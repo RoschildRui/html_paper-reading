@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>谨慎对待 Scaling Law · Lilian Weng 博客图解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+    svg: { fontCache: 'global' },
+    options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+  :root{
+    --bg:#faf9f5; --ink:#141413; --muted:#6b6a62; --faint:#b0aea5;
+    --line:#e4e1d7; --surface:#f1eee4;
+    --accent:#d97757; --accent-deep:#bf5c3c;
+    --sans:"Poppins","Noto Sans SC","PingFang SC",sans-serif;
+    --serif:"Lora",Georgia,serif;
+    --cjk:"Noto Sans SC","PingFang SC",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--cjk);font-size:16.5px;line-height:1.8;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 28px;}
+
+  /* 顶栏 */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(250,249,245,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{max-width:880px;margin:0 auto;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--sans);font-weight:500;font-size:15px;letter-spacing:.2px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);}
+  .topnav{display:flex;gap:18px;font-family:var(--sans);font-size:13.5px;}
+  .topnav a{color:var(--muted);text-decoration:none;transition:color .18s;white-space:nowrap;}
+  .topnav a:hover{color:var(--accent-deep);}
+  .topnav a.src{color:var(--accent);}
+  @media(max-width:760px){.topnav{display:none;}}
+
+  /* Hero */
+  header.hero{padding:72px 0 34px;border-bottom:1px solid var(--line);}
+  .eyebrow{font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:0 0 18px;}
+  h1{font-family:var(--sans);font-weight:600;font-size:clamp(28px,5vw,44px);line-height:1.16;letter-spacing:-.01em;margin:0 0 20px;}
+  h1 .en{display:block;font-size:.5em;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:12px;font-family:var(--serif);font-style:italic;}
+  .hero-sub{font-size:18px;color:var(--muted);margin:0 0 26px;max-width:44em;}
+  .hero-sub b{color:var(--ink);font-weight:600;}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;font-family:var(--sans);font-size:12.5px;align-items:center;}
+  .tag{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:#fff;}
+  .tag.accent{border-color:var(--accent);color:var(--accent-deep);}
+  .tag.src{border-color:var(--accent);color:var(--accent-deep);text-decoration:none;}
+  .tag.src:hover{background:var(--surface);}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line);}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin:0 0 8px;}
+  .sec-num{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--accent);flex:none;}
+  h2{font-family:var(--sans);font-weight:600;font-size:clamp(22px,3.4vw,29px);letter-spacing:-.01em;margin:0;line-height:1.25;}
+  .sec-rule{flex:1;height:1px;background:var(--line);align-self:center;}
+  .lead{font-size:17px;color:var(--muted);margin:6px 0 28px;}
+  h3{font-family:var(--sans);font-weight:600;font-size:19px;margin:34px 0 12px;letter-spacing:-.01em;}
+  h4{font-family:var(--sans);font-weight:500;font-size:16px;margin:22px 0 8px;}
+  p{margin:0 0 16px;}
+  strong{font-weight:600;color:var(--ink);}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(217,119,87,.3);}
+  a:hover{color:var(--accent-deep);border-color:var(--accent-deep);}
+  ul,ol{margin:0 0 16px;padding-left:1.3em;}
+  li{margin:0 0 9px;}
+  .en-term{font-family:var(--serif);font-style:italic;}
+  code{font-family:var(--mono);font-size:.86em;background:var(--surface);padding:1px 6px;border-radius:5px;color:var(--accent-deep);}
+
+  /* TL;DR */
+  .tldr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:0 0 8px;}
+  .tldr h3{margin-top:0;display:flex;align-items:center;gap:9px;}
+  .tldr h3 .k{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;color:#fff;background:var(--accent);padding:3px 9px;border-radius:6px;}
+  .tldr p{margin-bottom:12px;}
+  .tldr p:last-child{margin-bottom:0;}
+  .tldr b{color:var(--ink);}
+
+  /* 数学公式块 */
+  .eq{overflow-x:auto;overflow-y:hidden;margin:22px 0;padding:6px 2px;}
+  .eq mjx-container{margin:0 auto!important;}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:26px 0;}
+  .metric{border:1px solid var(--line);border-radius:12px;padding:18px 16px;background:#fff;}
+  .metric .num{font-family:var(--sans);font-weight:600;font-size:29px;line-height:1;color:var(--accent-deep);letter-spacing:-.02em;}
+  .metric .num .unit{font-size:15px;color:var(--faint);font-weight:400;margin-left:3px;}
+  .metric .lab{font-family:var(--sans);font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.5;}
+
+  /* 双栏对比 */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0;}
+  .col-card{border:1px solid var(--line);border-radius:12px;padding:20px;background:#fff;}
+  .col-card.dim{background:var(--surface);}
+  .col-card h4{margin-top:0;display:flex;align-items:center;gap:8px;}
+  .col-card .badge{font-family:var(--sans);font-size:11px;padding:2px 8px;border-radius:5px;}
+  .badge-a{background:#efe7e2;color:var(--accent-deep);}
+  .badge-b{background:#e7ece4;color:#4a6b46;}
+  .col-card ul{margin-bottom:0;font-size:14.5px;color:var(--muted);}
+  .col-card ul li strong{color:var(--ink);}
+  @media(max-width:760px){.two-col{grid-template-columns:1fr;}}
+
+  /* figure */
+  figure{margin:28px 0;}
+  figure img{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;display:block;}
+  figcaption{margin-top:12px;font-family:var(--sans);}
+  .fig-cap-main{font-size:14px;color:var(--muted);line-height:1.6;}
+  .fig-cap-main .fnum{color:var(--accent);font-weight:500;}
+  .fig-toggle{display:inline-block;margin-top:9px;font-size:13px;color:var(--accent);cursor:pointer;user-select:none;border-bottom:1px dashed rgba(217,119,87,.4);}
+  .fig-toggle:hover{color:var(--accent-deep);}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0;}
+  .figure-detail.active{max-height:2400px;opacity:1;margin-top:14px;}
+  .figure-detail-inner{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;font-family:var(--cjk);font-size:14.5px;line-height:1.75;}
+  .figure-detail-inner ul{margin:0;}
+  .figure-detail-inner li{margin-bottom:8px;}
+  .figure-detail-inner .end{margin:10px 0 0;color:var(--ink);font-weight:500;font-size:14px;}
+
+  /* 可展开卡片 */
+  .exp{border:1px solid var(--line);border-radius:12px;margin:12px 0;background:#fff;overflow:hidden;}
+  .exp-head{display:flex;align-items:flex-start;gap:14px;padding:17px 20px;cursor:pointer;user-select:none;transition:background .18s;}
+  .exp-head:hover{background:var(--surface);}
+  .exp-ic{flex:none;width:30px;height:30px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:1px;}
+  .exp-tt{flex:1;}
+  .exp-tt .t{font-family:var(--sans);font-weight:600;font-size:16px;line-height:1.35;}
+  .exp-tt .t .pill{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--accent-deep);background:#efe7e2;padding:2px 8px;border-radius:5px;margin-left:8px;vertical-align:middle;white-space:nowrap;}
+  .exp-tt .d{font-size:13px;color:var(--faint);margin-top:4px;line-height:1.55;}
+  .exp-ar{flex:none;color:var(--faint);font-size:13px;font-family:var(--sans);transition:transform .3s;margin-top:4px;}
+  .exp.open .exp-ar{transform:rotate(180deg);}
+  .exp-body{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+  .exp.open .exp-body{max-height:5000px;}
+  .exp-body-inner{padding:4px 20px 22px;border-top:1px solid var(--line);font-size:15px;}
+  .exp-body-inner h4:first-child{margin-top:16px;}
+
+  /* 符号表 */
+  .symtable{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:22px 0;}
+  .symtable .s{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:13px 16px;background:#fff;}
+  .symtable .s .sym{font-family:var(--mono);font-weight:500;color:var(--accent-deep);font-size:15px;}
+  .symtable .s .ds{font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:3px;}
+  @media(max-width:760px){.symtable{grid-template-columns:1fr;}}
+
+  /* 引用块 */
+  blockquote{margin:24px 0;padding:16px 22px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;font-family:var(--cjk);color:var(--ink);font-size:15.5px;line-height:1.75;}
+  blockquote p{margin:0;}
+  blockquote p+p{margin-top:10px;}
+
+  /* insight / 差异 box */
+  .insight{border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:20px 0;background:#fff;}
+  .insight .lbl{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 8px;}
+  .insight p:last-child{margin-bottom:0;}
+
+  /* 轻量补充说明 */
+  .aside{border-left:3px solid var(--line);padding:4px 0 4px 16px;color:var(--muted);font-size:14.5px;line-height:1.75;margin:20px 0;}
+  .aside b{color:var(--ink);}
+
+  /* stepper */
+  .stepper{border:1px solid var(--line);border-radius:14px;background:#fff;padding:22px;margin:26px 0;}
+  .step-title{font-family:var(--sans);font-weight:600;font-size:15px;margin:0 0 16px;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .step-title .k{font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.1em;color:#fff;background:var(--accent);padding:3px 8px;border-radius:5px;}
+  .step-pipe{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+  .step-node{flex:1;min-width:88px;text-align:center;padding:10px 6px;border:1px solid var(--line);border-radius:9px;font-family:var(--sans);font-size:11.5px;color:var(--faint);background:var(--bg);transition:all .3s;line-height:1.3;cursor:pointer;}
+  .step-node .sn{display:block;font-size:14px;font-weight:600;color:var(--faint);margin-bottom:3px;}
+  .step-node.active{border-color:var(--accent);background:#fff;color:var(--ink);box-shadow:0 0 0 3px rgba(217,119,87,.12);}
+  .step-node.active .sn{color:var(--accent-deep);}
+  .step-node.done{border-color:var(--line);color:var(--muted);}
+  .step-node.done .sn{color:var(--accent);}
+  .step-panel{display:none;}
+  .step-panel.active{display:block;}
+  .step-detail{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-height:150px;}
+  .step-detail .st{font-family:var(--sans);font-weight:600;font-size:16px;margin:0 0 10px;color:var(--ink);}
+  .step-detail .sd{font-size:14.5px;color:var(--muted);margin:0;line-height:1.75;}
+  .step-detail .sd b{color:var(--ink);}
+  .step-alloc{display:flex;gap:10px;margin:14px 0 0;flex-wrap:wrap;}
+  .step-alloc .a{flex:1;min-width:120px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:12px 14px;}
+  .step-alloc .a .h{font-family:var(--sans);font-size:11.5px;color:var(--faint);}
+  .step-alloc .a .v{font-family:var(--sans);font-weight:600;font-size:20px;color:var(--accent-deep);letter-spacing:-.01em;margin-top:3px;}
+  .step-alloc .a .v small{font-size:12px;color:var(--muted);font-weight:400;}
+  .step-ctrl{display:flex;align-items:center;gap:12px;margin-top:18px;}
+  .step-ctrl button{font-family:var(--sans);font-size:14px;padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:all .18s;white-space:nowrap;}
+  .step-ctrl button:hover:not(:disabled){border-color:var(--accent);color:var(--accent-deep);}
+  .step-ctrl button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .step-ctrl button.primary:hover{background:var(--accent-deep);}
+  .step-ctrl button:disabled{opacity:.4;cursor:not-allowed;}
+  .step-ctrl .prog{margin-left:auto;font-family:var(--sans);font-size:12.5px;color:var(--faint);}
+
+  /* 表格 */
+  .table-wrap{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:12px;}
+  table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:13.5px;min-width:460px;}
+  th,td{padding:10px 12px;text-align:center;border-bottom:1px solid var(--line);}
+  th{font-weight:600;color:var(--muted);background:var(--surface);font-size:12.5px;}
+  td:first-child,th:first-child{text-align:left;color:var(--ink);}
+  tbody tr:last-child td{border-bottom:none;}
+  td.win{background:rgba(217,119,87,.11);color:var(--accent-deep);font-weight:600;}
+  .mono{font-family:var(--mono);}
+  .tbl-note{font-family:var(--sans);font-size:12px;color:var(--faint);margin:8px 2px 0;}
+
+  /* case / details */
+  details.case{border:1px solid var(--line);border-radius:10px;margin:14px 0;background:#fff;padding:0 18px;}
+  details.case summary{cursor:pointer;padding:15px 0;font-family:var(--sans);font-weight:500;font-size:15px;list-style:none;display:flex;align-items:center;gap:9px;}
+  details.case summary::-webkit-details-marker{display:none;}
+  details.case summary .mk{color:var(--accent);transition:transform .3s;font-size:12px;flex:none;}
+  details.case[open] summary .mk{transform:rotate(90deg);}
+  details.case summary .sm{color:var(--faint);font-weight:400;font-size:13px;margin-left:auto;text-align:right;}
+  details.case .cbody{padding:2px 0 18px;font-size:14.5px;line-height:1.8;border-top:1px solid var(--line);}
+  details.case .cbody p:first-child{margin-top:14px;}
+
+  /* 参考文献 */
+  .reflist{font-family:var(--sans);font-size:13.5px;line-height:1.7;color:var(--muted);counter-reset:ref;list-style:none;padding-left:0;}
+  .reflist li{margin:0 0 11px;padding-left:34px;position:relative;}
+  .reflist li::before{content:"["counter(ref)"]";counter-increment:ref;position:absolute;left:0;top:0;color:var(--accent);font-weight:500;}
+  .reflist li b{color:var(--ink);font-weight:600;}
+  .reflist .venue{color:var(--faint);}
+
+  footer{padding:40px 0 60px;font-family:var(--sans);font-size:13px;color:var(--faint);}
+  footer .src-line{margin:0 0 8px;color:var(--muted);}
+  footer a{border:none;}
+  footer .home{color:var(--accent);}
+
+  @media(max-width:760px){
+    .wrap{padding:0 20px;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    body{font-size:16px;}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="brand"><span class="dot"></span>谨慎对待 Scaling Law</span>
+    <nav class="topnav">
+      <a href="#what">是什么</a>
+      <a href="#early">早期伏笔</a>
+      <a href="#duel">Kaplan vs Chinchilla</a>
+      <a href="#why">为何是幂律</a>
+      <a href="#data">数据受限</a>
+      <a href="#careful">谨慎拟合</a>
+      <a href="#refs">参考</a>
+      <a class="src" href="https://lilianweng.github.io/posts/2026-06-24-scaling-laws/" target="_blank" rel="noopener">原文 ↗</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">博客导读 · Lil'Log by Lilian Weng</p>
+    <h1>谨慎对待 Scaling Law
+      <span class="en">Scaling Laws, Carefully</span>
+    </h1>
+    <p class="hero-sub">大规模训练之前，Scaling law 用「小规模拟合 → 外推到大规模」预判：同样的算力，该多堆<b>参数</b>还是多喂<b>数据</b>。这篇博客把这套框架的来龙去脉讲清楚——<b>Kaplan 与 Chinchilla 为何吵架、数据不够用时怎么办、以及为什么拟合它时必须「谨慎」。</b></p>
+    <div class="meta-row">
+      <span class="tag accent">2026.06 · 博客</span>
+      <span class="tag">Lilian Weng（翁荔）</span>
+      <span class="tag">中文整理 · 机器之心</span>
+      <a class="tag src" href="https://lilianweng.github.io/posts/2026-06-24-scaling-laws/" target="_blank" rel="noopener">阅读原文 ↗</a>
+    </div>
+  </header>
+
+  <!-- ============ TL;DR ============ -->
+  <section id="tldr" style="border-bottom:none;padding-bottom:20px;">
+    <div class="tldr">
+      <h3><span class="k">TL;DR</span> 30 秒抓住核心</h3>
+      <p><b>Scaling law 是一条经验规律：</b>随着模型规模 \(N\)、数据量 \(D\)、算力 \(C\) 增大，训练损失 \(L\) 会以<b>可预测的幂律</b>下降——在双对数坐标上呈一条直线。它的实用价值在于：<b>在便宜的小模型上拟合规律，再外推去预判大模型该配多少参数和数据。</b></p>
+      <p><b>全文主线是一场「怎么分算力」的争论：</b>Kaplan 等人（2020）说算力应<b>更多堆到模型上</b>（\(N\!\propto\!C^{0.73}\)）；Chinchilla（2022）用更严谨的实验反驳，说模型和数据应<b>均衡扩展</b>（\(N\!\propto\!C^{0.5}\)），并证明当时的大模型普遍「训练不足」。</p>
+      <p><b>然后现实变复杂：</b>高质量数据快见底（「数据墙」），于是要研究<b>数据受限、需要重复喂数据</b>时的修正规律；而拟合本身对精度、噪声、拟合区间这些「小事」异常敏感——这正是标题说要「谨慎对待」的原因。</p>
+    </div>
+  </section>
+
+  <!-- ============ 1. 什么是 Scaling Law ============ -->
+  <section id="what">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Scaling Law 到底在说什么</h2><span class="sec-rule"></span></div>
+    <p class="lead">一个把「算力、损失、模型、数据」串起来的经验框架，核心是回答：宝贵的算力该如何在 \(N\) 和 \(D\) 之间最优分配。</p>
+
+    <p>Scaling law 是深度学习最关键的经验发现之一，形式简单得惊人：把模型规模 \(N\)、数据规模 \(D\)、算力 \(C\) 一起放大，训练损失 \(L\) 就会沿着幂律平滑下降，在双对数坐标里画出来是<strong>一条直线</strong>。这条直线之所以值钱，是因为它<strong>可外推</strong>——一种常见工作流是：先在少量小规模训练上拟合出 scaling law，再顺着直线预估更大模型需要多少 token、多少算力，从而在投入巨额训练之前就心里有数。</p>
+
+    <p>贯穿全文有一个把算力和 \(N,D\) 联系起来的换算关系（下文会推导它）：</p>
+    <div class="eq">$$ C \approx 6ND $$</div>
+
+    <h3>先约定符号</h3>
+    <p>这几个记号会反复出现，先摆在这里当速查表：</p>
+    <div class="symtable">
+      <div class="s"><span class="sym">N</span><div class="ds">模型规模，用参数量衡量。</div></div>
+      <div class="s"><span class="sym">D</span><div class="ds">训练数据集规模，通常用 token 数衡量。</div></div>
+      <div class="s"><span class="sym">C</span><div class="ds">训练算力（FLOPs）。常用近似 \(C\approx 6ND\)：前向 \(2ND\)，反向 \(4ND\)。</div></div>
+      <div class="s"><span class="sym">E</span><div class="ds">不可约损失（irreducible loss），数据本身噪声带来的下界。</div></div>
+      <div class="s"><span class="sym">L, L̂(·)</span><div class="ds">测试损失 / 损失预测函数；也可指训练损失，二者强相关。</div></div>
+      <div class="s"><span class="sym">ε</span><div class="ds">泛化误差（generalization error）。</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 2. 早期伏笔 ============ -->
+  <section id="early">
+    <div class="sec-head"><span class="sec-num">02</span><h2>早期伏笔：损失本来就「可预测」</h2><span class="sec-rule"></span></div>
+    <p class="lead">在 Scaling law 成为热词之前，研究者早已发现泛化误差随规模变化是可预测的——而且形式几乎总是幂律。</p>
+
+    <h3>Amari et al. (1992)：四类学习曲线，殊途同归到幂律</h3>
+    <p>Amari 等人用贝叶斯方法和退火近似，在简化的二分类设定下推导出<strong>四类学习曲线</strong>：</p>
+    <ul>
+      <li><strong>确定性算法 + 无噪声 + 唯一解</strong>：\(\epsilon \sim c\,D^{-1}\)。</li>
+      <li><strong>确定性算法 + 无噪声 + 多个等效解</strong>：\(\epsilon \sim c\,D^{-2}\)，新数据点加入会让学习更快。</li>
+      <li><strong>确定性算法 + 含噪声数据</strong>：\(\epsilon \sim c\,D^{-1/2}\)。</li>
+      <li><strong>随机算法 + 含噪声数据</strong>：\(\epsilon \sim c\,D^{-1} + E\)，其中 \(E\) 是随机学习器无法再降的残差。</li>
+    </ul>
+    <p>四类曲线都能收进同一个幂律骨架：</p>
+    <div class="eq">$$ \epsilon \sim c\cdot D^{\alpha} + E $$</div>
+    <p>其中 \(E\) 可以为 0，\(\alpha \in \{-2,-1,-\tfrac12\}\)。理论虽然基于玩具任务，却为后来「用经验幂律预测损失」指明了方向。</p>
+
+    <h3>Hestness et al. (2017)：跨领域反复出现的幂律</h3>
+    <p>这项早期实证研究在<strong>神经机器翻译、图像分类、语言建模、语音识别</strong>四个领域都观察到同一个模式。几个关键结论：</p>
+    <ul>
+      <li>泛化误差作为某个因素（如数据规模）的<strong>幂律函数</strong>缩放。</li>
+      <li>改进模型会<strong>平移</strong>误差曲线，但几乎<strong>不改变幂律指数</strong>。</li>
+      <li>架构变化会改变拟合的<strong>截距 \(E\)</strong>，却几乎不动<strong>指数 \(\alpha\)</strong>——斜率更像是「问题本身」的属性，与模型架构关系不大。</li>
+      <li>拟合规模为 \(D\) 的数据所需的模型参数量 \(N\)，同样遵循幂律。</li>
+    </ul>
+
+    <figure>
+      <img src="assets/hestness-1.png" alt="DS2 与注意力语音模型的学习曲线">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 1</span> · 语音模型学习曲线：损失随训练数据量按幂律下降，小模型在数据足够大时会「喂饱」而趋于平缓。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左图</strong>：对比 Deep-Speech-2（DS2）与注意力语音模型，两条曲线（及其趋势线）在双对数坐标上都近似直线，斜率相近——印证「斜率由问题域决定」。</li>
+            <li><strong>右图</strong>：同一 DS2 架构下不同规模（1.7M / 6M / 87M）的学习曲线；数据量很大时，<strong>小模型</strong>的损失率先趋平——它的容量被喂饱了。</li>
+            <li><strong>纵轴</strong>是最小验证损失（对数刻度），<strong>横轴</strong>是训练数据量（对数刻度）；虚线是各自的幂律趋势拟合。</li>
+          </ul>
+          <p class="end">一句话：损失沿幂律下降是可复现的经验事实，且斜率对架构不敏感。（图源：Hestness et al. 2017）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <p>Hestness 还把幂律学习曲线拆成三个阶段，这张概念图后来被反复引用：</p>
+    <figure>
+      <img src="assets/hestness-2.png" alt="幂律学习曲线的三个区域">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 2</span> · 学习曲线的三段式结构：小数据区 → 幂律区 → 不可约误差区。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>小数据区（Small Data Region）</strong>：学习信号不足，模型表现只比「随机瞎猜（Best Guess Error）」略好，几乎是一条平台。</li>
+            <li><strong>幂律区（Power-law Region）</strong>：中段的主战场，损失随数据/模型规模呈幂律下降，在对数坐标上是一条明显的下坡直线——scaling law 拟合的就是这一段。</li>
+            <li><strong>不可约误差区（Irreducible Error Region）</strong>：逼近由数据噪声等决定的下界 \(E\)，再加数据也压不下去，曲线重新变平。</li>
+          </ul>
+          <p class="end">一句话：scaling law 的「直线」只在中间的幂律区成立，两端都会失效。（图源：Hestness et al. 2017）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <h3>Rosenfeld et al. (2020)：把 N 和 D 写进同一个函数</h3>
+    <p>这项工作横跨 ResNet、WRN、LSTM、Transformer 等架构与 Adam、SGD 等优化器，想把误差建模为模型规模 \(N\) 和数据规模 \(D\) 的<strong>联合函数</strong>。经验上，固定一个轴、误差在另一个轴上按幂律衰减，于是可以组合成一个联合形式：</p>
+    <div class="eq">$$ \hat{L}(N,D) \approx \frac{A}{N^{\alpha}} + \frac{B}{D^{\beta}} + E $$</div>
+    <p>其中 \(A>0,\,B>0,\,\alpha\ge 0,\,\beta\ge 0\) 是标量常数，\(E\) 既不依赖 \(N\) 也不依赖 \(D\)。<strong>这个三项式后来被 Chinchilla 直接沿用</strong>，是全文最重要的公式之一。</p>
+
+    <figure>
+      <img src="assets/rosenfeld-1.png" alt="数据规模、模型规模与泛化误差的三维等高线图">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 3</span> · 数据规模 × 模型规模 × 泛化误差的三维「地形图」，蓝点是实验、曲面是插值。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>两个水平轴</strong>分别是 \(\log_2(\text{数据比例})\) 和 \(\log_2(\text{模型比例})\)，<strong>竖轴</strong>是 \(\log_{10}(\text{误差})\)。</li>
+            <li><strong>(a) Wiki103</strong> 语言建模、<strong>(b) CIFAR10</strong> 图像分类：两个截然不同的任务，误差曲面都近似一个规整的斜面。</li>
+            <li>曲面在两个方向上都单调下降且接近平面，正是「\(N\) 和 \(D\) 各自贡献一个幂律项」的几何直觉。</li>
+          </ul>
+          <p class="end">一句话：联合幂律不是拍脑袋，而是有实验曲面支撑的规整结构。（图源：Rosenfeld et al. 2020）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <details class="case">
+      <summary><span class="mk">▸</span>补充：为什么放弃 VC 维、拥抱经验幂律<span class="sm">早期理论视角的局限</span></summary>
+      <div class="cbody">
+        <p>这些早期工作大多依赖经典分类学习理论的直觉，例如用 <strong>VC 维</strong>（模型能打散的最大点集）作为「容量」的代理。但在现代深度学习里，VC 维往往过于粗糙，难以解释模型的真实行为。事实证明，<strong>经验性的幂律比理论提供的最坏情况边界清晰、实用得多</strong>——这也奠定了后续 Kaplan、Chinchilla「用数据拟合、不纠结理论上界」的路线。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ 3. Kaplan vs Chinchilla ============ -->
+  <section id="duel">
+    <div class="sec-head"><span class="sec-num">03</span><h2>数据无限时：Kaplan vs Chinchilla 之争</h2><span class="sec-rule"></span></div>
+    <p class="lead">这是全文的重头戏。两篇奠基性论文在「同样的算力该多堆模型还是多喂数据」上给出了截然不同的答案。</p>
+
+    <h3>Kaplan et al. (2020)：把 Scaling Law 带进语言模型</h3>
+    <p>Kaplan 等人在语言建模社区普及了 scaling law，并聚焦 Transformer 做了更大规模的实证（模型 7.68 亿～15 亿非嵌入参数，数据 2200 万～230 亿 token）。他们的<strong>主要发现</strong>：</p>
+    <ul>
+      <li>损失 \(L\) 与 \(N\)、\(D\)、\(C\) 分别呈幂律；要拿到最佳性能，<strong>三者必须同步扩展</strong>。</li>
+      <li><strong>更大的模型样本效率更高</strong>：用更少的优化步数和数据点就能到达同样的损失。</li>
+      <li>架构细节（宽度、纵横比）<strong>不如纯粹的规模重要</strong>。</li>
+      <li>一个后来备受争议的结论：<strong>算力有限时，训练一个「超大但不训到收敛」的模型，比把小模型训到完全收敛更划算。</strong></li>
+    </ul>
+
+    <figure>
+      <img src="assets/kaplan-1.png" alt="测试损失随算力、数据、参数的幂律">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 4</span> · 测试损失分别作为算力、数据集规模、参数量的幂律函数，跨越多个数量级都是直线。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左（Compute）</strong>：测试损失 vs 算力（PF-days，非嵌入），大量训练曲线的下包络是一条幂律直线 \(L=(C_{min}/2.3\!\cdot\!10^{8})^{-0.050}\)。</li>
+            <li><strong>中（Dataset Size）</strong>：损失 vs 数据量（token），\(L=(D/5.4\!\cdot\!10^{13})^{-0.095}\)。</li>
+            <li><strong>右（Parameters）</strong>：损失 vs 参数量（非嵌入），\(L=(N/8.8\!\cdot\!10^{13})^{-0.076}\)。</li>
+            <li>三条几乎笔直的直线跨越 6～7 个数量级，正是「幂律可外推」这一论断的经验底气。</li>
+          </ul>
+          <p class="end">一句话：三个变量各自都给出干净的幂律，缺一不可、需同步放大。（图源：Kaplan et al. 2020）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <p>他们把 \(N,D\) 的联合依赖写成一个式子，形式上略不同于 Rosenfeld：</p>
+    <div class="eq">$$ \hat{L}(N,D) = \left[\left(\frac{a}{N}\right)^{\frac{\alpha}{\beta}} + \frac{b}{D}\right]^{\beta} $$</div>
+    <p>它带来一个漂亮结论：<strong>过拟合程度主要取决于比率 \(N^{\alpha/\beta}/D\)</strong>——也就是说，<strong>数据要随模型规模按特定比例增长，才不至于让训练受数据限制</strong>。</p>
+
+    <h4>顺带推导：为什么 C ≈ 6ND</h4>
+    <p>Kaplan 还给了一个实用的算力估计。每次「乘加」约 2 FLOPs；在标准配置 \(d_{\text{attn}}=d_{\text{model}}=d_{\text{ff}}/4\) 下排除嵌入层，可得非嵌入参数量与单 token 前向算力：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>量</th><th>近似表达</th><th>结论</th></tr></thead>
+        <tbody>
+          <tr><td>非嵌入参数 \(N\)</td><td class="mono">\(12\,n_{layer}\,d_{model}^2\)</td><td>模型大小的主体</td></tr>
+          <tr><td>单 token 前向算力 \(C_{fwd}\)</td><td class="mono">\(\approx 2N\)</td><td>忽略 \(n_{ctx}\!\ll\! d_{model}\) 项</td></tr>
+          <tr><td>反向 / 前向</td><td class="mono">\(\times 2\)</td><td>反向需两次矩阵乘（算激活梯度 + 权重梯度）</td></tr>
+          <tr><td>单 token 训练算力</td><td class="mono">\(\approx 6N\)</td><td>前向 2N + 反向 4N</td></tr>
+          <tr><td class="win">D 个 token 训练总算力</td><td class="mono win">\(C\approx 6ND\)</td><td class="win">全文通用换算</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-note">重建自 Kaplan et al. (2020) 的参数 / FLOPs 估计表（原图为逐组件明细）。</p>
+    </div>
+
+    <h3>Chinchilla（Hoffmann et al. 2022）：更严谨，得出相反结论</h3>
+    <p>Chinchilla 研究的是同一个问题，但实验设计更严谨：<strong>在固定算力预算 \(C\approx 6ND\) 的约束下，怎么分配 \(N\) 和 \(D\) 才能让损失最小？</strong></p>
+    <div class="eq">$$ N_{\text{opt}}(C),\,D_{\text{opt}}(C) = \operatorname*{arg\,min}_{\text{s.t. } 6ND=C} \hat{L}(N,D) $$</div>
+    <p>他们扫了 400 多个模型（参数 7000 万～160 亿+，token 50 亿～5000 亿，假设每个 token 都独一无二即「数据无限」），用<strong>三种互补方法</strong>各自描绘计算最优边界。三种方法结果高度一致，这正是结论极具说服力的原因。</p>
+
+    <div class="two-col">
+      <div class="col-card">
+        <h4><span class="badge badge-a">方法 1</span>固定模型，扫 token 预算</h4>
+        <ul><li>对每个参数量 \(N\)，用不同 token 预算训练多次；</li><li>记录每个算力预算 \(C\) 下达到的<strong>最小损失</strong>，连成计算最优边界。</li></ul>
+      </div>
+      <div class="col-card">
+        <h4><span class="badge badge-a">方法 2</span>IsoFLOP 曲线</h4>
+        <ul><li>固定算力 \(C\)，画「最终损失 vs 参数量」——在对数空间近似一条<strong>抛物线</strong>；</li><li>抛物线<strong>最低点</strong>就是该预算下的最优模型规模。</li></ul>
+      </div>
+    </div>
+
+    <figure>
+      <img src="assets/chinchilla-1.png" alt="Chinchilla 方法 1：训练曲线扫描">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 5</span> · 方法 1：对一系列模型规模扫描，取每个算力预算下的最小损失，拟合出参数量、token 随算力的增长。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左</strong>：不同模型规模（颜色由 75M 到 10B）的训练损失 vs FLOPs，众多曲线的<strong>下包络</strong>就是计算最优前沿。</li>
+            <li><strong>中 / 右</strong>：把前沿上的点重新画成「最优参数量 vs 算力」和「最优 token vs 算力」，散点几乎落在一条直线上。</li>
+            <li>两条拟合线的斜率都接近 <strong>0.5</strong>，这是方法 1 给出的核心读数。</li>
+          </ul>
+          <p class="end">一句话：从训练曲线族的下包络直接量出最优分配。（图源：Hoffmann et al. 2022）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="assets/chinchilla-2.png" alt="Chinchilla 方法 2：IsoFLOP 抛物线">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 6</span> · 方法 2：每条等算力（IsoFLOP）曲线是一条抛物线，最低点即该预算下的计算最优模型规模。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左</strong>：固定算力预算（6e18 到 3e21 多档），画「训练损失 vs 参数量」，每档是一条向上开口的抛物线。</li>
+            <li><strong>抛物线最低点</strong>：太小的模型欠拟合、太大的模型 token 不够，中间存在一个甜蜜点——就是该预算的最优规模。</li>
+            <li><strong>中 / 右</strong>：把各档的最低点连起来，同样得到斜率约 0.5 的「参数 vs 算力」「token vs 算力」幂律。</li>
+          </ul>
+          <p class="end">一句话：用抛物线最低点定位最优规模，独立复现了方法 1 的结论。（图源：Hoffmann et al. 2022）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <h4>方法 3：参数化拟合</h4>
+    <p>直接拟合与 Rosenfeld 相同的三项式 \(\hat{L}(N,D)=A/N^{\alpha}+B/D^{\beta}+E\)，再在约束 \(C\approx 6ND\) 下最小化，得到最优分配的闭式近似：</p>
+    <div class="eq">$$ N_{\text{opt}} = \left(\frac{\alpha A}{\beta B}\right)^{\frac{1}{\alpha+\beta}}\!\left(\frac{C}{6}\right)^{\frac{\beta}{\alpha+\beta}},\qquad D_{\text{opt}} = \left(\frac{\beta B}{\alpha A}\right)^{\frac{1}{\alpha+\beta}}\!\left(\frac{C}{6}\right)^{\frac{\alpha}{\alpha+\beta}} $$</div>
+    <p>当 \(\alpha \approx \beta\) 时，模型规模与训练 token 应<strong>以相同速度扩展</strong>。拟合参数 \(\theta=\langle A,B,E,\alpha,\beta\rangle\) 时，Chinchilla 用了对异常值鲁棒的 <strong>Huber 损失</strong>（\(\delta=10^{-3}\)）配合 <strong>L-BFGS</strong>——这个细节在后面「谨慎拟合」一节会成为翻车现场。</p>
+
+    <p>三种方法在计算最优边界上高度吻合，但都与 Kaplan 分道扬镳：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>方法</th><th>\(N_{\text{opt}}\propto C^{a}\) 的 a</th><th>\(D_{\text{opt}}\propto C^{b}\) 的 b</th></tr></thead>
+        <tbody>
+          <tr><td>1 · 训练曲线最小值</td><td class="mono">0.50</td><td class="mono">0.50</td></tr>
+          <tr><td>2 · IsoFLOP 曲线</td><td class="mono">0.49</td><td class="mono">0.51</td></tr>
+          <tr><td>3 · 参数化拟合</td><td class="mono">0.46</td><td class="mono">0.54</td></tr>
+          <tr><td>Kaplan et al. (2020)</td><td class="mono win">0.73</td><td class="mono win">0.27</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-note">重建自 Hoffmann et al. (2022) 表 2。Chinchilla 三法都指向 ≈0.5，Kaplan 却是 0.73 / 0.27——分歧就在这里。</p>
+    </div>
+
+    <figure>
+      <img src="assets/chinchilla-4.png" alt="Chinchilla 三种方法与 Kaplan 的预测对比，以及主流大模型的位置">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 7</span> · 三种方法（≈0.5）vs Kaplan（0.73）的最优前沿，以及当时主流大模型的位置——它们普遍偏离了 Chinchilla 前沿。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>横轴 FLOPs、纵轴参数量</strong>（均对数）。三条实线是 Chinchilla 三法的最优前沿，斜率约 0.5，几乎重合。</li>
+            <li><strong>黑色虚线</strong>是 Kaplan 的预测，斜率更陡（0.73）：同样算力它主张用更多参数。</li>
+            <li><strong>星标</strong>是真实模型：Chinchilla(70B)、Gopher(280B)、GPT-3(175B)、Megatron-Turing NLG(530B)。除 Chinchilla 外，它们都落在最优前沿<strong>上方</strong>——参数相对算力太多、数据太少，即「训练不足」。</li>
+          </ul>
+          <p class="end">一句话：这张图是「当时大模型普遍训练不足」这一著名论断的直接证据。（图源：Hoffmann et al. 2022）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <!-- ===== 交互步进：计算预算怎么分 ===== -->
+    <div class="stepper" id="allocStepper">
+      <div class="step-title"><span class="k">步进演示</span>同样一笔算力预算，两派怎么分？</div>
+      <div class="step-pipe">
+        <div class="step-node active" data-step="0"><span class="sn">①</span>问题</div>
+        <div class="step-node" data-step="1"><span class="sn">②</span>Kaplan 的分法</div>
+        <div class="step-node" data-step="2"><span class="sn">③</span>Chinchilla 的分法</div>
+        <div class="step-node" data-step="3"><span class="sn">④</span>实证：谁赢了</div>
+      </div>
+
+      <div class="step-panel active" data-panel="0">
+        <div class="step-detail">
+          <p class="st">给定固定算力 \(C\approx 6ND\)，多堆参数还是多喂数据？</p>
+          <p class="sd">你只有有限的 FLOPs（比如一批 GPU 跑固定时长）。参数 \(N\) 和 token \(D\) 的乘积被预算钉死了，多分给一个就得少分给另一个。<b>这个取舍直接决定一次大规模训练是「训得好」还是「白烧钱」</b>——所以才需要 scaling law 来提前算账。</p>
+        </div>
+      </div>
+
+      <div class="step-panel" data-panel="1">
+        <div class="step-detail">
+          <p class="st">Kaplan：偏向模型 · \(N_{\text{opt}}\propto C^{0.73}\)，\(D_{\text{opt}}\propto C^{0.27}\)</p>
+          <p class="sd">算力主要该堆到<b>模型规模</b>上。因此他们建议：训练一个<b>超大但不训到收敛</b>的模型、中途停下，比把小模型训到底更高效。</p>
+          <div class="step-alloc">
+            <div class="a"><div class="h">算力 ×10 → 模型规模</div><div class="v">×5.5</div></div>
+            <div class="a"><div class="h">算力 ×10 → 训练 token</div><div class="v">×1.8</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-panel" data-panel="2">
+        <div class="step-detail">
+          <p class="st">Chinchilla：均衡扩展 · \(N_{\text{opt}}\propto C^{0.5}\)，\(D_{\text{opt}}\propto C^{0.5}\)</p>
+          <p class="sd">模型和数据应当<b>齐步走</b>：模型每翻一倍，训练 token 也要相应翻倍。按这个标准，Kaplan 高估了最优模型规模，导致大模型<b>严重训练不足（喂的数据太少）</b>。</p>
+          <div class="step-alloc">
+            <div class="a"><div class="h">算力 ×10 → 模型规模</div><div class="v">×3.2</div></div>
+            <div class="a"><div class="h">算力 ×10 → 训练 token</div><div class="v">×3.2</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-panel" data-panel="3">
+        <div class="step-detail">
+          <p class="st">实证一锤定音：Chinchilla 以小博大</p>
+          <p class="sd">在与 <b>Gopher</b>（280B 参数 / 300B token）<b>相同的算力预算</b>下，训练一个体积仅 1/4、数据约 4 倍的 <b>Chinchilla</b>（70B 参数 / 1.4T token）。结果 Chinchilla 在各项指标上<b>全面胜出</b>——直接证明了「之前的大模型普遍没喂饱」。</p>
+          <div class="step-alloc">
+            <div class="a"><div class="h">Gopher</div><div class="v">280B <small>参数 / 300B token</small></div></div>
+            <div class="a"><div class="h">Chinchilla</div><div class="v">70B <small>参数 / 1.4T token</small></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-ctrl">
+        <button id="allocPrev" onclick="allocStep(-1)" disabled>← 上一步</button>
+        <button id="allocNext" class="primary" onclick="allocStep(1)">下一步 →</button>
+        <span class="prog" id="allocProg">1 / 4</span>
+      </div>
+    </div>
+
+    <h3>调和分歧：两派其实都没错</h3>
+    <p>两篇论文在基本原理上一致，只在「最优规模 vs token 的权衡点」上分歧。分歧为什么这么大？后续工作（尤其 Pearce &amp; Song 2024）给出了两个关键原因。</p>
+
+    <div class="insight">
+      <p class="lbl">差异 1 · 实验规模不同</p>
+      <p>Kaplan 主要在<strong>较小的模型</strong>上测试，Chinchilla 的规模要大 10 倍以上。当你在双对数空间外推时，<strong>微小的拟合差异会被放大成巨大偏差</strong>（这正是最后一节「谨慎拟合」要讲的）。</p>
+    </div>
+    <div class="insight">
+      <p class="lbl">差异 2 · 要不要数嵌入层参数</p>
+      <p>小模型里，<strong>嵌入层参数占总参数的比例不可忽视</strong>。Kaplan 用的是<strong>非嵌入</strong>参数（\(N_{\backslash E}\propto C_{\backslash E}^{0.73}\)），Chinchilla 用的是<strong>总参数</strong>（\(N\propto C^{0.50}\)）。Pearce &amp; Song 用关系 \(N = N_{\backslash E} + \omega N_{\backslash E}^{1/3}\) 把两者接上：对大模型 \(N\to N_{\backslash E}\)，但在小模型区 \(C_{\backslash E}\) 与 \(N_{\backslash E}\) 之间不再是纯幂律，只能局部近似为 \(N_{\backslash E}\propto C_{\backslash E}^{g}\)，其中 \(g=\dfrac{\mathrm{d}\log C_{\backslash E}}{\mathrm{d}\log N_{\backslash E}}\) 是<strong>局部</strong>指数。</p>
+    </div>
+
+    <figure>
+      <img src="assets/pearce-1.png" alt="局部幂律指数 g 随 C 增长的变化">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 8</span> · 局部指数 \(g\) 会随算力增长而收敛到 Chinchilla 的 ≈0.5；而在 Kaplan 实验的小模型区间，\(g\) 恰好接近 0.73。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>黑色虚线（左轴）</strong>：非嵌入模型规模 \(N_{\backslash E}\) 随 \(C_{\backslash E}\) 单调上升。</li>
+            <li><strong>蓝色曲线（右轴）</strong>：局部指数 \(g\)。在小算力区它冲高到接近 0.73（Kaplan 的地盘），随后随算力增大逐渐<strong>回落收敛到 ≈0.5</strong>（Chinchilla 的值）。</li>
+            <li><strong>两条参考水平线</strong>标出 \(\beta/(\beta+\alpha)\) 与 \(\beta/(\alpha/3+\beta)\) 两个极限，\(g\) 正好在两者之间过渡。</li>
+          </ul>
+          <p class="end">一句话：Kaplan 不是错了，而是量到了幂律的「局部斜率」；放大规模后它自然收敛到 Chinchilla。（图源：Pearce &amp; Song 2024）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ 4. 为什么是幂律 ============ -->
+  <section id="why">
+    <div class="sec-head"><span class="sec-num">04</span><h2>为什么偏偏是幂律？</h2><span class="sec-rule"></span></div>
+    <p class="lead">幂律不是深度学习独有的。它在 Zipf 定律、无标度网络、城市规模等许多复杂系统里反复出现：大事件少、小事件多，规模与频率在双对数上是一条直线。</p>
+
+    <p>那语言模型的 scaling law 为什么也长这样？目前有几种互补的假说，都还没有定论：</p>
+
+    <div class="exp" onclick="toggleExp(this)">
+      <div class="exp-head">
+        <span class="exp-ic">🧩</span>
+        <div class="exp-tt">
+          <div class="t">数据流形假说<span class="pill">Sharma &amp; Kaplan 2020</span></div>
+          <div class="d">语言建模 ≈ 在低维数据流形上回归；参数越多、流形切得越细，误差越小。</div>
+        </div>
+        <span class="exp-ar">▾</span>
+      </div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p>他们假设语言建模可以看成在一个<strong>低维数据流形</strong>上做回归。更多的模型参数能把这个流形划分得更细，从而带来更小的泛化误差。直觉上：如果一个有效规模为 \(N\) 的模型把 \(d\) 维流形划成 \(O(N)\) 个区域，那么典型的线性分辨率就按 \(\sim N^{-1/d}\) 缩放——这与观测到的幂律形式一致。</p>
+        <p>这套理论最完美地适用于「数据无限、欠拟合」的状态。<strong>短板</strong>：现实中估算数据流形的固有维度 \(d\) 极其困难。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" onclick="toggleExp(this)">
+      <div class="exp-head">
+        <span class="exp-ic">🔢</span>
+        <div class="exp-tt">
+          <div class="t">技能「量子化」假说<span class="pill">Michaud 2023 · Brill 2024</span></div>
+          <div class="d">知识/技能以离散块（quanta）被学习，且其频率分布遵循幂律，于是损失平滑幂律下降。</div>
+        </div>
+        <span class="exp-ar">▾</span>
+      </div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p>这一派认为知识或技能是以<strong>离散块（「量子」）</strong>的形式被学习的，而这些技能的<strong>频率分布本身遵循幂律</strong>。模型会先学常见技能、再学罕见技能，一块一块地掌握。当把大量「阶梯式」的单技能习得叠加起来，宏观上就表现为损失的<strong>平滑幂律衰减</strong>。</p>
+        <p>这提供了一个更「机制化」的解释：宏观幂律 = 微观离散技能按幂律频率被依次点亮的累积效果。</p>
+      </div></div>
+    </div>
+
+    <p class="aside">除这两种外，还有研究尝试从<b>数据的谱尾、核特征值、自然语言统计特征</b>，或训练动态中的相变现象来解释幂律的形态。作者的态度很诚实：幂律「为什么」出现，仍是开放问题。</p>
+  </section>
+
+  <!-- ============ 5. 数据受限 ============ -->
+  <section id="data">
+    <div class="sec-head"><span class="sec-num">05</span><h2>数据不够用时：受限区域的 Scaling Law</h2><span class="sec-rule"></span></div>
+    <p class="lead">经典 scaling law 假设有近乎无限的去重数据、不重复、不多轮训练。但随着模型变大，高质量去重 token 快见底——关于「AI 还能 scale 多久」的争论，焦点往往就在我们是否撞上了「数据墙」。</p>
+
+    <p class="aside">还要强调：\(D\) 背后的数据应当是<b>已经清洗过的</b>。预训练数据管道通常包含去重（精确 + 模糊）、质量过滤、样板去除、安全过滤、隐私 / 版权脱敏、基准污染处理，以及按语言 / 质量 / 内容类型重新加权。<b>即使 token 数 \(D\) 相同，一份高质量数据和一堆网络垃圾的计算效率也可能天差地别。</b></p>
+
+    <h3>Hernandez et al. (2022)：重复数据引发「双重下降」</h3>
+    <p>他们构造了一个受控场景：保留 90% 去重数据，把剩下 10% 换成少量内容的重复。用 1000 亿 token 训练后观察到<strong>双重下降（double descent）</strong>——测试损失随重复占比先变差、再变好；重复比例越高，影响越明显。</p>
+    <figure>
+      <img src="assets/hernandez-1.png" alt="重复数据导致的双重下降">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 9</span> · 随重复率增加，测试损失出现双重下降（左：90% 重复；右：50% 重复）。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>横轴</strong>是 token 数，<strong>纵轴</strong>是测试损失；不同颜色代表不同的重复轮次（epochs）。</li>
+            <li><strong>左（90% 重复）</strong>：中途出现明显的平台甚至上升——模型开始「背下」重复数据，随后损失才继续下降，形成双重下降。</li>
+            <li><strong>右（50% 重复）</strong>：同样的现象但更温和，表现为一段较长的平台。</li>
+          </ul>
+          <p class="end">一句话：重复数据会让学习曲线变形，直接削弱 scaling law 拟合的准确性。（图源：Hernandez et al. 2022）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+    <p>训练中期的平台/上升，可能源于模型记住了重复数据。这种变形的曲线会降低 scaling law 拟合的准确性，也会损害部分 OOD 评估和下游微调。比起讨论重复「有多坏」，后续工作更关心：<strong>在必须重复数据的条件下，scaling law 该怎么拟合。</strong></p>
+
+    <h3>Muennighoff et al. (2023)：给重复 token 打折</h3>
+    <p>他们做了约 400 次实验（参数 1000 万～90 亿，数据高达 9000 亿 token，训练轮次高达 1500）。关键建模是把总 token 数拆开：\(D = U_D(1+R_D)\)，其中 \(U_D\) 是去重 token 数、\(R_D\) 是重复次数（训练轮次减 1）。核心思想是<strong>重复的 token 价值按指数衰减</strong>，于是用「有效数据量 \(D'\)」替换原始 \(D\)：</p>
+    <div class="eq">$$ \hat{L}(N,D) = \frac{A}{N'^{\alpha}} + \frac{B}{D'^{\beta}} + E,\qquad D' = U_D + U_D\,r_D\left(1-e^{-R_D/r_D}\right) $$</div>
+    <p>其中 \(r_D\) 是可学习的「半衰期」参数：\(R_D=0\) 或 \(R_D\ll r_D\) 时 \(D'\approx D\)（重复很少时退化回原始数据）。模型规模一侧也用了对称的折减 \(N'\)。他们的实证拟合表明<strong>多余参数的价值衰减得比重复数据更快（\(r_N<r_D\)）</strong>——也就是说，数据受限时应<strong>优先增加训练轮次，而不是一味把模型做大</strong>。</p>
+    <figure>
+      <img src="assets/muennighoff-1.png" alt="数据受限下带重复数据的缩放">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 10</span> · 显式建模重复数据的价值衰减，比忽略重复更贴合实验；「重复 4 轮几乎和新数据一样好」。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左（Empirical Loss）</strong>：固定训练长度下，最终损失 vs「唯一 token 占比」；三档模型规模，横轴从 100% 唯一逐渐降到 10%（即重复越来越多）。</li>
+            <li><strong>右（Predicted Loss）</strong>：变训练长度下，最终损失 vs 总训练 token。曲线显示<strong>重复约 4 轮的收益几乎等同于用等量新数据</strong>，之后收益迅速递减。</li>
+            <li>实线是「数据受限 scaling law」的预测，与散点吻合；虚线是「假设重复等价于新数据」的乐观估计，明显偏离。</li>
+          </ul>
+          <p class="end">一句话：重复不是白费，但有一个「大约 4 轮」的性价比拐点。（图源：Muennighoff et al. 2023）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+    <p class="aside">作者也坦承这个对称折减形式<b>不够直观</b>，且会严重低估「训练中途翻车」（损失开始回升）模型的最终损失，例如训了 44 轮的模型。这为下一项工作留了口子。</p>
+
+    <h3>Lovelace et al. (2026)：给过拟合一个「显式罚项」</h3>
+    <p>与其把过度参数化建模成「有效规模的递减收益」，Lovelace 等人选择<strong>显式建模模型规模与数据重复之间的相互作用</strong>（约 300 个模型，参数 1500 万～10 亿，去重 token 5000 万～60 亿）。他们发现：<strong>轮次越多损害越大，且模型越大对重复越敏感</strong>——暗示损失惩罚是模型规模和数据规模的<em>共同</em>函数。于是引入一个基于容量比 \(N/U_D\) 的显式过拟合罚项：</p>
+    <div class="eq">$$ \hat{L}(N,U_D,R_D) = E + \frac{A}{N^{\alpha}} + \frac{B}{\big(U_D(1+R_D)\big)^{\beta}} + \underbrace{P\cdot R_D^{\,\delta}\cdot\left(\frac{N}{U_D}\right)^{\kappa}}_{\text{过拟合惩罚}} $$</div>
+    <ul>
+      <li>\(P\) 是可学习的标量系数；</li>
+      <li>\(\kappa\) 让惩罚随容量比 \(N/U_D\) <strong>非线性</strong>缩放；</li>
+      <li>\(\delta\) 单独作用在重复次数 \(R_D\) 上，把「重复带来的非线性惩罚」与 \(\kappa\) 解耦。</li>
+    </ul>
+    <p>这项惩罚会随<strong>重复次数增加</strong>、以及<strong>相对可用去重数据的过度参数化程度增加</strong>而变得更严重。他们还做了案例研究：<strong>强权重衰减能显著减轻数据重复引起的过拟合惩罚。</strong></p>
+    <figure>
+      <img src="assets/lovelace-1.png" alt="有效规模拟合的残差">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 11</span> · 过拟合造成的损害随「重复轮次」和「模型规模」的增加而增大。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li>三张子图分别是 \(N=125\text{m}/250\text{m}/500\text{m}\)，<strong>横轴是数据重复次数 \(R_D\)</strong>，纵轴是拟合残差（损失惩罚）。</li>
+            <li>同一张图里，不同曲线对应不同去重数据量 \(U_D\)：<strong>可用去重数据越少，惩罚上升越陡</strong>。</li>
+            <li>从左到右模型变大，<strong>整体惩罚水位明显抬高</strong>——证明惩罚同时依赖模型规模和重复程度，支持引入显式罚项。</li>
+          </ul>
+          <p class="end">一句话：残差不是随机噪声，而是有规律地随「更多重复 + 更大模型」增长。（图源：Lovelace et al. 2026）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="assets/lovelace-2.png" alt="强权重衰减减轻过拟合惩罚">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 12</span> · 强权重衰减把数据重复带来的过拟合惩罚降低约 70%。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左（柱状）</strong>：过拟合系数 \(P\cdot R_D\cdot N/U_D\) 在「标准权重衰减」与「强权重衰减」下的对比，后者下降约 <strong>70%</strong>。</li>
+            <li><strong>右（两张损失分解）</strong>：在 \(N=250\text{m},U_D=100\text{M}\) 下，把验证损失分解出「过拟合惩罚」这一块（阴影面积）；强权重衰减让这块阴影明显缩小。</li>
+            <li>对照 Chinchilla 的理想曲线（点线）可见：强权重衰减把实际曲线拉得更贴近理想、更晚翻车。</li>
+          </ul>
+          <p class="end">一句话：数据受限时，强权重衰减是对抗「重复过拟合」的有效工程手段。（图源：Lovelace et al. 2026）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+    <p class="aside">两套建模都建立在经验曲线拟合上。<b>为什么数据受限的 scaling law 必须采用这些特定形式、为什么需要这些自由参数，目前仍缺乏理论解释</b>——这也是作者点名期待的方向。</p>
+  </section>
+
+  <!-- ============ 6. 谨慎拟合 ============ -->
+  <section id="careful">
+    <div class="sec-head"><span class="sec-num">06</span><h2>谨慎对待：拟合 Scaling Law 的微妙之处</h2><span class="sec-rule"></span></div>
+    <p class="lead">这是全文标题的落点。形式虽简洁，但 scaling law 的拟合对一些看似微不足道的流程选择异常敏感——因为你是在便宜的小模型上拟合，却要外推到大几个数量级的模型。</p>
+
+    <blockquote>
+      <p>Scaling law 通常在我们负担得起的（较小、较便宜的）模型上拟合，而预测要外推到规模大几个数量级的模型。在这种设定下，<strong>看似舍入误差般的细微选择，都可能让预测大相径庭。</strong></p>
+    </blockquote>
+
+    <p>另一个隐含假设是：拟合时<strong>唯一的变量只有规模</strong>。这意味着模型架构、优化器、学习率调度、批量大小、数据混合、分词器等设计都应保持不变，而且默认它们<strong>都已被仔细调过</strong>——因为「模型训练不足」这类情况会导出截然不同的结论。前面 Kaplan 与 Chinchilla 的分歧，本身就是「拟合有微妙之处」的活教材。</p>
+
+    <details class="case">
+      <summary><span class="mk">▸</span>翻车现场：Chinchilla 方法 3 为什么偏了一点<span class="sm">Besiroglu et al. 2024 复现</span></summary>
+      <div class="cbody">
+        <p>Besiroglu 等人从 Hoffmann et al. (2022) 的图 4 中提取原始 \((N,D,L)\) 数据点，重跑方法 3 的参数化拟合，发现了两个具体问题：</p>
+        <ul>
+          <li><strong>L-BFGS-B 的损失尺度过高</strong>：主要因为对样本的 Huber 损失做了<strong>求平均而非求和</strong>，导致优化过早终止；在原始拟合和 bootstrapping 重采样中损失最小化提前停止，产生了不一致的估计值和窄得离谱的置信区间。</li>
+          <li><strong>报告的 \(\alpha\)、\(\beta\) 被四舍五入到 2 位精度</strong>，这让由它们推导出的 \(A,B\) 看起来比实际偏差更大。</li>
+        </ul>
+        <p>换句话说：Chinchilla 方法 3 与另外两法的轻微偏差，很大程度上是<strong>拟合流程的实现细节</strong>造成的，而非科学结论本身有分歧。</p>
+      </div>
+    </details>
+
+    <h3>模拟测试：三个「翻车」旋钮</h3>
+    <p>作者用一个（由 ChatGPT 生成的）交互小部件演示三种典型失效。它假设的真实函数为：</p>
+    <div class="eq">$$ \hat{L}(N,D) = 1.8172 + 482.01\,N^{-0.3478} + 2085.43\,D^{-0.3658} $$</div>
+    <p>对应 \(N_{\text{opt}}\propto C^{0.5126}\)、\(D_{\text{opt}}\propto C^{0.4874}\)（这是 Besiroglu et al. 2024 的估计）。小部件用一组 slider 展示：</p>
+    <ul>
+      <li><strong>损失精度</strong>：把损失从高位小数四舍五入到低位，就可能改变拟合出的指数。</li>
+      <li><strong>损失噪声</strong>：仅以千分之一量级扰动损失，拟合结果就变了。</li>
+      <li><strong>拟合区间敏感性</strong>：只拟合小模型、只拟合中模型、或拟合全部，会得出<strong>不同的 scaling law</strong>。</li>
+    </ul>
+    <figure>
+      <img src="assets/playground.png" alt="Scaling-law 拟合 playground 截图">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 13</span> · 拟合 playground（原文为可交互组件，此处为静态截图）。<a href="https://lilianweng.github.io/posts/2026-06-24-scaling-laws/" target="_blank" rel="noopener">移步原文体验交互 ↗</a></div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>上方主图</strong>：损失 vs 模型规模 \(N\)（对数横轴，到 \(10^{15}\)）。红点是「用于拟合」的点，灰点是留出点，虚线是合成的真实曲线，蓝线是拟合出的 scaling law。</li>
+            <li><strong>左下三个旋钮</strong>：拟合区间（All / 只小 / 只中）、损失精度（保留几位小数）、损失噪声——每动一个，拟合出的 \(\alpha,\beta\) 和外推预测都会变。</li>
+            <li><strong>右下 Fit result</strong>：实时显示拟合的 \(\alpha,\beta,E\)、\(N_{\text{opt}}/D_{\text{opt}}\) 指数与真值的对比，以及外推到 \(N=10^{15}\) 的预测损失与真实损失之差。</li>
+          </ul>
+          <p class="end">一句话：同一批数据、只改「无关紧要的流程选择」，外推结论就能被显著带偏——这就是要「谨慎对待」的直观证据。（图源：Lilian Weng 博客）</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <div class="insight">
+      <p class="lbl">全文收束</p>
+      <p>Scaling law 给了我们一把在烧钱之前预判的尺子：<strong>损失可预测地随规模按幂律下降</strong>，据此可以规划算力如何在参数与数据间分配。但这把尺子有刻度误差——<strong>从 Kaplan 到 Chinchilla 的翻转、数据墙下的重复折减、以及拟合对精度 / 噪声 / 区间的敏感</strong>，都在提醒我们：外推越远，越要谨慎对待每一个「小数点」。</p>
+    </div>
+  </section>
+
+  <!-- ============ 参考文献 ============ -->
+  <section id="refs">
+    <div class="sec-head"><span class="sec-num">·</span><h2>参考文献</h2><span class="sec-rule"></span></div>
+    <ol class="reflist">
+      <li>S. Amari, N. Fujita, S. Shinomoto. <b>Four Types of Learning Curves.</b> <span class="venue">Neural Computation, 1992.</span></li>
+      <li>Hestness et al. <b>Deep Learning Scaling is Predictable, Empirically.</b> <a href="https://arxiv.org/abs/1712.00409" target="_blank" rel="noopener">arXiv:1712.00409</a>, 2017.</li>
+      <li>Rosenfeld et al. <b>A Constructive Prediction of the Generalization Error Across Scales.</b> <a href="https://arxiv.org/abs/1909.12673" target="_blank" rel="noopener">ICLR 2020</a>.</li>
+      <li>Kaplan et al. <b>Scaling Laws for Neural Language Models.</b> <a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">arXiv:2001.08361</a>, 2020.</li>
+      <li>Hoffmann et al. <b>Training Compute-Optimal Large Language Models.</b> <a href="https://arxiv.org/abs/2203.15556" target="_blank" rel="noopener">NeurIPS 2022</a>.</li>
+      <li>Pearce, Song. <b>Reconciling Kaplan and Chinchilla Scaling Laws.</b> <a href="https://arxiv.org/abs/2406.12907" target="_blank" rel="noopener">TMLR 2024</a>.</li>
+      <li>Bahri et al. <b>Explaining Neural Scaling Laws.</b> <a href="https://arxiv.org/abs/2102.06701" target="_blank" rel="noopener">arXiv:2102.06701</a>, 2021.</li>
+      <li>Sharma, Kaplan. <b>A Neural Scaling Law from the Dimension of the Data Manifold.</b> <a href="https://arxiv.org/abs/2004.10802" target="_blank" rel="noopener">arXiv:2004.10802</a>, 2020.</li>
+      <li>Hernandez et al. <b>Scaling Laws and Interpretability of Learning from Repeated Data.</b> <a href="https://arxiv.org/abs/2205.10487" target="_blank" rel="noopener">arXiv:2205.10487</a>, 2022.</li>
+      <li>Muennighoff et al. <b>Scaling Data-Constrained Language Models.</b> <a href="https://arxiv.org/abs/2305.16264" target="_blank" rel="noopener">NeurIPS 2023</a>.</li>
+      <li>Lovelace et al. <b>Prescriptive Scaling Laws for Data Constrained Training.</b> <span class="venue">arXiv:2605.01640, 2026.</span></li>
+      <li>Besiroglu et al. <b>Chinchilla Scaling: A Replication Attempt.</b> <a href="https://arxiv.org/abs/2404.10102" target="_blank" rel="noopener">arXiv:2404.10102</a>, 2024.</li>
+      <li>Michaud et al. <b>The Quantization Model of Neural Scaling.</b> <a href="https://arxiv.org/abs/2303.13506" target="_blank" rel="noopener">NeurIPS 2023</a>.</li>
+      <li>Brill. <b>Neural Scaling Laws Rooted in the Data Distribution.</b> <a href="https://arxiv.org/abs/2412.07942" target="_blank" rel="noopener">arXiv:2412.07942</a>, 2024.</li>
+      <li>Rae et al. <b>Scaling Language Models: Methods, Analysis &amp; Insights from Training Gopher.</b> <a href="https://arxiv.org/abs/2112.11146" target="_blank" rel="noopener">arXiv:2112.11146</a>, 2021.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p class="src-line">原文：<a href="https://lilianweng.github.io/posts/2026-06-24-scaling-laws/" target="_blank" rel="noopener">Scaling Laws, Carefully</a> · Lilian Weng（翁荔）· lilianweng.github.io（Lil'Log）</p>
+    <p class="src-line">中文整理参考：机器之心。本页为教学可视化导读，图片版权归原作者 / 原论文所有。</p>
+    <p><a class="home" href="../../index.html">← 返回论文导读首页</a></p>
+  </footer>
+
+</div>
+
+<script>
+  // 图片说明卡片展开 / 收起
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    var open = d.classList.toggle('active');
+    el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+  }
+
+  // 可展开卡片
+  function toggleExp(card){
+    card.classList.toggle('open');
+  }
+
+  // 步进演示：计算预算怎么分
+  (function(){
+    var total = 4, cur = 0;
+    var nodes = document.querySelectorAll('#allocStepper .step-node');
+    var panels = document.querySelectorAll('#allocStepper .step-panel');
+    var prev = document.getElementById('allocPrev');
+    var next = document.getElementById('allocNext');
+    var prog = document.getElementById('allocProg');
+    function render(){
+      nodes.forEach(function(n,i){
+        n.classList.toggle('active', i === cur);
+        n.classList.toggle('done', i < cur);
+      });
+      panels.forEach(function(p,i){ p.classList.toggle('active', i === cur); });
+      prev.disabled = (cur === 0);
+      next.disabled = (cur === total - 1);
+      next.textContent = (cur === total - 1) ? '已到结尾' : '下一步 →';
+      prog.textContent = (cur + 1) + ' / ' + total;
+    }
+    window.allocStep = function(delta){
+      cur = Math.min(total - 1, Math.max(0, cur + delta));
+      render();
+    };
+    nodes.forEach(function(n){
+      n.addEventListener('click', function(){
+        cur = parseInt(n.getAttribute('data-step'), 10);
+        render();
+      });
+    });
+    render();
+  })();
+</script>
+</body>
+</html>
