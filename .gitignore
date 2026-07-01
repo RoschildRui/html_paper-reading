@@ -1,12 +1,8 @@
 .DS_Store
 
-# 编辑器 / 技能产生的杂项
-.agents/
-.claude/
+# 技能锁文件
 skills-lock.json
 src/skills-lock.json
 
-# 生成的单页 PDF（体积大，改用在线网页查看）；保留原始论文 PDF
-reports/**/*.pdf
-!reports/deepseek/dspark_visual/DSpark_paper.pdf
-!reports/mas_visual/paper.pdf
+# PDF 暂不纳入仓库（如需可用 src/html_to_pdf.py 本地生成）
+*.pdf
