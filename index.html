@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论文阅读 · HTML 导读合集</title>
+<style>
+  :root {
+    --bg: #0f1116; --panel: #171a21; --border: #262b36;
+    --text: #e6e8ec; --muted: #9aa3b2; --accent: #6ea8fe;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif; line-height: 1.6;
+  }
+  header {
+    padding: 56px 24px 32px; text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: radial-gradient(1200px 400px at 50% -10%, #1c2230 0%, var(--bg) 70%);
+  }
+  header h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: .5px; }
+  header p { margin: 0; color: var(--muted); font-size: 15px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+  .group { margin-top: 36px; }
+  .group h2 {
+    font-size: 18px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px;
+    color: var(--text);
+  }
+  .count {
+    font-size: 12px; color: var(--muted); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; font-weight: 400;
+  }
+  .cards {
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .card {
+    display: block; padding: 14px 16px; text-decoration: none; color: var(--text);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    transition: border-color .15s, transform .15s, background .15s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); background: #1b1f28; }
+  .card-title { font-size: 14.5px; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 24px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>论文阅读 · HTML 导读合集</h1>
+    <p>共 57 篇 · 点击卡片查看对应报告</p>
+  </header>
+  <main>
+      <section class="group">
+        <h2>DeepSeek <span class="count">10</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/deepseek/deepseek-ocr2_visual/index.html"><span class="card-title">DeepSeek-OCR 2:视觉因果流 · 图解精读</span></a>
+          <a class="card" href="reports/deepseek/deepseek-ocr_visual/index.html"><span class="card-title">DeepSeek-OCR：用「光学压缩」把长文本塞进视觉 token</span></a>
+          <a class="card" href="reports/deepseek/deepseek-prover-v2_visual/index.html"><span class="card-title">DeepSeek-Prover-V2 图解精读 · 子目标分解与强化学习</span></a>
+          <a class="card" href="reports/deepseek/deepseek-r1_visual/index.html"><span class="card-title">DeepSeek-R1 · 中文导读：用强化学习激发推理能力</span></a>
+          <a class="card" href="reports/deepseek/deepseek-v3_visual/index.html"><span class="card-title">DeepSeek-V3 技术报告 · 图解精读</span></a>
+          <a class="card" href="reports/deepseek/deepseek-v32_visual/index.html"><span class="card-title">DeepSeek-V3.2 解读 · 稀疏注意力 + 扩展 RL + 智能体合成</span></a>
+          <a class="card" href="reports/deepseek/deepseek-v32-exp_visual/index.html"><span class="card-title">DeepSeek-V3.2-Exp：用 DSA 稀疏注意力打通长上下文效率</span></a>
+          <a class="card" href="reports/deepseek/deepseek-v4_visual/index.html"><span class="card-title">DeepSeek-V4：让百万 token 上下文真正用得起 · 论文图解</span></a>
+          <a class="card" href="reports/deepseek/dspark_visual/index.html"><span class="card-title">DSpark · 半自回归 + 置信度调度的投机解码</span></a>
+          <a class="card" href="reports/deepseek/mhc_visual/index.html"><span class="card-title">mHC：流形约束的超连接 · 论文精读</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>GLM · 智谱 <span class="count">3</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/glm/glm-4.5_visual/index.html"><span class="card-title">GLM-4.5 图解 · ARC 统一的智能体 / 推理 / 代码基础模型</span></a>
+          <a class="card" href="reports/glm/glm-4.5v_visual/index.html"><span class="card-title">GLM-4.5V &amp; GLM-4.1V-Thinking · 可扩展强化学习驱动的多模态推理</span></a>
+          <a class="card" href="reports/glm/glm-5_visual/index.html"><span class="card-title">GLM-5：从 Vibe Coding 到 Agentic Engineering · 图解精读</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>Kimi · 月之暗面 <span class="count">7</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/kimi/kimi-k1.5_visual/index.html"><span class="card-title">Kimi k1.5 · 中文导读：用长上下文把强化学习扩展到 LLM</span></a>
+          <a class="card" href="reports/kimi/kimi-k2_visual/index.html"><span class="card-title">Kimi K2 · 中文导读：为「智能体」而生的开源万亿大模型</span></a>
+          <a class="card" href="reports/kimi/kimi-k2.5_visual/index.html"><span class="card-title">Kimi K2.5 · 中文导读：视觉智能体与 Agent Swarm</span></a>
+          <a class="card" href="reports/kimi/kimi-linear_visual/index.html"><span class="card-title">Kimi Linear · 中文导读：又快又强的混合线性注意力</span></a>
+          <a class="card" href="reports/kimi/kimi-dev_visual/index.html"><span class="card-title">Kimi-Dev · 中文导读：Agentless 训练作为 SWE-Agent 的技能先验</span></a>
+          <a class="card" href="reports/kimi/kimina-lean-server_visual/index.html"><span class="card-title">Kimina Lean Server · 中文导读：为大规模形式化验证而生的高性能 Lean 服务器</span></a>
+          <a class="card" href="reports/kimi/kimina-prover-preview_visual/index.html"><span class="card-title">Kimina-Prover Preview · 中文导读：用强化学习训练会「思考」的形式化证明大模型</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>LongCat · 美团 <span class="count">4</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/longcat/longcat-flash_visual/index.html"><span class="card-title">LongCat-Flash 技术报告 · 图解导读</span></a>
+          <a class="card" href="reports/longcat/longcat-flash-prover_visual/index.html"><span class="card-title">LongCat-Flash-Prover 图解：把形式化推理变成模型的原生能力</span></a>
+          <a class="card" href="reports/longcat/longcat-flash-thinking_visual/index.html"><span class="card-title">LongCat-Flash-Thinking 图解 · 美团 LongCat 推理增强技术报告</span></a>
+          <a class="card" href="reports/longcat/longcat-flash-thinking-2601_visual/index.html"><span class="card-title">LongCat-Flash-Thinking-2601 技术报告 · 图解导读</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>MiniMax <span class="count">4</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/minimax/minimax-sparse-attention_visual/index.html"><span class="card-title">MiniMax Sparse Attention（MSA）图解 · 论文精读</span></a>
+          <a class="card" href="reports/minimax/minimax-01_visual/index.html"><span class="card-title">MiniMax-01：用 Lightning Attention 把上下文扩到百万级</span></a>
+          <a class="card" href="reports/minimax/minimax-m1_visual/index.html"><span class="card-title">MiniMax-M1 图解：用 Lightning Attention 高效扩展推理算力</span></a>
+          <a class="card" href="reports/minimax/minimax-m2_visual/index.html"><span class="card-title">MiniMax-M2 系列：用「迷你激活」撬动「最大真实世界智能」</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>Qwen · 通义千问 <span class="count">8</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/qwen/qwen-image-2.0_visual/index.html"><span class="card-title">Qwen-Image-2.0 技术报告 · 图解精读</span></a>
+          <a class="card" href="reports/qwen/qwen2.5-1m_visual/index.html"><span class="card-title">Qwen2.5-1M 技术报告 · 图解</span></a>
+          <a class="card" href="reports/qwen/qwen3-embedding_visual/index.html"><span class="card-title">Qwen3 Embedding 论文图解 · 基于基座大模型的文本嵌入与重排</span></a>
+          <a class="card" href="reports/qwen/qwen3_visual/index.html"><span class="card-title">Qwen3 技术报告 · 中文导读：一个模型同时会「想」与「不想」</span></a>
+          <a class="card" href="reports/qwen/qwen3-coder-next_visual/index.html"><span class="card-title">Qwen3-Coder-Next 技术报告 · 图解精读</span></a>
+          <a class="card" href="reports/qwen/qwen3.5-omni_visual/index.html"><span class="card-title">Qwen3.5-Omni 技术报告 · 图解精读</span></a>
+          <a class="card" href="reports/qwen/qwen3guard_visual/index.html"><span class="card-title">Qwen3Guard 技术报告 · 可视化精读</span></a>
+          <a class="card" href="reports/qwen/tongyi-deepresearch_visual/index.html"><span class="card-title">Tongyi DeepResearch 技术报告 · 图解</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>Seed · 字节 <span class="count">8</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/seed/gr-rl_visual/index.html"><span class="card-title">GR-RL · 中文导读：用强化学习把通用 VLA 打磨成长程灵巧操作专家</span></a>
+          <a class="card" href="reports/seed/seed-coder_visual/index.html"><span class="card-title">Seed-Coder：让代码模型为自己筛选训练数据</span></a>
+          <a class="card" href="reports/seed/seed-oss_visual/index.html"><span class="card-title">Seed-OSS · 图解精读：字节 Seed 开源的 36B 长上下文推理模型</span></a>
+          <a class="card" href="reports/seed/seed-prover-1.5_visual/index.html"><span class="card-title">Seed-Prover 1.5 · 从经验中学习的自动定理证明</span></a>
+          <a class="card" href="reports/seed/seed-thinking-v1.5_visual/index.html"><span class="card-title">Seed-Thinking-v1.5 · 中文导读：把推理能力用强化学习「练」到顶尖</span></a>
+          <a class="card" href="reports/seed/seed1.8_visual/index.html"><span class="card-title">Seed1.8 模型卡 · 面向通用真实世界智能体</span></a>
+          <a class="card" href="reports/seed/seed2.0_visual/index.html"><span class="card-title">Seed2.0 Model Card · 面向真实世界复杂性的智能前沿</span></a>
+          <a class="card" href="reports/seed/seedance-2.0_visual/index.html"><span class="card-title">Seedance 2.0：统一的原生视频生成与编辑基础模型 · 可视化精读</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>StepFun · 阶跃 <span class="count">5</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/stepfun/step3.5-flash_visual/index.html"><span class="card-title">Step 3.5 Flash · 11B 激活的开源前沿智能 | 论文可视化精读</span></a>
+          <a class="card" href="reports/stepfun/step3_visual/index.html"><span class="card-title">Step-3 解读 · 模型-系统协同设计，把大模型的解码做便宜</span></a>
+          <a class="card" href="reports/stepfun/step-deepresearch_visual/index.html"><span class="card-title">Step-DeepResearch 深读 · 用原子能力把中等模型训成专家级研究员</span></a>
+          <a class="card" href="reports/stepfun/stepfun-formalizer_visual/index.html"><span class="card-title">StepFun-Formalizer：用「知识-推理融合」解锁大模型的自动形式化能力</span></a>
+          <a class="card" href="reports/stepfun/stepfun-prover_visual/index.html"><span class="card-title">StepFun-Prover Preview · 一边思考一边验证的形式化定理证明</span></a>
+        </div>
+      </section>
+      <section class="group">
+        <h2>其它 <span class="count">8</span></h2>
+        <div class="cards">
+          <a class="card" href="reports/dcrc_visual/index.html"><span class="card-title">DCRC：用「数据中心的编译」治金融问答的数字幻觉</span></a>
+          <a class="card" href="reports/mas_visual/index.html"><span class="card-title">MAS-Orchestra：多智能体系统该不该用、又该怎么造</span></a>
+          <a class="card" href="reports/iwopd_visual/index.html"><span class="card-title">OPD 的位置偏差：让在线策略蒸馏把劲使在刀刃上</span></a>
+          <a class="card" href="reports/quest_visual/index.html"><span class="card-title">Quest：用全合成任务训练前沿深度研究智能体 · 可视化导读</span></a>
+          <a class="card" href="reports/qwen3-technical-report/qwen3-technical-report.html"><span class="card-title">Qwen3 技术报告 · 中文导读</span></a>
+          <a class="card" href="reports/rubric_visual/index.html"><span class="card-title">Rubrics 综述 · 从整体评判到结构化准则</span></a>
+          <a class="card" href="reports/tnet_blog/tnet.html"><span class="card-title">TNet：用 CNN 取代 Attention 做目标级情感分类</span></a>
+          <a class="card" href="reports/otagent_visual/index.html"><span class="card-title">训练 Agent 模型的数据配方 · OpenThoughts-Agent 导读</span></a>
+        </div>
+      </section>
+  </main>
+  <footer>由 <code>src/build_index.py</code> 自动生成</footer>
+</body>
+</html>
