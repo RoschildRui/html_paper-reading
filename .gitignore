@@ -4,5 +4,8 @@
 skills-lock.json
 src/skills-lock.json
 
-# PDF 暂不纳入仓库（如需可用 src/html_to_pdf.py 本地生成）
-*.pdf
+# HTML 生成的单页 PDF（由 src/html_to_pdf.py 生成，可随时重建，不纳入仓库）
+# 源论文 PDF 不受影响，会正常提交
+reports/**/*_visual.pdf
+reports/tnet_blog/tnet.pdf
+reports/qwen3-technical-report/qwen3-technical-report.pdf
