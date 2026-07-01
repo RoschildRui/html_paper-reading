@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rubrics 综述 · 从整体评判到结构化准则</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf7ef;
+  --bg2:#f5ecdb;
+  --surface:#fdfaf3;
+  --surface2:#f4ead7;
+  --line:#e7dcc6;
+  --line2:#dccdb0;
+  --ink:#2c271f;
+  --ink2:#5c5446;
+  --muted:#8a7e6b;
+  --accent:#b5742f;
+  --accent-soft:#f0e2cb;
+  --danger:#a8492f;
+  --danger-soft:#f3e0d6;
+  --ok:#5d6b3a;
+  --radius:14px;
+  --maxw:980px;
+  font-synthesis:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  line-height:1.78;font-size:17px;-webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"JetBrains Mono",monospace}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- top nav ---------- */
+.nav{
+  position:sticky;top:0;z-index:50;backdrop-filter:blur(8px);
+  background:rgba(251,247,239,.86);border-bottom:1px solid var(--line);
+}
+.nav-inner{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:6px;
+  padding:10px 22px;flex-wrap:wrap}
+.nav-logo{font-weight:800;letter-spacing:.02em;margin-right:auto;font-size:15px;color:var(--ink)}
+.nav a.nlink{color:var(--ink2);font-size:13.5px;padding:5px 9px;border-radius:8px;white-space:nowrap}
+.nav a.nlink:hover{background:var(--accent-soft);color:var(--accent);text-decoration:none}
+.nav a.src{color:var(--accent);font-weight:600}
+
+/* ---------- layout ---------- */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:54px 0 8px}
+.sec-tag{font-family:"JetBrains Mono",monospace;font-size:12.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:6px}
+h1{font-size:40px;line-height:1.18;font-weight:800;letter-spacing:-.01em;margin:.2em 0 .35em}
+h2{font-size:28px;font-weight:800;letter-spacing:-.01em;margin:.1em 0 .5em;color:var(--ink)}
+h3{font-size:20px;font-weight:700;margin:1.4em 0 .4em}
+h4{font-size:16.5px;font-weight:700;margin:1.1em 0 .3em;color:var(--ink)}
+p{margin:.5em 0 1em}
+strong{font-weight:700;color:var(--ink)}
+.lead{font-size:18.5px;color:var(--ink2)}
+.muted{color:var(--muted)}
+hr.div{border:0;border-top:1px solid var(--line);margin:46px 0 0}
+
+/* ---------- hero ---------- */
+.hero{padding-top:46px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+.badge{font-family:"JetBrains Mono",monospace;font-size:12px;background:var(--surface2);
+  border:1px solid var(--line2);color:var(--ink2);padding:4px 10px;border-radius:999px}
+.badge.hot{background:var(--accent-soft);border-color:#e3cfa6;color:var(--accent)}
+.authors{font-size:14.5px;color:var(--muted);margin-top:10px}
+
+/* ---------- TL;DR ---------- */
+.tldr{background:linear-gradient(180deg,var(--surface),var(--surface2));
+  border:1px solid var(--line2);border-radius:var(--radius);padding:22px 24px;margin:22px 0}
+.tldr h4{margin-top:0;color:var(--accent);font-size:14px;letter-spacing:.08em;
+  text-transform:uppercase;font-family:"JetBrains Mono",monospace}
+.tldr p{margin:.4em 0;font-size:17px}
+
+/* ---------- 3 levels ---------- */
+.levels{display:grid;grid-template-columns:1fr;gap:12px;margin:22px 0}
+.level{display:grid;grid-template-columns:54px 1fr;gap:16px;align-items:center;
+  background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:12px;padding:16px 18px;position:relative}
+.level .n{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:26px;color:var(--accent);
+  opacity:.55;text-align:center}
+.level h4{margin:.1em 0 .15em}
+.level p{margin:0;font-size:15px;color:var(--ink2)}
+.level.l1{border-left-color:#c9a25e}
+.level.l2{border-left-color:#b5742f}
+.level.l3{border-left-color:#9a5a24}
+
+/* ---------- generic cards ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 17px}
+.tile h4{margin:0 0 .25em;font-size:15.5px}
+.tile p{margin:0;font-size:14px;color:var(--ink2);line-height:1.6}
+.tile .mono.lab{font-size:11.5px;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+
+/* ---------- metric ---------- */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
+.metric .v{font-size:30px;font-weight:800;color:var(--accent);font-family:"JetBrains Mono",monospace;line-height:1.1}
+.metric .v small{font-size:15px}
+.metric .k{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+
+/* ---------- figure ---------- */
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin:24px 0}
+.fig img{width:100%;height:auto;border-radius:8px;display:block;background:#fff;
+  border:1px solid var(--line)}
+.fig-cap{font-size:14px;color:var(--ink2);margin-top:11px;line-height:1.6}
+.fig-cap b{color:var(--accent);font-weight:700}
+.fig-toggle{display:inline-block;margin-top:10px;cursor:pointer;font-size:13px;
+  color:var(--accent);font-weight:600;user-select:none;border:1px solid var(--line2);
+  border-radius:8px;padding:3px 11px;background:var(--bg)}
+.fig-toggle:hover{background:var(--accent-soft)}
+.fig-toggle .s-open{display:none}
+.fig-toggle.active .s-open{display:inline}
+.fig-toggle.active .s-closed{display:none}
+.figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease,opacity .3s ease,margin .3s ease;opacity:0}
+.figure-detail.active{max-height:1600px;opacity:1;margin-top:14px}
+.figure-detail ul{margin:0;padding-left:20px}
+.figure-detail li{font-size:14px;color:var(--ink2);margin:.42em 0;line-height:1.62}
+.figure-detail li b{color:var(--ink)}
+.figure-detail .sum{font-size:13.5px;color:var(--muted);margin-top:10px;font-style:italic}
+
+/* ---------- expandable deep card ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:11px 0;overflow:hidden}
+.card-head{display:flex;align-items:flex-start;gap:12px;padding:15px 17px;cursor:pointer;user-select:none}
+.card-head:hover{background:var(--bg2)}
+.card-head .tw{flex:1;min-width:0}
+.card-title{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.ptag{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:500;
+  background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:6px;letter-spacing:.02em;border:1px solid #e7d2ab}
+.card-sum{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.5}
+.chev{color:var(--muted);font-size:14px;transition:transform .3s ease;margin-top:3px}
+.card.open .chev{transform:rotate(90deg)}
+.card-body{max-height:0;overflow:hidden;transition:max-height .5s ease;border-top:0 solid var(--line)}
+.card.open .card-body{max-height:1400px;border-top:1px solid var(--line)}
+.card-body-in{padding:15px 17px;font-size:14.5px;color:var(--ink2)}
+.card-body-in p{margin:.2em 0 .8em}
+.card-body-in p:last-child{margin-bottom:0}
+.card-body-in b{color:var(--ink)}
+
+/* ---------- taxonomy grids ---------- */
+.tax-grid{width:100%;border-collapse:separate;border-spacing:6px;margin:14px 0}
+.tax-grid th{font-size:12px;font-family:"JetBrains Mono",monospace;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--muted);font-weight:600;padding:4px 8px;text-align:left}
+.tax-grid td.rh{font-weight:700;font-size:13.5px;color:var(--ink);width:118px;vertical-align:middle}
+.tax-cell{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;vertical-align:top}
+.tax-cell .ct{font-weight:700;font-size:13px;color:var(--accent);margin-bottom:4px}
+.tax-cell .ex{font-size:12.5px;color:var(--ink2);line-height:1.55}
+.axis-note{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* ---------- phase stepper ---------- */
+.phases{margin:20px 0}
+.phase-nav{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.phase-btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:11px 6px;cursor:pointer;text-align:center;font-size:13px;font-weight:700;color:var(--ink2);
+  transition:all .2s ease;line-height:1.3;position:relative}
+.phase-btn .yr{display:block;font-family:"JetBrains Mono",monospace;font-size:11px;
+  font-weight:500;color:var(--muted);margin-top:3px}
+.phase-btn:hover{border-color:var(--line2);background:var(--bg2)}
+.phase-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.phase-btn.active .yr{color:#f4e2c8}
+.phase-track{height:3px;background:var(--line);border-radius:2px;margin:0 0 16px;position:relative;overflow:hidden}
+.phase-fill{height:100%;background:var(--accent);width:20%;transition:width .35s ease,margin-left .35s ease}
+.phase-panel{display:none;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.phase-panel.active{display:block;animation:fade .4s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.phase-panel h4{margin-top:0;color:var(--accent)}
+.phase-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 4px;
+  font-size:13px;font-family:"JetBrains Mono",monospace}
+.phase-flow .node{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:5px 10px;color:var(--ink2)}
+.phase-flow .node.hl{background:var(--accent-soft);border-color:#e3cfa6;color:var(--accent);font-weight:600}
+.phase-flow .arr{color:var(--muted)}
+.reps{font-size:13px;color:var(--muted);margin-top:10px}
+.reps b{color:var(--ink2)}
+
+/* ---------- lifecycle pipeline ---------- */
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.pipe a{display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:15px 14px;color:inherit;transition:all .2s ease;border-top:3px solid var(--accent)}
+.pipe a:hover{text-decoration:none;transform:translateY(-2px);box-shadow:0 6px 18px rgba(120,90,40,.10)}
+.pipe .step{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--accent);font-weight:600}
+.pipe h4{margin:.25em 0 .25em;font-size:16px}
+.pipe p{margin:0;font-size:13px;color:var(--ink2);line-height:1.55}
+
+/* ---------- callout ---------- */
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);
+  border-radius:0 10px 10px 0;padding:13px 18px;margin:18px 0;font-size:15px;color:var(--ink)}
+.callout.warn{border-left-color:var(--danger);background:var(--danger-soft)}
+.callout .qt{font-weight:700}
+.quote{border-left:3px solid var(--line2);padding:2px 16px;margin:16px 0;color:var(--ink2);font-style:italic}
+
+/* ---------- reliability dims ---------- */
+.rel{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+.rel .rc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;border-top:3px solid var(--danger)}
+.rel .rc .rt{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--danger);font-weight:600;letter-spacing:.04em}
+.rel .rc h4{margin:.2em 0 .35em}
+.rel .rc p{margin:0;font-size:13.5px;color:var(--ink2);line-height:1.6}
+.rel .rc .hl{color:var(--danger);font-weight:700}
+
+/* ---------- table ---------- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:16px 0}
+table.bench{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+table.bench th{background:var(--surface2);color:var(--ink);text-align:left;padding:9px 12px;
+  font-weight:700;border-bottom:1px solid var(--line2);position:sticky;top:0}
+table.bench td{padding:8px 12px;border-bottom:1px solid var(--line)}
+table.bench tr:last-child td{border-bottom:0}
+table.bench .cat{font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;font-size:11.5px}
+table.bench .yes{color:var(--ok);font-weight:700}
+table.bench .no{color:var(--muted)}
+table.bench tbody tr:hover{background:var(--bg2)}
+
+/* ---------- domains ---------- */
+.domains{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.dom{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+.dom .emo{font-size:20px}
+.dom h4{margin:.3em 0 .2em;font-size:15px}
+.dom .ch{font-size:11.5px;color:var(--accent);font-family:"JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.04em}
+.dom p{margin:.3em 0 0;font-size:13px;color:var(--ink2);line-height:1.55}
+
+/* ---------- future ---------- */
+.future{counter-reset:f;margin:18px 0}
+.future .fut{display:grid;grid-template-columns:40px 1fr;gap:14px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:10px 0}
+.future .fut::before{counter-increment:f;content:counter(f);font-family:"JetBrains Mono",monospace;
+  font-size:22px;font-weight:700;color:var(--accent);opacity:.5}
+.future .fut h4{margin:.05em 0 .25em}
+.future .fut p{margin:0;font-size:14px;color:var(--ink2)}
+
+/* ---------- footer ---------- */
+footer{margin-top:60px;border-top:1px solid var(--line);background:var(--bg2)}
+.foot-in{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px;font-size:14px;color:var(--ink2)}
+.foot-in a{font-weight:600}
+.foot-in .t{font-weight:700;color:var(--ink);font-size:15px}
+
+/* ---------- responsive ---------- */
+@media(max-width:880px){
+  body{font-size:16px}
+  h1{font-size:31px}h2{font-size:24px}
+  .grid2,.grid3,.grid4,.metrics,.rel,.pipe,.domains,.levels{grid-template-columns:1fr}
+  .phase-nav{grid-template-columns:repeat(5,1fr);gap:5px}
+  .phase-btn{font-size:11px;padding:8px 3px}
+  .level{grid-template-columns:42px 1fr}
+  .nav-logo{font-size:13px}
+  .nav a.nlink{padding:4px 6px;font-size:12.5px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="nav-logo">📐 Rubrics · 综述导读</span>
+    <a class="nlink" href="#what">是什么</a>
+    <a class="nlink" href="#coevo">协同演化</a>
+    <a class="nlink" href="#framework">研究框架</a>
+    <a class="nlink" href="#reliable">可靠性</a>
+    <a class="nlink" href="#apply">应用</a>
+    <a class="nlink" href="#future">未来</a>
+    <a class="nlink src" href="https://arxiv.org/abs/2606.08625" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="sec-tag">Survey · LLM 评估与对齐</div>
+  <h1>从整体评判到结构化准则：<br>Rubric 如何贯穿 LLM 的演化</h1>
+  <p class="lead">当大模型从「完成特定任务」走向「开放式自主智能体」，我们用什么来评估、监督、引导它？这篇综述提出一个统一答案——<strong>Rubric（评分准则）</strong>：把模糊的质量判断，拆成显式、可独立验证的标准。</p>
+  <div class="badges">
+    <span class="badge hot">arXiv preprint</span>
+    <span class="badge">2026.05 · May 31</span>
+    <span class="badge">HIT-SCIR &amp; Tsinghua</span>
+    <span class="badge">综述 / Survey</span>
+    <span class="badge">覆盖 100+ 篇工作</span>
+  </div>
+  <p class="authors">Hao Chen, Ziyu Han, Yukun Yan, Qingfu Zhu, Maosong Sun, Wanxiang Che ·
+    <a href="https://github.com/AI9Stars/LLM-Rubrics-Survey" target="_blank" rel="noopener">GitHub 论文列表 ↗</a> ·
+    <a href="https://arxiv.org/abs/2606.08625" target="_blank" rel="noopener">阅读原文 ↗</a>
+  </p>
+
+  <div class="tldr">
+    <h4>TL;DR · 30 秒抓住核心</h4>
+    <p>① 评估机制总是<strong>滞后于</strong>它要监督的模型。标量奖励 / 整体打分（holistic）把多维质量压成一个数字，既不可解释，也无法在「没有标准答案」的开放任务里给出细粒度反馈。</p>
+    <p>② 评估、强化学习、安全对齐这三条<strong>本来独立</strong>的研究线，不约而同地收敛到同一个设计：把准则<strong>显式化、结构化</strong>——这就是 Rubric。它有四个核心属性：显式、结构化、可分解、可验证。</p>
+    <p>③ 随着 LLM 经历五次范式跃迁，Rubric 也在<strong>三个递进层次</strong>上加深作用：评估工具 → 稠密训练信号 → 模型自生的内生机制。论文论证：这种反复出现不是巧合，而是<strong>结构性必然</strong>。</p>
+  </div>
+</header>
+
+<!-- ===================== CORE IDEA: 3 LEVELS ===================== -->
+<section id="idea">
+  <div class="sec-tag">Core Idea</div>
+  <h2>一个概念，三层影响</h2>
+  <p>论文最核心的论点：Rubric 不只是一把「尺子」。随着模型能力增强，它在越来越深的层次上参与塑造模型行为。读懂这三层，就读懂了全文的主线。</p>
+
+  <div class="levels">
+    <div class="level l1">
+      <div class="n">01</div>
+      <div>
+        <h4>评估层 · Evaluative</h4>
+        <p>把整体、主观的判断拆成<strong>细粒度、可验证的维度</strong>，让评估变得可靠、可解释、可诊断。</p>
+      </div>
+    </div>
+    <div class="level l2">
+      <div class="n">02</div>
+      <div>
+        <h4>监督层 · Supervisory（训练）</h4>
+        <p>作为<strong>稠密的训练信号</strong>，在标量奖励模型与结果导向方法失效的开放任务里，提供过程级（process-level）指导。</p>
+      </div>
+    </div>
+    <div class="level l3">
+      <div class="n">03</div>
+      <div>
+        <h4>内生层 · Intrinsic</h4>
+        <p>不再是外部强加的约束，而是<strong>从模型训练行为中动态涌现</strong>，与模型能力协同进化，驱动自我提升。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="fig">
+    <img src="assets/x1.png" loading="lazy" alt="Figure 1: Conceptual Organization of This Paper">
+    <div class="fig-cap"><b>图 1：全文的概念组织。</b>论文分为三大部分——Part I 建立 Rubric 的概念基础（定义 / 分类 / 发展脉络）；Part II 是核心方法框架（构建优化、评估、训练、可靠性）；Part III 梳理基准与应用，并展望未来。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)"><span class="s-closed">展开图解 ▸</span><span class="s-open">收起 ▴</span></span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>Part I（§2）概念基础</b>：回答「Rubric 是什么」——四个核心属性的定义，以及结构 × 内容的二维分类法，再用「协同演化」视角串起历史。</li>
+        <li><b>Part II（§3–§6）方法框架</b>：这是全文重心，按 Rubric 的<b>生命周期</b>展开——如何构建与优化（§3）、如何赋能评估（§4）、如何赋能训练（§5）、以及它到底可靠吗（§6）。</li>
+        <li><b>Part III（§7–§8）落地与展望</b>：盘点 19 个代表性基准与六大应用领域（§7），最后用五个开放问题收束（§8）。</li>
+        <li><b>三部分的递进关系</b>：从「定义清楚」到「怎么用」再到「用在哪、往哪走」，构成一条由概念到实践的完整链路。</li>
+      </ul>
+      <div class="sum">一句话总结：这是一张「全书地图」，告诉你接下来会从概念走到方法、再走到应用与未来。</div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== WHAT IS A RUBRIC ===================== -->
+<section id="what">
+  <div class="sec-tag">§2 · Definition &amp; Taxonomy</div>
+  <h2>Rubric 是什么？四个属性，两个坐标轴</h2>
+  <p>Rubric 源自教育测量学，本质是把「老师心里的好坏标准」写成一套可复用、可复现的评分细则。迁移到 LLM 语境，评估对象变成了模型生成的文本、代码、推理链，但<strong>核心逻辑不变：把隐式意图转成显式、可操作的协议。</strong></p>
+
+  <h3>① 四个核心属性</h3>
+  <p>这四点把 Rubric 与「整体标量奖励」和「无结构的自然语言反馈」区分开来：</p>
+  <div class="grid4">
+    <div class="tile"><div class="mono lab">Explicit</div><h4>显式</h4><p>准则用自然语言明确写出，而非藏在打分者脑中。</p></div>
+    <div class="tile"><div class="mono lab">Structured</div><h4>结构化</h4><p>准则之间有显式的组织关系（层级 / 权重 / 类别）。</p></div>
+    <div class="tile"><div class="mono lab">Decomposable</div><h4>可分解</h4><p>拆成相互独立的单元，可分别评判。</p></div>
+    <div class="tile"><div class="mono lab">Verifiable</div><h4>可验证</h4><p>每条都设计为可独立、可复现地核验。</p></div>
+  </div>
+
+  <h3>② 结构分类：评估层级 × 评估粒度</h3>
+  <p class="axis-note">纵轴是「评估模型输出的哪个阶段」，横轴是「评分准则的分辨率」。点开下方任意单元格的思路即可对应代表工作（来自论文 Table 1）。</p>
+  <table class="tax-grid">
+    <tr><th></th><th>Holistic 整体</th><th>Analytic 分析式</th><th>Atomic 原子化</th></tr>
+    <tr>
+      <td class="rh">Output-level<br><span class="muted" style="font-weight:400;font-size:12px">评最终回答</span></td>
+      <td class="tax-cell"><div class="ct">单一总分</div><div class="ex">MT-Bench, AlpacaEval</div></td>
+      <td class="tax-cell"><div class="ct">分维度打分</div><div class="ex">G-Eval, PRBench, CDRRM</div></td>
+      <td class="tax-cell"><div class="ct">二元判定</div><div class="ex">RBR, TICK, HealthBench, RLCF</div></td>
+    </tr>
+    <tr>
+      <td class="rh">Process-level<br><span class="muted" style="font-weight:400;font-size:12px">评中间推理</span></td>
+      <td class="tax-cell"><div class="ct">逐步整体评</div><div class="ex">Let's Verify Step by Step, Math-Shepherd</div></td>
+      <td class="tax-cell"><div class="ct">分维度评步骤</div><div class="ex">RM-R1, AdaRubric, Critic Rubrics</div></td>
+      <td class="tax-cell"><div class="ct">原子化评步骤</div><div class="ex">AutoRubric-R1V, RLCER, CaRR</div></td>
+    </tr>
+  </table>
+  <p class="muted" style="font-size:13.5px">粒度从左到右递增：Holistic 给一个总判断 → Analytic 拆成独立打分的维度 → Atomic 把每条压成「是/否」的最小命题（回答 whether 而非 how much）。本文主要聚焦后两者，把 Holistic 视为 Rubric 的「前身」。</p>
+
+  <h3>③ 内容分类：准则锚定在哪里</h3>
+  <p>结构坐标只描述「形态」，不区分「评判依据」。G-Eval、CDRRM、PRBench 都是 Output × Analytic，但分别锚定在任务指令、模型输出、外部知识。于是论文补充了内容分类：</p>
+  <div class="grid3">
+    <div class="tile"><div class="mono lab">Task-Grounded</div><h4>任务锚定</h4><p>准则来自任务本身的要求，可直接对当前任务验证。如从指令抽取的约束、质量维度、用户的隐式期待。</p></div>
+    <div class="tile"><div class="mono lab">Behavior-Grounded</div><h4>行为锚定</h4><p>从模型已有输出/行为中构建，有效性依赖外部观察。如诊断推理轨迹、从历史失败中提炼、对比候选差异。</p></div>
+    <div class="tile"><div class="mono lab">Knowledge-Grounded</div><h4>知识锚定</h4><p>锚定在人类预设原则与领域来源，跨任务保持一致。如事实核查、法律法规、金融准则等领域规范。</p></div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== CO-EVOLUTION ===================== -->
+<section id="coevo">
+  <div class="sec-tag">§2.3 · A Co-evolutionary Perspective</div>
+  <h2>主线：Rubric 与 LLM 的五次协同演化</h2>
+  <p>这是全文的叙事脊柱。模型能力每一次跃迁，都会暴露出旧机制填不上的「对齐鸿沟」，逼着 Rubric 变得更结构化、更自适应、最终内生化。<strong>点击下面的阶段，看每一步发生了什么。</strong></p>
+
+  <div class="phases">
+    <div class="phase-nav">
+      <button class="phase-btn active" onclick="selPhase(0,this)">Phase I<span class="yr">≤ 2023</span></button>
+      <button class="phase-btn" onclick="selPhase(1,this)">Phase II<span class="yr">23–24</span></button>
+      <button class="phase-btn" onclick="selPhase(2,this)">Phase III<span class="yr">24–25</span></button>
+      <button class="phase-btn" onclick="selPhase(3,this)">Phase IV<span class="yr">25–26</span></button>
+      <button class="phase-btn" onclick="selPhase(4,this)">Phase V<span class="yr">2026–</span></button>
+    </div>
+    <div class="phase-track"><div class="phase-fill" id="pfill"></div></div>
+
+    <div class="phase-panel active">
+      <h4>Phase I：从整体判断到显式准则</h4>
+      <div class="phase-flow">
+        <span class="node">整体打分 / 标量奖励</span><span class="arr">→</span>
+        <span class="node hl">显式、可解释的准则</span>
+      </div>
+      <p>早期评估靠整体判断与标量奖励。RLHF 证明人类偏好能引导模型，但标量奖励抓不住质量的多面性；CoT 推理与 GPT-4 这类更强评判者的出现，既暴露了粗粒度评估的局限，也提供了做结构化评估的能力。Rubric 开始从隐式人类标准，变成显式、可解释的准则。</p>
+      <div class="reps"><b>代表工作：</b>Constitutional AI、G-Eval、MT-Bench —— 把过去默会的质量观念形式化为结构化评估维度。</div>
+    </div>
+
+    <div class="phase-panel">
+      <h4>Phase II：作为可靠对齐的引导</h4>
+      <div class="phase-flow">
+        <span class="node">RLVR 可验证奖励</span><span class="arr">→</span>
+        <span class="node">开放任务「验证鸿沟」</span><span class="arr">→</span>
+        <span class="node hl">对齐脚手架</span>
+      </div>
+      <p>指令模型越来越强，挑战从「生成流畅」转向「可靠对齐」。RLVR 在数学、代码等可验证领域奏效，却暴露了开放任务中「对错难判」的验证鸿沟。Rubric 从评估便利，升级为能把复杂目标拆成可解释标准的「对齐脚手架」，同时服务于测试时扩展与智能体工作流。</p>
+      <div class="reps"><b>代表工作：</b>RLVR、LLM-RUBRIC（多维准则可逼近人类判断）；Gupta 等指出固定准则在逼近复杂奖励时有内在局限，催生更自适应的形式。</div>
+    </div>
+
+    <div class="phase-panel">
+      <h4>Phase III：Rubric 与「推理」相互增益</h4>
+      <div class="phase-flow">
+        <span class="node">推理模型 / GRPO</span><span class="arr">⇄</span>
+        <span class="node hl">更复杂的 Rubric</span>
+      </div>
+      <p>推理型 LLM 把评估范围从「最终答案对不对」扩展到推理过程本身。Rubric 演化为能捕捉多个认知维度、并在推理全程给可解释反馈的框架；反过来，更强的推理能力又能生成、精炼更复杂的 Rubric——形成相互强化的循环。同时，对评分偏置的系统研究开始浮现。</p>
+      <div class="reps"><b>代表工作：</b>HealthBench（建模专家级推理）、Rubric 引导的长文写作智能体；以及对 scoring bias 的系统调查。</div>
+    </div>
+
+    <div class="phase-panel">
+      <h4>Phase IV：作为可扩展监督的奖励信号</h4>
+      <div class="phase-flow">
+        <span class="node">自主智能体 / 开放环境</span><span class="arr">→</span>
+        <span class="node hl">结构化奖励接口</span>
+      </div>
+      <p>自主智能体的出现，把 Rubric 从静态评估者变成动态奖励机制。当结果难以验证，基于 Rubric 的监督成为常规奖励建模的实用替代。它被拆成可验证准则以对抗 reward hacking，并被规模化为可复用的奖励库；多模态基础模型进一步把监督扩展到文本之外。</p>
+      <div class="reps"><b>代表工作：</b>Checklist-as-Reward（RLCF）、Rubicon（万级可复用奖励库）、OnlineRubrics（在线准则工程）、多模态扩展。</div>
+    </div>
+
+    <div class="phase-panel">
+      <h4>Phase V：内生机制与自进化系统</h4>
+      <div class="phase-flow">
+        <span class="node">外部设计的准则</span><span class="arr">→</span>
+        <span class="node hl">模型生命周期内自生</span>
+      </div>
+      <p>最新前沿不再由外部设计评估框架，而是让 Rubric 在「生成—评估—优化—部署」的交互中自然涌现。研究转向生成器—评判者的协同进化、动态准则自适应与自治理；同时也揭示了机器自生准则的严重风险（质量退化、自我偏好偏置），凸显可信自监督的必要。</p>
+      <div class="reps"><b>代表工作：</b>EvoLM、Rubric-ARM（生成器—评判者协同进化）；以及对内生失败与 self-preference bias 的揭示。</div>
+    </div>
+  </div>
+
+  <div class="fig">
+    <img src="assets/x2.png" loading="lazy" alt="Figure 2: Co-evolutionary framework of rubrics and LLMs">
+    <div class="fig-cap"><b>图 2：Rubric 与 LLM 的协同演化框架。</b>横向是时间与模型能力的跃迁（RLHF → RLVR → 推理 → 智能体 → 自进化），纵向展示 Rubric 角色随之深化——从整体评估工具，到对齐脚手架、奖励信号，最终成为内生机制。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)"><span class="s-closed">展开图解 ▸</span><span class="s-open">收起 ▴</span></span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>双向箭头是关键</b>：图中模型能力与 Rubric 之间是互为因果的循环——能力进步重塑 Rubric 的角色，更强的 Rubric 又为下一步能力进步提供评估与监督基础。</li>
+        <li><b>五个阶段沿时间轴排布</b>：每个阶段对应一次范式跃迁（如 RLVR、推理模型工业化、自主智能体），下方标注了该阶段的代表系统。</li>
+        <li><b>角色的逐级加深</b>：评估工具（Phase I）→ 对齐引导（II）→ 推理增益（III）→ 奖励信号（IV）→ 内生机制（V），正好对应「三层影响」从评估到监督到内生的深化。</li>
+        <li><b>叙事含义</b>：Rubric 的反复出现不是偶然，而是每次能力跃迁都会撕开一道对齐鸿沟，而结构化准则是最自然的「补丁」。</li>
+      </ul>
+      <div class="sum">一句话总结：这张图是全文主线的「时间轴版」——模型与准则手拉手往前走。</div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== FRAMEWORK OVERVIEW ===================== -->
+<section id="framework">
+  <div class="sec-tag">§3–§6 · Methodological Framework</div>
+  <h2>研究框架：Rubric 的完整生命周期</h2>
+  <p>方法部分（Part II）把所有工作组织成四个紧密相连的维度。可以把它读成一条流水线：<strong>先把 Rubric 造出来并维护好 → 用它做评估 → 用它做训练 → 再回头审视它到底可不可靠</strong>。点击任一卡片跳到对应章节。</p>
+
+  <div class="pipe">
+    <a href="#construct"><div class="step">§3</div><h4>构建与优化</h4><p>把人类意图变成结构化准则，并持续改进质量。</p></a>
+    <a href="#evaluate"><div class="step">§4</div><h4>赋能评估</h4><p>显式拆解 → 忠实执行 → 超越评估驱动推理。</p></a>
+    <a href="#train"><div class="step">§5</div><h4>赋能训练</h4><p>作为稠密奖励，把 RL 拓展到不可验证领域。</p></a>
+    <a href="#reliable"><div class="step">§6</div><h4>可靠性审视</h4><p>生成质量、执行忠实、理论边界、安全威胁。</p></a>
+  </div>
+
+  <div class="callout">
+    <span class="qt">为什么这个顺序很重要：</span>实证表明，<strong>低质量的 Rubric 不只是没用，反而会主动误导奖励模型、拉低评估准确率</strong>（甚至低于「不用 Rubric」的基线）。所以「构建」是一切的前提，「可靠性」是悬在头顶的问号。
+  </div>
+</section>
+
+<!-- ===================== §3 CONSTRUCTION ===================== -->
+<section id="construct">
+  <div class="sec-tag">§3 · Construction &amp; Optimization</div>
+  <h2>如何构建与优化 Rubric？</h2>
+  <p>构建本质是<strong>知识外化</strong>：把隐式评估标准变成显式、可操作的准则。按「人类参与程度」分三种范式，本质是在<strong>质量与可扩展性之间权衡</strong>。</p>
+
+  <div class="fig">
+    <img src="assets/x3.png" loading="lazy" alt="Figure 4: Rubric Construction Paradigms on the Quality–Scalability Spectrum">
+    <div class="fig-cap"><b>图 4：三种构建范式在「质量—可扩展性」谱系上的定位。</b>人类专家构建质量最高但成本高、难扩展；自动化 LLM 构建可扩展但质量波动；人在回路（HIL）居中，把人力集中在最高价值环节。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)"><span class="s-closed">展开图解 ▸</span><span class="s-open">收起 ▴</span></span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>左上 · 人类专家构建</b>：质量上限（如 HealthBench 由 262 名医生写 48,562 条准则），但成本「按定义无法规模化」。</li>
+        <li><b>右下 · 自动化 LLM 构建</b>：可扩展性强，又细分为五条子路径——演绎（从任务描述）、归纳（从样本）、迁移（从外部知识）、即时生成、查询自适应生成。</li>
+        <li><b>中间 · 人在回路（HIL）</b>：典型是「专家精修 + 模型放量」——LLM 出草稿，专家精修成金标准，再让 LLM 评判者放大评估。</li>
+        <li><b>谱系的张力</b>：箭头方向揭示核心矛盾——越往自动化走越省钱，但质量风险从「没有准则」变成了「准则有害」。</li>
+      </ul>
+      <div class="sum">一句话总结：构建方法的演进，就是在「省人力」和「保质量」之间不断找平衡点。</div>
+    </div>
+  </div>
+
+  <h3>代表方法（点击展开）</h3>
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">HealthBench <span class="ptag">Output × Atomic · 2025</span></div>
+      <div class="card-sum">人类专家构建的质量上限：262 名医生为 5,000 段医疗对话手写 48,562 条二元准则。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>解决什么</b>：高风险医疗场景下，整体打分既不可靠也不可审计。<b>怎么做</b>：把评估彻底原子化——每条准则是一个「是/否」的二元命题，由医生手写，覆盖医疗对话的方方面面。<b>意义</b>：它定义了 Rubric 质量的天花板，也成为后续无数工作对比的金标准；但 262 名医生的构建成本本质上无法复制，直接催生了自动化方法。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">RLCF / TICK <span class="ptag">演绎式 · 2024–25</span></div>
+      <div class="card-sum">从用户指令直接抽取扁平 checklist，把每条约束绑定到具体指令。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>思路</b>：演绎式构建——把任务描述/元规则通过逻辑推理拆成细粒度准则。TICK 把每条指令拆成 yes/no checklist；RLCF（Checklists are better than reward models）进一步组合「AI 评判」与「程序可验证」两类约束。<b>延伸</b>：RubricHub 引入多模型聚合 + 难度演化，捕捉「好」与「优秀」之间的细微差距；Qworld 把每个问题递归展开成二元准则的层级树。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">OpenRubrics / CDRRM / RaR <span class="ptag">归纳式 · 2025–26</span></div>
+      <div class="card-sum">从「优劣样本对」的差异中蒸馏出有判别力的准则。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>思路</b>：归纳式——不从任务描述，而从已有样本中提炼准则。对比驱动方向（Auto-Rubric、OpenRubrics、CDRRM、C2、ROPD）分析「被偏好」与「被拒绝」回答的差异，蒸馏出判别性准则；失败反思方向（Sanders、Wan）反其道而行，从历史失败中建「负面错误模式库」；RaR 则直接从参考答案推导多类别准则，外化为 RL 奖励信号。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">CARMO / Think-with-Rubrics / CaT <span class="ptag">即时生成 · 2025–26</span></div>
+      <div class="card-sum">不预建准则库，在评估或训练时为每个实例即时生成准则。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>思路</b>：即时生成（on-the-fly）。CARMO 为每个 query 动态生成上下文感知准则来锚定打分；Think-with-Rubrics 把准则生成<b>内化进推理链</b>——模型先生成任务专属准则，再据此作答，让质量标准成为生成的「先验约束」；CaT 从伪参考答案推导可审计的二元准则。这条路线是后文「内生机制」的雏形。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">EvoLM / Rubric-ARM / RLAC <span class="ptag">主动进化 · 2025–26</span></div>
+      <div class="card-sum">优化的终极形态：Rubric 与模型协同进化，不再是静态外部标准。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>背景</b>：优化分被动优化（用外部质量信号改进准则，如 OptimSyn、SibylSense、AMARIS 的记忆库机制）与<b>主动进化</b>两类。<b>主动进化</b>把 Rubric 从静态标准重定义为与训练深度耦合的动态机制：EvoLM 让准则生成器与回答生成器共享参数互相强化；Rubric-ARM 在 RL 框架下交替优化两者，理论上比联合更新更稳；RLAC 走对抗路线——评判者专门暴露生成内容的弱点，靠竞争而非协作驱动进步。</p>
+    </div></div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== §4 EVALUATION ===================== -->
+<section id="evaluate">
+  <div class="sec-tag">§4 · Rubrics Power Evaluation</div>
+  <h2>Rubric 如何赋能评估？</h2>
+  <p>传统整体打分有三宗罪：<strong>不可解释</strong>（一个数字说不清理由）、<strong>执行不一致</strong>（评判者受非语义线索影响有系统偏置）、<strong>静态被动</strong>（打完分就结束，不回流到改进）。Rubric 同时治这三病。</p>
+
+  <div class="fig">
+    <img src="assets/x4.png" loading="lazy" alt="Figure 5: Rubric-Based Evaluation through Structural Decomposition and Format Discretization">
+    <div class="fig-cap"><b>图 5：通过「结构分解」与「格式离散化」实现显式评估。</b>一个方向是把整体判断拆成可独立评估的分析维度；另一个方向是把每个维度内的连续量表，离散成可验证的勾选项。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)"><span class="s-closed">展开图解 ▸</span><span class="s-open">收起 ▴</span></span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>左路 · 结构分解</b>：把「写得好不好」这种整体判断，拆成内容组织、论证质量等独立维度——固定维度（LLM-RUBRIC）或实例自适应（ExpertLongBench）。</li>
+        <li><b>右路 · 格式离散化</b>：Likert 量表主观、难复现，于是转向布尔验证（HealthBench 的 yes/no）或双轨打分（SedarEval 的加分项 + 扣分项）。</li>
+        <li><b>两路正交</b>：一个改「评什么维度」，一个改「每个维度怎么打分」，可以叠加使用。</li>
+        <li><b>但分解非万能</b>：在「完整性」要求高的任务上，配了详细准则的整体评判者反而优于原子评判者——粒度要随任务选。</li>
+      </ul>
+      <div class="sum">一句话总结：让评估「看得见维度、说得清是非」，但粒度要对症下药。</div>
+    </div>
+  </div>
+
+  <h3>三条子线索</h3>
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">显式评估：拆维度 + 离散化 <span class="ptag">§4.1</span></div>
+      <div class="card-sum">LLM-RUBRIC 建模每位评分者的个性化判断；SedarEval 用「加分/扣分」双轨模仿人类阅卷。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>结构分解</b>：LLM-RUBRIC 是奠基工作——不追求单一真值分，而是用校准网络聚合每位评分者的逐维度分布，把评分者间的主观性当信号而非噪声。<b>格式离散化</b>：Mallinar 等把多维 Likert 拆成细粒度二元准则并按 query 动态保留最相关子集；SedarEval 区分「答对但被扣分」与「答错但给了部分分」，诊断力超过单纯的二元验证。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">忠实评估：证据锚定 + 偏置抑制 <span class="ptag">§4.2</span></div>
+      <div class="card-sum">准则定得好，不代表评判者执行得对。RULERS 要求每个打分引用可审计证据；FairJudge 用课程式训练对抗三类偏置。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>客观证据锚定</b>：RULERS 把准则编译成带版本的不可变包，要求每个打分都引用可审计证据；RubricEval 是首个「准则项粒度」的元评估基准，直接检验评判者对单条准则用得对不对。<b>主观偏置抑制</b>：研究揭示了一长串偏置——准则顺序偏置、分数 ID 偏置、自我偏好偏置（评判者偏爱自家模型，错答标「满意」的比例高达 50%）、上下文准则漂移。FairJudge 用 SFT→DPO→GRPO 的课程逐一对抗。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">超越评估：测试时扩展 <span class="ptag">§4.3</span></div>
+      <div class="card-sum">评估信号不再是终点，而是驱动推理时改进的引擎。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p>评估信号被接进生成回路，驱动两种推理时改进：<b>迭代自我精修</b>（TICK 用 yes/no checklist 驱动迭代；Think-with-Rubrics 把准则生成放进推理上下文；DeepVerifier 从历史失败轨迹归纳准则，用「分解—验证—判断」三智能体精修深度研究输出）；<b>并行路径选择</b>（利用「验证比重新生成更便宜」的不对称——为候选打分选最优，如 Ctx2Skill、RubricRefine 在工具调用前做合规检查）。详见下图。</p>
+    </div></div>
+  </div>
+
+  <div class="fig">
+    <img src="assets/x5.png" loading="lazy" alt="Figure 6: Rubric-Guided Test-Time Scaling">
+    <div class="fig-cap"><b>图 6：Rubric 引导的测试时扩展。</b>左侧是迭代自我精修——结构化反馈注入生成回路；右侧是并行路径选择——Rubric 作为轻量验证器，从多个候选推理轨迹中挑出更优解。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)"><span class="s-closed">展开图解 ▸</span><span class="s-open">收起 ▴</span></span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>机制一 · 迭代自我精修</b>：模型用自生准则评估自己的输出，把反馈喂回生成循环，逐轮改进——无需额外训练。</li>
+        <li><b>机制二 · 并行路径选择</b>：同时生成多个候选，用 Rubric 当「廉价裁判」打分排序，选出最优——利用验证比生成便宜的不对称性。</li>
+        <li><b>共同点</b>：两者都把评估从「事后测量」变成「事中决策」，让 Rubric 直接参与提升最终质量。</li>
+      </ul>
+      <div class="sum">一句话总结：好的评估信号可以「现场」把答案改得更好，或从一堆答案里挑出最好的。</div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== §5 TRAINING ===================== -->
+<section id="train">
+  <div class="sec-tag">§5 · Rubrics Power Training</div>
+  <h2>Rubric 如何赋能训练？</h2>
+  <p>这是 Rubric「三层影响」中的监督层，也是论文篇幅最重的一章。标量奖励模型有三宗罪：<strong>信息稀疏</strong>（多维压成一个数）、<strong>表达受限</strong>（抓不住开放任务的多约束）、<strong>易被 hack</strong>。Rubric 同时治这三病。</p>
+
+  <h3>① 理论根基：为什么 Rubric 优于标量奖励</h3>
+  <div class="callout">
+    <span class="qt">有限准则失败定理（CARMO, Gupta et al.）：</span>对任何<strong>有限的固定准则集</strong>，总存在一个真实奖励函数是它完全无法刻画的。换句话说——不管你多用心设计标量奖励，总有它结构上表达不了的质量维度。<strong>标量奖励在实践中失败，是因为它在理论上必须失败。</strong>
+  </div>
+  <p>另一条线（Zhang et al.）证明：奖励过优化恰恰源于<strong>高奖励尾部</strong>——标量模型分不清「优秀」与「仅仅是好」，导致策略去拟合分布伪影而非真实质量。而 OpenRubrics / CDRRM 给出正面论证：传统 RLHF 学的是一个<strong>排序</strong>（不透明、脆弱），而 Rubric 训练学的是排序背后的<strong>评判依据</strong>（可解释、可组合）。</p>
+
+  <div class="fig">
+    <img src="assets/x6.png" loading="lazy" alt="Figure 7: Scalar Reward RL vs Rubric Reward RL">
+    <div class="fig-cap"><b>图 7：标量奖励 RL vs Rubric 奖励 RL。</b>标量奖励把多个评估维度坍缩成单一分数；Rubric 奖励保留维度级反馈，从而提供更丰富的学习信号与更准的信用分配（credit assignment）。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)"><span class="s-closed">展开图解 ▸</span><span class="s-open">收起 ▴</span></span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>左 · 标量奖励</b>：所有质量维度被压成一个数喂给策略——模型只知道「好/坏」，不知道「哪好哪坏」，信用分配粗糙。</li>
+        <li><b>右 · Rubric 奖励</b>：每个维度独立给分后再聚合，保留了维度级信息，反馈更稠密。</li>
+        <li><b>训练含义</b>：维度级信号让梯度能精准指向「该改哪里」，这正是 process-level、step-level、token-level 各种细粒度奖励的共同动机。</li>
+        <li><b>抗 hacking</b>：分解结构本身就构成约束——靠表面满足某一维度骗不到整体高分。</li>
+      </ul>
+      <div class="sum">一句话总结：把「一个总分」换成「一张评分表」，模型才知道往哪个方向改。</div>
+    </div>
+  </div>
+
+  <h3>② 奖励信号设计：从 output 到 process</h3>
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">Output-level 奖励：RaR / RLCF / RBR / Rubicon <span class="ptag">§5.2.1</span></div>
+      <div class="card-sum">评最终回答，沿粒度递增：整体 → 分解聚合 → 成对比较 → 因果锚定。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>从整体到分解</b>：RaR 把准则分成 mandatory/important/bonus/penalty 并加权；RLCF 把每条指令拆成「AI 评判 + 程序可验证」的 checklist；RBR 把安全行为表示为细粒度可组合命题，大幅减少过度拒答。<b>从独立打分到成对比较</b>：Jia 等让准则以两个候选的语义差异为条件。<b>从表面到因果锚定</b>：CROME 把准则当因果干预变量；Rubicon 用万级准则库 + 否决机制 + 防御准则在规模上对抗 hacking。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">Process-level 奖励：RM-R1 / SRaR / RTT / Critic Rubrics <span class="ptag">§5.2.2</span></div>
+      <div class="card-sum">监督中间步骤本身，从 response → step → token → 轨迹逐级细化。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p>output 奖励管不了「答案怎么来的」——逻辑错误却答对会拿到同样的奖励。<b>RM-R1（Chain-of-Rubrics）</b>先按任务类型生成实例专属准则再逐条评判，把不透明的标量打分变成结构化推理。<b>SRaR</b>把每条准则映射到负责满足它的具体步骤，揭示 response-level 奖励会双向错配信用。<b>RTT</b>训练 token 级相关性判别器，把回答级分数细化到 token。<b>Critic Rubrics / SWE-TRACE</b>把长程智能体轨迹拆成可观测的行为检查点，把稀疏的成败转成稠密的轨迹级奖励。</p>
+    </div></div>
+  </div>
+
+  <h3>③ 在线 RL / 离线训练 / 内生进化</h3>
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">在线 RL：把 RL 拓展到不可验证领域 <span class="ptag">§5.3</span></div>
+      <div class="card-sum">标准 RLVR 只在有标准答案时奏效；Rubric 让 RL 进入写作、开放问答等大多数真实任务。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>互补可验证奖励</b>：Yuan 等用准则显式惩罚数学推理中的「虚假推理步骤」。<b>拓展到不可验证域</b>：RaR（有参考答案但二元对错抓不全质量）、RLCF（连参考都没有，从任务描述抽 checklist）、Writing-Zero（创意写作）、QuRL（从网络资源挖 case-wise 准则）。<b>训练动态</b>：RGR-GRPO 让准则兼任奖励与离线引导；RuscaRL 在探索时把准则注入指令、再随训练衰减，让模型内化标准；并用细粒度信号缓解奖励稀疏、用专用验证器/负面规则对抗 reward hacking。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">离线训练：偏好优化 + 拒绝采样 <span class="ptag">§5.4</span></div>
+      <div class="card-sum">rDPO 证明「基于准则的过滤」是决定因素，而非数据量；ROPD 用准则做黑盒知识蒸馏。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>偏好优化</b>：rDPO 显示基于准则的过滤显著提分，而基于结果的过滤反而拉低基线——决定性的是过滤机制不是数据量；CPT 用准则当条件合成不同满足度的偏好对。<b>拒绝采样</b>：用编码了期望行为模式的准则给轨迹打分选样本，优于纯终局分数；ROPD 通过对比师生输出诱导 prompt 专属准则，实现与闭源模型完全兼容的黑盒蒸馏，证明显式准则信号承载的信息不亚于隐式 logits。</p>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <div class="tw"><div class="card-title">内生机制：Rubric 不再外部强加 <span class="ptag">§5.5 · 最关键的转变</span></div>
+      <div class="card-sum">模型同时生成回答与评估它的准则，二者在训练中相互强化。对应「第三层影响」。</div></div>
+      <div class="chev">▸</div>
+    </div>
+    <div class="card-body"><div class="card-body-in">
+      <p><b>模型内进化环（按耦合程度）</b>：合作式（EvoLM——生成器与评判者共享参数，改一个就改另一个）、协调式（Rubric-ARM——独立参数、共享目标、交替更新降低梯度方差）、竞争式（RLAC——评判者专找弱点，对抗驱动）。<b>训练间进化环</b>：短期（OnlineRubrics 在每步用当前/参考策略的成对比较动态构造准则；CaT、DR Tulu、课程式 InfiMed-ORBIT）、长期（AMARIS 维护跨整个训练史的持久记忆库；SibylSense 动态替换饱和准则并对抗更新策略）。核心动机：静态准则会随训练饱和、退化成噪声。</p>
+    </div></div>
+  </div>
+
+  <div class="fig">
+    <img src="assets/x7.png" loading="lazy" alt="Figure 8: The Evolution of Rubrics from External Supervision to Endogenous Mechanisms">
+    <div class="fig-cap"><b>图 8：Rubric 从外部监督到内生机制的演化。</b>进化环闭合——Rubric 与模型能力逐步协同进化，减少对外部监督源的依赖，让准则从「评估标准」变成「内生的学习机制」。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)"><span class="s-closed">展开图解 ▸</span><span class="s-open">收起 ▴</span></span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>左 · 外部监督</b>：传统范式中 Rubric 由外部供给，模型被动消费——准则与模型是分离的两个物件。</li>
+        <li><b>右 · 内生机制</b>：模型自己生成、应用、精炼准则；生成器与评判者角色在模型内部统一并相互强化。</li>
+        <li><b>两个层级的环</b>：模型内环（生成—评判共享/交替/对抗）与训练间环（准则跨训练步持续适配模型的能力前沿）。</li>
+        <li><b>意义</b>：当准则与模型协同进化，它就从「外加约束」变成「自我维持的训练机制」，不再需要外部监督源。</li>
+      </ul>
+      <div class="sum">一句话总结：Rubric 的归宿，是长进模型自己身体里、和能力一起涨。</div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== §6 RELIABILITY ===================== -->
+<section id="reliable">
+  <div class="sec-tag">§6 · How Reliable Are Rubrics?</div>
+  <h2>Rubric 真的可靠吗？四个递进的拷问</h2>
+  <p>「Rubric 一定比整体打分可靠」这个假设本身需要被审视。论文指出可靠性不是单一属性，而是分布在<strong>四个相互独立、层层加深</strong>的维度上——任何一个没处理好，整体就不可信。</p>
+
+  <div class="rel">
+    <div class="rc">
+      <div class="rt">§6.1 · GENERATION QUALITY</div>
+      <h4>① 生成质量：造得好吗？</h4>
+      <p>LLM 自生准则有系统性认知错位，<span class="hl">且其危害可能超过「不用准则」</span>。用人写准则替换模型生成的，可让判断准确率平均<b>提升 27%</b>；劣质准则甚至把 GPT-4o 在 JudgeBench 上从 55.6% 拉到 42.9%——低于无准则基线 13 个百分点。</p>
+    </div>
+    <div class="rc">
+      <div class="rt">§6.2 · EXECUTION FIDELITY</div>
+      <h4>② 执行忠实：执行得对吗？</h4>
+      <p>偏置来自两个<span class="hl">相互正交</span>的源头——评判者的内在行为（自我偏好、上下文漂移）与打分提示的结构（顺序/ID/参考分偏置）。没有单一策略能同时治两者。更糟的是，Rubric 的多维结构会<b>放大</b>偏置：定义了关注什么，也就「授权」忽略其余。</p>
+    </div>
+    <div class="rc">
+      <div class="rt">§6.3 · THEORETICAL LIMITS</div>
+      <h4>③ 理论边界：有根本极限吗？</h4>
+      <p>这一层不是工程缺陷，而是范式固有：<b>跨任务失败定理</b>（固定准则必然在某些真实奖励上零相关）、<b>高奖励判别瓶颈</b>（在「优秀 vs 仅好」处失去分辨率）、<b>维度与真实目标错位</b>、以及<b>模型能力前提</b>（弱模型对准则只是表面响应）。</p>
+    </div>
+    <div class="rc">
+      <div class="rt">§6.4 · SECURITY THREATS</div>
+      <h4>④ 安全威胁：会被武器化吗？</h4>
+      <p>RIPD 证明：对准则做<span class="hl">看似自然的细微改动</span>，能诱导定向偏好漂移，目标域准确率最多降 27.9%，却在聚合基准上几乎不可见。更可怕的是<b>不可逆性</b>——被污染的准则一旦进入后训练管线，偏置会固化进模型参数，换回干净准则也无法挽回。</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <span class="qt">边界与替代：</span>有些失败可工程修复，有些则是范式边界。当任务有多个有效答案、没有唯一参考时——<strong>IEC（Implicit Error Counting）</strong>干脆反转范式：从「数对了什么」改为「数错了什么」（错误模式更可枚举）；<strong>JADE</strong>则用混合框架：保留 Rubric 作为组织脚手架，但把逐条验证换成证据依赖门控的 claim 级动态评估。
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== §7 APPLICATIONS ===================== -->
+<section id="apply">
+  <div class="sec-tag">§7 · Benchmarks &amp; Applications</div>
+  <h2>Rubric 用在哪里？</h2>
+  <p>论文盘点了 19 个代表性基准（5 类）与六大应用领域。三条横向观察很有意思：① <strong>专业领域</strong>是唯一全部采用专家构建的类别（领域知识不可替代）；② Holistic 粒度几乎绝迹，社区已收敛到 Analytic 与 Atomic；③ 行为锚定（Behavior-Grounded）内容仍被系统性低估，尚未规模化。</p>
+
+  <h3>代表性基准（Table 2 节选）</h3>
+  <div class="tbl-wrap">
+    <table class="bench">
+      <thead><tr><th>类别</th><th>基准</th><th>规模</th><th>构建方式</th><th>粒度</th><th>内容锚定</th></tr></thead>
+      <tbody>
+        <tr><td class="cat">General</td><td>SedarEval</td><td>1,000</td><td>HIL</td><td>Analytic</td><td>Task</td></tr>
+        <tr><td class="cat">General</td><td>RubricBench</td><td>1,147</td><td>Expert</td><td>Analytic</td><td>Task</td></tr>
+        <tr><td class="cat">General</td><td>RubricEval</td><td>3,486</td><td>Expert</td><td>Atomic</td><td>Task</td></tr>
+        <tr><td class="cat">Professional</td><td>HealthBench</td><td>48,562</td><td>Expert</td><td>Atomic</td><td>Know.</td></tr>
+        <tr><td class="cat">Professional</td><td>PRBench</td><td>19,356</td><td>Expert</td><td>Analytic</td><td>Know.</td></tr>
+        <tr><td class="cat">Professional</td><td>ProfBench</td><td>7,347</td><td>Expert</td><td>Analytic</td><td>Know.</td></tr>
+        <tr><td class="cat">Professional</td><td>ExpertLongBench</td><td>1,050</td><td>Expert</td><td>Analytic</td><td>Know.</td></tr>
+        <tr><td class="cat">Deep Research</td><td>ResearchRubrics</td><td>2,593</td><td>Expert</td><td>Analytic</td><td>Task</td></tr>
+        <tr><td class="cat">Deep Research</td><td>DRACO</td><td>3,934</td><td>HIL</td><td>Analytic</td><td>Task</td></tr>
+        <tr><td class="cat">Multi-modal</td><td>UEval</td><td>10,417</td><td>HIL</td><td>Analytic</td><td>Task</td></tr>
+        <tr><td class="cat">Multi-modal</td><td>TechImage-Bench</td><td>44,131</td><td>Auto</td><td>Atomic</td><td>Know.</td></tr>
+        <tr><td class="cat">Academic</td><td>PaperBench</td><td>8,316</td><td>Expert</td><td>Analytic</td><td>Know.</td></tr>
+        <tr><td class="cat">Academic</td><td>PresentBench</td><td>12,900</td><td>Expert</td><td>Atomic</td><td>Task</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:13px">构建方式：Expert = 无 LLM 协助的领域专家；Auto = 全自动 LLM 生成；HIL = 人在回路。完整 19 个基准见原文 Table 2。</p>
+
+  <h3>六大应用领域：同一张张力，不同的脸</h3>
+  <div class="domains">
+    <div class="dom"><div class="emo">🏥</div><div class="ch">Scalability</div><h4>医疗</h4><p>质量与可扩展的张力最尖锐。HealthBench 立天花板，Health-SCORE 用蒸馏建可复用准则库；精修后的 LLM 准则可达专家级一致性，成本仅千分之一。</p></div>
+    <div class="dom"><div class="emo">⚖️</div><div class="ch">Auditability</div><h4>法律</h4><p>要求推理过程可审计。LEGIT 把法院判决转成层级化「法律争点树」，每个节点是有法律权威背书的可验证准则。</p></div>
+    <div class="dom"><div class="emo">🎓</div><div class="ch">Interactivity</div><h4>教育</h4><p>目标不是排序而是促进学习。iRULER 提供 Why / Why-Not / How-To 的逐条反馈；已在千人规模的真实大学课堂验证可行。</p></div>
+    <div class="dom"><div class="emo">💹</div><div class="ch">Transferability</div><h4>金融</h4><p>FIRE 双轨设计：1,000 道封闭题自动评 + 2,000 道开放题配 query 专属准则。模型擅长指令遵循，但在尽职调查、领域推理上仍远不足（顶分仅 0.39）。</p></div>
+    <div class="dom"><div class="emo">🌐</div><div class="ch">Consensus</div><h4>社会</h4><p>招聘、新闻可信度等高吞吐决策。SCRuB 在无唯一答案时，用五维批判性思维准则 + 多学科视角衡量推理深度，替代准确率。</p></div>
+    <div class="dom"><div class="emo">🔬</div><div class="ch">Reflexivity</div><h4>科研</h4><p>PaperBench 把论文复现拆成 8,316 个可部分给分项，并被纳入三大 AI 安全框架——Rubric 评估已成 AI 治理的基础设施。</p></div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ===================== §8 FUTURE ===================== -->
+<section id="future">
+  <div class="sec-tag">§8 · Open Questions</div>
+  <h2>往哪走？五个开放问题</h2>
+  <div class="future">
+    <div class="fut"><div><h4>Rubric 生成的可靠性</h4><p>生成依赖模型自身的价值判断作锚，而这个锚恰恰是需要被校准的——自指循环无法从系统内部解决。需要独立于生成模型的质量参照（一个元评估问题）。</p></div></div>
+    <div class="fut"><div><h4>超越静态 Rubric 设计</h4><p>固定准则有理论天花板（会饱和、退化为噪声）；动态生成又让跨模型/跨检查点比较失去意义。出路或在「分层设计」：抽象核心维度保持稳定，实例级细则随训练动态调整。</p></div></div>
+    <div class="fut"><div><h4>多模态扩展与跨模态统一</h4><p>核心难题是划出「模态无关」与「模态特有」准则的原则性边界。视频的时序连贯、语音的韵律，反映的是不同认知官能，强行统一会失真。或需借力认知科学。</p></div></div>
+    <div class="fut"><div><h4>从外部准则到内化机制</h4><p>当前 Rubric 仍在模型之外，意味着「有条件的对齐」。真正内化的模型会自发应用标准、在输出前自查。路径有二：大规模准则条件训练的隐式内化，或显式的元认知架构设计。</p></div></div>
+    <div class="fut"><div><h4>从评估工具到表征结构的一部分</h4><p>论文的终极猜想：从「整体评估到结构化准则」的范式迁移仍在进行中，其终点可能是——Rubric 不再作为独立物件可见，而成为模型理解和监控自身输出的方式本身。</p></div></div>
+  </div>
+
+  <div class="quote">
+    「随着模型愈发强大与自主，Rubric 将成为连接人类意图与机器行为的持久桥梁，支撑下一代可靠、对齐的 AI 系统。」 —— 论文结论
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="foot-in">
+    <p class="t">From Holistic Evaluation to Structured Criteria: Rubrics Across the Evolving LLM Landscape</p>
+    <p class="muted">Hao Chen, Ziyu Han, Yukun Yan, Qingfu Zhu, Maosong Sun, Wanxiang Che · arXiv preprint, 2026.05 · Research Center for Social Computing and Interactive Robotics (HIT-SCIR) &amp; Institute for AI, Tsinghua</p>
+    <p>原文：<a href="https://arxiv.org/abs/2606.08625" target="_blank" rel="noopener">arxiv.org/abs/2606.08625</a>
+       · 论文列表：<a href="https://github.com/AI9Stars/LLM-Rubrics-Survey" target="_blank" rel="noopener">github.com/AI9Stars/LLM-Rubrics-Survey</a></p>
+    <p class="muted" style="font-size:12.5px;margin-top:14px">本页为面向中文读者的教学可视化导读，图片来自论文 arXiv HTML 版（©原作者）。内容为帮助理解而做的提炼与翻译，具体细节请以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+function toggleFig(btn){
+  btn.classList.toggle('active');
+  var d = btn.nextElementSibling;
+  if(d && d.classList.contains('figure-detail')) d.classList.toggle('active');
+}
+function toggleCard(head){
+  head.parentElement.classList.toggle('open');
+}
+function selPhase(i, btn){
+  var btns = document.querySelectorAll('.phase-btn');
+  var panels = document.querySelectorAll('.phase-panel');
+  btns.forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  panels.forEach(function(p, idx){ p.classList.toggle('active', idx === i); });
+  var fill = document.getElementById('pfill');
+  fill.style.width = '20%';
+  fill.style.marginLeft = (i * 20) + '%';
+}
+document.addEventListener('DOMContentLoaded', function(){
+  var fill = document.getElementById('pfill');
+  if(fill){ fill.style.width = '20%'; fill.style.marginLeft = '0%'; }
+});
+</script>
+
+</body>
+</html>

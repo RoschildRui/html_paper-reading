@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GR-RL · 中文导读：用强化学习把通用 VLA 打磨成长程灵巧操作专家</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:520px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:680px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1200px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+
+/* progress ladder */
+.ladder{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.ladder .lrow{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.ladder .lrow:last-child{margin-bottom:0}
+.ladder .lname{flex:0 0 168px;font-size:13.5px;font-weight:600;color:var(--ink)}
+.ladder .lname .ls{display:block;font-size:11.5px;font-weight:500;color:var(--ink-faint)}
+.ladder .lbar{flex:1;height:24px;background:var(--bg);border:1px solid var(--border);border-radius:7px;overflow:hidden;position:relative}
+.ladder .lfill{height:100%;background:linear-gradient(90deg,var(--accent-soft),var(--accent));border-radius:6px 0 0 6px}
+.ladder .lval{flex:0 0 56px;text-align:right;font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;color:var(--accent-deep)}
+.ladder .lrow.base .lfill{background:var(--surface-3)}
+.ladder .lrow.base .lval{color:var(--ink-soft)}
+
+/* step animation (3-stage recipe) */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:170px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-3,.sp-io{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+  .ladder .lname{flex:0 0 120px}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">GR-RL 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#overview">方法总览</a>
+      <a href="#model">模型</a>
+      <a href="#filter">①过滤</a>
+      <a href="#augment">②增强</a>
+      <a href="#online">③在线</a>
+      <a href="#robot">机器人</a>
+      <a href="#insights">有意思的点</a>
+      <a href="#results">实验结论</a>
+      <a href="#limits">局限</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2512.01801" target="_blank" rel="noopener">阅读原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">论文导读 · 具身智能 / 长程灵巧操作</div>
+    <h1>GR-RL：用强化学习把「通用机器人大脑」打磨成会系鞋带的专家</h1>
+    <p class="subtitle">GR-RL: Going Dexterous and Precise for Long-Horizon Robotic Manipulation</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv preprint · 2025.12</span>
+      <span class="chip">ByteDance Seed</span>
+      <span class="chip">cs.RO / cs.LG</span>
+      <span class="chip">arXiv:2512.01801（v1 12-01 / v3 12-23）</span>
+      <span class="chip">5B 参数 · VLA + Critic</span>
+    </div>
+    <p class="lead">一句话：通用的视觉-语言-动作（VLA）模型很「博学」，却不够「可靠」。GR-RL 不再假设人类示范是最优的，而是用一条 <strong>过滤 → 增强 → 在线强化</strong> 的三段式流水线，把通用策略 GR-3 打磨成一个能<strong>自主把鞋带穿过多个鞋孔、成功率 83.3%</strong> 的灵巧操作专家。</p>
+    <p class="muted" style="font-size:14px">本页基于已抓取的 arXiv 全文（v3，2025.12.23）正文与三张原始方法图构建。术语首次出现时给出英文原词，便于对照原文；项目主页：<a href="https://seed.bytedance.com/gr_rl" target="_blank" rel="noopener">seed.bytedance.com/gr_rl ↗</a>。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>核心痛点</strong>：在<strong>毫米级精度 + 长程 + 灵巧</strong>的任务里（如系鞋带），人类示范本身就是<strong>带噪声、次优</strong>的——人会犹豫、出错、动作前后不一致。直接行为克隆（BC）只会把这些坏习惯一起学进去。</li>
+      <li><strong>三步打磨流水线</strong>：① <strong>数据过滤</strong>——用离线 RL 学一个"任务进度评估器"，剔除掉示范里拖后腿的片段；② <strong>形态对称增强</strong>——利用双臂任务的左右镜像对称扩充数据；③ <strong>在线 steering RL</strong>——让模型在真机闭环里试错，弥补"训练动作"与"部署动作"的错位。</li>
+      <li><strong>关键技巧</strong>：把稀疏奖励下学到的 <strong>Q 值当作任务进度</strong>（分布式 critic，输出有界 0~1）；在线探索<strong>不加动作噪声</strong>，而是在<strong>隐空间</strong>里预测初始噪声来 steering flow 策略。</li>
+      <li><strong>结果</strong>：成功率从 GR-3 基线 <strong>45.7% → 61.6%（过滤）→ 72.7%（增强）→ 83.3%（在线）</strong>，在线阶段峰值一度超过 90%。这是已知<strong>首个能自动系鞋带</strong>的学习型策略。</li>
+    </ul>
+    <div class="quote big">「现有 VLA 策略的核心假设是『人类示范是最优的』。但我们主张：在高度灵巧、高精度的操作任务里，人类示范是带噪声、次优的。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 论文摘要（释义自 “we claim that … human demonstrations are noisy and suboptimal”）</span></div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：通用 ≠ 可靠</h2>
+    <p>大规模 VLA 模型让「通用机器人」成为可能：给一张图、一句自然语言指令，模型就能泛化到很多物体、场景和语义概念。但论文一针见血地指出——<strong>「能做很多事」不等于「每件事都做得可靠」</strong>。面向真实部署，当前 VLA 还卡在两个根本问题上：</p>
+    <ul class="tight">
+      <li><strong>灵巧 + 精度</strong>（Dexterity with precision）：对可变形物体的<strong>毫米级控制</strong>仍未解决。</li>
+      <li><strong>长程鲁棒性</strong>（Long-horizon robustness）：误差会<strong>逐步累积</strong>，当它和高精度灵巧操作叠加时会更糟。</li>
+    </ul>
+
+    <div class="callout">
+      <div class="t">贯穿全文的 motivating example：系鞋带（shoe lacing）</div>
+      这一个任务同时压满了三种难度：（1）要足够<strong>灵巧</strong>，才能同时操控鞋带和鞋这两个可变形物体；（2）要<strong>毫米级精度</strong>，才能把鞋带穿进鞋孔（eyelet）；（3）要<strong>长程</strong>能力，才能应对各种意外（鞋带掉了、穿歪了、抓得太浅……）。经典方法靠<strong>运动规划 + 预设动作原语</strong>来系鞋带，泛化和失败恢复都成问题；而朴素地套用行为克隆，只能得到次优、能力受限的策略。
+    </div>
+
+    <h3>为什么从 GR-3 出发还会失败？两个瓶颈</h3>
+    <p>GR-RL 的起点是 <strong>GR-3</strong>——一个用互联网数据、机器人轨迹和人类示范联合训练的大规模 VLA 策略。它泛化很强，但一旦遇到「要精度、要灵巧、要长程」的场景就会掉链子。论文把原因归结为两点：</p>
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph">瓶颈一：示范本身次优</div>
+        <ul>
+          <li>在极端精细的场景里，<strong>遥操作者会放慢、犹豫</strong>，给策略灌进噪声、次优的轨迹</li>
+          <li>就算是熟练遥操作员的数据，也含<strong>误操作、迟疑等次优片段</strong></li>
+          <li>人工标注哪些片段「不好」既费力，又会引入更主观的噪声</li>
+        </ul>
+      </div>
+      <div class="panel before">
+        <div class="ph">瓶颈二：训练-推理错位</div>
+        <ul>
+          <li>训练时策略学的是<strong>滑窗切出的定长动作块</strong>（action chunk）</li>
+          <li>但部署时为了平滑执行，会叠加<strong>时序集成（temporal ensembling）、receding horizon 控制</strong>等后处理</li>
+          <li>结果：<strong>训练见到的动作 ≠ 部署真正执行的动作</strong>，在高精度任务里这个错位不可忽视</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIOR -->
+  <section id="prior">
+    <h2><span class="num">02</span> 已有方案卡在哪</h2>
+    <p>论文没有堆砌相关工作，而是聚焦几条与 GR-RL 形成对比的技术路线。理解它们的「卡点」，就能明白 GR-RL 为什么选择「真机离线 + 在线 RL」这条路。</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📐</span>运动规划 + 预设原语 <span class="xtag">经典法</span></div>
+        <div class="xs">用预先设计好的动作原语和固定模式，靠运动规划完成系鞋带等任务。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：把任务拆成人工设计的 primitive（抓、穿、拉……），用 motion planning 串起来执行。</p>
+          <p><b>卡在哪</b>：高度依赖人工脚本，<b>泛化到没见过的配置</b>、<b>从失败中恢复</b>、以及其它灵巧技能都成了悬而未决的问题。</p>
+          <p><b>与本文关系</b>：GR-RL 要的是<b>学习型、可泛化、能自我纠错</b>的策略，而非写死的流程。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧬</span>朴素行为克隆 / GR-3 <span class="xtag">本文底座</span></div>
+        <div class="xs">大规模 VLA 直接模仿人类示范，假设示范即最优。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：把"问题→人类动作"当监督信号，让 VLA（如 GR-3）模仿全部遥操作数据。</p>
+          <p><b>卡在哪</b>：示范<b>带噪声、次优</b>，BC 会把坏习惯一起学进去；且能力上界被示范锁死，<b>无法超越示范者</b>，还易受复合误差（compounding errors）影响。</p>
+          <p><b>与本文关系</b>：GR-RL 直接<b>反对"示范最优"假设</b>，先过滤再强化，正是为了突破 BC 的天花板。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🕹️</span>仿真里做在线 RL <span class="xtag">Sim RL</span></div>
+        <div class="xs">在模拟器里对 VLA 做 on-policy RL，再迁移到真机。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：用仿真的廉价交互做策略提升，规避真机采样昂贵的问题。</p>
+          <p><b>卡在哪</b>：真机交互<b>样本低效、含噪声</b>，仿真到现实的迁移仍然很难，尤其在可变形物体、毫米级精度场景。</p>
+          <p><b>与本文关系</b>：GR-RL 选择<b>直接在真机做 off-policy RL</b>，复用历史轨迹来提升样本效率。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🌐</span>世界模型 RL <span class="xtag">World Model</span></div>
+        <div class="xs">学一个世界模型，让策略在"想象"的环境里做 on-policy RL。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：用学到的世界模型预测未来，缓解真机交互成本。</p>
+          <p><b>卡在哪</b>：视觉预测<b>不准确</b>会引入新的误差来源，在精细操作中尤其致命。</p>
+          <p><b>与本文关系</b>：GR-RL 不依赖想象，<b>把分布式 critic 用在真实奖励上</b>，并指出与同期工作 π*₀.₆ 都用分布式 critic 学进度，但 GR-RL 走的是<b>过滤式 BC</b> 而非 advantage-conditioned denoising。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <h2><span class="num">03</span> 方法总览：过滤 → 增强 → 在线，三步打磨</h2>
+    <p>GR-RL 的核心思路用三个动词就能概括：<strong>filter（过滤）、augment（增强）、reinforce（强化）</strong>。它不推翻通用底座，而是把次优、错位的人类示范层层精炼，最终把通用 VLA「特化」成可靠专家。下面这张全文骨架图，把三阶段流水线（上）与系鞋带任务的关键动作（下）对在了一起。</p>
+
+    <div class="figure">
+      <img src="assets/fig_x1.png" alt="GR-RL 三阶段训练流水线与系鞋带任务概览" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 1）</span>：GR-RL 通过「离线过滤行为克隆 → 形态对称增强 → 在线强化学习」三阶段流水线，完成长程、灵巧、高精度的系鞋带任务。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>顶部三个蓝框</b>：训练流水线的三个阶段——<b>离线过滤行为克隆 / 形态对称增强 / 在线强化学习</b>，从左到右层层叠加，而非并列任务。</li>
+          <li><b>中间 GR-RL 横幅</b>：三阶段共同产出同一个策略模型 GR-RL，强调它们是一条递进的精炼链路。</li>
+          <li><b>底部三张实拍</b>：对应系鞋带任务的关键动作——<b>拿起鞋带（Pick Up）→ 穿过鞋孔（Thread）→ 拉紧鞋带（Pull）</b>，体现真实场景的长程与毫米级精度。</li>
+          <li><b>读图重点</b>：上半部分回答「怎么训」，下半部分回答「训出来能干什么」；流水线越往右，数据质量与策略行为越贴近真实部署。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话：这就是全文主线——三步把通用 VLA 打磨成会系鞋带的专家。</p>
+      </div>
+    </div>
+
+    <p>用「下一步」按钮，跟着流水线一阶段一阶段看每一步「做什么、为什么这么做」：</p>
+
+    <div class="stepbox" id="recipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STAGE 1 · FILTER</span>数据过滤（学到的任务进度评估器）</div>
+          <div class="sb">先用离线 RL 训一个 critic，把它学到的 <strong>Q 值当作"任务进度"</strong>。进度突然下跌的地方，往往就是遥操作者出错/犹豫的次优片段。把这些片段<strong>剔除</strong>，再在"干净"数据上做行为克隆，得到更强的基础策略。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>全部人类遥操作示范（含次优片段）</div>
+            <div class="io"><div class="iol">输出</div>过滤后高质量数据 + 基础 BC 策略</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STAGE 2 · AUGMENT</span>形态对称增强（Morphological Symmetry）</div>
+          <div class="sb">利用双臂任务天然的<strong>左右镜像对称</strong>：水平翻转图像并交换左右手腕视角，本体状态与动作在世界坐标系做镜像后再转回腕部坐标系，语言里的"左/右"也相应翻转。一招简单的增强，<strong>显著提升成功率与泛化</strong>。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>过滤后的示范数据</div>
+            <div class="io"><div class="iol">输出</div>镜像扩充后训练出的更鲁棒策略（Filtered BC + Aug.）</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STAGE 3 · REINFORCE</span>在线 steering（部署对齐）</div>
+          <div class="sb">把离线策略放上真机做<strong>闭环在线 RL</strong>，专治"训练动作 ≠ 部署动作"的错位。关键：<strong>不在动作上加噪声</strong>（毫米级任务一加就废），而是在<strong>隐空间</strong>里学一个噪声预测器 steering flow 策略去探索高回报区域。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>Filtered BC + Aug. 策略 + 真机闭环交互</div>
+            <div class="io"><div class="iol">输出</div><strong>GR-RL</strong>（系鞋带成功率 83.3%）</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-controls">
+        <button id="sp-prev" onclick="spPrev()">‹ 上一步</button>
+        <button id="sp-next" class="primary" onclick="spNext()">下一步 ›</button>
+        <button onclick="spReset()">重置</button>
+        <span class="sp-counter" id="sp-counter">1 / 3</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODEL -->
+  <section id="model">
+    <h2><span class="num">04</span> 模型：一套 VLM 骨干，挂两个头</h2>
+    <p>GR-RL 采用 <strong>Mixture-of-Transformer（MoT）</strong> 架构，由一个 VLA 策略 <strong>π<sub>θ</sub></strong> 和一个多任务评论家 <strong>Q<sub>φ</sub></strong> 组成，总计 <strong>5B 参数</strong>。两者共享同一个视觉-语言骨干，各自挂一个下游 Transformer：一个产动作，一个评进度。</p>
+
+    <div class="figure">
+      <img src="assets/fig_x2.png" alt="GR-RL 的 Mixture-of-Transformer 模型架构图" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 2（原论文 Figure 2）</span>：GR-RL 模型。共享 VLM 骨干同时驱动「动作扩散 Transformer（flow matching）」与「Critic Transformer（分布式 RL / TD 误差）」。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左侧 Vision-Language Model</b>（Qwen2.5-VL-3B-Instruct）：输入系统提示、head/left/right 三路摄像头图像，以及自然语言指令（如 “thread the shoelace through …”），编码成共享表征。</li>
+          <li><b>中间 kv cache 箭头</b>：只取 VLM <b>后半段层</b>的 KV 缓存喂给两个下游头，兼顾表达力与推理速度（沿用 GR-3 的快速推理设计）。</li>
+          <li><b>右上 Action Diffusion Transformer（动作 DiT）</b>：以 proprios（本体感知）+ noisy actions 为输入，用 <b>flow matching</b> 去噪生成定长动作块——这是「策略」。</li>
+          <li><b>右下 Critic Transformer</b>：以 proprios + actions 为输入，输出 value predictions（红色）——这是「评论家」，与策略共享骨干构成 MoT。</li>
+          <li><b>最右分布式细节</b>：critic 不回归单个标量，而是输出一个<b>有界（0~1）的离散值分布</b>，用 cross entropy 对齐 target value distribution；这让稀疏奖励下的进度估计更稳健。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话：一套 VLM 骨干 + 两个头——flow matching 产动作，distributional RL 评进度。</p>
+      </div>
+    </div>
+
+    <div class="twocol">
+      <div class="panel">
+        <div class="ph">🎮 策略 Policy · π<sub>θ</sub></div>
+        <ul>
+          <li>控制带移动底盘的<strong>双臂机器人</strong>，给定指令 l、观测 o<sub>t</sub>、状态 s<sub>t</sub>，生成长度为 k 的<strong>动作块</strong> a<sub>t</sub>=a<sub>t:t+k</sub></li>
+          <li>VLM 骨干用 <strong>Qwen2.5-VL-3B-Instruct</strong></li>
+          <li>动作由 <strong>action DiT</strong> 预测，训练目标是 <strong>flow matching</strong></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="ph">⚖️ 评论家 Critic · Q<sub>φ</sub></div>
+        <ul>
+          <li>因果 Transformer，对每个动作块预测一<strong>串 Q 值</strong>（沿用 Q-chunking）</li>
+          <li>采用<strong>分布式 RL</strong>：把价值视为有上下界的离散分布，天然刻画真实轨迹的不确定性</li>
+          <li>上界设 1、下界设 0，<strong>Q 值即任务进度</strong>；稀疏奖励下比非分布式 critic 稳得多</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTER -->
+  <section id="filter">
+    <h2><span class="num">05</span> 阶段一：把「Q 值」当成任务进度计</h2>
+    <p>高精度可变形物体操作（如系鞋带），<strong>采集完美示范几乎不可能</strong>——再熟练的遥操作员也会留下误操作、犹豫等次优片段。直接全盘模仿，会把这些噪声多模态动作灌进训练。但人工去标注"哪段不好"，又会引入更主观的噪声。GR-RL 的巧思是：<strong>让 RL 自己学出一把"进度尺"</strong>。</p>
+
+    <h3>怎么把稀疏奖励变成进度函数</h3>
+    <ul class="tight">
+      <li><strong>训练 critic（TD3+BC）</strong>：奖励是稀疏的——只在轨迹成功结束时给 +1，其余为 0。</li>
+      <li><strong>人为制造失败样本</strong>：由于大多数轨迹都成功，论文标注每条示范里的<strong>"重试关键帧"</strong>，用 hindsight 的方式在这些关键帧处<strong>截断出多条失败轨迹</strong>。这样成功 + 失败数据都有，TD 学习才能学出可靠的进度。</li>
+      <li><strong>读出进度 ρ</strong>：对每个 transition，取分布式 critic 类别分布的<strong>均值</strong>作为进度 ρ。</li>
+      <li><strong>定义并剔除次优</strong>：若一段窗口 ρ<sub>t:t+k</sub> 内进度<strong>下跌超过阈值 δ</strong>，就判定该样本次优、从训练集中删除。剩下的"干净"数据，用普通 BC 训 π<sub>θ</sub> 即可。</li>
+    </ul>
+
+    <div class="formula">
+      <div class="eq">r<sub>t</sub> = <b>𝕀</b>(τ 成功) · γ<sup>(T−t)</sup> &nbsp;&nbsp;⟶&nbsp;&nbsp; ρ<sub>t</sub> = <b>mean</b>( Q<sub>φ</sub> 的类别分布 )</div>
+      <div class="cap">稀疏奖励只在结尾给信号；经 TD 学习后，每一步的 Q 值就成了"离成功还有多远"的连续进度 ρ。</div>
+    </div>
+
+    <p>下图是学到的进度曲线实例。可以直观看到：<strong>遥操作者一出错，进度就会骤降</strong>——这正是过滤的依据。</p>
+
+    <div class="figure">
+      <img src="assets/fig_x3.png" alt="GR-RL 学到的任务进度曲线实例：失败时下跌、长期正收益时抬升" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3（原论文 Figure 3）</span>：学到的任务进度示例。深蓝线为 GR-RL 的分布式 critic，浅蓝线为回归基线（Regression）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>读图方式</b>：每个子图上方是真机操作截图（<b>红框=失败/失误事件，绿框=成功事件</b>），下方是进度曲线，纵轴 0~1，横轴时间（秒）。</li>
+          <li><b>两条线</b>：深蓝 <b>GR-RL（分布式 critic）</b> vs 浅蓝 <b>Regression（回归基线）</b>。</li>
+          <li><b>(a) 对失败敏感</b>：鞋带滑出鞋孔时 GR-RL 值明显<b>下降</b>，精准穿孔时回升。</li>
+          <li><b>(b) 捕捉多次失败</b>：交接（handover）中的多次失败都被 GR-RL 曲线刻画为下探；回归曲线过度平滑、几乎无感。</li>
+          <li><b>(c) 懂长期收益</b>：机器人故意放下鞋带去<b>调整抓取姿态</b>，GR-RL 识别出这一动作的"长期正收益"而抬升，回归基线在调整段几乎持平。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话：分布式 critic 既能在失误处掉头、又懂得为长远收益打分，正好当数据过滤的"裁判"。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUGMENT -->
+  <section id="augment">
+    <h2><span class="num">06</span> 阶段二：用「左右镜像」免费造数据</h2>
+    <p>在离线训练阶段，GR-RL 用了一招<strong>简单却有效</strong>的形态对称增强（morphological symmetry augmentation）。它利用了双臂任务里天然存在的<strong>左右镜像对称</strong>：同一个系鞋带动作，镜像翻转后仍是一个物理上合理的系鞋带动作。</p>
+    <ul class="tight">
+      <li><strong>图像</strong>：全部<strong>水平翻转</strong>，再把左手腕视角与右手腕视角<strong>互换</strong>。</li>
+      <li><strong>本体状态 s<sub>t</sub> 与动作 a<sub>t</sub></strong>：先在<strong>世界坐标系</strong>做镜像变换，再转回各自的<strong>腕部局部坐标系</strong>。</li>
+      <li><strong>语言指令</strong>：相应翻转空间描述，例如把"左边的孔"改成"右边的孔"。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">效果</div>
+      仅靠这一镜像增强，过滤后 BC 策略的成功率就从 <strong>61.6% 提升到 72.7%</strong>，并明显增强泛化能力——几乎零成本地把数据量翻倍，还顺带让模型"左右都会做"。
+    </div>
+  </section>
+
+  <!-- ONLINE -->
+  <section id="online">
+    <h2><span class="num">07</span> 阶段三：在隐空间里做在线强化</h2>
+    <p>部署时为了让机器人动作平滑，常要叠加时序集成、receding horizon 控制等后处理。但这造成了<strong>训练-部署错位</strong>：训练时模型见的是<strong>原始动作</strong>，部署时执行的是<strong>被优化过的动作</strong>。在灵巧高精度任务里，这个错位不可忽视。解法只有一个——<strong>让模型在真机闭环里、用"对齐后的动作"亲自试错</strong>。</p>
+
+    <h3>难点：毫米级任务不能靠"加噪声"探索</h3>
+    <p>长程高精度任务的在线 RL，最难的是<strong>探索</strong>。任务要毫米级精度才能完成，<strong>直接给腕部位姿或关节加噪声，几乎不可能探索到成功</strong>。GR-RL 改在<strong>隐空间做结构化探索</strong>：</p>
+    <div class="flow flow-3">
+      <div class="fnode">
+        <div class="ftag">NOISE PREDICTOR</div>
+        <div class="fname">隐空间噪声预测器 π<sub>θ′</sub></div>
+        <div class="fdesc">在共享 VLM 骨干后接一个<strong>噪声预测器</strong>，为 action DiT 预测初始噪声 ε<sub>t</sub>，以此 steering flow 策略走向高回报区域。可训练参数仅 <strong>51.5M</strong>。</div>
+        <div class="fseq">只动一小部分参数</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STAY IN-DISTRIBUTION</div>
+        <div class="fname">约束在分布内</div>
+        <div class="fdesc">当预测噪声<strong>偏离原始正态分布超过阈值 β</strong> 时施加惩罚，避免从噪声生成离线分布之外的乱动作。</div>
+        <div class="fseq">不跑出离线分布</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">NOISE-SPACE Q</div>
+        <div class="fname">隐空间 Q<sub>φ′</sub></div>
+        <div class="fdesc">蒸馏一个<strong>噪声空间的 Q 函数</strong>，避免优化时反传穿过 flow 模型；动作空间的 Q<sub>φ</sub> 用标准 TD3 训练。蒸馏时以 0.5 概率从正态采样、否则用预测器采样，保证噪声空间覆盖。</div>
+        <div class="fseq">绕开 flow 反传</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">样本高效的离线→在线衔接</div>
+      维护<strong>离线 buffer + 在线 buffer</strong>，各采一半。开训前先用离线 checkpoint 的在线 rollout <strong>预热离线 buffer</strong>（类似 Warm-start RL）。<strong>刻意不混入遥操作轨迹</strong>，以免在"错位动力学"上训练。在线 buffer 只存最近两个 checkpoint 的轨迹，过期数据下放到离线 buffer。
+    </div>
+    <p class="muted" style="font-size:14px">训练细节：先采 673 条离线模型 rollout，冻结 VLM 骨干、只续训 critic 头以对齐 rollout 分布；每收集 12 条新在线 episode，就对噪声预测器和两个 critic 头做 50 步优化；成功率移动平均窗口为 24。早期因离线→在线分布漂移会先掉，随后<strong>迅速恢复并涨过离线水平、超过 90%</strong>；取第 500 个在线步的 checkpoint 评测，得到 83.3%。</p>
+  </section>
+
+  <!-- ROBOT -->
+  <section id="robot">
+    <h2><span class="num">08</span> 硬件：ByteMini-v2 机器人</h2>
+    <p>验证 GR-RL 的本体是 <strong>ByteMini-v2</strong>——一台带移动底盘的<strong>双 7-DoF 机械臂</strong>机器人，腕部为独特的球形关节设计。相比在 GR-3 中验证过的 v1，v2 针对实测痛点做了三处升级：</p>
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">💪</span>更大负载</div>
+        <div class="xs">肘部执行器峰值扭矩 <b>17 → 35 Nm</b>，单臂峰值负载 <b>1.4 → 3.15 kg</b>，操作能力显著扩展。</div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">🛞</span>狭窄空间更灵活</div>
+        <div class="xs">底盘投影 <b>500×720 → 450×650 mm</b>；舵轮可在偏航/俯仰方向同步调整，提升狭小空间里的快速转向能力。</div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">✨</span>更精致、更好用</div>
+        <div class="xs">外露线束做了 ID 与封装；便携显示屏从底盘移到肩部，使用体验更好。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">09</span> 有意思的点</h2>
+    <p>除了主线，这几处设计取舍往往比 benchmark 数字更能帮你判断这套方法适不适合自己的场景。</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📊</span>分布式 critic 完胜回归 critic</div>
+        <div class="xs">同样 TD3+BC，回归 critic 严重高估、值域无界；分布式 critic 落在 0~1，进度更靠谱。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>长程 + 二值稀疏奖励下，<b>非分布式 critic 严重过估</b>，尤其在轨迹早期奖励信号弱的地方（见原论文 Fig. 7）。</p>
+          <p>分布式 critic 把价值<b>限定在预设区间</b>，收敛到合理尺度更稳健，与真实时间顺序对齐得更好——这是进度评估器能用的前提。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🎚️</span>不加动作噪声，改在隐空间探索</div>
+        <div class="xs">毫米级任务一加动作噪声就失败，改为隐空间预测初始噪声去 steering。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>对腕部位姿/关节加噪声几乎探索不到成功；GR-RL 在<b>隐空间</b>学一个轻量噪声预测器（51.5M）steering flow 策略。</p>
+          <p><b>启发</b>：当动作空间对精度极敏感时，把探索"挪到"表征/噪声空间，比直接扰动动作更安全有效。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔁</span>用 hindsight 主动造失败</div>
+        <div class="xs">成功轨迹太多、缺负样本？在"重试关键帧"处截断，造出失败轨迹。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>稀疏奖励 + 几乎全成功的数据，会让 critic 学不到"什么是失败"。论文标注重试关键帧 m<sub>i</sub>，把成功轨迹 τ<sub>0:T</sub> 截成多条失败轨迹 τ<sub>0:m<sub>i</sub></sub>。</p>
+          <p>成功/失败兼备后，TD 学习才能让 Q 值真正反映进度涨落。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🦾</span>对失败的"自发"鲁棒行为</div>
+        <div class="xs">掉了会重抓、穿歪了会重试、还会主动调整场景让任务更好做。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>原论文 Fig. 8 展示：换不同颜色/尺寸的鞋都能做；鞋带掉落或没穿进孔会<b>自动重试</b>。</p>
+          <p>更妙的是会<b>主动改造场景</b>：抓得太浅就把鞋带放到鞋面上重抓近鞋带尖端；鞋摆歪了先<b>扶正</b>；鞋太远先<b>拉近</b>；两端交叉时能<b>挑出该抓的那一根</b>。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">10</span> 实验结论：一句话能说清</h2>
+    <p>一句话：<strong>在系鞋带这个长程、灵巧、高精度任务上，GR-RL 把成功率从 GR-3 基线的 45.7% 一路抬到 83.3%</strong>，三个阶段各有贡献，且在线阶段峰值一度超过 90%。这是已知<strong>首个能自动系鞋带</strong>的学习型策略。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">83.3<span class="u">%</span></div><div class="k">系鞋带总体成功率<br>（第 500 在线步 checkpoint）</div></div>
+      <div class="metric"><div class="v">+37.6<span class="u">pt</span></div><div class="k">相对 GR-3 基线提升<br>45.7% → 83.3%</div></div>
+      <div class="metric"><div class="v">&gt;90<span class="u">%</span></div><div class="k">在线训练阶段<br>移动平均峰值</div></div>
+      <div class="metric"><div class="v">5<span class="u">B</span></div><div class="k">模型总参数<br>策略 + 评论家</div></div>
+    </div>
+
+    <h3>三阶段逐级累加：每一步都在涨</h3>
+    <p>论文用消融把每个阶段的增益拆得很清楚（原论文 Fig. 5 左）：</p>
+    <div class="ladder">
+      <div class="lrow base">
+        <div class="lname">GR-3 基线<span class="ls">全量数据 BC</span></div>
+        <div class="lbar"><div class="lfill" style="width:45.7%"></div></div>
+        <div class="lval">45.7%</div>
+      </div>
+      <div class="lrow">
+        <div class="lname">+ 数据过滤<span class="ls">学到的进度评估器</span></div>
+        <div class="lbar"><div class="lfill" style="width:61.6%"></div></div>
+        <div class="lval">61.6%</div>
+      </div>
+      <div class="lrow">
+        <div class="lname">+ 对称增强<span class="ls">Filtered BC + Aug.</span></div>
+        <div class="lbar"><div class="lfill" style="width:72.7%"></div></div>
+        <div class="lval">72.7%</div>
+      </div>
+      <div class="lrow">
+        <div class="lname">+ 在线 RL<span class="ls">隐空间 steering</span></div>
+        <div class="lbar"><div class="lfill" style="width:83.3%"></div></div>
+        <div class="lval">83.3%</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">分阶段失败分析（Fig. 6）</div>
+      论文还按关键阶段拆解失败——<strong>拿对鞋带 → 穿进正确鞋孔 → 交接到另一只手 → 拉紧</strong>。结论：<strong>数据过滤与在线 RL 主要削减"穿孔"阶段的失败</strong>；对称增强则在所有阶段都有提升，只是幅度较小。
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>在线 RL 的"先降后升"曲线（Fig. 5 右）<span class="sub">点开看 offline→online 衔接的真实动态</span></summary>
+      <div class="ex-body">
+        <p class="muted" style="font-size:14px;margin-top:4px">在线初期，因离线→在线的<strong>分布漂移</strong>，成功率会<strong>先下降</strong>；经过一段 offline-to-online 适配后，成功率<strong>迅速回升并涨过离线水平，最终超过 90%</strong>（移动平均，窗口 24）。这条曲线说明：在线 steering 不是锦上添花，而是真正在弥补训练-部署错位。</p>
+        <pre class="code"><span class="cm"># 在线 RL 关键设置</span>
+critic 预对齐:   freeze VLM, 用 <span class="em">673</span> 条离线 rollout 续训 critic 头
+更新节奏:        每收集 <span class="em">12</span> 个在线 episode → 优化 <span class="em">50</span> 步
+评测 checkpoint: 第 <span class="em">500</span> 个在线训练步
+成功率轨迹:      先降(分布漂移) → 快速恢复 → <span class="em">&gt;90%</span> 峰值 → 评测 83.3%</pre>
+      </div>
+    </details>
+
+    <p class="muted" style="font-size:14px">说明：原论文的核心实验图（Fig. 5/6/7）是成功率曲线与柱状对比，按本导读规范不作截图嵌入，改以上方 metric card、进度条与文字呈现；嵌入的三张图（Fig. 1/2/3）均为方法/机制图，取自原论文。</p>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">11</span> 局限与结论</h2>
+    <p>论文坦诚地列出了当前 GR-RL 的短板：</p>
+    <ul class="tight">
+      <li><strong>行为漂移（behavior-drifting）</strong>：稀疏且带噪的奖励下，在线 RL 时策略行为可能不稳定。可能原因是<strong>轻量噪声预测器容量有限</strong>，或大隐动作空间里的<strong>信用分配（credit assignment）难题</strong>。</li>
+      <li><strong>尚未回灌基座</strong>：把提升后的专家策略<strong>蒸馏回基础 VLA</strong>，以同时获得"通用 + 能干"的策略，是个有前景但留待未来的方向。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这篇论文最值得记住的一句话</div>
+      GR-RL 的核心洞见是：<strong>数据采集与策略推理之间的错位，需要靠在线对齐来弥补</strong>。把稀疏奖励学到的 critic 值当作任务进度去过滤数据、再用形态对称增强、最后用在线 RL 把 rollout 行为与训练信号对齐——三步就把一个通用 VLA 特化成了已知首个会系鞋带的专家。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对论文 <strong>《GR-RL: Going Dexterous and Precise for Long-Horizon Robotic Manipulation》</strong>（ByteDance Seed）的中文导读可视化，内容基于已抓取的 arXiv 全文（2512.01801v3，2025.12.23）正文与三张原始方法图（Figure 1/2/3，取自 arXiv HTML）。三阶段步进图为依据原文文字自制的交互示意，忠于原文流程。</p>
+    <p>阅读原文：<a href="https://arxiv.org/abs/2512.01801" target="_blank" rel="noopener">arXiv:2512.01801 ↗</a> · HTML 全文：<a href="https://arxiv.org/html/2512.01801v3/" target="_blank" rel="noopener">arxiv.org/html/2512.01801v3 ↗</a> · 项目主页：<a href="https://seed.bytedance.com/gr_rl" target="_blank" rel="noopener">seed.bytedance.com/gr_rl ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">作者：Yunfei Li, Xiao Ma, Jiafeng Xu 等（ByteDance Seed；Supervisors: Hang Li, Yonghui Wu）· 主题：Robotics (cs.RO) / Machine Learning (cs.LG) · 提交 2025.12.01（v1），最新修订 2025.12.23（v3）· arXiv preprint。</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明展开/收起（仅用于图片）
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// 三阶段步进动画
+var spIdx = 0;
+var spTotal = 3;
+function spRender(){
+  var steps = document.querySelectorAll('#recipe .sp-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === spIdx);
+  }
+  var dots = document.querySelectorAll('#recipe .sp-dot');
+  for (var j=0;j<dots.length;j++){
+    dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= spIdx);
+  }
+  document.getElementById('sp-counter').textContent = (spIdx+1) + ' / ' + spTotal;
+  document.getElementById('sp-prev').disabled = (spIdx === 0);
+  document.getElementById('sp-next').disabled = (spIdx === spTotal-1);
+}
+function spNext(){ if (spIdx < spTotal-1){ spIdx++; spRender(); } }
+function spPrev(){ if (spIdx > 0){ spIdx--; spRender(); } }
+function spReset(){ spIdx = 0; spRender(); }
+spRender();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

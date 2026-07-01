@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Qwen3.5-Omni 技术报告 · 图解精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg2:#f4ead7;
+    --bg3:#efe2cb;
+    --card:#fcf8ef;
+    --border:#e6d8bf;
+    --border-strong:#d8c6a4;
+    --ink:#2c2823;
+    --ink-soft:#6c6253;
+    --ink-faint:#928871;
+    --accent:#b06a3c;
+    --accent-deep:#8f5226;
+    --accent-tint:#f3e6d4;
+    --accent-tint2:#ecdcc4;
+    --shadow:0 1px 2px rgba(80,60,30,.05),0 6px 18px rgba(120,90,50,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    line-height:1.78;font-size:17px;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px;}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+  /* ---------- header ---------- */
+  header.top{
+    padding:64px 0 40px;border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#fcf8ee 0%,var(--bg) 100%);
+  }
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;}
+  .badge{
+    font-size:12.5px;font-weight:600;letter-spacing:.02em;
+    padding:4px 11px;border-radius:999px;border:1px solid var(--border-strong);
+    background:var(--bg2);color:var(--ink-soft);
+  }
+  .badge.accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+  h1.title{
+    font-size:39px;line-height:1.18;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;
+  }
+  h1.title .en{color:var(--accent-deep);}
+  .subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 24px;max-width:640px;}
+  .meta-row{display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:14px;color:var(--ink-faint);}
+  .meta-row a{color:var(--accent-deep);text-decoration:none;font-weight:600;border-bottom:1px solid var(--accent-tint2);}
+  .meta-row a:hover{border-bottom-color:var(--accent);}
+
+  /* ---------- sections ---------- */
+  section{padding:44px 0;border-bottom:1px solid var(--border);}
+  .kicker{
+    font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 8px;
+  }
+  h2{font-size:27px;font-weight:700;margin:0 0 18px;letter-spacing:-.01em;line-height:1.3;}
+  h3{font-size:20px;font-weight:700;margin:34px 0 12px;}
+  h4{font-size:16.5px;font-weight:700;margin:24px 0 8px;color:var(--accent-deep);}
+  p{margin:0 0 16px;}
+  strong{font-weight:700;color:var(--ink);}
+  ul.body{margin:0 0 16px;padding-left:0;list-style:none;}
+  ul.body li{position:relative;padding-left:22px;margin-bottom:10px;}
+  ul.body li::before{content:"";position:absolute;left:4px;top:11px;width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .lead{font-size:18.5px;color:var(--ink);}
+
+  /* ---------- TLDR ---------- */
+  .tldr{
+    background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);
+    padding:26px 28px;box-shadow:var(--shadow);
+  }
+  .tldr .tag{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.06em;}
+  .tldr p{margin:10px 0 0;font-size:18px;}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+  .pill{font-size:13px;background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:5px 13px;color:var(--ink-soft);font-weight:500;}
+
+  /* ---------- figure ---------- */
+  figure.fig{margin:26px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+  figure.fig .imgbox{padding:18px 18px 6px;text-align:center;background:#fff;}
+  figure.fig img{max-width:100%;height:auto;border-radius:6px;}
+  .fig-toggle{
+    cursor:pointer;user-select:none;display:flex;gap:11px;align-items:flex-start;
+    padding:14px 18px;background:var(--bg2);border-top:1px solid var(--border);
+    transition:background .18s ease;
+  }
+  .fig-toggle:hover{background:var(--bg3);}
+  .fig-toggle .ico{
+    flex:0 0 auto;width:22px;height:22px;border-radius:6px;background:var(--accent);color:#fff;
+    font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px;
+    transition:transform .22s ease;
+  }
+  .fig-toggle.open .ico{transform:rotate(45deg);}
+  .fig-toggle .cap{font-size:14.5px;color:var(--ink-soft);}
+  .fig-toggle .cap b{color:var(--ink);font-weight:700;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .42s ease;background:var(--card);}
+  .figure-detail .inner{padding:6px 22px 20px;font-size:15px;color:var(--ink-soft);}
+  .figure-detail h5{margin:16px 0 6px;font-size:14.5px;color:var(--accent-deep);font-weight:700;}
+  .figure-detail ul{margin:0;padding-left:0;list-style:none;}
+  .figure-detail li{position:relative;padding-left:18px;margin-bottom:9px;line-height:1.7;}
+  .figure-detail li::before{content:"";position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--accent);}
+  .figure-detail li b{color:var(--ink);}
+  .figure-detail .sum{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-strong);font-style:italic;color:var(--ink-faint);}
+
+  /* ---------- expandable cards ---------- */
+  .cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;}
+  .xcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+  .xcard .head{cursor:pointer;user-select:none;padding:16px 18px;display:flex;gap:11px;align-items:flex-start;transition:background .18s;}
+  .xcard .head:hover{background:var(--bg2);}
+  .xcard .head .ico{flex:0 0 auto;width:22px;height:22px;border-radius:6px;background:var(--accent-tint2);color:var(--accent-deep);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:transform .22s;}
+  .xcard .head.open .ico{transform:rotate(45deg);background:var(--accent);color:#fff;}
+  .xcard .head .t{font-size:15.5px;font-weight:700;}
+  .xcard .head .s{font-size:13px;color:var(--ink-faint);font-weight:400;margin-top:3px;line-height:1.55;}
+  .xcard .detail{max-height:0;overflow:hidden;transition:max-height .42s ease;}
+  .xcard .detail .inner{padding:0 18px 18px;font-size:14.5px;color:var(--ink-soft);}
+  .xcard .detail .inner p{margin:8px 0;}
+
+  /* ---------- step animation ---------- */
+  .stepper{background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:22px;margin:24px 0;box-shadow:var(--shadow);}
+  .stage-track{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+  .stage{
+    flex:1 1 0;min-width:96px;text-align:center;padding:11px 6px;border-radius:10px;
+    background:var(--card);border:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--ink-faint);
+    transition:all .3s ease;position:relative;
+  }
+  .stage .n{display:block;font-size:11px;color:var(--ink-faint);font-weight:700;margin-bottom:2px;}
+  .stage.active{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-2px);box-shadow:0 6px 14px rgba(176,106,60,.25);}
+  .stage.active .n{color:#f3ddc9;}
+  .stage.done{background:var(--accent-tint);border-color:var(--accent-tint2);color:var(--accent-deep);}
+  .stage.done .n{color:var(--accent);}
+  .step-body{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;min-height:120px;}
+  .step-body .st{font-size:16px;font-weight:700;color:var(--accent-deep);margin-bottom:6px;}
+  .step-body .sd{font-size:15px;color:var(--ink-soft);margin:0;}
+  .step-controls{display:flex;gap:10px;align-items:center;margin-top:16px;}
+  .btn{
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    padding:9px 18px;border-radius:9px;border:1px solid var(--border-strong);
+    background:var(--card);color:var(--ink);transition:all .16s;
+  }
+  .btn:hover{background:var(--bg3);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:var(--accent-deep);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .step-count{margin-left:auto;font-size:13px;color:var(--ink-faint);font-weight:600;}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0;}
+  .metric{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+  .metric .num{font-size:30px;font-weight:700;color:var(--accent-deep);letter-spacing:-.01em;line-height:1.1;}
+  .metric .num small{font-size:15px;font-weight:600;color:var(--accent);}
+  .metric .lbl{font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+
+  /* ---------- compare table ---------- */
+  .tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--card);}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);}
+  thead th{background:var(--bg2);font-weight:700;color:var(--ink);font-size:13.5px;}
+  tbody tr:last-child td{border-bottom:none;}
+  td.num,th.num{text-align:right;font-family:"JetBrains Mono",monospace;}
+  .win{color:var(--accent-deep);font-weight:700;}
+  .cat-row td{background:var(--bg3);font-weight:700;font-size:12.5px;letter-spacing:.04em;color:var(--ink-soft);text-transform:uppercase;}
+
+  /* ---------- quote ---------- */
+  blockquote{
+    margin:22px 0;padding:16px 22px;background:var(--bg2);border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;font-size:16px;color:var(--ink-soft);
+  }
+  blockquote .src{display:block;margin-top:8px;font-size:13px;color:var(--ink-faint);font-style:normal;}
+
+  /* ---------- details ---------- */
+  details.ex{margin:18px 0;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  details.ex summary{cursor:pointer;padding:14px 18px;font-size:14.5px;font-weight:600;color:var(--ink);background:var(--bg2);list-style:none;}
+  details.ex summary::-webkit-details-marker{display:none;}
+  details.ex summary::before{content:"▸ ";color:var(--accent);font-weight:700;}
+  details.ex[open] summary::before{content:"▾ ";}
+  details.ex .exbody{padding:14px 20px;font-size:14.5px;color:var(--ink-soft);}
+  details.ex .exbody .small{font-size:13px;color:var(--ink-faint);}
+
+  /* ---------- timeline ---------- */
+  .tl{position:relative;margin:24px 0 8px;padding-left:26px;}
+  .tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--border-strong);}
+  .tl-item{position:relative;margin-bottom:18px;}
+  .tl-item::before{content:"";position:absolute;left:-23px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);}
+  .tl-item .tlt{font-weight:700;font-size:15.5px;}
+  .tl-item .tlt em{font-style:normal;color:var(--accent-deep);font-family:"JetBrains Mono",monospace;font-size:13px;margin-left:6px;}
+  .tl-item .tld{font-size:14.5px;color:var(--ink-soft);margin-top:3px;}
+
+  /* ---------- footer ---------- */
+  footer{padding:40px 0 60px;color:var(--ink-faint);font-size:14px;}
+  footer a{color:var(--accent-deep);text-decoration:none;font-weight:600;}
+  footer a:hover{text-decoration:underline;}
+  .note{font-size:13px;color:var(--ink-faint);margin-top:6px;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1.title{font-size:30px;}
+    h2{font-size:23px;}
+    .cardgrid{grid-template-columns:1fr;}
+    .metrics{grid-template-columns:1fr 1fr;}
+    .stage{min-width:70px;font-size:11px;}
+  }
+  @media (max-width:520px){
+    .metrics{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="badges">
+      <span class="badge accent">arXiv preprint · 2026.04</span>
+      <span class="badge">arXiv:2604.15804v2 [cs.CL]</span>
+      <span class="badge">Qwen Team · 阿里巴巴</span>
+      <span class="badge">全模态大模型 · Omni</span>
+    </div>
+    <h1 class="title">把世界「看、听、说」装进一个模型<br /><span class="en">Qwen3.5-Omni Technical Report</span></h1>
+    <p class="subtitle">一个端到端的全模态（any-to-any）大模型：文本 / 图像 / 音频 / 视频进，文本 + 实时语音出。本文图解它的 Thinker–Talker 架构、流式语音生成与跨模态训练。</p>
+    <div class="meta-row">
+      <span>📅 发表：2026 年 4 月</span>
+      <span>🏛 venue：arXiv preprint（技术报告）</span>
+      <a href="https://arxiv.org/abs/2604.15804" target="_blank" rel="noopener">阅读原文 / Source ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ TL;DR ============ -->
+<section id="tldr">
+  <div class="tldr">
+    <span class="tag">TL;DR · 30 秒抓住核心</span>
+    <p>Qwen3.5-Omni 是 Qwen-Omni 家族的最新一代<strong>全模态模型</strong>：它能同时理解<strong>文本、图像、音频、视频</strong>，并实时生成<strong>文本或语音</strong>回应。它沿用 <strong>Thinker–Talker</strong> 双脑架构——Thinker 负责「想 + 说成文字」，Talker 负责「把文字变成流式语音」。三大关键升级让它既强又快：① Thinker 与 Talker 都用 <strong>Hybrid-Attention MoE</strong>，支持 <strong>256k 长上下文</strong>（10 小时音频 / 400 秒 720P 视频）；② 用 <strong>ARIA</strong> 动态对齐文本与语音单元，解决流式语音「吞字、念错」的老毛病；③ 多 codebook codec + MTP 实现<strong>逐帧即时出声</strong>。结果：在 <strong>215 个音频 / 音视频子任务</strong>上拿下 SOTA，音频能力<strong>超过 Gemini-3.1 Pro</strong>，而文本 / 视觉能力不掉队。</p>
+    <div class="pillrow">
+      <span class="pill">🧠 Thinker–Talker 架构</span>
+      <span class="pill">🔀 Hybrid MoE（含 Gated DeltaNet）</span>
+      <span class="pill">🗣 ARIA 流式对齐</span>
+      <span class="pill">🎧 AuT 音频编码器（40M 小时）</span>
+      <span class="pill">🌍 113 语种识别 / 36 语种合成</span>
+      <span class="pill">⚡ 首包延迟低至 235ms</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 问题 ============ -->
+<section id="why">
+  <p class="kicker">这篇论文要解决什么</p>
+  <h2>人和世界打交道，本来就是「全模态 + 会行动」的</h2>
+  <p class="lead">我们看、我们听、我们说，还会顺手查资料、调用工具去完成事情。可是大多数模型只停留在<strong>被动的「感知—回答」</strong>：给一张图答一句话，给一段音频转一段字。</p>
+  <p>论文指出，现有模型在四件「实用部署必需的能力」上明显不足：<strong>可扩展的智能体行为</strong>、<strong>实时交互</strong>、<strong>自主调用工具</strong>、以及<strong>跨模态推理</strong>。要做一个真正能陪人对话、能看视频听声音、还能边想边动手的「原生全模态智能体」，就需要把理解、推理、生成、行动统一进<strong>一个端到端模型</strong>里——这正是 Qwen3.5-Omni 想做的事。</p>
+
+  <figure class="fig">
+    <div class="imgbox"><img src="assets/image.png" alt="Qwen3.5-Omni 能力概览图" loading="lazy" /></div>
+    <div class="fig-toggle" onclick="toggleFig(this)">
+      <span class="ico">+</span>
+      <span class="cap"><b>图 1：Qwen3.5-Omni 的两副面孔。</b>左边「Plus」主打离线强能力，右边「Plus-Realtime」主打实时交互——点开看每个能力标签的含义。</span>
+    </div>
+    <div class="figure-detail">
+      <div class="inner">
+        <p>这是论文的封面示意图，用两只小熊把模型的两类用法画了出来：一个统一模型，既能当「深度理解引擎」，也能当「实时语音助手」。</p>
+        <h5>左侧 · Qwen3.5-Omni-Plus（坐在电脑前，离线强能力）</h5>
+        <ul>
+          <li><b>SOTA Performance</b>：在大量音频 / 音视频基准上达到业界最强。</li>
+          <li><b>Detailed Audio-Visual Captioning</b>：能生成「剧本级」结构化字幕——自动分镜、打时间戳、描述人物及其与声音的关系。</li>
+          <li><b>Native Multimodal</b>：原生全模态预训练，而非把多个单模态模型拼接。</li>
+          <li><b>Extensive Multilingual</b>：覆盖海量语言与方言（语音识别 113 种、语音合成 36 种）。</li>
+        </ul>
+        <h5>右侧 · Qwen3.5-Omni-Plus-Realtime（坐在沙发上拿手机，实时交互）</h5>
+        <ul>
+          <li><b>Voice Control</b>：端到端用语音直接控制音量、语速、情绪。</li>
+          <li><b>WebSearch Tool</b>：自主联网搜索、调用工具（FunctionCall）。</li>
+          <li><b>Voice Clone</b>：用用户提供的样本做零样本音色克隆。</li>
+          <li><b>Semantic Interruption</b>：靠原生「轮次意图识别」实现语义级打断（你说话它就停下来听）。</li>
+        </ul>
+        <p class="sum">一句话：同一个模型，左手「看懂世界」，右手「实时陪你说话办事」。</p>
+      </div>
+    </div>
+  </figure>
+</section>
+
+<!-- ============ 谱系 ============ -->
+<section id="lineage">
+  <p class="kicker">站在前作的肩膀上</p>
+  <h2>从 Qwen2.5-Omni 到 Qwen3.5-Omni：升级在哪</h2>
+  <p>Qwen3.5-Omni 不是从零发明，而是在自家 Omni 谱系上迭代。理解它最快的方式，是看它相对前代<strong>解决了什么痛点</strong>。下面三张卡片按时间展开。</p>
+
+  <div class="cardgrid">
+    <div class="xcard">
+      <div class="head" onclick="toggleCard(this)">
+        <span class="ico">+</span>
+        <span><span class="t">Qwen2.5-Omni</span><span class="s">最早提出 Thinker–Talker 双脑架构。</span></span>
+      </div>
+      <div class="detail"><div class="inner">
+        <p><b>做了什么：</b>首次把「理解 + 文本生成」（Thinker）和「语音生成」（Talker）拆成协作的两个模块，并用分块预填充（chunked prefilling）让编码器沿时间维度出 chunk，降低首字延迟。</p>
+        <p><b>卡在哪：</b>规模与上下文有限，多模态长序列建模与流式稳定性仍有提升空间。</p>
+      </div></div>
+    </div>
+
+    <div class="xcard">
+      <div class="head" onclick="toggleCard(this)">
+        <span class="ico">+</span>
+        <span><span class="t">Qwen3-Omni</span><span class="s">引入 RVQ 语音表示与双轨 Talker。</span></span>
+      </div>
+      <div class="detail"><div class="inner">
+        <p><b>做了什么：</b>用基于 RVQ（残差矢量量化）的 codec 表示大幅提升语音推理效率；Talker 采用「双轨」输入设计；用 TM-RoPE 给模型音视频时间感知。</p>
+        <p><b>卡在哪：</b>① 双轨生成里文本与语音 tokenizer 编码速率不匹配，流式时易吞字、念错、数字含糊；② TM-RoPE 把位置 ID 直接绑绝对时间，长视频会产生过于稀疏的索引，削弱长程时序建模。</p>
+      </div></div>
+    </div>
+
+    <div class="xcard" style="grid-column:1/-1;border-color:var(--border-strong);">
+      <div class="head" onclick="toggleCard(this)">
+        <span class="ico">+</span>
+        <span><span class="t">Qwen3.5-Omni（本文）· 五大技术升级</span><span class="s">把规模、对齐、实时性一次性补齐。</span></span>
+      </div>
+      <div class="detail"><div class="inner">
+        <ul class="body">
+          <li><b>① Hybrid-Attention MoE：</b>Thinker 与 Talker 都改用混合注意力 MoE，含 Gated DeltaNet（GDN），长序列推理高效、KV-cache I/O 开销小。</li>
+          <li><b>② 256k 长上下文：</b>支持 10 小时以上音频、400 秒 720P 视频（1 FPS）。</li>
+          <li><b>③ 多 codebook codec：</b>单帧即时合成，逐帧出声。</li>
+          <li><b>④ ARIA：</b>流式解码时动态对齐文本与语音单元，显著提升自然度与鲁棒性。</li>
+          <li><b>⑤ 多语种大幅扩展：</b>语音识别覆盖 113 种语言 / 方言，语音合成覆盖 36 种。</li>
+        </ul>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 架构总览 ============ -->
+<section id="arch">
+  <p class="kicker">本文方法 · 重头戏</p>
+  <h2>架构总览：Thinker 负责想，Talker 负责说</h2>
+  <p class="lead">Qwen3.5-Omni 的骨架是 <strong>Thinker–Talker</strong>。可以把它想成一个人的两个分工：<strong>Thinker</strong> 像「大脑 + 嘴里的文字」——它接收所有模态、做推理、输出文本；<strong>Talker</strong> 像「发声器官」——它直接读取 Thinker 中间层的高层表示，把文字实时变成语音。</p>
+  <p>整条流水线最重要的就是下面这张图——它是全文的「地图」。建议先看图，再展开说明逐模块对照。</p>
+
+  <figure class="fig">
+    <div class="imgbox"><img src="assets/model.jpg" alt="Qwen3.5-Omni 总体架构图" loading="lazy" /></div>
+    <div class="fig-toggle" onclick="toggleFig(this)">
+      <span class="ico">+</span>
+      <span class="cap"><b>图 2：Qwen3.5-Omni 总体架构（最重要的一张图）。</b>自底向上是「多模态输入 → Thinker 出文本 → Talker 出流式语音」。点开逐层拆解每个色块与数据流。</span>
+    </div>
+    <div class="figure-detail">
+      <div class="inner">
+        <p>图例颜色（左上角）：<b>紫</b>=文本 token，<b>青</b>=文本隐藏态，<b>黄</b>=视觉隐藏态，<b>粉</b>=音频隐藏态，<b>绿</b>=codec 隐藏态，<b>橙</b>=codec embedding。整张图从下往上读：</p>
+        <ul>
+          <li><b>① 最底层 · 多模态输入：</b>视频帧（标了 Height / Width）和音频波形沿时间轴排列。视频经 <b>Vision Encoder</b>，音频经 <b>AuT</b> 编码。</li>
+          <li><b>② 带时间戳的统一序列：</b>编码后的视觉 / 音频隐藏态与文本 token 交错成一条序列，并显式插入 <code>&lt;0.0 seconds&gt;</code>、<code>&lt;4.0 seconds&gt;</code> 这样的<b>文字时间戳</b>，让模型天然学到「时间码」。</li>
+          <li><b>③ Thinker（Hybrid MoE）：</b>吃下这条统一序列，自回归生成文本回应（图右「According to the … &lt;eos&gt;」）。</li>
+          <li><b>④ Hidden Extraction：</b>Talker 不是只读文本，而是从 Thinker 的<b>中间层</b>直接抽取高层表示（图中向上的箭头），信息更丰富。</li>
+          <li><b>⑤ Talker（Hybrid MoE）：</b>结合「参考音频 + 对话上下文 + 当前轮文本」，用 <b>ARIA</b> 把文本单元与语音单元交错成单流（Interleaved Speech Generation），自回归预测 codec 的<b>基础码本（codebook 0）</b>。</li>
+          <li><b>⑥ MTP 模块：</b>在每一帧再补出<b>残差码本（1–15）</b>，刻画细粒度声学细节。</li>
+          <li><b>⑦ Streaming Codec Decoder（Code2Wav）：</b>把多码本「sum」求和，用因果 ConvNet <b>逐帧合成波形</b>，实现真正的流式出声。</li>
+        </ul>
+        <p class="sum">数据流主线：模态输入 → 编码 → Thinker 出文字 → Talker 抽表示 + ARIA 交错 → MTP 补残差 → Code2Wav 逐帧出声。这就是「边想边说、低延迟」的全貌。</p>
+      </div>
+    </div>
+  </figure>
+
+  <p>把这张图「跑起来」更直观。下面是端到端流式推理的逐步演示，点「下一步」看信息怎样一站站流动。</p>
+
+  <!-- step animation -->
+  <div class="stepper" id="flow">
+    <div class="stage-track">
+      <div class="stage" data-i="0"><span class="n">01</span>模态编码</div>
+      <div class="stage" data-i="1"><span class="n">02</span>Thinker 推理</div>
+      <div class="stage" data-i="2"><span class="n">03</span>抽取高层表示</div>
+      <div class="stage" data-i="3"><span class="n">04</span>ARIA 交错</div>
+      <div class="stage" data-i="4"><span class="n">05</span>MTP 补残差</div>
+      <div class="stage" data-i="5"><span class="n">06</span>Code2Wav 出声</div>
+    </div>
+    <div class="step-body">
+      <div class="st" id="stepTitle"></div>
+      <p class="sd" id="stepDesc"></p>
+    </div>
+    <div class="step-controls">
+      <button class="btn" id="prevBtn" onclick="stepPrev()">← 上一步</button>
+      <button class="btn primary" id="nextBtn" onclick="stepNext()">下一步 →</button>
+      <button class="btn" onclick="stepReset()">重置</button>
+      <span class="step-count" id="stepCount"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 各模块 ============ -->
+<section id="modules">
+  <p class="kicker">逐模块细讲</p>
+  <h2>四个关键模块：编码、感知、出声、对齐</h2>
+
+  <h3>AuT：从零训练的音频编码器</h3>
+  <p>音频这一支的「耳朵」叫 <strong>AuT（Audio Transformer）</strong>，是一个<strong>从零训练</strong>的注意力 encoder-decoder 模型，喂了 <strong>4000 万小时</strong>由 Qwen3-ASR 生成的音频-文本对。音频先转成 fbank 特征，再被 4 个 Conv2D 块下采样 <strong>16 倍</strong>，进入自注意力层，最终得到 <strong>6.25Hz</strong> token 率的音频表示。相比 Qwen3-Omni，它喂了更多（20+ 种）多语种数据，中 : 英 : 多语 ≈ 3.5 : 3.5 : 3，并用<strong>动态注意力窗口</strong>训练，兼顾实时预填充与离线理解。</p>
+
+  <figure class="fig">
+    <div class="imgbox"><img src="assets/3.5aut.png" alt="AuT 音频编码器结构图" loading="lazy" /></div>
+    <div class="fig-toggle" onclick="toggleFig(this)">
+      <span class="ico">+</span>
+      <span class="cap"><b>图 3：AuT 概览。</b>波形 → fbank → 编码器（下采样 + 自注意力）→ 6.25Hz 表示 → 解码器（ASR 监督）。点开看每一层在做什么。</span>
+    </div>
+    <div class="figure-detail">
+      <div class="inner">
+        <p>AuT 是用 ASR（语音识别）任务监督训练出来的。训练完之后，<b>真正被 Omni 模型复用的是它的 encoder</b>——专门负责把音频压成高质量、低帧率的表示。自底向上：</p>
+        <ul>
+          <li><b>波形 → FBank Feature（10ms 帧移，黄色块）：</b>原始音频先重采样到 16kHz，转成 128 通道 mel 频谱。</li>
+          <li><b>AuT Encoder：</b><code>4× Downsampling Conv2d</code> 把帧率压低 16 倍，再叠 <code>32× Self-Attention Layer</code> 提特征。</li>
+          <li><b>AuT Hidden, 6.25Hz（粉色块）：</b>编码器输出的音频表示，帧率仅 6.25Hz——序列短、算得快，每帧约对应 160ms 原始信号。</li>
+          <li><b>AuT Decoder：</b><code>8×</code>（Self-Attention + Cross-Attention），通过交叉注意力读取编码器表示，在训练时以「&lt;sos&gt; Hi, I'm Qwen…」做 teacher forcing，输出识别文本「Hi, I'm Qwen… &lt;eos&gt;」。</li>
+        </ul>
+        <p class="sum">用 ASR 把 encoder「教会听懂话」，再把这个 encoder 接进 Omni——这就是 AuT 通用音频表示的来历。</p>
+      </div>
+    </div>
+  </figure>
+
+  <h3>Perception：Thinker 怎么「看时间」</h3>
+  <p>Thinker 把文本、音频、图像、无声视频统一成一条表示序列。文本用 Qwen3.5 的 tokenizer（词表升到 <strong>250k</strong>，多数语言编解码效率提升 10–60%）。这里有个很实在的设计取舍：</p>
+  <ul class="body">
+    <li><b>放弃「绝对时间硬塞进位置 ID」：</b>前代 TM-RoPE 直接把时间编进位置 ID，长视频会让视觉 patch 的索引<strong>过于稀疏</strong>，反而削弱长程时序建模，还要海量均匀帧率数据才能学好。</li>
+    <li><b>改用「文字时间戳」：</b>在每个视频 / 音视频片段前，<strong>直接写一串秒数文本</strong>（如 <code>&lt;4.0 seconds&gt;</code>），让模型像读文字一样学时间码；音频序列里还随机插时间戳来跨模态对齐。每 160ms 给一个时间 ID。</li>
+    <li><b>位置编号连续不冲突：</b>多模态拼接时，后一模态从前一模态最大位置 ID + 1 开始，避免位置打架。</li>
+  </ul>
+
+  <h3>Speech Generation：Talker 怎么「出声」</h3>
+  <p>Talker 直接在 <strong>Qwen3.5-Omni-Audio-Tokenizer</strong> 产生的 RVQ token 上工作。它用 <strong>MTP（多 token 预测）</strong>模块建模残差码本，再配一个因果 ConvNet 重建波形——高保真、低延迟、算力开销小。多轮对话里，Talker 受 Thinker 的丰富上下文（历史文本、多模态表示、当前轮流式文本）调制，能动态调节<strong>韵律、音量、情绪</strong>。和前代相比有两点关键不同：</p>
+  <ul class="body">
+    <li><b>给 Talker 一个「语音 system prompt」：</b>用一段提示指定目标音色，既能零样本克隆音色，又能可控生成；比传统的说话人 embedding 能编码更丰富的多模态线索。</li>
+    <li><b>用 ARIA 取代双轨：</b>把原来的双通道生成统一成<strong>单通道</strong>表述（详见下一节）。</li>
+  </ul>
+
+  <h3 id="aria">ARIA：让流式语音不再吞字念错</h3>
+  <p>这是本文最有意思的创新之一。<strong>ARIA = Adaptive Rate Interleave Alignment（自适应速率交错对齐）</strong>。问题根源在于：文本 tokenizer 和语音 tokenizer 的<strong>编码速率不一样</strong>，一段话对应的文本 token 数和语音 token 数对不齐，流式拼接时就会吞字、念错、把数字读得含糊。</p>
+  <blockquote>
+    ARIA 不依赖 MFA 对齐、也不用固定交错率，而是施加一条<strong>自适应速率约束</strong>：对生成序列的<strong>任意前缀</strong>，累计的「语音 token : 文本 token」比例，都不得超过该条目级别的全局比例。
+    <span class="src">—— 论文 §2.4，ARIA 的核心约束</span>
+  </blockquote>
+  <p>这条约束虽简单，却带来三个好处：① 跨语言灵活对齐，连编码效率较低的语言也照顾到；② 天然支持「任意文本前缀 + 连贯语音续接」；③ 把双轨同步开销去掉，token 调度更高效，更贴合流式交互的增量节奏。</p>
+</section>
+
+<!-- ============ 流式与并发 ============ -->
+<section id="streaming">
+  <p class="kicker">工程亮点</p>
+  <h2>为什么它能又快又能扛并发</h2>
+  <p>实时音视频交互里，<strong>首包延迟</strong>直接决定体验，<strong>并发能力</strong>决定成本与速度。Qwen3.5-Omni 从算法和架构两头压延迟：</p>
+  <ul class="body">
+    <li><b>分块预填充（Chunked Prefilling）：</b>沿用前代，音视频编码器能按时间维度出 chunk，显著降低 Thinker / Talker 的 TTFT（首字时间）。</li>
+    <li><b>Hybrid MoE + Gated DeltaNet：</b>GDN 对长音视频序列建模特别有效，大幅降低长上下文推理的 KV-cache I/O，提升吞吐与并发。</li>
+    <li><b>轻量出声链路：</b>Talker（预测 RVQ） + MTP（补残差） + 因果流式 ConvNet codec 解码器，都很轻、对 batch 友好，适合低延迟部署。</li>
+  </ul>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">235<small> ms</small></div><div class="lbl">Flash 音频输入首包延迟（Plus 为 435ms）</div></div>
+    <div class="metric"><div class="num">426<small> ms</small></div><div class="lbl">Flash 视频输入首包延迟（Plus 为 651ms）</div></div>
+    <div class="metric"><div class="num">0.18<small>–0.33</small></div><div class="lbl">不同并发下的生成 RTF，留足流式裕量</div></div>
+  </div>
+  <p class="note">注：上表为论文 Table 1 / Table 2 报告的首包延迟；Flash 与 Plus 规模差异大、部署资源与并行策略不同，数字不宜横向严格对比。</p>
+</section>
+
+<!-- ============ 训练 ============ -->
+<section id="training">
+  <p class="kicker">跨模态训练</p>
+  <h2>怎么训出来的：预训练 3 段 + 后训练多段</h2>
+  <p class="lead">全模态能力不是一次喂完，而是分阶段「先对齐、再泛化、最后拉长上下文」，后训练再把各领域专长蒸馏进同一个模型并对齐人类交互偏好。</p>
+
+  <h3>预训练：三阶段（Thinker 侧）</h3>
+  <div class="tl">
+    <div class="tl-item">
+      <div class="tlt">S1 · 编码器对齐<em>LLM 冻结</em></div>
+      <div class="tld">锁住 LLM 参数，单独训练视觉 / 音频编码器（先训各自 adapter，再训编码器）。LLM 来自 Qwen3.5，视觉编码器来自 Qwen3.5，音频编码器用 AuT 初始化。</div>
+    </div>
+    <div class="tl-item">
+      <div class="tlt">S2 · 通用阶段<em>≈ 4T tokens</em></div>
+      <div class="tld">解冻全部参数，序列长度 32,768。约 4 万亿 token，跨模态配比：文本 0.92T、音频 1.99T、图像 0.95T、视频 0.14T、视频-音频 0.29T。</div>
+    </div>
+    <div class="tl-item">
+      <div class="tlt">S3 · 长上下文阶段<em>262,144</em></div>
+      <div class="tld">序列长度从 32,768 拉到 262,144，并提高长音频 / 长视频比例，显著增强长序列理解。</div>
+    </div>
+  </div>
+
+  <h3>后训练：Thinker 三阶段 + Talker 四阶段</h3>
+  <div class="cardgrid">
+    <div class="xcard">
+      <div class="head" onclick="toggleCard(this)">
+        <span class="ico">+</span>
+        <span><span class="t">Thinker 后训练（3 段）</span><span class="s">专家蒸馏 → 同策略蒸馏 → 交互对齐 RL。</span></span>
+      </div>
+      <div class="detail"><div class="inner">
+        <p><b>① 专家蒸馏：</b>先从 Qwen3.5 base 分别 SFT + RL 出一批领域专家（文本 / 代码 / 推理 / 智能体 / 视觉 / 音频），用它们造数据，再把各路专长蒸馏进一个统一模型。</p>
+        <p><b>② 同策略蒸馏（OPD）：</b>同一问题，文本输入的回答通常更流畅、更会推理；把「文本条件下的回答」当作「音频条件下回答」的蒸馏目标，缩小语音对话与文本对话的质量差。</p>
+        <p><b>③ 交互对齐 RL：</b>针对多轮对话里的语言乱切、人设漂移、长程指令跟随退化等问题，构造多轮交互轨迹并设计奖励，让模型在长对话中更稳定一致。</p>
+      </div></div>
+    </div>
+
+    <div class="xcard">
+      <div class="head" onclick="toggleCard(this)">
+        <span class="ico">+</span>
+        <span><span class="t">Talker 后训练（4 段）</span><span class="s">通用 → 长上下文 → RL(DPO/GSPO) → 音色微调。</span></span>
+      </div>
+      <div class="detail"><div class="inner">
+        <p><b>① 通用阶段：</b>用 2000 万小时以上多语种语音 + 多模态上下文预训练；引入指令跟随式语音生成等多样任务，超越「表示→语音」的简单单调映射。</p>
+        <p><b>② 长上下文阶段：</b>数据分层筛选 + 高质量子集 CPT，借 Qwen3-Omni-Captioner 抑制噪声幻觉；上下文扩到 64k。</p>
+        <p><b>③ 强化学习阶段：</b>用 DPO 对齐人类偏好（多语种偏好对），并加规则奖励、用 GSPO 提升整体能力与训练稳定性。</p>
+        <p><b>④ 说话人微调：</b>轻量 speaker fine-tuning，让模型忠实复现目标音色，同时进一步提升自然度、表现力与可控性。</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 有意思的点 ============ -->
+<section id="emergent">
+  <p class="kicker">有意思的点</p>
+  <h2>意外涌现：Audio-Visual Vibe Coding</h2>
+  <p>论文报告了一个全模态模型里<strong>新涌现的能力</strong>：模型能<strong>直接根据音视频指令写出可执行代码</strong>，作者称之为 <strong>Audio-Visual Vibe Coding</strong>。这意味着模型可以在没有外部编排的情况下，对实时音视频查询做出「会动手」的响应——把「看 + 听 + 写代码」串成一条龙。</p>
+  <details class="ex">
+    <summary>它带来的三类新能力（相对 Qwen3-Omni）</summary>
+    <div class="exbody">
+      <ul class="body">
+        <li><b>可控音视频字幕：</b>可控、细粒度、结构化字幕，乃至剧本级描述——自动分段、时间戳标注、人物及其与声音关系的刻画。</li>
+        <li><b>全面实时交互：</b>原生轮次意图识别带来的语义打断；端到端语音控制音量 / 语速 / 情绪；用户样本即时音色克隆。</li>
+        <li><b>原生全模态智能体：</b>自主 WebSearch、复杂 FunctionCall，以及上面的 Audio-Visual Vibe Coding。</li>
+      </ul>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 实验 ============ -->
+<section id="results">
+  <p class="kicker">实验结论 · 轻量</p>
+  <h2>结果一句话：音频超 Gemini-3.1 Pro，文本视觉不掉队</h2>
+  <p>在覆盖音视频、音频、ASR、语种翻译 / 识别等 <strong>215 个子任务</strong>上，<strong>Qwen3.5-Omni-Plus 拿下 SOTA</strong>，在通用音频理解、推理、识别、翻译、对话上<strong>超过 Gemini-3.1 Pro</strong>，整体音视频理解达到其水平；同时文本 / 视觉能力相对同规模纯 Qwen 模型<strong>不退化</strong>。</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">215</div><div class="lbl">音频 / 音视频子任务上达成 SOTA（Plus）</div></div>
+    <div class="metric"><div class="num">93.1</div><div class="lbl">VoiceBench 语音对话（Gemini-3.1 Pro 88.9）</div></div>
+    <div class="metric"><div class="num">84.6</div><div class="lbl">DailyOmni 音视频理解 SOTA（Gemini 82.7）</div></div>
+    <div class="metric"><div class="num">72.4</div><div class="lbl">RUL-MuchoMusic 音乐理解（Gemini 59.6）</div></div>
+    <div class="metric"><div class="num">1.26</div><div class="lbl">SEED-TTS test-en 词错率 WER，英文 split 最佳</div></div>
+    <div class="metric"><div class="num">94.2</div><div class="lbl">MMLU-Redux 文本能力，几乎追平纯文本模型 94.3</div></div>
+  </div>
+
+  <p>挑几个最能说明问题的音频基准，和 Gemini-3.1 Pro 直接对比（粗体为更优）：</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>基准（↑ 越高越好）</th><th class="num">Gemini-3.1 Pro</th><th class="num">Omni-Flash</th><th class="num">Omni-Plus</th></tr>
+      </thead>
+      <tbody>
+        <tr class="cat-row"><td colspan="4">音频理解</td></tr>
+        <tr><td>MMAU</td><td class="num">81.1</td><td class="num">80.4</td><td class="num win">82.2</td></tr>
+        <tr><td>MMSU</td><td class="num">81.3</td><td class="num">72.2</td><td class="num win">82.8</td></tr>
+        <tr><td>RUL-MuchoMusic</td><td class="num">59.6</td><td class="num">60.5</td><td class="num win">72.4</td></tr>
+        <tr class="cat-row"><td colspan="4">语音对话</td></tr>
+        <tr><td>VoiceBench</td><td class="num">88.9</td><td class="num">87.8</td><td class="num win">93.1</td></tr>
+        <tr class="cat-row"><td colspan="4">音视频理解</td></tr>
+        <tr><td>DailyOmni</td><td class="num">82.7</td><td class="num">81.8</td><td class="num win">84.6</td></tr>
+        <tr><td>Qualcomm IVD（音频查询）</td><td class="num">66.2</td><td class="num">66.3</td><td class="num win">68.5</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">数字取自论文 Table 5 / Table 7。并非所有基准都领先（如 WorldSense、AV-SpeakerBench、OmniGAIA 上 Gemini-3.1 Pro 更强），此处只挑最能体现优势的核心结论，完整数据见原文。</p>
+</section>
+
+<!-- ============ 结论 ============ -->
+<section id="conclusion">
+  <p class="kicker">结语</p>
+  <h2>一个能「感知、推理、生成、行动」的统一系统</h2>
+  <p>Qwen3.5-Omni 把跨文本、图像、音频、音视频的理解、推理、生成与行动统一进一个模型：基于 Thinker–Talker，引入高效 Hybrid-Attention MoE、256k 长上下文、多 codebook codec + ARIA 的流式语音、以及大幅扩展的多语种支持。论文给出的启示是——<strong>把原生全模态训练规模化，能造出不只「会感知会推理」、还能「实时交互、会动手」的统一系统</strong>。</p>
+  <blockquote>
+    We hope Qwen3.5-Omni provides a strong foundation for future research on general-purpose omnimodal agents.
+    <span class="src">我们希望 Qwen3.5-Omni 能为「通用全模态智能体」的后续研究提供坚实基础。—— 论文结论</span>
+  </blockquote>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Qwen3.5-Omni Technical Report</strong> · Qwen Team（阿里巴巴）· arXiv preprint，2026 年 4 月 · License CC BY 4.0</p>
+    <p>原文：<a href="https://arxiv.org/abs/2604.15804" target="_blank" rel="noopener">arxiv.org/abs/2604.15804</a> ｜ HTML 版：<a href="https://arxiv.org/html/2604.15804v2" target="_blank" rel="noopener">arxiv.org/html/2604.15804v2</a> ｜ API：<a href="https://www.alibabacloud.com/help/en/model-studio/qwen-omni" target="_blank" rel="noopener">Model Studio</a></p>
+    <p class="note">本页为教学性图解，图片均来自 arXiv HTML 原文，数字与方法忠于原报告；如有理解偏差请以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+  // ---- expandable figure caption ----
+  function toggleFig(el){
+    el.classList.toggle("open");
+    var d = el.nextElementSibling;
+    if(!d) return;
+    if(d.style.maxHeight && d.style.maxHeight !== "0px"){
+      d.style.maxHeight = "0px";
+    }else{
+      d.style.maxHeight = d.scrollHeight + 40 + "px";
+    }
+  }
+
+  // ---- expandable card ----
+  function toggleCard(el){
+    el.classList.toggle("open");
+    var d = el.parentElement.querySelector(".detail");
+    if(!d) return;
+    if(d.style.maxHeight && d.style.maxHeight !== "0px"){
+      d.style.maxHeight = "0px";
+    }else{
+      d.style.maxHeight = d.scrollHeight + 40 + "px";
+    }
+  }
+
+  // ---- step animation ----
+  var steps = [
+    {t:"① 模态编码：先把世界压成表示", d:"视频帧经 Vision Encoder、音频经 AuT 编码；音频转 16kHz mel 频谱后每 160ms 出一个表示。视觉与音频隐藏态会与文本 token 交错，并插入「<秒数> seconds」文字时间戳来对齐时间。"},
+    {t:"② Thinker 推理：融合多模态，输出文本", d:"Hybrid MoE Thinker 吃下这条带时间戳的统一序列，做跨模态推理，自回归生成文本回应。它同时是后续语音生成的「内容大脑」。"},
+    {t:"③ 抽取高层表示：Talker 直连 Thinker 中间层", d:"Talker 不只读最终文本，而是从 Thinker 的中间层直接抽取高层表示（Hidden Extraction），拿到比纯文本更丰富的语义与上下文线索。"},
+    {t:"④ ARIA 交错：文本与语音单元拼成单流", d:"Talker 结合参考音频、对话上下文与当前轮文本，用 ARIA 把文本单元与语音单元按「自适应速率约束」交错成单通道流，并自回归预测 codec 的基础码本（codebook 0）。"},
+    {t:"⑤ MTP 补残差：刻画细粒度声学细节", d:"多 token 预测（MTP）模块在每一帧补出残差码本（1–15），把音色、韵律等细节补全，得到完整的多码本表示。"},
+    {t:"⑥ Code2Wav 出声：逐帧合成波形", d:"Streaming Codec Decoder 把多码本求和，用因果 ConvNet 逐帧增量合成波形——边生成边播放，实现真正低延迟的流式语音。"}
+  ];
+  var cur = 0;
+  var stagesEls = document.querySelectorAll("#flow .stage");
+  function renderStep(){
+    document.getElementById("stepTitle").textContent = steps[cur].t;
+    document.getElementById("stepDesc").textContent = steps[cur].d;
+    document.getElementById("stepCount").textContent = (cur+1) + " / " + steps.length;
+    stagesEls.forEach(function(s){
+      var i = parseInt(s.getAttribute("data-i"),10);
+      s.classList.remove("active","done");
+      if(i < cur) s.classList.add("done");
+      else if(i === cur) s.classList.add("active");
+    });
+    document.getElementById("prevBtn").disabled = (cur === 0);
+    document.getElementById("nextBtn").disabled = (cur === steps.length-1);
+  }
+  function stepNext(){ if(cur < steps.length-1){ cur++; renderStep(); } }
+  function stepPrev(){ if(cur > 0){ cur--; renderStep(); } }
+  function stepReset(){ cur = 0; renderStep(); }
+  renderStep();
+
+  // allow clicking a stage to jump
+  stagesEls.forEach(function(s){
+    s.addEventListener("click", function(){
+      cur = parseInt(s.getAttribute("data-i"),10);
+      renderStep();
+    });
+  });
+</script>
+</body>
+</html>

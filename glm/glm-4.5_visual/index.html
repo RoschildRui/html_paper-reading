@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GLM-4.5 图解 · ARC 统一的智能体 / 推理 / 代码基础模型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --surface:#f4ead7;
+    --surface-2:#efe3cd;
+    --deep:#e8dcc7;
+    --line:#e0d2b8;
+    --line-soft:#ece0c9;
+    --ink:#262019;
+    --ink-2:#5d5446;
+    --ink-3:#897c66;
+    --accent:#b06a43;
+    --accent-soft:#f0e0d2;
+    --good:#5c7a52;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    --sans:"Inter","Noto Sans SC",-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.85;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+
+  /* ---------- header ---------- */
+  header.hero{padding:64px 0 28px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:14px}
+  h1.title{font-size:34px;line-height:1.32;font-weight:800;margin:0 0 8px;letter-spacing:-.01em}
+  h1.title .en{display:block;font-size:18px;font-weight:600;color:var(--ink-2);margin-top:8px;letter-spacing:0}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 6px}
+  .tag{font-size:12.5px;font-weight:600;padding:4px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+  .tag.mono{font-family:var(--mono);font-weight:500}
+  .src-link{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--accent);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .2s}
+  .src-link:hover{border-color:var(--accent)}
+  .authors{font-size:14px;color:var(--ink-3);margin-top:10px}
+
+  /* ---------- nav ---------- */
+  nav.toc{position:sticky;top:0;z-index:20;background:rgba(251,246,234,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);margin-bottom:8px}
+  nav.toc .wrap{display:flex;flex-wrap:wrap;gap:4px 18px;padding-top:12px;padding-bottom:12px}
+  nav.toc a{font-size:13.5px;font-weight:600;color:var(--ink-2);text-decoration:none;padding:3px 0;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+  nav.toc a:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* ---------- sections ---------- */
+  section{padding:40px 0;border-bottom:1px solid var(--line-soft)}
+  .sec-num{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+  h2{font-size:25px;font-weight:800;margin:6px 0 18px;letter-spacing:-.01em;line-height:1.35}
+  h3{font-size:18.5px;font-weight:700;margin:30px 0 10px}
+  p{margin:14px 0}
+  strong{font-weight:700;color:var(--ink)}
+  a.inline{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft);transition:border-color .2s}
+  a.inline:hover{border-color:var(--accent)}
+  ul,ol{margin:14px 0;padding-left:22px}
+  li{margin:9px 0}
+  .lead{font-size:18px;color:var(--ink-2)}
+  .em-term{font-family:var(--mono);font-size:.9em;background:var(--surface);padding:1px 6px;border-radius:5px;border:1px solid var(--line);color:var(--ink)}
+
+  /* ---------- TL;DR ---------- */
+  .tldr{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin:8px 0 4px}
+  .tldr h2{font-size:16px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+  .tldr ul{margin:0;padding-left:20px}
+  .tldr li{margin:11px 0;font-size:16.5px}
+  .oneliner{font-size:20px;font-weight:700;line-height:1.7;margin:24px 0 6px;padding-left:18px;border-left:3px solid var(--accent)}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  .metric{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px 14px;text-align:center}
+  .metric .num{font-family:var(--mono);font-size:25px;font-weight:600;color:var(--accent);line-height:1.1}
+  .metric .lab{font-size:12.5px;color:var(--ink-2);margin-top:7px;font-weight:600}
+  .metric .sub{font-size:11px;color:var(--ink-3);margin-top:3px}
+
+  /* ---------- figure ---------- */
+  figure.fig{margin:30px 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;overflow:hidden}
+  figure.fig img{width:100%;display:block;border-radius:9px;background:#fff}
+  figure.fig.selfsvg{padding:24px 18px}
+  .svgbox{width:100%;background:#fff;border-radius:9px;padding:10px 6px}
+
+  /* ---------- expandable caption ---------- */
+  .figcap{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+  .figcap-head{display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-size:14.5px;color:var(--ink-2);font-weight:600;user-select:none}
+  .figcap-head .fig-toggle{flex:none;color:var(--accent);font-family:var(--mono);font-size:13px;transition:transform .25s ease;margin-top:2px}
+  .figcap.active .figcap-head .fig-toggle{transform:rotate(90deg)}
+  .figcap-head .src-note{font-weight:500;color:var(--ink-3);font-size:12.5px}
+  .figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .35s ease}
+  .figcap.active .figure-detail{max-height:1600px;opacity:1}
+  .figure-detail-inner{padding:14px 2px 4px}
+  .figure-detail ul{margin:6px 0;padding-left:20px}
+  .figure-detail li{font-size:14.5px;color:var(--ink-2);margin:7px 0}
+  .figure-detail .takeaway{font-size:14.5px;font-weight:700;color:var(--ink);margin:12px 0 2px;padding:10px 14px;background:var(--accent-soft);border-radius:9px}
+
+  /* ---------- callout / quote ---------- */
+  .callout{background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:16px 20px;margin:22px 0;font-size:15.5px;color:var(--ink-2)}
+  .callout .c-title{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:5px;display:block}
+  blockquote{margin:22px 0;padding:16px 20px;background:var(--surface);border-radius:12px;border:1px solid var(--line);font-size:15.5px}
+  blockquote .q-en{font-style:italic;color:var(--ink-2)}
+  blockquote .q-zh{display:block;margin-top:8px;color:var(--ink);font-weight:600}
+
+  /* ---------- details ---------- */
+  details{margin:18px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  details summary{cursor:pointer;padding:13px 18px;font-size:14.5px;font-weight:600;color:var(--ink-2);list-style:none;display:flex;gap:9px;align-items:center}
+  details summary::-webkit-details-marker{display:none}
+  details summary .tw{color:var(--accent);font-family:var(--mono);font-size:12px;transition:transform .2s}
+  details[open] summary .tw{transform:rotate(90deg)}
+  details summary .sumtag{margin-left:auto;font-weight:500;color:var(--ink-3);font-size:12px}
+  .det-body{padding:4px 18px 18px;font-size:15px;color:var(--ink-2)}
+
+  /* ---------- table ---------- */
+  .tbl-scroll{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+  th,td{padding:10px 13px;text-align:right;border-bottom:1px solid var(--line-soft)}
+  th:first-child,td:first-child{text-align:left;font-weight:600}
+  thead th{background:var(--surface-2);color:var(--ink);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td.hl{color:var(--accent);font-weight:700;font-family:var(--mono)}
+  tbody tr.glm{background:var(--accent-soft)}
+
+  /* ---------- code ---------- */
+  pre{background:#2a241d;color:#f0e9dc;border-radius:12px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65;margin:14px 0}
+  pre .k{color:#d9a679}
+  code.inline{font-family:var(--mono);font-size:.88em;background:var(--surface);padding:1.5px 6px;border-radius:5px;border:1px solid var(--line)}
+
+  /* ---------- footer ---------- */
+  footer{padding:46px 0 70px}
+  footer .fbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px}
+  footer h3{margin:0 0 12px;font-size:16px}
+  footer a{color:var(--accent);text-decoration:none;font-weight:600}
+  footer a:hover{text-decoration:underline}
+  footer .small{font-size:13px;color:var(--ink-3);margin-top:16px;line-height:1.7}
+
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+  .pill{font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+  .pill .b{color:var(--accent);font-family:var(--mono)}
+
+  @media (max-width:880px){
+    body{font-size:16px}
+    .wrap{padding:0 18px}
+    h1.title{font-size:27px}
+    h2{font-size:22px}
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    header.hero{padding:44px 0 24px}
+    nav.toc .wrap{gap:4px 13px}
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">基础模型 · 技术报告图解</div>
+    <h1 class="title">
+      GLM-4.5：统一「智能体 · 推理 · 代码」的开源基础模型
+      <span class="en">GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models</span>
+    </h1>
+    <div class="meta">
+      <span class="tag mono">2025.08</span>
+      <span class="tag">arXiv preprint · 2508.06471</span>
+      <span class="tag">Zhipu AI &amp; 清华大学</span>
+      <span class="tag">开源 · MIT License</span>
+      <a class="src-link" href="https://arxiv.org/abs/2508.06471" target="_blank" rel="noopener">阅读原文 ↗</a>
+    </div>
+    <div class="authors">GLM-4.5 Team（共 171 位作者）· 模型与代码：<a class="inline" href="https://github.com/zai-org/GLM-4.5" target="_blank" rel="noopener">github.com/zai-org/GLM-4.5</a></div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#tldr">速览</a>
+    <a href="#problem">问题</a>
+    <a href="#pretrain">预训练</a>
+    <a href="#posttrain">后训练</a>
+    <a href="#rl">RL 与基建</a>
+    <a href="#infra">slime</a>
+    <a href="#results">实验结论</a>
+  </div>
+</nav>
+
+<section id="tldr" style="border-bottom:none;padding-top:26px">
+  <div class="wrap">
+    <div class="tldr">
+      <h2>30 秒速览 · TL;DR</h2>
+      <ul>
+        <li><strong>一个模型，三种核心能力。</strong>GLM-4.5 把 <strong>Agentic（智能体）、Reasoning（推理）、Coding（代码）</strong>——作者称之为 <span class="em-term">ARC</span>——统一进同一个开源大模型，目标是一个真正的「通用问题求解器」，而不是单项偏科。</li>
+        <li><strong>MoE 架构 + 混合推理。</strong>355B 总参 / <strong>仅 32B 激活</strong>；支持 <strong>thinking 模式</strong>（复杂推理与工具调用）和 <strong>non-thinking 模式</strong>（即时回复）两种工作方式。</li>
+        <li><strong>多阶段训练 23T tokens。</strong>预训练 → 中训练（mid-training）→ 后训练（专家模型迭代 + 强化学习），并自研开源 RL 基建 <span class="em-term">slime</span>。</li>
+        <li><strong>用更少参数打到第一梯队。</strong>TAU-Bench 70.1%、AIME 24 91.0%、SWE-bench Verified 64.2%；综合排名第 3、智能体任务排名第 2，参数量却只有 DeepSeek-R1 的一半、Kimi K2 的三分之一。</li>
+        <li><strong>同时开源轻量版 GLM-4.5-Air</strong>（106B 总参 / 12B 激活），在 100B 量级里同样领先。</li>
+      </ul>
+      <div style="margin-top:18px">
+        <a class="src-link" href="https://arxiv.org/abs/2508.06471" target="_blank" rel="noopener">阅读原文 ↗</a>
+      </div>
+    </div>
+
+    <p class="oneliner">核心一句话：与其追求「样样都会」，不如把「智能体 + 推理 + 代码」当成同一个能力底座来训练——GLM-4.5 用「窄而深的 MoE + 多阶段训练 + 专家模型迭代 RL」证明了：开源模型也能在这三件最难的事上同时接近最强闭源模型。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">355B</div><div class="lab">总参数</div><div class="sub">激活 32B</div></div>
+      <div class="metric"><div class="num">23T</div><div class="lab">训练 tokens</div><div class="sub">多阶段</div></div>
+      <div class="metric"><div class="num">第 3</div><div class="lab">综合排名</div><div class="sub">智能体第 2</div></div>
+      <div class="metric"><div class="num">64.2%</div><div class="lab">SWE-bench V.</div><div class="sub">真实修 bug</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="sec-num">01 / 问题</div>
+    <h2>为什么要把「智能体、推理、代码」拧成一股绳？</h2>
+
+    <p class="lead">大模型正从「知识库」进化为「通用问题求解器」。但作者认为，要衡量一个模型是否真正通用，关键看三类彼此交织的核心能力——而过去这三件事往往被分开优化、互相牵制。</p>
+
+    <p>论文开门见山地把这三类能力定义为模型走向 AGI 的「试金石」：</p>
+    <ul>
+      <li><strong>Agentic（智能体能力）</strong>：能调用外部工具、与真实世界环境交互，比如多轮函数调用、网页浏览检索。</li>
+      <li><strong>Reasoning（复杂推理）</strong>：能在数学、科学等领域完成多步推导，答案可被客观验证。</li>
+      <li><strong>Coding（代码能力）</strong>：能解决真实软件工程任务，比如读懂一个仓库、修复 GitHub issue。</li>
+    </ul>
+
+    <blockquote>
+      <span class="q-en">"Agentic abilities for interacting with external tools and the real world; complex Reasoning for solving multi-step problems… and advanced Coding skills for tackling real-world software engineering tasks."</span>
+      <span class="q-zh">这三类能力（ARC）相互关联、缺一不可，是「真正通才」的度量标准。</span>
+    </blockquote>
+
+    <h3>已有方案卡在哪里</h3>
+    <p>最强的闭源模型（OpenAI o1/o3、Anthropic Claude Sonnet 4）确实在<strong>某一个</strong> ARC 维度上很突出——要么擅长数学推理，要么擅长改代码。但论文指出：<strong>一个在三方面同时出色的开源模型，一直是缺失的（remained elusive）。</strong>开源阵营要么偏科，要么靠堆参数取胜，参数效率不高。</p>
+
+    <p>GLM-4.5 给出的答案不是「再训一个更大的模型」，而是<strong>从架构、数据到训练范式都围绕「ARC 统一」来设计</strong>：用一个混合推理（hybrid reasoning）的 MoE 模型，既能「想清楚再答」，也能「即时回复」，并通过「先分头训练专家、再蒸馏融合」的方式把三种能力装进同一套权重。下面按论文自身的结构展开：预训练 → 后训练 → RL 基建 → 实验。</p>
+
+    <div class="callout">
+      <span class="c-title">名词卡 · 什么是混合推理（Hybrid Reasoning）？</span>
+      同一个模型提供两档「思考力度」：<strong>thinking 模式</strong>会先输出一段 <code class="inline">&lt;think&gt;…&lt;/think&gt;</code> 推理再作答，适合难题与工具调用；<strong>non-thinking 模式</strong>跳过思考直接回答，适合闲聊等需要低延迟的场景。关键挑战是让<strong>同一套权重</strong>学会两种模式，这正是后训练阶段要解决的问题。
+    </div>
+  </div>
+</section>
+<section id="pretrain">
+  <div class="wrap">
+    <div class="sec-num">02 / 预训练 &amp; 中训练</div>
+    <h2>底座怎么搭：窄而深的 MoE，加上「分阶段加料」的训练</h2>
+
+    <h3>架构：故意「窄而深」，并堆更多注意力头</h3>
+    <p>GLM-4.5 系列首次采用 <strong>MoE（混合专家）</strong>架构来提升训练与推理的计算效率，并使用 <strong>loss-free balance routing（无损均衡路由）</strong>和 <strong>sigmoid 门控</strong>。和 DeepSeek-V3、Kimi K2 不同，作者做了几个有意思的反直觉选择：</p>
+    <ul>
+      <li><strong>窄而深，而不是宽而浅。</strong>主动<strong>减小宽度</strong>（隐藏维度、路由专家数）、<strong>增加深度</strong>（层数），因为他们发现<strong>更深的模型推理能力更强</strong>。</li>
+      <li><strong>2.5 倍的注意力头。</strong>在 5120 的隐藏维度上用了 <strong>96 个注意力头</strong>。反直觉的是：更多的头<strong>并不降低训练 loss</strong>，却能<strong>持续提升 MMLU、BBH 等推理基准</strong>的表现。</li>
+      <li><strong>注意力细节：</strong>采用 <strong>分组查询注意力（GQA）+ 部分 RoPE</strong>，并加入 <strong>QK-Norm</strong> 稳定注意力 logits 的数值范围。</li>
+      <li><strong>MTP 层：</strong>为 GLM-4.5 和 Air 都加了一层 <strong>多 token 预测（MTP）</strong>，用于推理时的<strong>投机解码（speculative decoding）</strong>加速。</li>
+    </ul>
+
+    <blockquote>
+      <span class="q-en">"we reduce the width… and increase its height (number of layers), as we found that deeper models exhibited better reasoning capacity."</span>
+      <span class="q-zh">减宽增深——因为更深的模型展现出更强的推理能力。这是 GLM-4.5 架构选择的核心直觉。</span>
+    </blockquote>
+
+    <details>
+      <summary><span class="tw">▸</span> 展开：GLM-4.5 / Air 关键架构参数（对照 DeepSeek-V3 / Kimi K2）<span class="sumtag">Table 1</span></summary>
+      <div class="det-body">
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>参数</th><th>GLM-4.5</th><th>GLM-4.5-Air</th><th>DeepSeek-V3</th><th>Kimi K2</th></tr></thead>
+            <tbody>
+              <tr class="glm"><td>总参数</td><td>355B</td><td>106B</td><td>671B</td><td>1043B</td></tr>
+              <tr class="glm"><td>激活参数</td><td>32B</td><td>12B</td><td>37B</td><td>32B</td></tr>
+              <tr><td>稠密层数</td><td>3</td><td>1</td><td>3</td><td>1</td></tr>
+              <tr><td>MoE 层数</td><td>89</td><td>45</td><td>58</td><td>60</td></tr>
+              <tr><td>MTP 层数</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+              <tr><td>隐藏维度</td><td>5120</td><td>4096</td><td>7168</td><td>7168</td></tr>
+              <tr><td>注意力头数</td><td>96</td><td>96</td><td>128</td><td>64</td></tr>
+              <tr><td>KV 头数</td><td>8</td><td>8</td><td>128</td><td>64</td></tr>
+              <tr><td>专家总数</td><td>160</td><td>128</td><td>256</td><td>384</td></tr>
+              <tr><td>每 token 激活专家</td><td>8</td><td>8</td><td>8</td><td>8</td></tr>
+              <tr><td>共享专家</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+              <tr><td>QK-Norm</td><td>是</td><td>否</td><td>否</td><td>否</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:13.5px;margin:10px 0 0">注：参数统计含 MTP 层，但不含词嵌入与输出层。可见 GLM-4.5「层数多（89 MoE 层）、宽度小（5120）、头多（96）」的「窄而深」特征。</p>
+      </div>
+    </details>
+
+    <h3>数据：按来源分别清洗，按质量分桶上采样</h3>
+    <p>预训练语料来自网页、社交媒体、书籍、论文和代码仓库，每类来源都有专门的处理流程：</p>
+    <ul>
+      <li><strong>网页（占大头）：</strong>借鉴 Nemotron-CC，按<strong>质量分数分桶</strong>，高质量桶上采样、最低质量桶丢弃；最高质量桶在预训练中贡献 <strong>3.2+ 个 epoch</strong>。还用 <strong>SemDedup</strong>（基于文档向量）去掉 MinHash 去重漏掉的「模板批量生成」的相似网页。</li>
+      <li><strong>代码：</strong>分高/中/低三档质量，高质量上采样、低质量剔除；对所有源码施加 <strong>Fill-In-the-Middle（中间填空）</strong>训练目标；对代码相关网页做两阶段检索 + 精细解析以保留代码格式。</li>
+      <li><strong>多语言：</strong>结合自爬网页与 Fineweb-2，用「教育价值」质量分类器上采样高质量多语文档。</li>
+      <li><strong>数学 &amp; 科学：</strong>用 LLM 按「教育性内容比例」给候选文档打分并训练小分类器，高分文档上采样，专门增强推理底子。</li>
+    </ul>
+
+    <h3>中训练（Mid-Training）：在底座上「定向加料」</h3>
+    <p>预训练之后，作者没有直接进入后训练，而是插入若干 <strong>中训练（mid-training）</strong>阶段——用<strong>中等规模、领域专门</strong>的数据集（含指令数据）进一步拔高关键能力，并把序列长度从 4K 一路扩到 128K：</p>
+    <ul>
+      <li><strong>仓库级代码训练：</strong>把同一仓库的代码文件拼接，学习<strong>跨文件依赖</strong>；还纳入经过筛选的 GitHub issue / PR / commit（以 diff 格式组织）。序列长度 4K → <strong>32K</strong>。</li>
+      <li><strong>合成推理数据训练：</strong>收集数学、科学、编程竞赛的问答，用推理模型<strong>合成推理过程</strong>。</li>
+      <li><strong>长上下文 &amp; 智能体训练：</strong>序列长度 32K → <strong>128K</strong>，上采样长文档，并引入<strong>大规模合成智能体轨迹</strong>。</li>
+    </ul>
+
+    <figure class="fig">
+      <img src="assets/fig_pipeline.png" alt="GLM-4.5 预训练与中训练阶段流程图：从 4K 通用预训练语料逐步扩展到 128K 长上下文与智能体数据" />
+      <div class="figcap">
+        <div class="figcap-head" onclick="toggleExpand(this, event)">
+          <span class="fig-toggle">▸</span>
+          <span>图 3：GLM-4.5 的预训练 + 中训练全流程——序列长度从 4K 逐步扩展到 128K，数据从「通用」逐步聚焦到「代码 / 推理 / 长上下文智能体」。<span class="src-note">（PDF 原图裁切）</span></span>
+        </div>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左侧灰色「Pre-training」（预训练，序列长 4K）</strong>分两步：先在 <strong>General Pre-training Corpus（通用语料，15T tokens）</strong>上训练，再用 <strong>Code &amp; Reasoning Continual Pre-training Corpus（代码与推理续训语料，7T）</strong>上采样代码 / 数学 / 科学。</li>
+            <li><strong>右侧蓝/绿色「Mid-training」（中训练）</strong>分三步、序列长逐级放大：<strong>Repo-Level Code Data（仓库级代码，500B，32K）</strong> → <strong>Synthetic Reasoning Data（合成推理数据，500B，32K）</strong> → <strong>Long Context &amp; Agent Data（长上下文与智能体数据，100B，128K）</strong>。</li>
+            <li><strong>方框下方的 4K / 32K / 128K</strong> 标注的是该阶段的<strong>最大训练序列长度</strong>：能力越「高阶」（跨文件代码、长链推理、长程智能体），需要的上下文窗口越长。</li>
+            <li><strong>箭头方向 = 训练顺序</strong>：从海量通用知识打底，逐步收窄到「越来越像真实任务」的数据，是一种由粗到精的课程式安排。</li>
+            <li><strong>数量级对比</strong>：预训练是「T（万亿）」级，中训练是「B（十亿）」级——中训练不是再灌一遍大数据，而是<strong>小而精的定向增强</strong>。</li>
+          </ul>
+          <div class="takeaway">一句话总结：先用万亿级通用语料打底，再用十亿级、越来越长、越来越贴近真实任务的数据「分阶段加料」，把上下文从 4K 撑到 128K。</div>
+        </div></div>
+      </div>
+    </figure>
+
+    <h3>训练超参里的几个关键选择</h3>
+    <ul>
+      <li><strong>Muon 优化器</strong>（替代 AdamW，用于除词嵌入/bias/RMSNorm 外的所有参数）：能<strong>加速收敛、容忍更大 batch</strong>。</li>
+      <li><strong>用 cosine 衰减而非 WSD 调度。</strong>早期实验发现 WSD（warmup-stable-decay）在稳定期<strong>欠拟合</strong>，通用基准（SimpleQA、MMLU）反而更差。学习率从 0 warmup 到 2.5e-4，再衰减到 2.5e-5。</li>
+      <li><strong>batch size warmup：</strong>前 500B tokens 内从 16M 逐步增到 64M tokens。</li>
+      <li><strong>扩长上下文时调 RoPE：</strong>扩到 32K 时把 RoPE base 频率从 10,000 调到 1,000,000，改善长上下文建模。</li>
+    </ul>
+  </div>
+</section>
+<section id="posttrain">
+  <div class="wrap">
+    <div class="sec-num">03 / 后训练 · 核心贡献</div>
+    <h2>专家模型迭代：先「分头练专家」，再「蒸馏成通才」</h2>
+
+    <p class="lead">这是 GLM-4.5 把 ARC 三种能力装进同一套权重的关键。后训练被拆成两个阶段：先训出各有所长的专家模型，再把它们融合成一个混合推理通才。</p>
+
+    <ul>
+      <li><strong>阶段一 · 专家训练（Expert Training）：</strong>分别构建 <strong>推理（Reasoning）、智能体（Agent）、通用对话（General chat）</strong>三个专家模型。每个专家先用 SFT 做<strong>冷启动</strong>，再用各自领域的 RL 把能力推到上限。</li>
+      <li><strong>阶段二 · 统一训练（Unified Training）：</strong>用<strong>自蒸馏（self-distillation）</strong>把多个专家的能力整合进一个模型，最终得到既能「深思」又能「直答」的<strong>混合推理通才</strong>。</li>
+    </ul>
+
+    <figure class="fig selfsvg">
+      <div class="svgbox">
+        <svg viewBox="0 0 840 392" width="100%" role="img" aria-label="后训练两阶段流程：专家训练到统一训练" style="display:block">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#b06a43"></path>
+            </marker>
+          </defs>
+          <!-- Stage 1 label -->
+          <text x="160" y="28" text-anchor="middle" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="15" font-weight="700" fill="#262019">阶段一 · 专家训练</text>
+          <text x="160" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="11.5" fill="#897c66">Expert Training</text>
+          <!-- expert boxes -->
+          <g font-family="Inter, 'Noto Sans SC', sans-serif">
+            <rect x="26" y="62" width="268" height="74" rx="11" fill="#efe3cd" stroke="#e0d2b8" stroke-width="1.5"></rect>
+            <text x="46" y="92" font-size="15" font-weight="700" fill="#262019">推理专家 · Reasoning</text>
+            <text x="46" y="116" font-size="12" fill="#5d5446">SFT 冷启动 → 数学 / 代码 / 科学 RL</text>
+
+            <rect x="26" y="148" width="268" height="74" rx="11" fill="#efe3cd" stroke="#e0d2b8" stroke-width="1.5"></rect>
+            <text x="46" y="178" font-size="15" font-weight="700" fill="#262019">智能体专家 · Agent</text>
+            <text x="46" y="202" font-size="12" fill="#5d5446">SFT 冷启动 → 网页搜索 / 代码 Agent RL</text>
+
+            <rect x="26" y="234" width="268" height="74" rx="11" fill="#efe3cd" stroke="#e0d2b8" stroke-width="1.5"></rect>
+            <text x="46" y="264" font-size="15" font-weight="700" fill="#262019">通用对话专家 · General</text>
+            <text x="46" y="288" font-size="12" fill="#5d5446">SFT 冷启动 → 通用 RL（多源反馈）</text>
+          </g>
+          <!-- merge arrows -->
+          <path d="M300 99 C 360 99, 360 185, 408 185" fill="none" stroke="#b06a43" stroke-width="2"></path>
+          <path d="M300 185 L 404 185" fill="none" stroke="#b06a43" stroke-width="2"></path>
+          <path d="M300 271 C 360 271, 360 185, 408 185" fill="none" stroke="#b06a43" stroke-width="2" marker-end="url(#ah)"></path>
+          <text x="356" y="150" text-anchor="middle" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="12.5" font-weight="700" fill="#b06a43">SFT 自蒸馏</text>
+          <text x="356" y="167" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#897c66">self-distillation</text>
+          <!-- Stage 2 label -->
+          <text x="620" y="28" text-anchor="middle" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="15" font-weight="700" fill="#262019">阶段二 · 统一训练</text>
+          <text x="620" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="11.5" fill="#897c66">Unified Training</text>
+          <!-- unified model box -->
+          <rect x="430" y="112" width="384" height="146" rx="13" fill="#f0e0d2" stroke="#b06a43" stroke-width="1.8"></rect>
+          <text x="622" y="150" text-anchor="middle" font-family="Inter, 'Noto Sans SC', sans-serif" font-size="17" font-weight="800" fill="#262019">统一混合推理模型</text>
+          <text x="622" y="172" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#5d5446">GLM-4.5 / GLM-4.5-Air</text>
+          <g font-family="Inter, 'Noto Sans SC', sans-serif">
+            <rect x="452" y="190" width="160" height="46" rx="9" fill="#fbf6ea" stroke="#e0d2b8" stroke-width="1.3"></rect>
+            <text x="532" y="212" text-anchor="middle" font-size="13" font-weight="700" fill="#262019">thinking 模式</text>
+            <text x="532" y="228" text-anchor="middle" font-size="10.5" fill="#897c66">复杂推理 / 工具调用</text>
+            <rect x="632" y="190" width="160" height="46" rx="9" fill="#fbf6ea" stroke="#e0d2b8" stroke-width="1.3"></rect>
+            <text x="712" y="212" text-anchor="middle" font-size="13" font-weight="700" fill="#262019">non-thinking 模式</text>
+            <text x="712" y="228" text-anchor="middle" font-size="10.5" fill="#897c66">即时直接回复</text>
+          </g>
+        </svg>
+      </div>
+      <div class="figcap">
+        <div class="figcap-head" onclick="toggleExpand(this, event)">
+          <span class="fig-toggle">▸</span>
+          <span>自建示意图：后训练「专家训练 → 统一训练」两阶段流程，三个领域专家经自蒸馏融合为一个支持双模式的混合推理模型。<span class="src-note">（依据论文第 3 节文字自建）</span></span>
+        </div>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左侧三个方框 = 三个独立训练的专家</strong>：推理、智能体、通用对话。它们的共同套路都是<strong>「SFT 冷启动 → 领域专属 RL」</strong>——先用少量带长链思考的 SFT 数据给专家「点火」，再用强化学习把单项能力顶到天花板。</li>
+            <li><strong>中间橙色箭头 = 自蒸馏（self-distillation）</strong>：不是简单拼接权重，而是用各专家生成高质量回答，再让一个基座模型通过 SFT「学习这些回答」，从而把多专家能力<strong>蒸馏进同一个模型</strong>。</li>
+            <li><strong>右侧大框 = 最终的统一模型</strong>：同时得到 GLM-4.5 与 GLM-4.5-Air。</li>
+            <li><strong>框内两个小标签 = 两种工作模式</strong>：通过在 SFT 中<strong>混合「有思考过程」与「无思考过程」的数据</strong>，同一套权重学会按需切换 <span class="em-term">thinking</span>（先想后答）与 <span class="em-term">non-thinking</span>（即时回复）。</li>
+            <li><strong>为什么要这么绕？</strong>直接在一个模型上同时训三种能力容易互相干扰；先分头练到极致、再融合，既保住了单项峰值，又得到了一个通才。</li>
+          </ul>
+          <div class="takeaway">一句话总结：分头把每种能力练到顶，再用自蒸馏「合体」，最终长出一个可在「深思 / 直答」之间切换的通才模型。</div>
+        </div></div>
+      </div>
+    </figure>
+
+    <h3>SFT 阶段的几个实用技巧</h3>
+    <ul>
+      <li><strong>冷启动 + Overall SFT：</strong>冷启动用少量长 CoT 数据给每个专家打底；Overall SFT 则从各专家收集<strong>数百万样本</strong>（推理、通用对话、智能体、长上下文），在 128K 上下文下训练，并<strong>刻意平衡「带完整推理」与「不带思考过程」的数据</strong>，从而炼成混合推理模型。</li>
+      <li><strong>函数调用模板减少转义：</strong>当函数参数里含代码时，JSON 格式会逼模型生成大量转义字符、加重学习负担。作者改用 <strong>XML 风格的特殊 token 标签</strong>包裹键值，让绝大多数代码能以原生形式书写——既减少转义，又不损害函数调用的执行性能。</li>
+      <li><strong>拒绝采样多级过滤：</strong>从专家采样时，过滤掉重复/过短/截断/格式不合规的样本，对客观题做正确性校验，对主观题用奖励模型筛选，对工具调用校验是否到达预期终止状态。</li>
+      <li><strong>难 prompt 优先 + 回答扩增：</strong>去掉「回答长度最短 50%」的简单 prompt，数学/科学反而提升 2%–4%（数据只用一半）；对这些难 prompt 每条生成 4 个回答，再额外提升 1%–2%。</li>
+      <li><strong>智能体 SFT 数据全自动构造（四步）：</strong>① 收集智能体框架与真实工具 / MCP server；② 自动合成任务；③ 用 LLM（含用户模拟器）生成多轮工具调用轨迹；④ 多个评审 agent 过滤，只保留成功轨迹。</li>
+    </ul>
+
+    <details>
+      <summary><span class="tw">▸</span> 展开：XML 风格函数调用模板示例（论文图 4）<span class="sumtag">代码 · 9+ 行</span></summary>
+      <div class="det-body">
+        <p>键值用 <code class="inline">&lt;arg_key&gt;</code> / <code class="inline">&lt;arg_value&gt;</code> 标签包裹，参数里的代码无需大量转义：</p>
+<pre><span class="k">&lt;tool_call&gt;</span>get_weather
+<span class="k">&lt;arg_key&gt;</span>city<span class="k">&lt;/arg_key&gt;</span>
+<span class="k">&lt;arg_value&gt;</span>Beijing<span class="k">&lt;/arg_value&gt;</span>
+<span class="k">&lt;arg_key&gt;</span>date<span class="k">&lt;/arg_key&gt;</span>
+<span class="k">&lt;arg_value&gt;</span>2024-06-27<span class="k">&lt;/arg_value&gt;</span>
+<span class="k">&lt;/tool_call&gt;</span>
+<span class="k">&lt;observation&gt;</span>
+<span class="k">&lt;tool_response&gt;</span>
+{"city": "Beijing", "date": "2024-06-27", "weather": "Sunny", "temperature": "26C"}
+<span class="k">&lt;/tool_response&gt;</span></pre>
+        <p style="font-size:13.5px;margin-bottom:0">对话角色用 <code class="inline">&lt;|system|&gt;</code>、<code class="inline">&lt;|user|&gt;</code>、<code class="inline">&lt;|assistant|&gt;</code>、<code class="inline">&lt;|observation|&gt;</code> 等特殊 token 标记；思考过程包在 <code class="inline">&lt;think&gt;…&lt;/think&gt;</code> 内。</p>
+      </div>
+    </details>
+  </div>
+</section>
+<section id="rl">
+  <div class="wrap">
+    <div class="sec-num">04 / 强化学习</div>
+    <h2>RL：把推理、智能体、通用三条线分别顶到上限</h2>
+
+    <p class="lead">GLM-4.5 的 RL 整体基于 <strong>GRPO 框架（去掉 KL 损失项）</strong>。论文按能力类型把 RL 拆成三块，每块都有针对性的「踩坑经验」。注意：以下许多对比曲线来自<strong>更小的实验模型</strong>，便于快速消融。</p>
+
+    <h3>推理 RL（Reasoning RL）</h3>
+    <p>推理任务的特点是<strong>奖励信号高度精确</strong>——对错往往能用程序客观判定。作者发展了一套专门技巧：</p>
+    <ul>
+      <li><strong>两阶段难度课程（Difficulty-based Curriculum）：</strong>RL 中模型能力在变，静态数据会失配——太简单全得 1 分、太难全得 0 分，都<strong>没有奖励方差、没有梯度信号</strong>。于是先用中等难度数据，第二阶段切到「极难」题（pass@8=0 但 pass@512&gt;0），让模型持续突破天花板。第二阶段题目<strong>全部来自已验证正确答案的池子</strong>以保证信噪比。</li>
+      <li><strong>直接在 64K 输出长度做单阶段 RL：</strong>与「逐步增大输出长度」的多阶段做法相反，作者发现多阶段会让模型<strong>「遗忘」长上下文能力</strong>、平均输出变短，造成不可逆的性能下跌；直接在目标长度 64K 上做单阶段 RL 反而持续向上。</li>
+      <li><strong>动态采样温度：</strong>温度太低探索不足、太高引入噪声。当奖励趋于稳定（进入收敛期）时<strong>提高温度</strong>鼓励多样性；并定期在验证集上跨温度评测，把下一阶段温度设为「不会让性能下跌超过 1%」的最大值。</li>
+      <li><strong>代码 RL 用 token 加权平均损失：</strong>相比序列平均损失，token 加权能给出<strong>更细粒度、更稳定的梯度</strong>，收敛更快，还能缓解长度偏置、抑制「base case」式偷懒回答。</li>
+      <li><strong>科学 RL 数据质量压倒数量：</strong>在 GPQA-Diamond 上，只用<strong>专家验证过的高质量选择题</strong>训练，明显优于混入低质量/未验证数据。</li>
+    </ul>
+
+    <div class="callout">
+      <span class="c-title">直觉卡 · 为什么「全对」和「全错」都是坏事？</span>
+      GRPO 这类方法靠「同一题的多个回答之间的<strong>奖励差异</strong>」来更新模型。如果一批回答<strong>全得满分或全得零分</strong>，组内没有高下之分，梯度信号≈0，训练就「空转」。难度课程的本质，就是始终把模型放在「会一点、又不全会」的甜区。
+    </div>
+
+    <h3>智能体 RL（Agentic RL）</h3>
+    <p>作者把重心放在<strong>网页搜索</strong>与<strong>代码生成</strong>两类智能体上，因为它们的每一步动作或最终答案都能<strong>自动校验</strong>，从而提供密集可靠的奖励，便于把 RL 规模做大。</p>
+    <ul>
+      <li><strong>数据合成：</strong>网页搜索任务用「知识图谱多跳推理自动合成」+「人在环路抽取并选择性混淆网页内容」两条路构造需要多源多步推理的难题；软件工程任务则从大量 GitHub PR / issue 构造「带可执行单测」的真实开发任务，并在<strong>强隔离的分布式沙箱</strong>里评测。</li>
+      <li><strong>奖励设计：</strong>网页搜索用最终答案准确率作为整条轨迹的奖励；代码 agent 主要用带可验证测试用例的 SWE 数据。额外加<strong>「过程动作格式惩罚」</strong>：一旦工具调用格式出错，立即中止该轨迹并给 0 奖励。</li>
+      <li><strong>迭代自蒸馏：</strong>智能体 RL 很耗时，于是先 RL 提升、达到平台期后用 RL 模型的回答<strong>替换冷启动数据</strong>得到更强的 SFT 模型，再继续 RL 并逐步加难——循环往复地推高上限。</li>
+      <li><strong>用交互轮数做测试时扩展：</strong>不同于推理模型「拉长输出 token」，智能体靠<strong>持续与环境交互</strong>（反复搜索、写测试自检自纠）来使用更多测试时算力；论文显示随浏览预算增加，BrowseComp 准确率平滑上升。</li>
+    </ul>
+
+    <h3>通用 RL（General RL）</h3>
+    <p>作为后训练的收尾，通用 RL 用<strong>多源反馈</strong>整体打磨：规则反馈（精确）、人类反馈 RLHF（细腻判断）、模型反馈 RLAIF（可扩展）三者融合。它包含：</p>
+    <ul>
+      <li><strong>Holistic RL（全面 RL）：</strong>构建约 5,000 条覆盖 7 大类 / 33 中类 / 139 小类的均衡 prompt 集，奖励来自人类偏好奖励模型 + 模型打分。</li>
+      <li><strong>指令遵循 RL：</strong>建立 7 大类 / 151 小类的约束分类法，用「确定性规则 + 奖励模型 + 批评模型」的混合反馈对抗 reward hacking；约 1,000 步内未见明显作弊，SysBench 稳步提升。</li>
+      <li><strong>函数调用 RL：</strong>分为<strong>分步规则 RL</strong>（每步比对 ground-truth 函数调用，名称 / 参数 / 字段完全匹配且格式正确才给 1 分）与<strong>端到端多轮 RL</strong>（先生成完整轨迹，再按任务是否完成给奖励，支持单轮多步 / 多轮多步任务）。</li>
+      <li><strong>Pathology RL（病态行为 RL）：</strong>专门针对语言混杂、过度重复、格式错误等低发生率（常&lt;1% 输出）问题，挑选最易触发的 prompt 做高效惩罚，压低残余错误率。</li>
+    </ul>
+
+    <details>
+      <summary><span class="tw">▸</span> 展开：智能体 RL 的目标函数与「只优化模型生成 token」<span class="sumtag">公式</span></summary>
+      <div class="det-body">
+        <p>对每个问题 x，从旧策略采样 K 条轨迹，按「相对组内平均奖励」的优势来优化（组级策略优化）：</p>
+<pre>L_RL(θ) = E_{x~D} [ (1/K) Σ_i ( r(x, y_i) − r̄(x) ) ]
+其中 r̄(x) = (1/K) Σ_i r(x, y_i)  // 组内平均奖励</pre>
+        <p style="margin-bottom:0">关键细节：<strong>只有模型生成的 token 参与优化，环境反馈（工具返回内容）不计入损失</strong>——避免模型去「拟合」自己无法控制的环境输出。</p>
+      </div>
+    </details>
+  </div>
+</section>
+<section id="infra">
+  <div class="wrap">
+    <div class="sec-num">05 / RL 基础设施</div>
+    <h2>slime：让长程智能体 RL 不再「卡在最慢的那条轨迹」</h2>
+
+    <p class="lead">大规模智能体 RL 的最大瓶颈是<strong>数据生成（rollout）效率</strong>：智能体要和复杂环境长时间交互，轨迹长短不一，同步训练时整条流水线会被最慢的 rollout 拖死。GLM-4.5 的 RL 跑在自研开源框架 <span class="em-term">slime</span>（<a class="inline" href="https://github.com/THUDM/slime" target="_blank" rel="noopener">THUDM/slime</a>）上。</p>
+
+    <figure class="fig">
+      <img src="assets/fig_slime.png" alt="slime RL 基础设施总览：Data Buffer、Megatron 训练、SGLang Router 与多个 SGLang server 之间的数据流" />
+      <div class="figcap">
+        <div class="figcap-head" onclick="toggleExpand(this, event)">
+          <span class="fig-toggle">▸</span>
+          <span>图 10：slime 三大模块——训练（Megatron）、推理 rollout（SGLang + Router）、数据缓冲（Data Buffer）——之间的数据与参数流动。<span class="src-note">（PDF 提取原图）</span></span>
+        </div>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>data buffer（数据缓冲，左上）</strong>是「桥梁」：负责 prompt 初始化、自定义数据、以及 rollout 生成策略；它向训练端发送训练数据（<em>send train data</em>），并与「自定义 rollout 生成」交换初始 prompt 与自定义数据。</li>
+            <li><strong>megatron（左下，蓝色 GPU 组）= 训练模块</strong>：执行主训练过程，从 data buffer 读数据；训练后把<strong>更新的权重同步</strong>给 rollout 端（<em>update weights from distributed/tensor</em>）。</li>
+            <li><strong>sglang router + sglang server（右侧，绿色 GPU 组）= 推理 / rollout 模块</strong>：由 router 把请求分发到多个 SGLang server，它们负责<strong>生成新数据（含奖励与 verifier 输出）</strong>并写回 data buffer。</li>
+            <li><strong>蓝色 vs 绿色 GPU = 训练与推理资源解耦</strong>：两组 GPU 可放同机（colocated）也可分开（disaggregated），由 Ray 灵活调度。</li>
+            <li><strong>箭头形成闭环</strong>：buffer →（训练数据）→ megatron →（同步权重）→ sglang →（新轨迹+奖励）→ buffer，构成「生成—训练—再生成」的 RL 循环。</li>
+          </ul>
+          <div class="takeaway">一句话总结：把「训练」和「生成数据」拆成两套可独立调度的 GPU 引擎，用 data buffer 解耦二者，从而让长短不一的智能体轨迹不再阻塞整条训练流水线。</div>
+        </div></div>
+      </div>
+    </figure>
+
+    <h3>三个关键工程设计</h3>
+    <ul>
+      <li><strong>同步 / 异步两种模式可切换：</strong>推理类任务（数学、代码）用<strong>同机同步</strong>模式 + 动态采样，最大化 GPU 利用率；智能体任务（如 SWE）数据生成慢、交互复杂，改用<strong>分离式异步</strong>模式——rollout 引擎直接对接 agent 环境，与训练 GPU 独立调度，<strong>不被训练周期拖停</strong>。</li>
+      <li><strong>混合精度 rollout：</strong>训练用 <strong>BF16</strong>，推理 rollout 用 <strong>FP8</strong>——每次策略更新前对参数做在线、分块 FP8 量化，显著提升数据收集吞吐。</li>
+      <li><strong>面向 agent 的解耦设计：</strong>用高并发 <strong>Docker</strong> 为每个任务提供隔离环境；用<strong>统一 HTTP 端点 + 中心化数据池</strong>把「各式各样的 agent 框架」与训练过程解耦——大多数框架输出 message-list 格式，统一存入数据池供训练取用，从而无缝接入异构 agent 框架。</li>
+    </ul>
+  </div>
+</section>
+<section id="results">
+  <div class="wrap">
+    <div class="sec-num">06 / 实验结论</div>
+    <h2>用「一半的参数」打进第一梯队</h2>
+
+    <p class="lead">在覆盖 ARC 三类能力的 12 个标准基准上，GLM-4.5 综合排名<strong>第 3</strong>（仅次于头部闭源模型），智能体任务<strong>第 2</strong>（仅次于 OpenAI o3），代码任务第 3（紧追 Claude Sonnet 4）；GLM-4.5-Air 综合第 6。而它的参数量只有 DeepSeek-R1 的一半、Kimi K2 的三分之一。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">70.1%</div><div class="lab">TAU-Bench</div><div class="sub">智能体</div></div>
+      <div class="metric"><div class="num">77.8%</div><div class="lab">BFCL v3</div><div class="sub">函数调用</div></div>
+      <div class="metric"><div class="num">91.0%</div><div class="lab">AIME 24</div><div class="sub">数学推理</div></div>
+      <div class="metric"><div class="num">79.1%</div><div class="lab">GPQA</div><div class="sub">科学推理</div></div>
+      <div class="metric"><div class="num">72.9%</div><div class="lab">LiveCodeBench</div><div class="sub">2407-2501</div></div>
+      <div class="metric"><div class="num">64.2%</div><div class="lab">SWE-bench V.</div><div class="sub">真实修 bug</div></div>
+      <div class="metric"><div class="num">37.5%</div><div class="lab">Terminal-Bench</div><div class="sub">终端任务</div></div>
+      <div class="metric"><div class="num">26.4%</div><div class="lab">BrowseComp</div><div class="sub">网页浏览</div></div>
+    </div>
+
+    <p>分项亮点（均来自论文表 3–5）：</p>
+    <ul>
+      <li><strong>智能体：</strong>TAU-Bench 与 Claude Sonnet 4 同档，优于 Gemini 2.5 Pro；BFCL v3 取得基线中最佳；BrowseComp 26.4% 明显高于 Claude Opus 4（18.8%）、接近 o4-mini-high。</li>
+      <li><strong>推理：</strong>AIME 24（91.0%）与 SciCode 上<strong>超过 OpenAI o3</strong>；平均推理表现超过 Claude Opus 4、接近 DeepSeek-R1-0528。</li>
+      <li><strong>代码：</strong>SWE-bench Verified 上优于 GPT-4.1 与 Gemini-2.5-Pro；Terminal-Bench 上优于 Claude Sonnet 4；综合是 Claude Sonnet 4 在代码上最有力的竞争者。</li>
+      <li><strong>真实编程对战（CC-Bench）：</strong>对 Qwen3-Coder <strong>80.8% 胜率</strong>，对 Kimi K2 53.9% 胜率，对 Claude Sonnet 4 互有胜负；工具调用成功率 <strong>90.6%</strong> 为参评最高。</li>
+    </ul>
+
+    <details>
+      <summary><span class="tw">▸</span> 展开：推理基准完整对照表<span class="sumtag">Table 4</span></summary>
+      <div class="det-body">
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>基准</th><th>GLM-4.5</th><th>GLM-4.5-Air</th><th>o3</th><th>Claude Opus 4</th><th>Gemini 2.5 Pro</th><th>DeepSeek R1-0528</th></tr></thead>
+            <tbody>
+              <tr><td>MMLU-Pro</td><td class="hl">84.6</td><td>81.4</td><td>85.3</td><td>87.3</td><td>86.2</td><td>84.9</td></tr>
+              <tr><td>AIME 24</td><td class="hl">91.0</td><td>89.4</td><td>90.3</td><td>75.7</td><td>88.7</td><td>89.3</td></tr>
+              <tr><td>MATH 500</td><td class="hl">98.2</td><td>98.1</td><td>99.2</td><td>98.2</td><td>96.7</td><td>98.3</td></tr>
+              <tr><td>SciCode</td><td class="hl">41.7</td><td>37.3</td><td>41.0</td><td>39.8</td><td>42.8</td><td>40.3</td></tr>
+              <tr><td>GPQA</td><td class="hl">79.1</td><td>75.0</td><td>82.7</td><td>79.6</td><td>84.4</td><td>81.3</td></tr>
+              <tr><td>HLE</td><td class="hl">14.4</td><td>10.6</td><td>20.0</td><td>11.7</td><td>21.1</td><td>14.9</td></tr>
+              <tr><td>LCB</td><td class="hl">72.9</td><td>70.7</td><td>78.4</td><td>63.6</td><td>80.1</td><td>77.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="tw">▸</span> 展开：智能体 &amp; 代码基准对照表<span class="sumtag">Table 3 &amp; 5</span></summary>
+      <div class="det-body">
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>基准</th><th>GLM-4.5</th><th>GLM-4.5-Air</th><th>o3</th><th>Claude Sonnet 4</th><th>Claude Opus 4</th><th>Kimi K2</th></tr></thead>
+            <tbody>
+              <tr><td>TAU-Retail</td><td class="hl">79.7</td><td>77.9</td><td>70.4</td><td>80.5</td><td>81.4</td><td>73.9</td></tr>
+              <tr><td>TAU-Airline</td><td class="hl">60.4</td><td>60.8</td><td>52.0</td><td>60.0</td><td>59.6</td><td>51.2</td></tr>
+              <tr><td>BFCL v3</td><td class="hl">77.8</td><td>76.4</td><td>72.4</td><td>75.2</td><td>74.4</td><td>71.1</td></tr>
+              <tr><td>BrowseComp</td><td class="hl">26.4</td><td>21.3</td><td>49.7</td><td>14.7</td><td>18.8</td><td>7.9</td></tr>
+              <tr><td>SWE-bench Verified</td><td class="hl">64.2</td><td>57.6</td><td>69.1</td><td>70.4</td><td>67.8</td><td>65.4</td></tr>
+              <tr><td>Terminal-Bench</td><td class="hl">37.5</td><td>30.0</td><td>30.2</td><td>35.5</td><td>43.2</td><td>25.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:13px;margin:10px 0 0">SWE-bench Verified 用 OpenHands v0.34.0 评测（temperature=0.6, top_p=1.0，限 100 轮）。BrowseComp 上 OpenAI o3 一骑绝尘，但 GLM-4.5 仍显著优于多数模型。</p>
+      </div>
+    </details>
+
+    <h3>一句话结论</h3>
+    <blockquote>
+      <span class="q-en">"GLM-4.5 excels at reasoning, coding, and agentic tasks, ranked in 3rd place globally among open-source and proprietary models."</span>
+      <span class="q-zh">GLM-4.5 在推理、代码、智能体三类任务上俱佳，在所有开源与闭源模型中综合排名第 3——并以开源、参数高效的姿态证明了「ARC 统一」这条路走得通。</span>
+    </blockquote>
+
+    <div class="pill-row">
+      <span class="pill">综合排名 <span class="b">第 3</span></span>
+      <span class="pill">智能体 <span class="b">第 2</span></span>
+      <span class="pill">参数效率 <span class="b">≈DeepSeek-R1 的 1/2</span></span>
+      <span class="pill">开源 <span class="b">MIT</span></span>
+      <span class="pill">轻量版 <span class="b">GLM-4.5-Air 106B</span></span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fbox">
+      <h3>原文与资源</h3>
+      <p style="margin:6px 0">
+        论文：<a href="https://arxiv.org/abs/2508.06471" target="_blank" rel="noopener">GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models</a>（arXiv:2508.06471，GLM-4.5 Team · Zhipu AI &amp; 清华大学，2025.08）
+      </p>
+      <p style="margin:6px 0">
+        代码与模型：<a href="https://github.com/zai-org/GLM-4.5" target="_blank" rel="noopener">github.com/zai-org/GLM-4.5</a>　·　RL 框架：<a href="https://github.com/THUDM/slime" target="_blank" rel="noopener">github.com/THUDM/slime</a>　·　评测工具：<a href="https://github.com/zai-org/glm-simple-evals" target="_blank" rel="noopener">glm-simple-evals</a>
+      </p>
+      <p class="small">
+        本页为帮助理解论文而制作的中文图解（非官方）。图 3（预训练/中训练流程）与图 10（slime 架构）均提取自论文 PDF 原图；后训练「专家训练 → 统一训练」流程图为依据论文第 3 节文字自建的示意图。所有数值引自论文摘要、正文与表 1–5，若有出入请以原文为准。
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function toggleExpand(headEl, event){
+    if(event){ event.stopPropagation(); }
+    var card = headEl.parentElement;
+    card.classList.toggle('active');
+  }
+</script>
+</body>
+</html>

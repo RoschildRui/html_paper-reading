@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Seedance 2.0：统一的原生视频生成与编辑基础模型 · 可视化精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --surface:#f5ecd9;
+    --surface-2:#efe2c9;
+    --surface-3:#e9dabd;
+    --border:#e3d4b6;
+    --border-strong:#d6c39d;
+    --ink:#2c2820;
+    --ink-soft:#6a6051;
+    --ink-faint:#8c8270;
+    --accent:#c0673a;
+    --accent-soft:#f0d8c5;
+    --good:#5d7a4f;
+    --maxw:920px;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    line-height:1.75;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code,.mono{font-family:"JetBrains Mono",monospace;font-size:.86em;}
+
+  /* ---------- header ---------- */
+  header.hero{
+    background:linear-gradient(180deg,#f7eedb 0%,var(--bg) 100%);
+    border-bottom:1px solid var(--border);
+    padding:46px 0 30px;
+  }
+  .eyebrow{
+    font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;margin-bottom:14px;
+  }
+  h1.title{
+    font-size:34px;line-height:1.28;margin:0 0 10px;font-weight:700;letter-spacing:-.01em;
+  }
+  .subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 20px;font-weight:500;}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px;}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--surface);border:1px solid var(--border-strong);
+    border-radius:999px;padding:5px 13px;font-size:13.5px;color:var(--ink-soft);
+  }
+  .chip strong{color:var(--ink);font-weight:600;}
+  .src-link{
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--accent);color:#fff;border-radius:999px;
+    padding:7px 16px;font-size:14px;font-weight:600;
+  }
+  .src-link:hover{background:#a8552d;text-decoration:none;}
+
+  /* ---------- nav ---------- */
+  nav.toc{
+    position:sticky;top:0;z-index:30;
+    background:rgba(251,246,234,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:9px;padding-bottom:9px;}
+  nav.toc a{
+    white-space:nowrap;font-size:13.5px;color:var(--ink-soft);
+    padding:5px 11px;border-radius:8px;font-weight:500;
+  }
+  nav.toc a:hover{background:var(--surface-2);text-decoration:none;color:var(--ink);}
+
+  /* ---------- sections ---------- */
+  section{padding:40px 0 8px;}
+  section > .wrap > h2{
+    font-size:25px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em;
+    display:flex;align-items:baseline;gap:11px;
+  }
+  .sec-num{
+    font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--accent);
+    font-weight:500;
+  }
+  .sec-lead{color:var(--ink-soft);font-size:15.5px;margin:0 0 22px;}
+  p{margin:0 0 17px;}
+  strong{font-weight:600;color:var(--ink);}
+  .em{color:var(--accent);font-weight:600;}
+  ul.clean{margin:0 0 18px;padding-left:0;list-style:none;}
+  ul.clean li{position:relative;padding-left:22px;margin-bottom:10px;}
+  ul.clean li::before{
+    content:"";position:absolute;left:4px;top:11px;width:6px;height:6px;
+    border-radius:50%;background:var(--accent);opacity:.7;
+  }
+
+  /* ---------- tldr ---------- */
+  .tldr{
+    background:var(--surface);border:1px solid var(--border-strong);
+    border-radius:var(--radius);padding:24px 26px;margin:6px 0 4px;
+    box-shadow:0 1px 0 #fff inset;
+  }
+  .tldr h3{margin:0 0 12px;font-size:15px;letter-spacing:.04em;color:var(--accent);text-transform:uppercase;}
+  .tldr p{margin:0 0 12px;font-size:17px;}
+  .tldr p:last-child{margin:0;}
+
+  /* ---------- key idea band ---------- */
+  .idea{
+    border-left:3px solid var(--accent);
+    background:var(--surface-2);
+    padding:16px 20px;border-radius:0 10px 10px 0;margin:4px 0 22px;
+  }
+  .idea .q{font-size:18px;font-weight:600;line-height:1.6;}
+  .idea .qt{color:var(--ink-soft);font-size:14.5px;margin-top:6px;}
+
+  /* ---------- cards (expandable) ---------- */
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;margin-bottom:14px;overflow:hidden;
+  }
+  .card-head{
+    padding:15px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;
+    user-select:none;
+  }
+  .card-head:hover{background:var(--surface-2);}
+  .card-head .ico{font-size:19px;line-height:1.4;flex-shrink:0;}
+  .card-head .ct{flex:1;}
+  .card-head .ct .cn{font-weight:600;font-size:16.5px;}
+  .card-head .ct .cs{color:var(--ink-faint);font-size:13.5px;margin-top:2px;}
+  .card-head .arr{color:var(--ink-faint);transition:transform .25s;margin-top:2px;}
+  .card.open .card-head .arr{transform:rotate(90deg);}
+  .card-body{
+    max-height:0;overflow:hidden;transition:max-height .35s ease;
+    padding:0 18px;
+  }
+  .card.open .card-body{max-height:900px;}
+  .card-body-inner{padding:2px 0 18px;border-top:1px solid var(--border);margin-top:0;}
+  .card-body-inner p{font-size:15.5px;margin:14px 0 0;}
+  .card-body-inner p:first-child{margin-top:14px;}
+
+  /* ---------- figure ---------- */
+  figure.fig{margin:6px 0 8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  figure.fig img{width:100%;height:auto;border-radius:8px;display:block;border:1px solid var(--border);}
+  .figcap{font-size:13.5px;color:var(--ink-soft);margin-top:11px;line-height:1.6;}
+  .fig-toggle{
+    display:inline-block;margin-top:10px;color:var(--accent);font-size:14px;
+    font-weight:600;cursor:pointer;user-select:none;
+  }
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+  .figure-detail.active{max-height:1400px;}
+  .figure-detail .fdi{
+    margin-top:13px;padding-top:14px;border-top:1px dashed var(--border-strong);
+    font-size:14.5px;color:var(--ink-soft);
+  }
+  .figure-detail .fdi ol{margin:0;padding-left:20px;}
+  .figure-detail .fdi li{margin-bottom:9px;}
+  .figure-detail .fdi b{color:var(--ink);}
+
+  /* ---------- pipeline schematic ---------- */
+  .schem{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:22px 18px;margin:6px 0 10px;
+  }
+  .schem .lane{display:flex;align-items:stretch;gap:14px;flex-wrap:wrap;justify-content:center;}
+  .node{
+    background:var(--bg);border:1px solid var(--border-strong);border-radius:10px;
+    padding:13px 15px;min-width:130px;text-align:center;flex:1;
+  }
+  .node .nh{font-weight:600;font-size:14.5px;}
+  .node .nd{font-size:12.5px;color:var(--ink-faint);margin-top:3px;line-height:1.45;}
+  .node.in{background:var(--surface-2);}
+  .node.core{
+    background:var(--accent);color:#fff;border-color:#a8552d;min-width:220px;flex:1.4;
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  .node.core .nh{font-size:16px;}
+  .node.core .nd{color:#f6e3d6;}
+  .node.out{background:var(--surface-2);}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;font-weight:700;}
+  .schem-cap{font-size:13px;color:var(--ink-faint);text-align:center;margin-top:14px;}
+  @media(max-width:680px){
+    .schem .lane{flex-direction:column;}
+    .arrow{transform:rotate(90deg);height:18px;}
+  }
+
+  /* ---------- metric cards + tabs ---------- */
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .tab-btn{
+    background:var(--surface);border:1px solid var(--border-strong);
+    border-radius:9px;padding:8px 16px;font-size:14px;font-weight:600;
+    color:var(--ink-soft);cursor:pointer;font-family:inherit;
+  }
+  .tab-btn.active{background:var(--accent);color:#fff;border-color:#a8552d;}
+  .tab-panel{display:none;}
+  .tab-panel.show{display:block;animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .metric{
+    background:var(--surface);border:1px solid var(--border);border-radius:11px;
+    padding:16px;text-align:center;
+  }
+  .metric .mv{font-size:27px;font-weight:700;color:var(--ink);line-height:1.1;font-family:"JetBrains Mono",monospace;}
+  .metric .mv .u{font-size:14px;color:var(--ink-faint);font-weight:500;}
+  .metric .ml{font-size:13px;color:var(--ink-soft);margin-top:6px;}
+  .metric .msub{font-size:11.5px;color:var(--good);margin-top:4px;font-weight:600;}
+  .panel-note{font-size:14px;color:var(--ink-soft);margin-top:14px;}
+  @media(max-width:680px){.mgrid{grid-template-columns:repeat(2,1fr);}}
+
+  /* ---------- task taxonomy ---------- */
+  .taxo{display:grid;grid-template-columns:repeat(2,1fr);gap:13px;}
+  .taxo .tcard{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 17px;}
+  .taxo .tcard h4{margin:0 0 8px;font-size:15.5px;display:flex;align-items:center;gap:8px;}
+  .taxo .tcard .tg{font-size:12px;color:#fff;background:var(--accent);border-radius:6px;padding:2px 7px;font-weight:600;}
+  .taxo .tcard ul{margin:0;padding-left:18px;font-size:14px;color:var(--ink-soft);}
+  .taxo .tcard ul li{margin-bottom:5px;}
+  @media(max-width:680px){.taxo{grid-template-columns:1fr;}}
+
+  /* ---------- callout ---------- */
+  .callout{
+    background:var(--surface-2);border:1px solid var(--border-strong);
+    border-radius:11px;padding:16px 19px;margin:6px 0 18px;
+  }
+  .callout .ch{font-weight:600;font-size:15px;margin-bottom:7px;display:flex;align-items:center;gap:8px;}
+  .callout p{font-size:14.5px;margin:0;color:var(--ink-soft);}
+
+  details.raw{
+    background:var(--surface);border:1px solid var(--border);border-radius:11px;
+    padding:0 18px;margin-bottom:16px;
+  }
+  details.raw summary{
+    cursor:pointer;padding:15px 0;font-weight:600;font-size:15.5px;list-style:none;
+  }
+  details.raw summary::-webkit-details-marker{display:none;}
+  details.raw summary .ss{display:block;font-weight:400;font-size:13px;color:var(--ink-faint);margin-top:3px;}
+  details.raw[open] summary{border-bottom:1px solid var(--border);}
+  details.raw .rb{padding:14px 0 18px;font-size:14.5px;color:var(--ink-soft);}
+  details.raw .rb p{margin:0 0 11px;}
+  details.raw .rb p:last-child{margin:0;}
+
+  /* ---------- footer ---------- */
+  footer{
+    margin-top:50px;border-top:1px solid var(--border);
+    background:var(--surface);padding:30px 0 44px;
+  }
+  footer .wrap{font-size:14px;color:var(--ink-soft);}
+  footer .fl{margin-bottom:8px;}
+  footer a{font-weight:600;}
+
+  @media(max-width:880px){
+    body{font-size:16px;}
+    h1.title{font-size:27px;}
+    section > .wrap > h2{font-size:21px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">ByteDance Seed · 视频基础模型</div>
+    <h1 class="title">Seedance 2.0：统一的原生多模态视频生成与编辑模型</h1>
+    <p class="subtitle">Advancing Video Generation for World Complexity —— 把「生成短片段」推进到「可控、原生、音画一体的多模态合成」</p>
+    <div class="meta-row">
+      <span class="chip">📅 发表 <strong>2026-04</strong></span>
+      <span class="chip">📄 <strong>arXiv preprint</strong></span>
+      <span class="chip">🏢 <strong>ByteDance Seed</strong></span>
+      <span class="chip">🆔 <strong>doubao-seedance-2-0-260128</strong></span>
+      <a class="src-link" href="https://arxiv.org/abs/2604.14148" target="_blank" rel="noopener">阅读原文 / arXiv ↗</a>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#tldr">TL;DR</a>
+    <a href="#problem">① 要解决什么</a>
+    <a href="#method">② 统一框架</a>
+    <a href="#tasks">③ 能力图谱</a>
+    <a href="#bench">④ 评测体系</a>
+    <a href="#results">⑤ 实验结论</a>
+    <a href="#showcase">⑥ 定性示例</a>
+    <a href="#notes">⑦ 取舍与局限</a>
+  </div>
+</nav>
+
+<!-- ===================== TL;DR ===================== -->
+<section id="tldr">
+  <div class="wrap">
+    <div class="tldr">
+      <h3>30 秒看懂</h3>
+      <p><strong>Seedance 2.0</strong> 是字节跳动 Seed 团队的<strong>原生多模态音视频联合生成模型</strong>（2026 年 2 月初在国内上线）。它用<strong>一套统一、高效、大规模的架构</strong>，同时接受 <span class="em">文本 / 图像 / 音频 / 视频</span> 四种输入，原生输出<strong>带双声道音频的 4–15 秒、480p/720p 视频</strong>。</p>
+      <p>它把业界最全的一套<strong>多模态参考 + 编辑能力</strong>（主体、动作、风格、特效参考；编辑；续写延展；组合任务）收进同一个模型，并配套升级的评测基准 <strong>SeedVideoBench 2.0</strong>。在 Arena.AI 社区盲评中，文生视频与图生视频均排名 <span class="em">#1</span>（Elo 1450 / 1449）；在 SeedVideoBench 2.0 的 T2V/I2V/R2V 各项维度上全面领先。</p>
+      <p style="font-size:14.5px;color:var(--ink-soft);">⚠️ 这是一份偏「能力 + 评测」的技术报告：详述模型能做什么、评测怎么设计、结果如何，但<strong>未公开内部网络结构与训练细节</strong>。本文中的架构示意图为依据原文文字描述自制，仅表达「输入→统一模型→音视频输出」的概念关系，不代表具体网络实现。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== problem ===================== -->
+<section id="problem">
+  <div class="wrap">
+    <h2><span class="sec-num">01</span>这篇报告要解决什么问题</h2>
+    <p class="sec-lead">从「生成几秒钟、可控性有限的短视频片段」，走向「可控、原生、音画一体的多模态视频合成」。</p>
+
+    <p>视频生成已经成为数字内容基础设施的核心技术，被广泛用在专业制作与大众创作场景。Seed 团队此前积累了一整套生成式媒体能力——Seedance 视频系列、Seedream 图像生成与编辑系列、Seed-VL 多模态理解模型等——并已服务<strong>十亿级日活</strong>的产品生态。</p>
+
+    <p>但作者指出一个明确的<strong>范式转变</strong>：过去的视频模型擅长「短片段、弱控制」，而真实创作需要的是<strong>对多种控制信号原生支持的、稳定可控的视频合成</strong>。具体痛点有三：</p>
+    <ul class="clean">
+      <li><strong>控制信号割裂</strong>：文本、图像、音频、视频往往各自为政，难以在同一个模型里组合参考与编辑。</li>
+      <li><strong>真实世界复杂度难还原</strong>：高难度人体动作、多主体交互、物理规律一致性，是旧模型常出 artifact 的地方。</li>
+      <li><strong>音画分离</strong>：音频与画面的同步生成、双声道沉浸感、与画面节奏的对齐，长期是短板。</li>
+    </ul>
+
+    <div class="idea">
+      <div class="q">Seedance 2.0 的答卷：用<strong>一套统一架构</strong>做「多模态音视频联合生成」，把参考、编辑、续写都收进同一个原生模型。</div>
+      <div class="qt">从 Seedance 1.5 的「音画同步生成」演进到 2.0 的「统一多模态音视频联合生成框架」——系列始终围绕统一架构，核心承诺是高保真还原真实世界的复杂度。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== method / unified framework ===================== -->
+<section id="method">
+  <div class="wrap">
+    <h2><span class="sec-num">02</span>核心做法：一个统一的原生多模态框架</h2>
+    <p class="sec-lead">四种模态进、音视频一体出；参考 / 编辑 / 续写共享同一个模型。</p>
+
+    <p>Seedance 2.0 的关键不是某个新模块，而是<strong>把过去分散的能力收敛进同一个原生模型</strong>。它能准确解读多模态输入内容，并按用户指令生成参考了指定元素（画面构图、镜头设计、运动节奏、声学特征）的输出，也能直接参考文字分镜（storyboard）。下面这张示意图按原文文字描述还原其概念关系：</p>
+
+    <div class="schem">
+      <div class="lane">
+        <div class="node in">
+          <div class="nh">📝 文本</div>
+          <div class="nd">提示词 / 长脚本 / 文字分镜</div>
+        </div>
+        <div class="node in">
+          <div class="nh">🖼️ 图像</div>
+          <div class="nd">最多 9 张参考图</div>
+        </div>
+        <div class="node in">
+          <div class="nh">🔊 音频</div>
+          <div class="nd">最多 3 段音频参考</div>
+        </div>
+        <div class="node in">
+          <div class="nh">🎬 视频</div>
+          <div class="nd">最多 3 段视频参考</div>
+        </div>
+      </div>
+      <div class="arrow" style="height:26px;">▼</div>
+      <div class="lane">
+        <div class="node core">
+          <div class="nh">统一原生多模态模型</div>
+          <div class="nd">音视频联合生成 · 大规模高效架构<br/>（含 Seedance 2.0 Fast 加速版）</div>
+        </div>
+      </div>
+      <div class="arrow" style="height:26px;">▼</div>
+      <div class="lane">
+        <div class="node out">
+          <div class="nh">🎞️ 视频</div>
+          <div class="nd">4–15 秒 · 原生 480p / 720p</div>
+        </div>
+        <div class="node out">
+          <div class="nh">🎧 双声道音频</div>
+          <div class="nd">对白 / 环境音 / 旁白多轨 · 与画面节奏对齐</div>
+        </div>
+      </div>
+      <div class="schem-cap">示意图（自制，忠于原文文字描述）：原文未公开具体网络结构，此图仅表达输入模态→统一模型→音视频输出的关系。</div>
+    </div>
+
+    <p>围绕这个统一模型，报告强调了几项可观测的<strong>能力升级</strong>：</p>
+    <ul class="clean">
+      <li><strong>真实世界复杂度的生成</strong>：人体动作建模显著更自然、时序更连贯、更符合物理规律；能合成高保真的复杂交互场景，减少旧模型常见 artifact。</li>
+      <li><strong>更强的可控性与指令遵循</strong>：面对含大量角色交互、细粒度动作描述的复杂脚本，仍能保持主体身份一致；具备基本的<strong>导演与镜头语言推理</strong>，可自主规划分镜与视觉呈现。</li>
+      <li><strong>原生音视频高保真</strong>：升级的音频模块 + 双声道技术，支持背景音 / 环境音效 / 角色旁白多轨同时输出，并与画面严格时序对齐。</li>
+      <li><strong>新增视频编辑与续写</strong>：可对指定片段 / 角色 / 动作 / 情节做定向修改；可对自有或上传素材做连贯续写延展。</li>
+    </ul>
+
+    <div class="callout">
+      <div class="ch">🧩 一个统一模型，覆盖「独立 + 组合」任务</div>
+      <p>这套多模态参考与编辑能力同时支持<strong>单项任务</strong>（如仅做主体参考）和<strong>组合任务</strong>（如「用参考图替换视频主体」= 参考 + 编辑），从而适配从广告、影视特效到游戏动画、解说视频的多样化生产工作流。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== task taxonomy ===================== -->
+<section id="tasks">
+  <div class="wrap">
+    <h2><span class="sec-num">03</span>能力图谱：四大类多模态任务</h2>
+    <p class="sec-lead">报告把多模态任务正式拆成四组，并据此设计了细粒度评测。点开每组看子任务。</p>
+
+    <div class="taxo">
+      <div class="tcard">
+        <h4><span class="tg">参考</span>Reference 参考生成</h4>
+        <ul>
+          <li><strong>主体</strong>参考（外观 / 声音还原）</li>
+          <li><strong>动作</strong>参考</li>
+          <li><strong>特效 / 创意</strong>参考</li>
+          <li><strong>风格</strong>参考</li>
+        </ul>
+      </div>
+      <div class="tcard">
+        <h4><span class="tg">编辑</span>Editing 视频编辑</h4>
+        <ul>
+          <li><strong>主体</strong>编辑</li>
+          <li><strong>风格</strong>编辑</li>
+          <li><strong>场景</strong>编辑</li>
+          <li><strong>音频内容</strong>编辑</li>
+        </ul>
+      </div>
+      <div class="tcard">
+        <h4><span class="tg">续写</span>Extension 延展续写</h4>
+        <ul>
+          <li><strong>情节续写</strong>（plot continuation）</li>
+          <li><strong>无缝延展</strong>（seamless extension）</li>
+          <li>时间轴<strong>向前 / 向后</strong>双向延展</li>
+          <li>支持对任意上传视频做延展</li>
+        </ul>
+      </div>
+      <div class="tcard">
+        <h4><span class="tg">组合</span>Combination 组合任务</h4>
+        <ul>
+          <li>贴合真实工作流的<strong>配对任务</strong></li>
+          <li>如：用参考图<strong>替换视频主体</strong>（参考 + 编辑）</li>
+          <li>如：延展 + 主体图参考</li>
+          <li>组合任务为 Seedance 2.0 独有优势</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:18px;">
+      <div class="ch">📊 覆盖广度：22 类输入模态中支持 20 类</div>
+      <p>在 R2V 多模态任务支持对比中，Seedance 2.0 支持 <strong>22 类输入模态中的 20 类</strong>，是所有模型里最广的；剩下 2 类（主体「视听 + 音频参考」、视频「音频编辑」）所有模型都不支持。其中<strong>全部 3 种特效/创意参考</strong> 与 <strong>全部 4 种续写/延展</strong> 共 7 类任务，是<strong>竞品都做不到、仅 Seedance 2.0 独有</strong>的。对比：Kling 3 Omni 支持 9/22，Vidu Q2 Pro 13/22，Kling O1 10/22。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== benchmark ===================== -->
+<section id="bench">
+  <div class="wrap">
+    <h2><span class="sec-num">04</span>怎么评：SeedVideoBench 2.0 评测体系</h2>
+    <p class="sec-lead">为了把模型推向生产部署，作者把评测框架升级到 SeedVideoBench 2.0——新增多模态、叙事质量、多语种覆盖。</p>
+
+    <p>新框架有两大变化：第一，建立<strong>多模态任务评测体系</strong>，正式定义「多模态任务遵循」与「生成一致性」，同时覆盖多模态设定下的基础生成质量（提示遵循、运动质量）；第二，把评测拆成<strong>客观与主观两条赛道</strong>——运动稳定性等客观指标走自动化流水线，美学等主观指标走专家盲评。此外还做了一项<strong>真实性研究</strong>：让评测者区分 Seedance 2.0 的输出与真实视频片段，结果反哺到美学调优。</p>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="ico">🎯</span>
+        <span class="ct">
+          <span class="cn">多模态任务遵循 + 生成一致性</span>
+          <span class="cs">把模型的能力边界从「试错才知道」变成「明确可测」</span>
+        </span>
+        <span class="arr">▸</span>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>多模态任务遵循（Multimodal Task Following）</strong>：度量在参考、编辑、延展场景下的指令遵循准确率，拆成数十种细粒度任务类型（主体身份、动作、风格等）。多数模型多模态覆盖有限，迫使用户靠试错探边界；这套指标把边界显式化。</p>
+        <p><strong>一致性（Consistency）</strong>：捕捉生成内容与参考输入的贴合程度（<strong>参考对齐 Reference Alignment</strong>），以及编辑时未改动区域的保持程度（<strong>编辑一致性 Editing Consistency</strong>）。为此构建了覆盖主体 / 动作 / 场景 / 风格 / 音频的专门数据集。</p>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="ico">🎬</span>
+        <span class="ct">
+          <span class="cn">叙事质量：三个子维度</span>
+          <span class="cs">运动质量可客观测量，叙事质量本质偏主观——靠专家评判</span>
+        </span>
+        <span class="arr">▸</span>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>镜头语言（Cinematographic language）</strong>：镜头是否服务于故事？评估镜头逻辑与表现力，关注冗余覆盖、越轴（违反 180° 规则）、景别不匹配、节奏不均等问题。</p>
+        <p><strong>情节设计（Plot design）</strong>：模型能否把一个模糊或简短的提示，变成既连贯又有吸引力的内容？</p>
+        <p><strong>风格美学（Stylistic aesthetics）</strong>：画面是否有经过考量的质感？涵盖布光、取景、构图、调色，以及角色、服装、道具、场景是否在美学上协调统一。</p>
+      </div></div>
+    </div>
+
+    <details class="raw">
+      <summary>外部交叉验证：Arena.AI 社区盲评<span class="ss">由 UC Berkeley 研究者创建的真人偏好平台（前 LMArena），用双盲对战投票产出 Elo 排名</span></summary>
+      <div class="rb">
+        <p>Arena（前身 LMArena）让用户对两个匿名模型的输出做并排盲选投票，产出反映大规模真人判断的 Elo 排名。不同于 FVD / CLIPScore 这类自动指标，它捕捉的是涵盖画质、运动真实感、时序连贯、提示遵循的<strong>整体人类偏好</strong>。</p>
+        <p>截至 2026 年 4 月 8 日，Dreamina Seedance 2.0 720p 在文生视频与图生视频榜单<strong>双双排名 #1</strong>。值得注意的是：它以 <strong>720p</strong> 分辨率，击败了运行在 1080p 的竞品——说明其在运动动态与视觉连贯上的提升，在感知上比单纯堆分辨率更显著。</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== results ===================== -->
+<section id="results">
+  <div class="wrap">
+    <h2><span class="sec-num">05</span>结果：一句话与一组数字</h2>
+    <p class="sec-lead">在 Arena.AI 真人盲评与 SeedVideoBench 2.0 各项任务上，Seedance 2.0 全面领先——尤其在竞品普遍薄弱的音频维度上拉开差距。切换标签看不同任务。</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTask(this,'arena')">🏆 Arena.AI</button>
+      <button class="tab-btn" onclick="switchTask(this,'t2v')">文生视频 T2V</button>
+      <button class="tab-btn" onclick="switchTask(this,'i2v')">图生视频 I2V</button>
+      <button class="tab-btn" onclick="switchTask(this,'r2v')">参考生视频 R2V</button>
+    </div>
+
+    <div class="tab-panel show" data-group="arena">
+      <div class="mgrid">
+        <div class="metric"><div class="mv">#1</div><div class="ml">文生视频 Arena 排名</div><div class="msub">Elo 1450 (±15)</div></div>
+        <div class="metric"><div class="mv">#1</div><div class="ml">图生视频 Arena 排名</div><div class="msub">Elo 1449 (±11)</div></div>
+        <div class="metric"><div class="mv">+79</div><div class="ml">T2V 领先第二名 Elo</div><div class="msub">vs. veo-3.1-audio-1080p</div></div>
+      </div>
+      <p class="panel-note">在 720p 分辨率下登顶，且 T2V/I2V 的 Rank Spread 均为 1↔1，说明各评测维度上稳居榜首。I2V 领先第二名 grok-imagine-video-720p 共 29 分。</p>
+    </div>
+
+    <div class="tab-panel" data-group="t2v">
+      <div class="mgrid">
+        <div class="metric"><div class="mv">3.75<span class="u">/5</span></div><div class="ml">运动质量</div><div class="msub">较 1.5 提升 +1.36</div></div>
+        <div class="metric"><div class="mv">3.75<span class="u">/5</span></div><div class="ml">音画同步</div><div class="msub">领先亚军 ≥0.65</div></div>
+        <div class="metric"><div class="mv">3.67<span class="u">/5</span></div><div class="ml">美学</div></div>
+        <div class="metric"><div class="mv">3.43<span class="u">/5</span></div><div class="ml">视频提示遵循</div></div>
+        <div class="metric"><div class="mv">3.63<span class="u">/5</span></div><div class="ml">音频质量</div></div>
+        <div class="metric"><div class="mv">97.55<span class="u">%</span></div><div class="ml">运动质量可用率</div><div class="msub">score ≥ 3</div></div>
+      </div>
+      <p class="panel-note">六个维度全部第一，是唯一每项都 &gt; 3.4 的模型，平均较 Seedance 1.5 提升 0.86 分。音频是竞品最吃力的地方（多数 &lt; 2.9），而 Seedance 2.0 三项音频维度全部 &gt; 3.5。</p>
+    </div>
+
+    <div class="tab-panel" data-group="i2v">
+      <div class="mgrid">
+        <div class="metric"><div class="mv">3.70<span class="u">/5</span></div><div class="ml">音频提示遵循</div><div class="msub">I2V 最高分</div></div>
+        <div class="metric"><div class="mv">3.61<span class="u">/5</span></div><div class="ml">音频质量与表现力</div></div>
+        <div class="metric"><div class="mv">3.54<span class="u">/5</span></div><div class="ml">音画同步</div></div>
+        <div class="metric"><div class="mv">3.46<span class="u">/5</span></div><div class="ml">视频提示遵循</div></div>
+        <div class="metric"><div class="mv">3.35<span class="u">/5</span></div><div class="ml">运动质量</div><div class="msub">领先亚军 0.55</div></div>
+        <div class="metric"><div class="mv">3.31<span class="u">/5</span></div><div class="ml">原图保持</div><div class="msub">最胶着，领先 0.13</div></div>
+      </div>
+      <p class="panel-note">六个维度全部第一（3.31–3.70），而<strong>没有任何竞品超过 3.18</strong>。呈两层格局：Seedance 2.0 在视频与音频上双双领先，竞品在音频上明显弱于视频。可用率在所有六项上均 &gt; 87%。</p>
+    </div>
+
+    <div class="tab-panel" data-group="r2v">
+      <div class="mgrid">
+        <div class="metric"><div class="mv">3.54<span class="u">/5</span></div><div class="ml">编辑一致性</div></div>
+        <div class="metric"><div class="mv">3.24<span class="u">/5</span></div><div class="ml">运动质量</div><div class="msub">领先 0.86–0.94</div></div>
+        <div class="metric"><div class="mv">3.03<span class="u">/5</span></div><div class="ml">参考对齐</div><div class="msub">领先 0.66–1.24</div></div>
+        <div class="metric"><div class="mv">2.50<span class="u">/3</span></div><div class="ml">多模态任务遵循</div></div>
+        <div class="metric"><div class="mv">2.52<span class="u">/3</span></div><div class="ml">提示遵循</div></div>
+        <div class="metric"><div class="mv">20<span class="u">/22</span></div><div class="ml">支持任务类型</div><div class="msub">全模型最广</div></div>
+      </div>
+      <p class="panel-note">参考生视频五个维度全部第一，全面超过 Kling 3 Omni、Kling O1、Vidu Q2 Pro。在主体外观与声音、动作、风格的参考对齐上优势明显，运动质量（生动度、物理合理性、结构稳定性）领先最大。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== showcase / figure ===================== -->
+<section id="showcase">
+  <div class="wrap">
+    <h2><span class="sec-num">06</span>定性示例：统一能力长什么样</h2>
+    <p class="sec-lead">下面是原文 Figure 4 的生成可视化，最能体现「真实世界复杂度 + 跨场景适配」的综合能力。</p>
+
+    <figure class="fig">
+      <img src="assets/fig4_qualitative.jpg" alt="Seedance 2.0 文生视频与图生视频定性结果：花样滑冰、武侠竹林、油画喝可乐三组示例" />
+      <div class="figcap">原文 Figure 4：Seedance 2.0 的文生视频（T2V）与图生视频（I2V）生成可视化。三行示例分别展示高难度人体运动、极致风格化镜头语言，以及由静态图像出发的创意叙事生成。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="fdi">
+        <ol>
+          <li><b>第一行 · T2V 花样滑冰（运动质量与物理一致性）</b>：竞技级双人花样滑冰，开场低机位跟拍冰刀、冰屑与反光细节清晰；进入旋转段男选手轴线微偏出现失误、节奏短暂塌陷，女选手迅速调整重心并示意「Stay with me」引导重新对齐，随后无缝衔接托举与同步跳跃组合。说明模型能严格遵循真实运动规律渲染同步起跳、空中旋转、精准落冰等高难度动作，避免旧模型常见的物理异常。</li>
+          <li><b>第二行 · T2V 武侠竹林对决（镜头语言与风格化）</b>：白衣剑客与蓑衣刀客在竹林对峙，镜头在两人间缓慢推移、焦点在雨滴与剑柄间切换；惊雷闪过双方冲锋，兵刃相接瞬间切为极慢动作，清晰展示震飞雨水形成的圆环激波与被剑气切断的竹叶。体现专业级镜头调度、节奏控制与高保真细节。</li>
+          <li><b>第三行 · I2V 油画喝可乐（由图像出发的创意叙事）</b>：以一幅油画人物为输入图，人物左顾右盼、探出画框取可乐啜饮、露出满足表情；脚步声临近时慌忙放回，随后一位西部牛仔走来取走可乐。结尾推至纯黑背景下可乐的顶光特写，配字幕与旁白。展示图生视频中的连贯情节、主体一致性与广告化创意表达。</li>
+          <li><b>整体（左侧 T2V/T2V/I2V 行标）</b>：三行覆盖体育、影视特效、广告创意等不同场景，对应原文强调的<b>跨场景适配性</b>——同一模型在商业广告、影视特效、游戏动画、解说视频等用例下都能稳定输出。</li>
+        </ol>
+        <p style="margin-top:12px;color:var(--ink-faint);">一句话总结：这张图用「高难运动 + 风格化镜头 + 图生叙事」三类样本，直观印证了统一模型在运动真实感、镜头语言与多模态创意上的综合能力。</p>
+      </div></div>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== notes / limitations ===================== -->
+<section id="notes">
+  <div class="wrap">
+    <h2><span class="sec-num">07</span>有意思的点 & 局限</h2>
+    <p class="sec-lead">几个值得记住的取舍，以及作者自己点名的短板。</p>
+
+    <ul class="clean">
+      <li><strong>音频是真正的护城河</strong>：竞品在音频维度普遍 &lt; 2.9，而 Seedance 2.0 在 T2V 三项音频维度全部 &gt; 3.5；I2V 音频质量「满意率」62% 对比竞品全部 &lt; 10%。音画一体的差距，比画面差距更明显。</li>
+      <li><strong>720p 也能赢 1080p</strong>：在 Arena 上以 720p 击败 1080p 竞品，作者认为运动动态与视觉连贯的提升在感知上比分辨率更重要。</li>
+      <li><strong>运动质量提升最大</strong>：T2V 运动质量较上一代 Seedance 1.5 提升 <strong>+1.36</strong>，是所有维度里增幅最大的一项。</li>
+      <li><strong>独有的续写 / 特效参考</strong>：7 类竞品都做不到的任务（特效/创意参考 + 续写延展）是 Seedance 2.0 的差异化能力。</li>
+    </ul>
+
+    <div class="callout">
+      <div class="ch">⚠️ 作者明示的局限</div>
+      <p><strong>多主体一致性</strong>、<strong>文字还原准确性</strong>、<strong>复杂编辑任务</strong>仍有优化空间；<strong>视频延展（Extension）是其最弱的 R2V 任务</strong>——尽管支持任意上传视频延展（Veo 3.1 只能延展自己生成的视频），但延展质量明显落后 Veo 3.1（任务遵循 1.93 vs 2.78）。此外仍存在轻微形变、边缘情形的运动合理性、高频视觉噪声、音频失真，以及多说话人场景的口型同步错误。安全性贯穿模型迭代全周期，作者建立了结构化安全评估框架以持续评估与缓解风险。</p>
+    </div>
+
+    <details class="raw">
+      <summary>金句原文（含中文译文）<span class="ss">作者对「统一架构」与「真实世界复杂度」的核心立场</span></summary>
+      <div class="rb">
+        <p class="mono" style="color:var(--ink);">“From the audio-video synchronous generation achieved by Seedance 1.5 to the unified multimodal audio-video joint generation framework established by Seedance 2.0, the Seedance series has consistently been built around a unified architecture, with a core commitment to high-fidelity reconstruction of real-world complexity.”</p>
+        <p>译：从 Seedance 1.5 实现的音视频同步生成，到 Seedance 2.0 建立的统一多模态音视频联合生成框架，Seedance 系列始终围绕一套统一架构构建，其核心承诺是<strong>对真实世界复杂度的高保真还原</strong>。</p>
+      </div>
+    </details>
+
+    <p style="font-size:14.5px;color:var(--ink-soft);">模型可在豆包、即梦与火山引擎体验，模型 ID 为 <code>doubao-seedance-2-0-260128</code>。更多细节见官方页面 <a href="https://seed.bytedance.com/seedance2_0" target="_blank" rel="noopener">seed.bytedance.com/seedance2_0 ↗</a>。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fl"><strong>Seedance 2.0: Advancing Video Generation for World Complexity</strong> · ByteDance Seed · arXiv preprint（2026-04）</div>
+    <div class="fl">📄 阅读原文：<a href="https://arxiv.org/abs/2604.14148" target="_blank" rel="noopener">arxiv.org/abs/2604.14148</a> &nbsp;·&nbsp; HTML 全文不可用，正文与图据 <a href="https://arxiv.org/pdf/2604.14148" target="_blank" rel="noopener">arXiv PDF</a> 提取 &nbsp;·&nbsp; 官方页面：<a href="https://seed.bytedance.com/seedance2_0" target="_blank" rel="noopener">seed.bytedance.com/seedance2_0</a></div>
+    <div class="fl" style="color:var(--ink-faint);font-size:13px;margin-top:10px;">本页为面向中文读者的可视化精读，所有数字与结论均来自原论文；架构示意图为依据原文文字自制的概念图，不代表具体网络实现。</div>
+  </div>
+</footer>
+
+<script>
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    var open = d.classList.toggle('active');
+    el.textContent = open ? '收起说明 ▾' : '展开说明 ▸';
+  }
+  function toggleCard(head){
+    head.parentElement.classList.toggle('open');
+  }
+  function switchTask(btn, group){
+    var tabs = btn.parentElement;
+    var btns = tabs.querySelectorAll('.tab-btn');
+    for(var i=0;i<btns.length;i++){ btns[i].classList.remove('active'); }
+    btn.classList.add('active');
+    var section = tabs.parentElement;
+    var panels = section.querySelectorAll('.tab-panel');
+    for(var j=0;j<panels.length;j++){
+      panels[j].classList.toggle('show', panels[j].getAttribute('data-group') === group);
+    }
+  }
+</script>
+</body>
+</html>

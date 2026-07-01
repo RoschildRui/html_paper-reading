@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StepFun-Formalizer：用「知识-推理融合」解锁大模型的自动形式化能力</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.92em' font-size='86'>λ</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#faf5ea;
+    --bg-2:#f4ead7;
+    --bg-3:#ece0c8;
+    --bg-4:#e4d6ba;
+    --border:#e0d2b4;
+    --border-strong:#cdba94;
+    --ink:#2c281f;
+    --ink-2:#6a604f;
+    --ink-3:#978c76;
+    --accent:#b1632e;
+    --accent-2:#8a5a39;
+    --accent-soft:#f0e2cb;
+    --good:#5a7a52;
+    --bad:#a85a48;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    --maxw:980px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;scroll-padding-top:72px;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.8;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+
+  /* ---------- nav ---------- */
+  .topnav{
+    position:sticky;top:0;z-index:50;background:rgba(250,245,234,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
+  }
+  .topnav-inner{
+    max-width:var(--maxw);margin:0 auto;padding:10px 22px;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  }
+  .topnav .brand{font-weight:800;font-size:15px;letter-spacing:.2px;color:var(--ink);white-space:nowrap;}
+  .topnav .brand span{color:var(--accent);}
+  .topnav nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto;}
+  .topnav nav a{
+    color:var(--ink-2);text-decoration:none;font-size:13.5px;font-weight:500;
+    padding:5px 10px;border-radius:7px;transition:background .15s,color .15s;white-space:nowrap;
+  }
+  .topnav nav a:hover{background:var(--bg-3);color:var(--ink);}
+  .topnav nav a.src{color:var(--accent);font-weight:600;}
+
+  /* ---------- layout ---------- */
+  main{max-width:var(--maxw);margin:0 auto;padding:0 22px 90px;}
+  section{padding:46px 0 8px;border-top:1px solid transparent;}
+  .sec-tag{
+    font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:6px;
+  }
+  h1{font-size:38px;line-height:1.25;font-weight:800;margin:0 0 14px;letter-spacing:-.4px;}
+  h2{font-size:27px;font-weight:800;margin:6px 0 14px;letter-spacing:-.3px;}
+  h3{font-size:20px;font-weight:700;margin:26px 0 8px;}
+  h4{font-size:16.5px;font-weight:700;margin:18px 0 6px;color:var(--ink);}
+  p{margin:12px 0;}
+  a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;}
+  strong{font-weight:700;color:var(--ink);}
+  ul,ol{margin:12px 0;padding-left:22px;}
+  li{margin:7px 0;}
+  code{font-family:var(--mono);font-size:.88em;background:var(--bg-3);padding:1.5px 6px;border-radius:5px;color:var(--accent-2);}
+
+  /* ---------- hero ---------- */
+  .hero{padding:54px 0 30px;}
+  .meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;}
+  .pill{
+    font-size:12.5px;font-weight:600;padding:4px 12px;border-radius:999px;
+    background:var(--bg-3);border:1px solid var(--border);color:var(--ink-2);
+  }
+  .pill.hl{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .authors{color:var(--ink-2);font-size:15px;margin:2px 0 20px;}
+  .links{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-weight:600;font-size:14px;
+    padding:9px 16px;border-radius:9px;border:1px solid var(--border-strong);
+    background:var(--bg-2);color:var(--ink);transition:transform .12s,background .15s;
+  }
+  .btn:hover{background:var(--bg-3);transform:translateY(-1px);}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.primary:hover{background:var(--accent-2);}
+
+  /* ---------- tldr ---------- */
+  .tldr{
+    background:var(--bg-2);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:14px;padding:24px 26px;margin:8px 0 8px;
+  }
+  .tldr h2{margin-top:0;font-size:21px;}
+  .tldr .lead{font-size:18px;}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:20px 0;}
+  .metric{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:13px;padding:18px 18px 16px;
+  }
+  .metric .num{font-size:34px;font-weight:800;color:var(--accent);line-height:1.05;letter-spacing:-.5px;}
+  .metric .num small{font-size:17px;font-weight:700;color:var(--accent-2);}
+  .metric .lbl{font-size:13.5px;color:var(--ink-2);margin-top:6px;font-weight:500;line-height:1.45;}
+
+  /* ---------- generic card ---------- */
+  .card{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin:16px 0;}
+  .note{background:var(--bg-3);border:1px solid var(--border);border-radius:11px;padding:14px 18px;font-size:15px;color:var(--ink-2);margin:14px 0;}
+
+  /* ---------- figure ---------- */
+  figure{margin:22px 0;background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:16px;}
+  figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  figcaption{font-size:14px;color:var(--ink-2);margin-top:12px;line-height:1.6;}
+  figcaption .fnum{font-weight:700;color:var(--accent-2);}
+  .fig-toggle{
+    display:inline-block;margin-top:10px;cursor:pointer;user-select:none;
+    font-size:13.5px;font-weight:600;color:var(--accent);
+    background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:8px;padding:4px 12px;
+  }
+  .fig-toggle:hover{background:var(--bg-4);}
+  .figure-detail{
+    max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0;
+  }
+  .figure-detail.active{max-height:2600px;opacity:1;margin-top:14px;}
+  .figure-detail ul{margin:6px 0;}
+  .figure-detail li{font-size:14.5px;color:var(--ink-2);}
+  .figure-detail li b{color:var(--ink);}
+  .fd-sum{font-size:14.5px;color:var(--ink);background:var(--bg-3);border-radius:8px;padding:10px 14px;margin-top:10px;border:1px solid var(--border);}
+
+  /* ---------- expandable card ---------- */
+  .excard{background:var(--bg-2);border:1px solid var(--border);border-radius:13px;margin:14px 0;overflow:hidden;}
+  .excard-head{
+    display:flex;align-items:flex-start;gap:14px;padding:18px 20px;cursor:pointer;user-select:none;transition:background .15s;
+  }
+  .excard-head:hover{background:var(--bg-3);}
+  .excard-head .ic{font-size:20px;line-height:1.4;flex-shrink:0;}
+  .excard-head .ht{flex:1;}
+  .excard-head .ht .t{font-weight:700;font-size:17px;}
+  .excard-head .ht .tag{
+    display:inline-block;font-size:11.5px;font-weight:600;color:var(--accent-2);
+    background:var(--accent-soft);border-radius:6px;padding:1px 8px;margin-left:8px;vertical-align:middle;
+  }
+  .excard-head .ht .sum{font-size:14px;color:var(--ink-3);margin-top:3px;line-height:1.5;}
+  .excard-head .chev{font-size:14px;color:var(--ink-3);transition:transform .25s;margin-top:3px;}
+  .excard.open .chev{transform:rotate(90deg);}
+  .excard-body{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .excard.open .excard-body{max-height:4000px;}
+  .excard-body .inner{padding:2px 22px 22px;border-top:1px solid var(--border);}
+
+  /* ---------- donut comparison ---------- */
+  .cmp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0;}
+  .cmp{border-radius:13px;border:1px solid var(--border);background:var(--bg-2);padding:16px;display:flex;flex-direction:column;}
+  .cmp.bad{border-top:4px solid var(--bad);}
+  .cmp.good{border-top:4px solid var(--good);}
+  .cmp .who{font-weight:700;font-size:15.5px;}
+  .cmp .lack{font-size:12.5px;font-weight:600;border-radius:6px;padding:2px 8px;margin:8px 0 10px;display:inline-block;width:fit-content;}
+  .cmp.bad .lack{background:#f1ddd6;color:var(--bad);}
+  .cmp.good .lack{background:#e2ecdd;color:var(--good);}
+  .cmp .desc{font-size:13.5px;color:var(--ink-2);margin-bottom:10px;}
+  .cmp pre{margin:auto 0 10px;}
+  .verdict{font-size:13.5px;font-weight:600;margin-top:auto;}
+  .verdict.x{color:var(--bad);}
+  .verdict.ok{color:var(--good);}
+  .verdict .mk{font-weight:500;color:var(--ink-2);display:block;margin-top:4px;font-size:13px;}
+
+  /* ---------- code ---------- */
+  pre{
+    background:#2c281f;color:#ede4d3;border-radius:10px;padding:14px 16px;overflow-x:auto;
+    font-family:var(--mono);font-size:13px;line-height:1.65;margin:12px 0;
+  }
+  pre code{background:none;color:inherit;padding:0;font-size:inherit;}
+  pre .kw{color:#e0a06a;}
+  pre .ty{color:#9bbf8f;}
+  pre .cm{color:#8d8473;}
+  pre .err{color:#e08a7a;}
+  pre .ok{color:#9bbf8f;}
+  details{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:6px 18px;margin:14px 0;}
+  details summary{cursor:pointer;font-weight:600;font-size:15px;padding:10px 0;list-style:none;color:var(--ink);}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:"▸ ";color:var(--accent);}
+  details[open] summary::before{content:"▾ ";}
+  details summary .ssum{display:block;font-weight:400;font-size:13.5px;color:var(--ink-3);margin-top:4px;}
+  details .dbody{padding:6px 0 14px;border-top:1px solid var(--border);margin-top:4px;}
+
+  /* ---------- stepper ---------- */
+  .stepper{background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:20px;margin:20px 0;}
+  .step-rail{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .step-dot{
+    flex:1;min-width:120px;text-align:left;cursor:pointer;border-radius:10px;padding:10px 12px;
+    background:var(--bg);border:1px solid var(--border);transition:all .18s;
+  }
+  .step-dot:hover{background:var(--bg-3);}
+  .step-dot.active{background:var(--accent);border-color:var(--accent);}
+  .step-dot .sn{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);}
+  .step-dot.active .sn{color:#fff;}
+  .step-dot .st{font-size:13px;font-weight:600;color:var(--ink);margin-top:2px;line-height:1.35;}
+  .step-dot.active .st{color:#fff;}
+  .step-panel{display:none;animation:fade .35s ease;}
+  .step-panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .step-panel h4{margin-top:4px;font-size:18px;}
+  .flow-io{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0;font-size:13.5px;}
+  .flow-io .box{background:var(--bg-3);border:1px solid var(--border);border-radius:9px;padding:8px 13px;font-weight:600;}
+  .flow-io .box.out{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-2);}
+  .flow-io .arr{color:var(--accent);font-weight:700;font-size:18px;}
+  .step-controls{display:flex;align-items:center;gap:14px;margin-top:18px;}
+  .step-controls button{
+    font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;
+    padding:8px 18px;border-radius:9px;border:1px solid var(--border-strong);background:var(--bg);color:var(--ink);transition:all .15s;
+  }
+  .step-controls button:hover:not(:disabled){background:var(--accent);color:#fff;border-color:var(--accent);}
+  .step-controls button:disabled{opacity:.4;cursor:not-allowed;}
+  .step-counter{font-family:var(--mono);font-size:13px;color:var(--ink-2);margin-left:auto;}
+
+  /* ---------- tiered selection flow ---------- */
+  .tier-flow{display:flex;flex-direction:column;gap:0;margin:14px 0;}
+  .tier{display:flex;gap:14px;align-items:flex-start;}
+  .tier .col-l{display:flex;flex-direction:column;align-items:center;}
+  .tier .knob{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .tier .line{width:2px;flex:1;background:var(--border-strong);min-height:18px;}
+  .tier:last-child .line{display:none;}
+  .tier .col-r{padding-bottom:16px;}
+  .tier .tt{font-weight:700;font-size:15.5px;}
+  .tier .td{font-size:14px;color:var(--ink-2);margin-top:2px;}
+
+  /* ---------- data flow chips ---------- */
+  .dataflow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0;}
+  .chip{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;text-align:center;}
+  .chip .cn{font-size:22px;font-weight:800;color:var(--accent);line-height:1;}
+  .chip .cl{font-size:12px;color:var(--ink-2);margin-top:3px;}
+  .dataflow .arr{color:var(--accent);font-weight:700;font-size:18px;}
+
+  /* ---------- table ---------- */
+  .tbl-wrap{overflow-x:auto;margin:18px 0;border-radius:12px;border:1px solid var(--border);}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--bg-2);min-width:560px;}
+  th,td{padding:10px 14px;text-align:center;border-bottom:1px solid var(--border);}
+  th{background:var(--bg-3);font-weight:700;color:var(--ink);font-size:13px;}
+  td:first-child,th:first-child{text-align:left;}
+  tbody tr:last-child td{border-bottom:none;}
+  tr.ours{background:var(--accent-soft);}
+  tr.ours td{font-weight:700;color:var(--accent-2);}
+  tr.grp td{background:var(--bg-4);font-weight:700;font-size:12px;color:var(--ink-2);text-align:left;letter-spacing:.5px;text-transform:uppercase;}
+  .best{color:var(--accent);font-weight:800;}
+
+  /* ---------- two-ability split ---------- */
+  .ability-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0;}
+  .ability{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:20px;}
+  .ability .ab-ic{font-size:26px;}
+  .ability h4{margin:8px 0 4px;font-size:17px;}
+  .ability .ab-need{font-size:14px;color:var(--ink-2);}
+  .ability .ab-fail{font-size:13.5px;color:var(--bad);background:#f1ddd6;border-radius:8px;padding:8px 12px;margin-top:10px;}
+
+  footer{border-top:1px solid var(--border);margin-top:60px;padding:30px 0 10px;color:var(--ink-2);font-size:14px;}
+  footer a{font-weight:600;}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
+
+  @media(max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:30px;}
+    h2{font-size:23px;}
+    .cmp-grid{grid-template-columns:1fr;}
+    .ability-grid{grid-template-columns:1fr;}
+    .topnav nav{display:none;}
+    main{padding:0 16px 70px;}
+    .step-dot{min-width:calc(50% - 8px);}
+  }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="topnav-inner">
+    <div class="brand">StepFun-<span>Formalizer</span></div>
+    <nav>
+      <a href="#tldr">速览</a>
+      <a href="#problem">问题</a>
+      <a href="#insight">两种能力</a>
+      <a href="#prior">已有方案</a>
+      <a href="#method">ThinkingF 方法</a>
+      <a href="#findings">有意思的点</a>
+      <a href="#results">实验</a>
+      <a class="src" href="https://arxiv.org/abs/2508.04440" target="_blank" rel="noopener">原文 ↗</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+  <!-- ===================== HERO ===================== -->
+  <header class="hero">
+    <div class="meta-row">
+      <span class="pill hl">2025.08 · arXiv preprint (v3)</span>
+      <span class="pill">自动形式化 Autoformalization</span>
+      <span class="pill">自然语言 → Lean 4</span>
+      <span class="pill">数据合成 + SFT + RLVR</span>
+    </div>
+    <div class="sec-tag">论文精读 · 教学可视化</div>
+    <h1>StepFun-Formalizer：用「知识–推理融合」<br/>解锁大模型的自动形式化能力</h1>
+    <p class="authors">Yutong Wu, Di Huang, Ruosi Wan, Yue Peng, Shijie Shang, Chenrui Cao, Lei Qi, Rui Zhang, Zidong Du, Jie Yan, Xing Hu　·　StepFun（阶跃星辰）/ 中国科学院计算技术研究所 等</p>
+    <p style="color:var(--ink-2);max-width:760px;">把一道自然语言数学题，<strong>逐字翻译成机器可严格验证的 Lean 4 形式化定理</strong>——这就是「自动形式化」。本文指出做好这件事需要两种缺一不可的能力，并给出一条同时注入这两种能力的数据合成与训练流水线 <strong>ThinkingF</strong>。</p>
+    <div class="links">
+      <a class="btn primary" href="https://arxiv.org/abs/2508.04440" target="_blank" rel="noopener">📄 阅读原文 arXiv</a>
+      <a class="btn" href="https://github.com/stepfun-ai/StepFun-Formalizer" target="_blank" rel="noopener">💻 GitHub 代码</a>
+      <a class="btn" href="https://huggingface.co/stepfun-ai/StepFun-Formalizer-32B" target="_blank" rel="noopener">🤗 HuggingFace 模型</a>
+    </div>
+  </header>
+
+  <!-- ===================== TL;DR ===================== -->
+  <section id="tldr">
+    <div class="tldr">
+      <h2>30 秒速览</h2>
+      <p class="lead">做好自动形式化需要<strong>两种能力</strong>：① <strong>形式语言的领域知识</strong>（知道每个数学概念在 Lean 4 里到底叫什么、怎么写），② <strong>自然语言理解与「非形式→形式」的推理能力</strong>（读懂题目真正的意思，并精确对齐到形式表达）。</p>
+      <p>现有方法各缺一种：<strong>通用大模型</strong>（如 Claude4-thinking）会推理但缺形式知识，常写出根本不存在的 Lean 函数；<strong>专用形式化模型</strong>（如 Kimina-Autoformalizer）有形式知识但缺推理，常误解题意、漏掉类型声明。本文提出 <strong>ThinkingF</strong>——通过「知识蒸馏 + 模板引导的推理轨迹合成 + 两阶段 SFT + 可验证奖励 RL」把两种能力<strong>融合进同一个模型</strong>。</p>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="num">40.5<small>%</small></div><div class="lbl">FormalMATH-Lite 上 BEq@1，32B 模型刷新 SOTA</div></div>
+      <div class="metric"><div class="num">26.7<small>%</small></div><div class="lbl">ProverBench（OOD）上 BEq@1，超过所有通用与专用模型</div></div>
+      <div class="metric"><div class="num">7B&gt;671B</div><div class="lbl">7B 模型在 ProverBench 上即超过 DeepSeek-R1-671B</div></div>
+      <div class="metric"><div class="num">5.8K</div><div class="lbl">仅用 5.8K 条人工模板合成的推理数据，便撬动推理能力</div></div>
+    </div>
+  </section>
+
+  <!-- ===================== PROBLEM ===================== -->
+  <section id="problem">
+    <div class="sec-tag">问题</div>
+    <h2>什么是自动形式化？为什么它很难？</h2>
+    <p><strong>自动形式化（Autoformalization）</strong>，就是把人类用自然语言写的数学命题，自动翻译成 Lean、Coq、Isabelle 这类<strong>形式语言</strong>里、能被证明助手逐符号严格检查的定理语句。它是自动定理证明、形式化验证、可验证代码生成等方向的<strong>数据基座</strong>：有了大量「自然语言题 → 形式化命题」的配对，才能训练更强的证明器。</p>
+    <p>难点在于：自然语言是<strong>模糊、省略</strong>的（比如不会写明某个量是自然数还是实数），而形式语言要求<strong>每个对象的类型、每条逻辑结构都精确无误</strong>，差一个符号就编译不过或语义跑偏。本文给「正确的形式化」下了两条判据：</p>
+    <div class="card">
+      <p style="margin-top:0;"><strong>一个形式化语句 <code>y</code> 是输入题目 <code>x</code> 的正确翻译，当且仅当：</strong></p>
+      <ul>
+        <li><strong>① 通过语法检查</strong>：<code>y</code> 在形式语言里能编译通过。</li>
+        <li><strong>② 语义等价</strong>：<code>y</code> 与 <code>x</code> 表达的是同一个数学命题。</li>
+      </ul>
+      <p style="margin-bottom:0;color:var(--ink-2);font-size:15px;">由于「语义是否等价」很难自动严判，论文用<strong>人工标注的形式化语句作为标准答案</strong>，再用证明助手判断模型输出是否与标准答案<strong>双向等价（BEq）</strong>。BEq 的细节见下文「方法」部分。</p>
+    </div>
+  </section>
+
+  <!-- ===================== INSIGHT (two abilities + donut) ===================== -->
+  <section id="insight">
+    <div class="sec-tag">核心洞察</div>
+    <h2>做好自动形式化，需要两种能力</h2>
+    <p>论文的整个动机建立在一个判断上：一个好的自动形式化模型，必须<strong>同时</strong>具备下面两种能力——缺任何一种，都会以可预测的方式犯错。</p>
+
+    <div class="ability-grid">
+      <div class="ability">
+        <div class="ab-ic">📚</div>
+        <h4>能力一：形式语言领域知识</h4>
+        <div class="ab-need">模型必须知道<strong>每个数学概念在目标形式语言里的准确写法</strong>。例如不熟悉欧拉函数在 Lean 4 中的定义，就无法形式化相关题目。由于形式数据在通用语料里极稀缺、且 Lean 3/4 版本差异巨大，通用大模型常常「想当然」。</div>
+        <div class="ab-fail">缺它 → 认不出正确的形式对象，写出不存在的函数 / 错误的 API。</div>
+      </div>
+      <div class="ability">
+        <div class="ab-ic">🧠</div>
+        <h4>能力二：非形式→形式的推理能力</h4>
+        <div class="ab-need">面对真实世界问题，模型要先<strong>读懂题目意图</strong>；而且自然语言常省略关键细节（如类型提示），这些在形式语言里必须被显式补全，才能通过严格验证。这要求很强的「informal-to-formal」推理。</div>
+        <div class="ab-fail">缺它 → 误解题意、informal 与 formal 错位、漏声明类型。</div>
+      </div>
+    </div>
+
+    <h3>一个具体例子：甜甜圈问题（论文 Figure 1）</h3>
+    <p>同一道题，三个模型的表现把两种能力的缺失暴露得淋漓尽致。题目大意：</p>
+    <div class="note">Victoria 要为竞赛订<strong>至少 550 个</strong>甜甜圈，甜甜圈<strong>只按「打」（12 个一盒）出售</strong>，每打 7.49 美元，问<strong>最少要花多少钱</strong>？答案是 344.54 美元。请把它形式化为 Lean 4 定理。</div>
+
+    <div class="cmp-grid">
+      <div class="cmp bad">
+        <div class="who">Claude4-thinking</div>
+        <span class="lack">通用模型 · 缺形式知识</span>
+        <div class="desc">能一步步分析题意，但落到 Lean 代码时凭空发明 API。</div>
+        <pre><code><span class="kw">theorem</span> b :
+  <span class="kw">let</span> target := (<span class="ty">550</span>:ℕ)
+  <span class="kw">let</span> per := (<span class="ty">12</span>:ℕ)
+  <span class="kw">let</span> dz := <span class="err">Nat.ceil_div</span> target per
+  ...</code></pre>
+        <div class="verdict x">✗ 错误
+          <span class="mk">Lean 4 里根本不存在 <code>Nat.ceil_div</code> 这个函数。</span>
+        </div>
+      </div>
+      <div class="cmp bad">
+        <div class="who">Kimina-Autoformalizer</div>
+        <span class="lack">专用模型 · 缺推理</span>
+        <div class="desc">熟悉 Lean 写法，却没读懂题意、漏了类型声明。</div>
+        <pre><code><span class="kw">theorem</span> a : <span class="ty">IsLeast</span>
+  {x | ∃ n:ℕ, x = n*<span class="ty">7.49</span>
+    ∧ <span class="err">12 ∣ n</span> ∧ n ≥ <span class="ty">550</span>}
+  <span class="ty">344.54</span> := <span class="kw">by</span> sorry</code></pre>
+        <div class="verdict x">✗ 错误
+          <span class="mk">(1) 误解了「打/dozen」的含义；(2) 总价 x 未声明为实数 ℝ，7.49 触发类型错误。</span>
+        </div>
+      </div>
+      <div class="cmp good">
+        <div class="who">StepFun-Formalizer</div>
+        <span class="lack">本文 · 知识 + 推理</span>
+        <div class="desc">先分析概念与类型、预判 Lean 陷阱，再精确映射。</div>
+        <pre><code><span class="kw">theorem</span> c : <span class="ty">IsLeast</span>
+  {x : <span class="ty">ℝ</span> | ∃ n:ℕ,
+    x = n*<span class="ty">7.49</span> ∧ <span class="ok">12*n ≥ 550</span>}
+  <span class="ty">344.54</span> := <span class="kw">by</span> sorry</code></pre>
+        <div class="verdict ok">✓ 正确
+          <span class="mk">n = 盒数，总数 12·n ≥ 550，总价 x:ℝ = 7.49·n，类型与语义都对。</span>
+        </div>
+      </div>
+    </div>
+    <p style="color:var(--ink-2);font-size:15px;">这正是全文的主张：<strong>把两种能力融合进同一个模型</strong>，才能既写对 Lean 语法、又对齐题目真实语义。</p>
+  </section>
+
+  <!-- ===================== EVIDENCE (Figure 2) ===================== -->
+  <section id="evidence">
+    <div class="sec-tag">证据</div>
+    <h2>错误到底错在哪？——两类错误的量化分析</h2>
+    <p>作者把人类专家在 100 个样本上识别出的 6 种常见错误，归并成两大类，恰好对应上面两种能力的缺失：</p>
+    <ul>
+      <li><strong>自然语言误解（Natural Language Misunderstanding）</strong>：在转成形式语言之前就误读了题意——比如误解原意、漏掉数学对象、漏掉条件/结论。</li>
+      <li><strong>非形式–形式错位（Informal-Formal Misalignment）</strong>：题意理解对了，但在翻译过程中出错——比如映射到错误的 Lean 对象、逻辑结构错误（如 iff 只写了一个方向）、类型不匹配或未声明类型。</li>
+    </ul>
+    <p>随后用 GPT-4o 对约 10K 条输出做归类、并请专家人工标注 100 条子集，对比 Kimina-Autoformalizer 与 StepFun-Formalizer 的错误分布：</p>
+
+    <figure>
+      <img src="assets/fig2_error_analysis.png" alt="两个模型的错误类型分布堆叠条形图" />
+      <figcaption><span class="fnum">Figure 2：</span>两个模型的错误类型占比（上：GPT-4o 自动评估；下：人工评估）。StepFun-Formalizer 把两类关键错误同时压低、正确率（蓝色）显著抬升。</figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>四种颜色段含义</b>：蓝色 = 正确（Correct）；粉色 = 自然语言误解；橙色 = 非形式–形式错位；绿色 = 其他错误。每个条形横向加总为 100%。</li>
+          <li><b>上半部「GPT-4o evaluation」</b>：用 GPT-4o 对约 10K 条大规模输出归类。Kimina 正确率 33.7%，StepFun 提升到 <b>42.9%</b>；同时把「自然语言误解」从 33.0% 降到 26.0%。</li>
+          <li><b>下半部「Human evaluation」</b>：专家在 100 条子集上人工标注，信号更干净。Kimina 正确率仅 35.7%，StepFun 升到 <b>50.0%</b>；「非形式–形式错位」从 24.3% 大幅降到 16.1%。</li>
+          <li><b>为什么两段都要看</b>：自动评估覆盖面大但有噪声，人工评估精确但样本小，两者结论一致才有说服力——两类错误都被缓解。</li>
+          <li><b>它如何支撑全文主张</b>：错误并非随机，而是集中在「两种能力缺失」对应的两类上；StepFun 同时压低两类，正说明「知识+推理」的融合是对症下药。</li>
+        </ul>
+        <div class="fd-sum">一句话总结：这张图是全文动机的实证地基——证明自动形式化的错误可被清晰拆成两类，而本文方法能同时把它们压下去。</div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ===================== PRIOR WORK ===================== -->
+  <section id="prior">
+    <div class="sec-tag">已有方案</div>
+    <h2>别人是怎么做的，又卡在哪？</h2>
+    <p>当前主流的「用 LLM 把非形式题翻成形式语句」大体分两类，恰好各自只补上了一种能力，因而都受限于较低的准确率、且依赖大量人工核查。</p>
+
+    <div class="excard">
+      <div class="excard-head" onclick="toggleCard(this)">
+        <div class="ic">🌐</div>
+        <div class="ht">
+          <div class="t">方案一：直接蒸馏 / 提示通用大模型<span class="tag">有推理，缺形式知识</span></div>
+          <div class="sum">用 GPT-4 / DeepSeek-R1 等通用模型直接生成或翻译——会推理，但对 Lean 细节不够熟。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="excard-body"><div class="inner">
+        <p><strong>做法</strong>：代表工作如 <strong>FormalMATH</strong>（用 GPT-4 生成自动形式化训练数据）和 <strong>FMC</strong>（直接把 DeepSeek-R1 当翻译模型）。输入自然语言题，靠通用模型强大的语言理解直接产出形式语句。</p>
+        <p><strong>卡在哪</strong>：通用语料里形式数据极稀缺，且 Lean 3 与 Lean 4 差异巨大，通用模型常「学错或忽略」关键语言细节——于是写出不存在的函数、用错 API（正如甜甜圈例子里的 Claude4-thinking）。</p>
+        <p style="margin-bottom:0;color:var(--ink-2);font-size:15px;">本质：<strong>推理在线，但形式知识掉线。</strong></p>
+      </div></div>
+    </div>
+
+    <div class="excard">
+      <div class="excard-head" onclick="toggleCard(this)">
+        <div class="ic">🔧</div>
+        <div class="ht">
+          <div class="t">方案二：从零训练专用形式化模型<span class="tag">有形式知识，缺推理</span></div>
+          <div class="sum">用人工标注的「非形式–形式」对训练专用模型，翻译时不做推理，直接输出形式语句。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="excard-body"><div class="inner">
+        <p><strong>做法</strong>：代表工作如 <strong>Lean Workbook</strong> 与 <strong>Kimina-Autoformalizer</strong>。从已有的人工标注「非形式–形式」配对出发，配合专家监督、专家迭代 + LLM 评判等训练专用模型。它们对 Lean 写法很熟。</p>
+        <p><strong>卡在哪</strong>：标注数据集中在狭窄场景，模型缺乏对真实世界问题的<strong>理解与推理</strong>；翻译时<strong>不做 informal-to-formal 推理</strong>，于是误解题意、漏声明类型、informal 与 formal 错位（正如甜甜圈例子里的 Kimina）。论文还特别提到 <strong>Mathesis</strong> 是首个在训练中引入 RL 的自动形式化模型，但它翻译时同样不做推理，导致错位（且其模型与评测未公开，无法直接对比）。</p>
+        <p style="margin-bottom:0;color:var(--ink-2);font-size:15px;">本质：<strong>形式知识在线，但推理掉线。</strong></p>
+      </div></div>
+    </div>
+
+    <p style="color:var(--ink-2);font-size:15px;">还有一条相关思路是「<strong>推理增强的领域模型</strong>」（如 Fin-R1、CodeV-R1）：它们多是<strong>蒸馏</strong>富含领域知识的通用模型来获取领域推理数据，但蒸馏往往让学生模型表现低于老师。本文反其道——<strong>先给通用模型补形式知识，再训练推理</strong>，从而能追平甚至超过专用与通用模型。</p>
+  </section>
+
+  <!-- ===================== METHOD ===================== -->
+  <section id="method">
+    <div class="sec-tag">本文方法</div>
+    <h2>ThinkingF：一条把「知识 + 推理」融合进模型的流水线</h2>
+    <p>ThinkingF 由 4 个阶段组成。<strong>阶段 1–2 构造两份数据集</strong>（分别补形式知识、补推理能力），<strong>阶段 3–4 训练模型</strong>（先注入两种能力，再促进融合）。下图是整体流程：</p>
+
+    <figure>
+      <img src="assets/fig3_pipeline.png" alt="ThinkingF 四阶段流水线总览图" />
+      <figcaption><span class="fnum">Figure 3：</span>ThinkingF 方法总览。左侧两块构造「知识数据集」与「推理数据集」，中间的 DeepSeek-R1-Distill-Qwen 经过右侧两阶段训练，最终得到 StepFun-Formalizer。</figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>① 左上「Knowledge Distillation With Selection」</b>：对一条 NL 问题，用专用模型翻译出多条候选形式语句（Formal Statement 1/2/3…），经「多数投票」选出代表，再做「有效性评估」剔除无用语句（如 <code>theorem thm : 2 &gt; 1</code> 这类平凡命题），产出高质量「知识数据集」。</li>
+          <li><b>② 左下「Informal-to-formal Reasoning Synthesis」</b>：以带人工标注的 (NL 问题, 形式语句) 为种子，用「模板引导的推理构造」生成一段 <code>&lt;Reasoning&gt;</code>（"Let me analyze the math concepts…"），产出「推理数据集」。</li>
+          <li><b>中间的羊驼 = 基座模型 DeepSeek-R1-Distill-Qwen</b>：两条向上/向下的虚线箭头表示「形式知识」与「推理能力」分别从两份数据集注入基座。</li>
+          <li><b>③ 右上「Two-Stage Supervised Fine-tuning」</b>：第一阶段用知识数据集（输出里 <code>&lt;think&gt;NULL&lt;/think&gt;</code>，不带推理），第二阶段用推理数据集（输出里带完整 <code>&lt;think&gt;Reasoning&lt;/think&gt;</code>），两阶段 SFT 把两种能力都装进模型。</li>
+          <li><b>④ 右下「Reinforcement Learning With Verifiable Reward」</b>：模型生成的形式语句与人工标注 Ground Truth 之间做「等价性验证（BEq）」，等价则给奖励，进一步促进两种能力融合。</li>
+          <li><b>整体数据流</b>：左（造数据）→ 中（基座）→ 右上（SFT 注入）→ 右下（RL 融合）→ 最右输出 StepFun-Formalizer。</li>
+        </ul>
+        <div class="fd-sum">一句话总结：左边造「知识」和「推理」两份数据，右边先用 SFT 把两者装进同一个模型、再用可验证奖励的 RL 把两者融合，最终炼成 StepFun-Formalizer。</div>
+      </div>
+    </figure>
+
+    <h3>跟着流程走一遍（点「下一步」逐阶段拆解）</h3>
+    <div class="stepper" id="stepper">
+      <div class="step-rail">
+        <div class="step-dot active" data-step="1" onclick="setStep(1)"><div class="sn">STAGE 1</div><div class="st">知识蒸馏与筛选</div></div>
+        <div class="step-dot" data-step="2" onclick="setStep(2)"><div class="sn">STAGE 2</div><div class="st">推理数据合成</div></div>
+        <div class="step-dot" data-step="3" onclick="setStep(3)"><div class="sn">STAGE 3</div><div class="st">两阶段 SFT</div></div>
+        <div class="step-dot" data-step="4" onclick="setStep(4)"><div class="sn">STAGE 4</div><div class="st">可验证奖励 RL</div></div>
+      </div>
+
+      <div class="step-panel active" data-step="1">
+        <h4>① 知识蒸馏与筛选 — 造一份「形式知识」数据集</h4>
+        <p>目标：拿到海量<strong>高质量的「非形式–形式」配对</strong>，把专用模型的形式知识「蒸」出来。做法是让专用模型大量翻译，再做三层筛选去伪存真。</p>
+        <div class="flow-io">
+          <span class="box">256K 道 NL 题<br/>(NuminaMath-1.5 过滤)</span>
+          <span class="arr">→</span>
+          <span class="box">Kimina 每题<br/>生成 16 个候选</span>
+          <span class="arr">→</span>
+          <span class="box out">三层筛选<br/>↓</span>
+        </div>
+        <div class="tier-flow">
+          <div class="tier"><div class="col-l"><div class="knob">1</div><div class="line"></div></div><div class="col-r"><div class="tt">语法检查（Lean 4 REPL）</div><div class="td">用 REPL 逐条编译，只留下语法正确的候选。</div></div></div>
+          <div class="tier"><div class="col-l"><div class="knob">2</div><div class="line"></div></div><div class="col-r"><div class="tt">多数投票（用 BEq 分等价类）</div><div class="td">把语法正确的候选按语义等价划分成若干等价类，从<strong>最大的等价类</strong>里随机取一条作为该题的最优形式化。多数投票能显著提升准确率（如 Kimina-7B 在 FormalMATH-Lite 上 BEq@1 35.1% → Maj@16 45.9%）。</div></div></div>
+          <div class="tier"><div class="col-l"><div class="knob">3</div></div><div class="col-r"><div class="tt">有效性评估（DeepSeek-V3）</div><div class="td">剔除过于平凡、或条件自相矛盾的形式语句。该步可在保持性能的同时大幅减少所需训练数据量。</div></div></div>
+        </div>
+        <div class="dataflow">
+          <div class="chip"><div class="cn">896K</div><div class="cl">NuminaMath 原始</div></div>
+          <span class="arr">→</span>
+          <div class="chip"><div class="cn">256K</div><div class="cl">规则过滤后</div></div>
+          <span class="arr">→</span>
+          <div class="chip"><div class="cn">~183K</div><div class="cl">最终知识数据</div></div>
+        </div>
+      </div>
+
+      <div class="step-panel" data-step="2">
+        <h4>② 推理数据合成 — 造一份「informal-to-formal 推理」数据集</h4>
+        <p>关键发现：直接从通用推理模型蒸馏推理轨迹<strong>效果很差</strong>（见「有意思的点」里的 off-task 现象）。所以作者<strong>手工设计了一个推理模板</strong>，把人类做形式化时的思考过程固化下来，再让强指令跟随模型按模板补全推理。模板分两部分：</p>
+        <ul>
+          <li><strong>(1) 非形式问题理解</strong>：复述原题、分析高层逻辑结构（如 iff / 蕴含 / 全称量化）、分解涉及的数学概念与对象。</li>
+          <li><strong>(2) 非形式→形式分析</strong>：先预判形式化时可能踩的坑（如隐式类型转换、自动变量声明），再用「分而治之」把每个自然语言数学对象逐一映射到 Lean。</li>
+        </ul>
+        <div class="flow-io">
+          <span class="box">人工标注种子<br/>(x̂, ŷ)</span>
+          <span class="arr">→</span>
+          <span class="box">Claude 3.7 Sonnet<br/>按模板补推理 ĉ</span>
+          <span class="arr">→</span>
+          <span class="box out">5.8K 条<br/>推理轨迹</span>
+        </div>
+        <p style="color:var(--ink-2);font-size:15px;margin-bottom:0;">注意：推理是从「题目 x̂ → 已知正确答案 ŷ」之间补出来的，因此<strong>正确率有保证</strong>——不是让模型自己瞎想，而是为已知正确的配对补写「为什么这样形式化」。</p>
+      </div>
+
+      <div class="step-panel" data-step="3">
+        <h4>③ 两阶段监督微调（SFT）— 把两种能力都装进模型</h4>
+        <p>基座选 <strong>DeepSeek-R1-Distill-Qwen</strong>（在非形式数学与代码上推理很强）。两阶段分别灌入两份数据：</p>
+        <ul>
+          <li><strong>第一阶段（灌知识，~183K）</strong>：输入题目 x，输出形式语句 y；在 y 前插入特殊 token 保持模型内部格式一致、并维持其推理能力。此阶段输出<strong>不带</strong>显式推理（对应总览图里的 <code>&lt;think&gt;NULL&lt;/think&gt;</code>）。</li>
+          <li><strong>第二阶段（灌推理，5.8K）</strong>：按推理模型的标准格式，把推理轨迹 ĉ 包在 <code>&lt;think&gt;…&lt;/think&gt;</code> 内，后接形式语句 ŷ。</li>
+        </ul>
+        <p style="margin-bottom:0;">两阶段做完，得到初步模型 <strong>StepFun-Formalizer-SFT</strong>，已同时具备形式知识与 informal-to-formal 推理能力。</p>
+      </div>
+
+      <div class="step-panel" data-step="4">
+        <h4>④ 可验证奖励强化学习（RLVR）— 促进两种能力融合</h4>
+        <p>在 SFT 模型上继续做 RL，进一步「融合」知识与推理。由于缺高质量标注，<strong>复用第二阶段的同一批 5.8K 题</strong>做 RL；即便数据相同，继续 RL 仍带来提升。</p>
+        <div class="flow-io">
+          <span class="box">模型生成形式语句 y</span>
+          <span class="arr">⟷</span>
+          <span class="box">人工标注 ŷ (Ground Truth)</span>
+          <span class="arr">=</span>
+          <span class="box out">BEq 等价? 是→奖励 1，否→0</span>
+        </div>
+        <p>奖励就是模型输出与标准答案之间的 <strong>BEq 双向等价验证</strong>结果（等价得 1、否则得 0）。算法用 <strong>GRPO</strong>（去掉价值函数、按组内相对方式估计优势），并吸收 <strong>DAPO</strong> 的动态采样与 token 级损失等改进。RL 让 reward 与下游任务性能<strong>同步上升</strong>。</p>
+      </div>
+
+      <div class="step-controls">
+        <button id="stepPrev" onclick="prevStep()" disabled>← 上一步</button>
+        <button id="stepNext" onclick="nextStep()">下一步 →</button>
+        <span class="step-counter" id="stepCounter">阶段 1 / 4</span>
+      </div>
+    </div>
+
+    <h3>放大看：推理模板长什么样（Figure 4）</h3>
+    <p>下图是「模板引导的推理构造框架」的具体提示词与示例，对应阶段 2。它把上面说的「问题理解 + 非形式→形式分析」拆成可操作的若干步。</p>
+    <figure>
+      <img src="assets/fig4_reasoning_template.png" alt="模板引导的推理构造框架的提示词与示例" />
+      <figcaption><span class="fnum">Figure 4：</span>模板引导的推理构造框架。(a) 任务描述；(b) 推理需覆盖的步骤清单；(c) 概念分析示例；(d) 非形式→形式转换的分析步骤；(e) 把概念映射到 Lean 的示例。</figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>(a) 绿色块 — 任务描述</b>：告诉模型「给定一道非形式数学题及其 Lean 4 形式语句，请给出一段从非形式到形式的形式化过程」，框定它<strong>只做形式化、不做解题</strong>。</li>
+          <li><b>(b) 蓝色块 — 步骤清单</b>：要求推理依次覆盖：① 复述题目；② 分析高层逻辑结构（如 if-and-only-if）；③ 分析涉及的数学概念；④ 据概念确定要定义的数学对象及其类型。这对应模板的「问题理解」部分。</li>
+          <li><b>(c) 蓝色块右 — 概念分析示例</b>：一个具体例子，逐条分析「正整数」「互质」等概念在本题中的含义（如 n &gt; 2、最大公约数为 1），示范应有的分析颗粒度。</li>
+          <li><b>(d) 灰色块 — 非形式→形式分析步骤</b>：⑤ 分析所需 headers（import/open/辅助函数）；⑥ 预判 Lean 陷阱（如隐式类型转换）；⑦ 把概念、对象、运算逐一映射到 Lean 4；⑧ 复核并输出与给定形式语句一致的完整代码。</li>
+          <li><b>(e) 灰色块右 — 映射示例</b>：示范把「1 到 n 的整数集合」映射为 Lean 的 <code>Finset.Icc 1 n</code>（闭区间 [1, n]），即「概念 → Lean 写法」的落地。</li>
+          <li><b>颜色分区的含义</b>：绿 = 总任务；蓝 = 「问题理解」相关步骤与示例；灰 = 「非形式→形式」相关步骤与示例——颜色把模板的两大部分清晰分开。</li>
+        </ul>
+        <div class="fd-sum">一句话总结：这张图把「人类如何一步步把题目翻成 Lean」固化成提示模板（理解题意 → 预判陷阱 → 逐对象映射 → 复核输出），用它合成的推理轨迹质量远高于直接蒸馏。</div>
+      </div>
+    </figure>
+
+    <details>
+      <summary>BEq 到底是什么？为什么用它当评测与奖励
+        <span class="ssum">双向扩展定义等价：用证明助手自动搜索，判断两条形式语句是否互相可证。</span>
+      </summary>
+      <div class="dbody">
+        <p><strong>BEq（Bidirectional Extended Definitional Equivalence，双向扩展定义等价）</strong>：两条形式语句 <code>y₁</code> 与 <code>y₂</code> 等价，当且仅当存在形式证明能<strong>用保语义的策略从 y₁ 推出 y₂、反之亦然</strong>。</p>
+        <p>为兼顾准确与算力，论文用最严格的 BEq 实现：只调用符号启发式策略 <code>exact?</code> 自动搜索等价证明。具体地，把 <code>y₁</code> 的证明设为 <code>sorry</code>（假设其成立），用 <code>exact?</code> 为 <code>y₂</code> 搜索一个由 y₁ 出发的证明；若两段证明拼接后在 Lean 4 REPL 验证通过、且确实用到了 y₁，则 y₂ 可由 y₁ 证出；双向都成立即 y₁ ∼ y₂。</p>
+        <p style="margin-bottom:0;color:var(--ink-2);"><strong>BEq@k</strong> = 在 k 次尝试中，至少有一次与标准答案 BEq 的样本比例。<code>BEq@1</code> 衡量单次生成准确率，<code>BEq@16</code> 衡量能力上限。附录还验证：相比再上一个 20B 证明模型来判等价，只用 <code>exact?</code> 便宜约 4 倍、仅少判 3 条，性价比更高。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== FINDINGS ===================== -->
+  <section id="findings">
+    <div class="sec-tag">有意思的点</div>
+    <h2>几个值得单独说的发现</h2>
+
+    <div class="excard">
+      <div class="excard-head" onclick="toggleCard(this)">
+        <div class="ic">🎯</div>
+        <div class="ht">
+          <div class="t">通用推理模型会「跑题」：去解题而不是去形式化<span class="tag">off-task</span></div>
+          <div class="sum">这正是「不能直接蒸馏通用模型推理」的根本原因，也是设计人工模板的动机。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="excard-body"><div class="inner">
+        <p>作者观察到：像 Claude4-thinking 这样的通用推理模型在做形式化时，会把<strong>绝大部分推理花在「解出这道数学题」上，而不是「如何把它翻译成 Lean」</strong>——虽然最后往往还是给出了正确的形式语句，但这种推理轨迹对训练自动形式化模型是有害的（学生学到的是解题而非形式化）。这就是为什么<strong>直接蒸馏通用模型反而拉低性能</strong>，也是作者改用「人工设计模板」来合成推理数据的原因。</p>
+        <details>
+          <summary>看一个 off-task 的真实例子（Claude4-thinking）<span class="ssum">题目只要求"形式化"，它却一路心算 11111² = 123454321、做 mod 4 分析……</span></summary>
+          <div class="dbody">
+            <p>题目：设正整数 a、b 满足 (11111+a)(11111−b)=123456789，证明 a−b 是 4 的倍数。<strong>要求只输出 Lean 4 定理语句，不要证明。</strong></p>
+            <p>Claude4-thinking 的推理却一路在<strong>解题</strong>：展开左边、算出 11111² = 123454321、化简得 11111(a−b)−ab = 2468、再做 mod 4 分析（11111 ≡ 3、2468 ≡ 0）……最后才"顺手"输出了正确的形式语句：</p>
+            <pre><code><span class="kw">theorem</span> my_favorite_theorem (a b : ℤ)
+  (ha : 0 &lt; a) (hb : 0 &lt; b)
+  (h : (11111 + a) * (11111 - b) = 123456789) :
+  4 ∣ (a - b) := <span class="kw">by</span> sorry</code></pre>
+            <p style="margin-bottom:0;color:var(--ink-2);">形式语句虽对，但整段推理几乎与「如何形式化」无关——把这种轨迹喂给学生模型，自然学不到形式化能力。</p>
+          </div>
+        </details>
+      </div></div>
+    </div>
+
+    <div class="excard">
+      <div class="excard-head" onclick="toggleCard(this)">
+        <div class="ic">⚖️</div>
+        <div class="ht">
+          <div class="t">消融：推理是主力，知识是补位<span class="tag">ablation</span></div>
+          <div class="sum">去掉推理数据 → BEq@16 断崖式下跌；去掉知识数据 → 仅小幅下降。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="excard-body"><div class="inner">
+        <p>分别从 SFT 中移除「知识」与「推理」阶段，在 OOD 基准上看影响（ProverBench / CombiBench，BEq@1 / BEq@16）：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>数据配置</th><th>ProverBench BEq@1</th><th>ProverBench BEq@16</th><th>CombiBench BEq@1</th><th>CombiBench BEq@16</th></tr></thead>
+            <tbody>
+              <tr class="ours"><td>ThinkingF（完整）</td><td>25.1</td><td>37.9</td><td>5.2</td><td>11.0</td></tr>
+              <tr><td>− 去掉知识数据</td><td>24.5</td><td>37.4</td><td>3.9</td><td>10.0</td></tr>
+              <tr><td>− 去掉推理数据</td><td>21.8</td><td>25.3</td><td>5.3</td><td>6.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-bottom:0;">结论：<strong>informal-to-formal 推理是性能的主要贡献者，形式知识起补充作用</strong>。尤其去掉推理后 BEq@16 大幅下滑（37.9 → 25.3），说明推理对「能力上限」至关重要。</p>
+      </div></div>
+    </div>
+
+    <div class="excard">
+      <div class="excard-head" onclick="toggleCard(this)">
+        <div class="ic">🧩</div>
+        <div class="ht">
+          <div class="t">「人工模板」明显优于「直接蒸馏」<span class="tag">template &gt; distill</span></div>
+          <div class="sum">把推理数据换成直接蒸馏 Claude4-thinking 的轨迹，性能显著下降。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="excard-body"><div class="inner">
+        <p>把 SFT 里的推理数据替换为「直接蒸馏 Claude4-thinking」得到的轨迹（同样用 BEq 筛过），对比模板法：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>推理数据来源</th><th>ProverBench BEq@1</th><th>ProverBench BEq@16</th><th>CombiBench BEq@1</th><th>CombiBench BEq@16</th></tr></thead>
+            <tbody>
+              <tr class="ours"><td>模板引导（本文）</td><td>25.1</td><td>37.9</td><td>5.2</td><td>11.0</td></tr>
+              <tr><td>直接蒸馏 Claude4</td><td>21.8</td><td>33.3</td><td>4.8</td><td>10.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-bottom:0;color:var(--ink-2);">原因正是上面的 off-task 现象——蒸来的轨迹大多在"解题"而非"形式化"，反而限制了模型学习。</p>
+      </div></div>
+    </div>
+
+    <div class="excard">
+      <div class="excard-head" onclick="toggleCard(this)">
+        <div class="ic">📈</div>
+        <div class="ht">
+          <div class="t">RL 持续带来稳定提升<span class="tag">RLVR</span></div>
+          <div class="sum">450 步内，奖励与下游 BEq@1 同步上升。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="excard-body"><div class="inner">
+        <p>每 50 步评测一次 7B 模型，奖励与各基准平均 BEq@1 同步上升：</p>
+        <div class="metrics" style="margin-top:6px;">
+          <div class="metric"><div class="num">0.232<small> → 0.347</small></div><div class="lbl">训练奖励（450 步）</div></div>
+          <div class="metric"><div class="num">0.258<small> → 0.303</small></div><div class="lbl">各基准平均 BEq@1（450 步）</div></div>
+        </div>
+        <p style="margin-bottom:0;color:var(--ink-2);">即便 RL 复用 SFT 第二阶段的同一批 5.8K 题，继续训练仍能带来提升，印证了 RLVR 对融合两种能力的作用。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ===================== RESULTS ===================== -->
+  <section id="results">
+    <div class="sec-tag">实验结论</div>
+    <h2>它到底有多强？</h2>
+    <p>在三个主流基准上用 BEq 评测：<strong>FormalMATH-Lite</strong>（与训练分布相近，in-domain）、<strong>ProverBench</strong> 与 <strong>CombiBench</strong>（OOD）。一句话结论：</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">SOTA</div><div class="lbl">32B 在 FormalMATH-Lite 与 ProverBench 上 BEq@1 全面登顶，超越所有通用与专用模型</div></div>
+      <div class="metric"><div class="num">38.3<small>%</small></div><div class="lbl">7B 在 FormalMATH-Lite 超过其形式知识来源 Kimina-7B（35.1%）</div></div>
+      <div class="metric"><div class="num">25.1<small>%</small></div><div class="lbl">7B 在 ProverBench 超过 DeepSeek-R1-671B（23.5%）</div></div>
+    </div>
+
+    <h3>主结果对比（BEq@1 / BEq@16，%）</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th rowspan="2">模型</th><th colspan="2">FormalMATH-Lite</th><th colspan="2">ProverBench</th><th colspan="2">CombiBench</th></tr>
+          <tr><th>@1</th><th>@16</th><th>@1</th><th>@16</th><th>@1</th><th>@16</th></tr>
+        </thead>
+        <tbody>
+          <tr class="grp"><td colspan="7">通用模型</td></tr>
+          <tr><td>OpenAI o3-pro</td><td>22.6</td><td>35.5</td><td>24.7</td><td>36.2</td><td>9.0</td><td>16.0</td></tr>
+          <tr><td>Claude4-thinking</td><td>20.8</td><td>32.2</td><td>24.4</td><td>35.6</td><td>9.7</td><td>18.0</td></tr>
+          <tr><td>DeepSeek-R1-671B</td><td>18.4</td><td>31.3</td><td>23.5</td><td>34.5</td><td>8.1</td><td class="best">20.0</td></tr>
+          <tr><td>DeepSeek-R1-Distill-7B</td><td>5.2</td><td>14.6</td><td>5.4</td><td>18.4</td><td>0.4</td><td>2.0</td></tr>
+          <tr class="grp"><td colspan="7">专用模型</td></tr>
+          <tr><td>Kimina-Autoformalizer-7B</td><td>35.1</td><td class="best">60.2</td><td>13.3</td><td>25.3</td><td>2.6</td><td>6.0</td></tr>
+          <tr><td>Goedel-Formalizer-32B (Sonnet)</td><td>18.7</td><td>29.2</td><td>13.6</td><td>27.6</td><td>3.4</td><td>10.0</td></tr>
+          <tr class="grp"><td colspan="7">本文模型</td></tr>
+          <tr class="ours"><td>StepFun-Formalizer-7B</td><td>38.3</td><td>61.2</td><td>25.1</td><td>37.9</td><td>5.2</td><td>11.0</td></tr>
+          <tr class="ours"><td>StepFun-Formalizer-32B</td><td class="best">40.5</td><td>59.3</td><td class="best">26.7</td><td class="best">38.5</td><td>6.9</td><td>14.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="color:var(--ink-2);font-size:14.5px;">表中 <span class="best">高亮</span> 为该列最佳。注：7B 与 32B 表现相近，作者认为受限于数据规模，32B 需要更多数据才能进一步发挥；在最难的 CombiBench（组合数学、长上下文、强真实世界建模）上，本文模型显著超过同规模专用模型，但绝对值对所有模型都仍偏低。</p>
+
+    <h3>一个延伸应用：生成更可证的形式语句</h3>
+    <p>把 StepFun-Formalizer 用于端到端定理证明的数据合成：随机取 NuminaMath-1.5 的 1 万题，分别用两个模型翻成形式语句，再用 Kimina-Prover-7B 各生成 16 个证明。结果 Kimina-Prover 能证出 <strong>StepFun 产出的 4940 条</strong> vs <strong>Kimina-Auto 产出的 4549 条</strong>——StepFun 在除「不等式」外的所有领域都产出更高比例的可证语句。</p>
+    <figure>
+      <img src="assets/fig5_provable_domains.png" alt="各数学领域可证形式语句比例的对比柱状图" />
+      <figcaption><span class="fnum">Figure 5：</span>1 万道 NuminaMath 题上，各领域「可被证明的形式语句」比例（蓝：Kimina-Auto-7B；橙：StepFun-7B）。</figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>纵轴 / 横轴</b>：纵轴是「可证形式语句的比例（%）」，越高越好；横轴是数学领域：代数、数论、逻辑与谜题、不等式、微积分、其他、总计。</li>
+          <li><b>两种颜色</b>：蓝色 = Kimina-Autoformalizer-7B；橙色 = StepFun-Formalizer-7B。每个领域并排两根柱子做对比。</li>
+          <li><b>StepFun 几乎全面领先</b>：代数 55.6 vs 50.9、数论 36.1 vs 33.6、逻辑与谜题 58.4 vs 53.9、微积分 35.7 vs 29.5、其他 64.3 vs 60.1；唯一例外是<b>不等式（19.4 vs 20.3）</b>，StepFun 略低。</li>
+          <li><b>总计（Total）</b>：49.4 vs 45.5——整体上 StepFun 产出的形式语句更容易被证明器证出。</li>
+          <li><b>为什么这件事重要</b>：可证语句越多、越多样，越能为下游定理证明模型提供高质量训练数据，形成「形式化 → 证明」的数据飞轮。</li>
+        </ul>
+        <div class="fd-sum">一句话总结：StepFun 在几乎所有数学领域都能生成更高比例的「可被证明」的形式语句，说明它不仅翻得对，还翻得"对证明器友好"，利于做定理证明的数据合成。</div>
+      </div>
+    </figure>
+
+    <details>
+      <summary>再看一个完整 case：商环是否为域（ProverBench）<span class="ssum">Kimina 凭空造定义导致语法错误；StepFun 正确分析多项式环与理想并映射到 Lean。</span></summary>
+      <div class="dbody">
+        <p>题目：设 ℤ₃ 是模 3 的有限域，c ∈ ℤ₃。商环 ℤ₃[x]/(x³+x²+c) 是域，当且仅当 c=2。</p>
+        <p><strong>Kimina-Autoformalizer</strong>：凭空发明了一堆 <code>ZMod3</code>、<code>ZMod3_quotient</code> 定义，把类型写得自相矛盾，最终<strong>语法错误</strong>——它根本没理解「商环」这个概念。</p>
+        <p><strong>StepFun-Formalizer</strong>：先分析逻辑结构（iff，需证双向）、逐一解释有限域 ℤ₃、多项式环 ℤ₃[x]、由多项式生成的理想、商环、域等概念，预判类型转换等 Lean 陷阱，再把每个概念映射到 Lean（<code>ZMod 3</code>、<code>Polynomial (ZMod 3)</code>、<code>span {...}</code>、<code>IsField</code>、商运算 <code>⧸</code>），最终输出正确语句：</p>
+        <pre><code><span class="kw">theorem</span> my_favorite_theorem {c : <span class="ty">ZMod 3</span>} :
+  <span class="ty">IsField</span> ((<span class="ty">Polynomial</span> (<span class="ty">ZMod 3</span>)) ⧸
+    (span ({X^3 + X^2 + C c} : <span class="ty">Set</span> (<span class="ty">Polynomial</span> (<span class="ty">ZMod 3</span>))))) ↔ c = 2 := <span class="kw">by</span> sorry</code></pre>
+        <p style="margin-bottom:0;color:var(--ink-2);">这正是「知识 + 推理融合」的价值：靠推理读懂抽象代数概念，靠知识把它们准确落到 Lean 构造上。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer>
+    <p style="font-weight:700;color:var(--ink);margin-bottom:4px;">可继续迭代的方向</p>
+    <ul style="color:var(--ink-2);">
+      <li>把「三层筛选」与「BEq 验证」做成可交互的小演示（输入候选 → 看每层留下什么），让读者亲手体验数据筛选。</li>
+      <li>补一个「推理模板 8 步」的逐步展开演示，配甜甜圈或商环题，从理解到映射走完整一遍。</li>
+      <li>加入与并发工作 Goedel-Formalizer-V2 的对比、以及 RL 训练曲线（Figure 11）的可视化呈现。</li>
+    </ul>
+    <p style="margin-top:18px;">原文：<strong>StepFun-Formalizer: Unlocking the Autoformalization Potential of LLMs Through Knowledge-Reasoning Fusion</strong>（Yutong Wu 等，StepFun / 中科院计算所，arXiv:2508.04440, 2025）。本页为面向中文读者的教学可视化，所有图片取自 arXiv HTML 版原文。</p>
+    <div class="foot-links">
+      <a href="https://arxiv.org/abs/2508.04440" target="_blank" rel="noopener">arXiv 原文 ↗</a>
+      <a href="https://github.com/stepfun-ai/StepFun-Formalizer" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="https://huggingface.co/stepfun-ai/StepFun-Formalizer-32B" target="_blank" rel="noopener">HuggingFace ↗</a>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  function toggleFigDetail(el){
+    var detail = el.nextElementSibling;
+    if(!detail) return;
+    var open = detail.classList.toggle('active');
+    el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+  }
+
+  function toggleCard(head){
+    var card = head.parentElement;
+    if(card) card.classList.toggle('open');
+  }
+
+  var currentStep = 1;
+  var TOTAL_STEPS = 4;
+  function setStep(n){
+    if(n < 1) n = 1;
+    if(n > TOTAL_STEPS) n = TOTAL_STEPS;
+    currentStep = n;
+    var dots = document.querySelectorAll('#stepper .step-dot');
+    var panels = document.querySelectorAll('#stepper .step-panel');
+    dots.forEach(function(d){
+      d.classList.toggle('active', parseInt(d.getAttribute('data-step'),10) === n);
+    });
+    panels.forEach(function(p){
+      p.classList.toggle('active', parseInt(p.getAttribute('data-step'),10) === n);
+    });
+    var counter = document.getElementById('stepCounter');
+    if(counter) counter.textContent = '阶段 ' + n + ' / ' + TOTAL_STEPS;
+    var prev = document.getElementById('stepPrev');
+    var next = document.getElementById('stepNext');
+    if(prev) prev.disabled = (n === 1);
+    if(next) next.disabled = (n === TOTAL_STEPS);
+  }
+  function nextStep(){ setStep(currentStep + 1); }
+  function prevStep(){ setStep(currentStep - 1); }
+
+  // lightweight scroll-spy for nav highlight
+  (function(){
+    var links = document.querySelectorAll('.topnav nav a[href^="#"]');
+    if(!links.length || !('IntersectionObserver' in window)) return;
+    var map = {};
+    links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){ a.style.background = ''; a.style.color = ''; });
+          var a = map[e.target.id];
+          if(a && !a.classList.contains('src')){
+            a.style.background = 'var(--bg-3)';
+            a.style.color = 'var(--ink)';
+          }
+        }
+      });
+    }, {rootMargin: '-45% 0px -50% 0px', threshold: 0});
+    document.querySelectorAll('main section[id]').forEach(function(s){ obs.observe(s); });
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi-Dev · 中文导读：Agentless 训练作为 SWE-Agent 的技能先验</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+.panel.neutral li::before{content:"›";color:var(--accent);font-weight:700;top:-1px}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:520px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:700;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint);font-weight:400}
+table.data tr.grp td{background:var(--surface-2);font-weight:700;color:var(--ink-soft);font-size:12px;text-align:left;letter-spacing:.04em}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:640px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.figure img.tight{padding:18px 14px}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1200px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+pre.code .bad{color:#a3502a;font-weight:600}
+pre.code .good{color:#5a7d2b;font-weight:600}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-2{grid-template-columns:1fr 1fr}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.flow-4{grid-template-columns:repeat(4,1fr)}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode.hot{border-color:var(--border-strong);background:var(--accent-soft)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+.fnode.hot .fseq{background:var(--surface)}
+
+/* duo diagram */
+.duo{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.duo .row{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;justify-content:center}
+.dbox{flex:1;min-width:150px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 15px}
+.dbox.core{background:var(--accent-soft);border-color:var(--border-strong);max-width:140px;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.dbox .dh{font-weight:700;font-size:15px;color:var(--accent-deep);margin-bottom:6px}
+.dbox .dd{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.dbox .dskill{font-size:12px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:4px 8px;margin-top:6px;display:flex;align-items:center;gap:7px}
+
+/* step animation */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:170px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-2,.flow-3,.flow-4,.sp-io{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Kimi-Dev 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#dichotomy">两条路线</a>
+      <a href="#duo">二人组</a>
+      <a href="#recipe">训练配方</a>
+      <a href="#selfplay">自对弈</a>
+      <a href="#prior">技能先验</a>
+      <a href="#insights">有意思的点</a>
+      <a href="#results">实验结论</a>
+      <a href="#limits">局限</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2509.23045" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">论文导读 · Agentless Training as Skill Prior</div>
+    <h1>Kimi-Dev：把「Agentless 训练」当作 SWE-Agent 的技能先验</h1>
+    <p class="subtitle">Kimi-Dev: Agentless Training as Skill Prior for SWE-Agents</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv preprint · 技术报告</span>
+      <span class="chip">2025.09</span>
+      <span class="chip">arXiv:2509.23045 (v3)</span>
+      <span class="chip">Moonshot AI · Kimi Team</span>
+      <span class="chip">72B · 基于 Qwen2.5-72B-Base</span>
+    </div>
+    <p class="lead">一句话：解软件工程任务（SWE）有两条公认对立的路线——按固定流水线走的 <strong>Agentless（工作流）</strong>，和多轮自由交互的 <strong>SWE-Agent（智能体）</strong>。本文主张二者<strong>不是非此即彼</strong>：用推理密集的 Agentless 训练，能把<strong>定位 bug、改代码、自我反思</strong>这些原子能力「烤」成模型的<strong>技能先验</strong>，再用极少的轨迹数据就能高效地把它适配成一个强大的 SWE-Agent。</p>
+    <p class="muted" style="font-size:14px">本页基于 arXiv HTML 原文（v3）正文、表格与 7 张原始图表构建；正文术语首次出现时给出英文原词，便于对照原文。<a href="https://arxiv.org/abs/2509.23045" target="_blank" rel="noopener">阅读原文 ↗</a></p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>核心主张</strong>：Agentless 训练<strong>不该被当成最终产物</strong>，而应被看作诱导<strong>技能先验（skill prior）</strong>的手段——它把 bug 定位、代码编辑、自我反思/验证这些原子能力植入模型，为后续训练更强、更通用的 SWE-Agent 打地基。</li>
+      <li><strong>先做一个最强的 Agentless 模型</strong>：以 Qwen2.5-72B-Base 为底座，走「中期训练 → 冷启动 → 强化学习 → 测试时自对弈」四步配方，得到 <strong>Kimi-Dev</strong>，在 SWE-bench Verified 上拿到 <strong>60.4%</strong>，是<strong>工作流类方法里的开源 SoTA</strong>。</li>
+      <li><strong>再证明技能能迁移</strong>：仅用 <strong>5,016 条公开轨迹</strong>做轻量 SFT，就把 Kimi-Dev 适配成 SWE-Agent，拿到 <strong>48.6% pass@1</strong>，与 <strong>Claude 3.5 Sonnet（241022）</strong>持平。</li>
+      <li><strong>结论</strong>：Agentless 与 agentic 是<strong>互补的两个阶段</strong>，不是互斥的两条岔路。结构化的技能先验可以「搭脚手架」，让自主智能体的训练更稳、更省、更能泛化。</li>
+    </ul>
+    <div class="quote big">「这两种范式不是互斥的：推理密集的 Agentless 训练会诱导出技能先验——定位、代码编辑、自我反思——它们让 SWE-Agent 的适配既高效又有效。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 释义自论文摘要</span></div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：SWE-bench 与「两种范式之争」</h2>
+    <p><strong>SWE-bench</strong> 是衡量大模型做软件工程的代表性基准：给一个真实 GitHub 仓库里的 bug issue，模型要产出一个能修复它的<strong>补丁（patch）</strong>，对错由「打上补丁后相应单元测试是否通过」自动判定。它难度高、有可执行的客观奖励、还直接对应真实经济价值，于是成了整个领域的焦点。</p>
+    <p>围绕 SWE-bench，业界长出两条解法路线，并被长期视为<strong>互斥</strong>：</p>
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph">🤖 SWE-Agent（智能体 / 多轮）</div>
+        <ul>
+          <li>给任务描述 + 一套工具 + 问题陈述，让 agent <strong>多轮交互</strong>：自主规划、动手、反思，自己决定何时停。</li>
+          <li>自由度高 → <strong>潜力与适应性上限更高</strong>，像人类开发者那样调试。</li>
+          <li>但<strong>端到端难训</strong>：轨迹动辄几十上百步，奖励稀疏、<strong>长程信用分配</strong>难，RL 容易不稳定甚至崩溃。</li>
+        </ul>
+      </div>
+      <div class="panel before">
+        <div class="ph">🔧 Agentless（工作流 / 单轮）</div>
+        <ul>
+          <li>把解题<strong>预定义成流水线</strong>：定位（localization）→ 修复（repair）→ 写测试（test）。</li>
+          <li>每一步都变成<strong>可验证奖励的单轮问题</strong>，模块化、稳定，<strong>易用 RLVR 训练</strong>。</li>
+          <li>但<strong>探索空间受限、灵活性差</strong>；遇到需要多轮增量修改的场景就难适应，错误模式藏在单轮长推理里、不好监控。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="t">训练 SWE-Agent 还有一个隐痛：对初始化极其敏感</div>
+      从一个通用预训练模型直接起步，常出现<strong>脆弱行为</strong>——不会有效用工具、或卡在某个动作模式的<strong>死循环</strong>里。再加上构造大规模可执行环境、采集可靠轨迹既<strong>慢又贵</strong>（要大量人工 + 调用前沿模型），让从零训智能体变得很奢侈。
+    </div>
+  </section>
+
+  <!-- DICHOTOMY / HYPOTHESIS -->
+  <section id="dichotomy">
+    <h2><span class="num">02</span> 本文的反直觉假设：把两条路线接起来</h2>
+    <p>两种范式各有一套「为了 A 牺牲 B」的取舍：Agentless 用灵活性和性能天花板，换来了模块化与稳定；SWE-Agent 反过来。本文<strong>从训练配方的视角挑战这个二分法</strong>：</p>
+    <div class="quote">与其把 Agentless 当作终点，不如把它当成<strong>诱导技能先验的训练手段</strong>。bug 定位、代码片段更新这些原子能力，加上自我反思与验证，都能成为「脚手架」，让更强、更通用的 SWE-Agent 适配得更高效。</div>
+    <p>换句话说，作者打赌：与其从零训智能体，不如<strong>先用 Agentless 训练把原子技能练扎实</strong>，再让这些先验去支撑端到端的多轮交互——这样后续的智能体训练会<strong>更稳、更省样本、更能泛化</strong>。整篇论文就是在验证这个假设的两步：</p>
+    <div class="flow flow-2">
+      <div class="fnode">
+        <div class="ftag">STEP A · 第 3 节</div>
+        <div class="fname">先造一个最强的 Agentless 模型</div>
+        <div class="fdesc">用一套 Agentless 训练配方得到 <strong>Kimi-Dev</strong>，在 SWE-bench Verified 上拿到工作流类开源 SoTA（60.4%）。</div>
+        <div class="fseq">技能被「烤」进模型</div>
+      </div>
+      <div class="fnode hot">
+        <div class="ftag">STEP B · 第 4 节</div>
+        <div class="fname">再证明技能可迁移到智能体</div>
+        <div class="fdesc">仅用 5k 公开轨迹轻量 SFT，就把 Kimi-Dev 适配成 SWE-Agent，达到 48.6% pass@1（≈ Claude 3.5 Sonnet）。</div>
+        <div class="fseq">先验支撑多轮交互</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DUO FRAMEWORK -->
+  <section id="duo">
+    <h2><span class="num">03</span> 方法总览：BugFixer × TestWriter 的「二人组」</h2>
+    <p>怎么把 GitHub issue 的解决过程拆成可训练的技能？作者把它建模成<strong>两个角色的协作</strong>：</p>
+    <ul class="tight">
+      <li><strong>BugFixer（修复者）</strong>：产出能正确修复 bug 的补丁。成功判据：补丁能通过 issue 配套的单元测试。</li>
+      <li><strong>TestWriter（测试编写者）</strong>：写出能复现 bug 的单元测试。好测试的判据：<strong>在打补丁前会失败、打补丁后会通过</strong>。</li>
+    </ul>
+    <p>这两个角色都依赖两项<strong>核心技能</strong>：<strong>文件定位（file localization）</strong>——找到与 bug/测试相关的文件；<strong>代码编辑（code edit）</strong>——做出必要的修改。整套训练就是在强化这两项技能。</p>
+
+    <div class="duo">
+      <div class="row">
+        <div class="dbox">
+          <div class="dh">BugFixer 的两项技能</div>
+          <div class="dskill">🔍 文件定位 File Localization</div>
+          <div class="dskill">✏️ 代码编辑（修复缺陷逻辑）</div>
+        </div>
+        <div class="dbox core">
+          <div class="dh">LLM</div>
+          <div class="dd">同一个模型<br>分饰两角</div>
+        </div>
+        <div class="dbox">
+          <div class="dh">TestWriter 的两项技能</div>
+          <div class="dskill">🔍 文件定位 File Localization</div>
+          <div class="dskill">✏️ 代码编辑（写复现 bug 的单测）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig1_framework.png" alt="Kimi-Dev 的 Agentless 框架：BugFixer 与 TestWriter 的二人组" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 1）</span>：Kimi-Dev 的 Agentless 框架——同一个 LLM 分饰 BugFixer 与 TestWriter，两者各自完成「文件定位 + 代码编辑」，再相互配合（一个修 bug、一个写测试）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>中央的 LLM</b>：图中间的网状节点代表同一个大模型，它<b>同时扮演两个角色</b>，而不是两个独立模型。</li>
+          <li><b>左侧 BugFixer</b>：紫色箭头由 LLM 指向 BugFixer，负责「Fix Bugs」（下方弧线）——读懂 issue 后产出修复补丁。</li>
+          <li><b>右侧 TestWriter</b>：紫色箭头由 LLM 指向 TestWriter，负责「Generate Test Case」（上方弧线）——写出能复现 bug 的单元测试。</li>
+          <li><b>两侧重复出现的图标</b>：File Localization（放大镜）与 Code Edit（文档+笔）说明<b>两个角色共享同一套底层技能</b>，只是作用对象不同：BugFixer 改的是源码逻辑，TestWriter 改的是测试文件。</li>
+          <li><b>蓝色环形箭头</b>：表示二者形成一个闭环——测试用来检验补丁、补丁用来验证测试，这正是后面「测试时自对弈」的基础。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：所有训练都围绕「定位 + 编辑」这两项原子技能展开，BugFixer 与 TestWriter 只是它们的两种用法。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECIPE -->
+  <section id="recipe">
+    <h2><span class="num">04</span> Agentless 训练配方：四步把技能「烤」进模型</h2>
+    <p>Kimi-Dev 的全部能力来自一条<strong>四步配方</strong>。点「下一步」跟着 checkpoint 一阶段一阶段演化——前两步打地基，第三步用 RL 拔高，第四步在测试时榨出最后的性能：</p>
+
+    <div class="stepbox" id="recipe-pipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STAGE 1</span>中期训练 Mid-Training（~150B tokens）</div>
+          <div class="sb">以 Qwen2.5-72B-Base 为起点，收集数百万 GitHub issue 与 PR commit，喂入 <strong>~150B token</strong> 的真实世界数据：<strong>~50B</strong> Agentless 格式（由真实 diff patch 转写）+ <strong>~20B</strong> 精选 PR commit 包 + <strong>~20B</strong> 合成的推理/智能体交互数据（训练时<strong>上采样 4×</strong>）。严格<strong>去污染</strong>，排除 SWE-bench Verified 测试集涉及的仓库。目的：让模型像人类开发者一样理解 issue、写修复、写单测。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>Qwen2.5-72B-Base + 海量 GitHub issue/PR</div>
+            <div class="io"><div class="iol">输出</div>懂真实 bugfix 与单测的更强起点</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STAGE 2</span>冷启动 Cold-Start SFT（激活长链推理）</div>
+          <div class="sb">用 <strong>DeepSeek-R1（20250120 版）</strong>在 SWE-Gym 与 SWE-bench-extra 上生成<strong>长思维链（long CoT）轨迹</strong>——让 R1 分别扮演 BugFixer 与 TestWriter，产出文件定位与代码编辑。再用这些数据做 SFT 冷启动，给模型植入<strong>问题分析、方法草拟、自我修正、探索替代解法</strong>等推理技能。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>中期训练模型 + R1 生成的长 CoT 轨迹</div>
+            <div class="io"><div class="iol">输出</div>具备长链推理与自反思的 checkpoint</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STAGE 3</span>强化学习 RL（只练「代码编辑」）</div>
+          <div class="sb">中期训练 + 冷启动后，模型的<strong>定位已经很强</strong>，所以 RL <strong>只聚焦代码编辑</strong>这一步。算法用 <strong>Kimi k1.5 的策略优化</strong>（基于 REINFORCE，类似 GRPO 用一组 rollout 的平均奖励做基线归一化）。三大要点：<strong>纯结果奖励</strong>、<strong>自适应 prompt 选择</strong>、<strong>正例强化</strong>（详见下方）。靠 K8s 沙箱支撑 <strong>&gt;10,000 并发实例</strong>。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>冷启动 checkpoint + 可执行环境 prompt</div>
+            <div class="io"><div class="iol">输出</div>BugFixer/TestWriter 都更强、输出更长的 Kimi-Dev</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">STAGE 4</span>测试时自对弈 Test-Time Self-Play</div>
+          <div class="sb">推理时让模型一次生成 <strong>40 个补丁 + 40 个测试</strong>，用<strong>执行结果</strong>让 BugFixer 与 TestWriter 互相验证、互相打分，挑出最佳补丁作为最终答案。<strong>无需额外训练</strong>，把单模型的能力进一步榨干。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>Kimi-Dev（40 patch × 40 test）</div>
+            <div class="io"><div class="iol">输出</div><strong>60.4%</strong> SWE-bench Verified（工作流开源 SoTA）</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-controls">
+        <button id="sp-prev" onclick="spPrev()">‹ 上一步</button>
+        <button id="sp-next" class="primary" onclick="spNext()">下一步 ›</button>
+        <button onclick="spReset()">重置</button>
+        <span class="sp-counter" id="sp-counter">1 / 4</span>
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:14px">下面把<strong>中期训练</strong>与<strong>强化学习</strong>这两步展开，因为它们直接决定了「技能先验」的强度。测试时自对弈单独放在第 5 节细讲。</p>
+
+    <h3>中期训练：数据越多，技能越扎实</h3>
+    <p>中期训练给模型灌入关于实际 bug 修复与单测的「领域知识」，是后续阶段更好的起点。作者用 50B / 100B / ~150B token 三档分别训练，再用同一批数据轻量激活，只看 BugFixer 的 pass@1：</p>
+    <div class="figure">
+      <img src="assets/fig2_midtrain.png" alt="中期训练 token 量与 SWE-bench Verified 表现的关系" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 2（原论文 Figure 2）</span>：中期训练 token 越多，BugFixer 在 SWE-bench Verified 上的 pass@1 越高：50B→28.6%、100B→32.6%、150B→36.6%。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：中期训练使用的 token 量，三档分别是 50B、100B、约 150B。</li>
+          <li><b>纵轴</b>：仅 BugFixer 的 pass@1 解决率（%），用同一批 2,000 个 BugFixer 输入输出对做冷启动后评测，便于公平比较。</li>
+          <li><b>三根柱子</b>：<b>28.6 → 32.6 → 36.6</b>，随 token 量<b>单调上升</b>，没有出现饱和迹象。</li>
+          <li><b>含义</b>：这一步证明「中期训练」确实有效，且<b>数据规模仍有红利</b>——技能先验越厚，起点越高。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：先验不是免费的，得靠大规模真实数据「喂」出来；喂得越多，BugFixer 越强。</p>
+      </div>
+    </div>
+
+    <h3>强化学习：奖励怎么设计</h3>
+    <p>RL 的训练信号<strong>只看执行结果，不掺任何格式或过程奖励</strong>——这与很多推理模型不同。两个角色各有一条简单到「不可作弊」的判分规则：</p>
+    <div class="twocol">
+      <div class="panel after">
+        <div class="ph">✓ BugFixer 奖励</div>
+        <ul>
+          <li>生成的补丁<strong>通过全部 ground-truth 单测</strong> → 奖励 1</li>
+          <li>否则 → 奖励 0。只认最终执行结果。</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">✓ TestWriter 奖励</div>
+        <ul>
+          <li>预测的测试<strong>在未打补丁时报错</strong>（能复现 bug）</li>
+          <li><strong>且</strong>打上 ground-truth 补丁后<strong>通过</strong> → 奖励 1</li>
+        </ul>
+      </div>
+    </div>
+    <p>除了纯结果奖励，作者还强调三个让大规模 RL 跑得稳、跑得快的工程要点：</p>
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">🎯</span>纯结果奖励 <span class="xtag">desideratum 1</span></div>
+        <div class="xs">只用环境给的最终执行结果（0/1），不加格式或过程信号。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：BugFixer 看补丁是否通过全部单测；TestWriter 看测试是否「补丁前失败、补丁后通过」。两者都是<b>可自动执行验证</b>的硬信号。</p>
+          <p><b>为什么</b>：避免引入神经奖励模型带来的<b>奖励作弊（reward hacking）</b>与额外训练复杂度，简单且不可钻空子。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">📈</span>自适应 prompt 选择 <span class="xtag">desideratum 2</span></div>
+        <div class="xs">先丢掉太难的题，再按课程学习逐步加难度。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：把 <code>pass@16 = 0</code> 的题先剔除（它们不贡献 batch loss），得到约 <b>1,200 道</b>有效题、放大有效批量。</p>
+          <p><b>课程学习</b>：当前题集成功率超过阈值后，<b>每 100 个 RL 步</b>重新引入 500 道之前被排除（但 RL 后已能做对）的题，逐步把难度抬上去。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔁</span>正例强化 <span class="xtag">desideratum 3</span></div>
+        <div class="xs">后期提升变缓时，把近期成功样本并回当前批次。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：训练后期增益趋平时，把最近若干 RL 迭代里的<b>正样本</b>掺进当前批次一起训。</p>
+          <p><b>效果</b>：强化模型对成功模式的依赖，<b>加速末期收敛</b>。（消融见原文附录 C.2）</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧱</span>稳健沙箱基建 <span class="xtag">infra</span></div>
+        <div class="xs">用 Kubernetes 搭安全可扩展的执行沙箱。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：基于 K8s 构建 docker 环境，支持 <b>&gt;10,000 并发实例</b>，保证训练与 rollout 的效率与稳定。</p>
+          <p><b>意义</b>：执行式奖励意味着每条样本都要真的跑测试，沙箱并发能力是这套配方能 scale 的隐形前提。</p>
+        </div>
+      </div>
+    </div>
+
+    <p>RL 跑起来后，一个和数学/代码推理任务一致的现象出现了：<strong>性能和输出长度同步上升</strong>——更长的回复里塞满了深入的问题分析与自我反思。</p>
+    <div class="figure">
+      <img src="assets/fig3_rl_bugfixer.png" alt="72B 联合 RL 中 BugFixer 的 pass rate 与 token 长度随训练步上升" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3（原论文 Figure 3a，BugFixer）</span>：联合 code-edit RL 中，BugFixer 的 pass@1（红，34%→46%）与平均 token 长度（蓝，~3900→~7800）随训练步同步攀升。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：RL 训练步数（0→约 500）。</li>
+          <li><b>红色曲线（右轴）</b>：BugFixer 的 pass rate，从约 <b>34%</b> 震荡上升到约 <b>46%</b>。</li>
+          <li><b>蓝色曲线（左轴）</b>：平均输出 token 长度，从约 <b>3,900</b> 增长到约 <b>7,800</b>，几乎翻倍。</li>
+          <li><b>两条曲线同步</b>：性能与长度<b>一起涨</b>，说明模型学会了「想得更久」——用更长的分析与自我反思换取更高的修复正确率。</li>
+          <li><b>跨规模成立</b>：作者在 Qwen2.5-14B-Instruct 上也观察到相似的 RL scaling 曲线，证明配方对不同尺寸模型都有效。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：RL scaling 在 SWE 任务上同样成立——更长的推理 = 更强的修复能力。TestWriter（原图 3b）的复现率曲线呈现同样趋势。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SELF-PLAY -->
+  <section id="selfplay">
+    <h2><span class="num">05</span> 测试时自对弈：让修复者和出题者互相验证</h2>
+    <p>RL 之后，同一个模型同时是合格的 BugFixer 和 TestWriter。测试时，作者让它<strong>自己跟自己玩</strong>：为每个 issue 生成 <strong>40 个候选补丁</strong>（第 1 个贪心解码，其余 39 个 temperature=1 保证多样性）和 <strong>40 个候选测试</strong>，再用真实执行结果给每个补丁打分。</p>
+    <p>打分逻辑很直观：一个好补丁，应该能<strong>让那些原本失败的复现测试转为通过</strong>（reproduction），同时<strong>不破坏原本就通过的回归测试</strong>（regression）。先过滤掉「在原仓库里根本不报错」的无效测试，剩下的测试集 𝒯 与补丁集 ℬ 两两执行，得到每个补丁的得分：</p>
+    <div class="formula">
+      <div class="eq">S<sub>i</sub> = <b>Σ<sub>j</sub> FP(i,j) / Σ<sub>j</sub> F(j)</b> &nbsp;+&nbsp; <b>Σ<sub>j</sub> PP(i,j) / Σ<sub>j</sub> P(j)</b></div>
+      <div class="cap">左项 = 复现能力（fail→pass 占所有「该失败」测试的比例）；右项 = 回归稳健性（pass→pass 占所有「该通过」测试的比例）。取 S<sub>i</sub> 最高的补丁作为最终答案。</div>
+    </div>
+    <p>这一步<strong>不需要任何额外训练</strong>，纯靠测试时多采样 + 执行反馈，就把单次 48.0% 一路推到 60.4%：</p>
+
+    <div class="metrics metrics-3">
+      <div class="metric"><div class="v">48.0<span class="u">%</span></div><div class="k">单补丁单测试（1×1）<br>自对弈起点</div></div>
+      <div class="metric"><div class="v">60.4<span class="u">%</span></div><div class="k">40 补丁 × 40 测试<br>自对弈终点（SoTA）</div></div>
+      <div class="metric"><div class="v">3×3 &gt; 40</div><div class="k">仅 3×3 自对弈即超过<br>40 补丁多数投票</div></div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig4_selfplay.png" alt="SWE-bench Verified 上测试时自对弈随补丁/测试数量的提升" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 4（原论文 Figure 4）</span>：左——执行式自对弈（蓝）始终高于 BugFixer 多数投票（绿）；右——自对弈（蓝）仍低于「用 ground-truth 测试」的 pass@N 上界（橙，最高 74.8%），说明 TestWriter 还有提升空间。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>两张图的横轴</b>：每个实例生成的补丁数 × 测试数（BF × TW），从 1×1 扩到 40×40。</li>
+          <li><b>左图蓝线（Self-play）</b>：随规模从 <b>48.0%</b> 升到 <b>60.4%</b>；<b>绿线（Majority Voting）</b>只用补丁多数投票，最高约 51%，明显更低。</li>
+          <li><b>左图关键点</b>：仅 <b>3×3</b> 的自对弈（52.6%）就已经<b>超过 40 个补丁的多数投票</b>——说明测试执行带来的额外信息非常值钱。</li>
+          <li><b>右图橙线（Pass@N）</b>：把 ground-truth 测试当裁判的理论上界，40×40 时达 <b>74.8%</b>。</li>
+          <li><b>右图蓝线 vs 橙线的差距</b>：自对弈（60.4%）距离上界（74.8%）还有约 14 个点的空间——瓶颈在 <b>TestWriter</b> 还不够强，复现覆盖不足。这与 Claude 3.5 Sonnet 增设「边界用例检查」相呼应。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：让模型自带的「出题能力」去验证「修复能力」，比单纯多采样投票更有效；但出题能力本身就是下一个提升点。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SKILL PRIOR (core) -->
+  <section id="prior">
+    <h2><span class="num">06</span> 核心论证：Agentless 训练 = SWE-Agent 的技能先验</h2>
+    <p>到这里 Kimi-Dev 已经是最强的 Agentless 模型。但本文真正想证明的是 <strong>STEP B</strong>：这套 Agentless 训练「烤」出来的技能，能<strong>迁移</strong>到完全不同的多轮智能体框架里。验证方法很干脆——只用 <strong>5,016 条公开 SWE-Agent 轨迹</strong>（来自 SWE-smith，由 Claude 3.7 Sonnet 在合成环境采集）做一次轻量 SFT。</p>
+    <div class="callout">
+      <div class="t">结果：极少数据就追平闭源强模型</div>
+      不采集更多真实环境轨迹、不做额外的多轮 agentic RL、不加测试时扩展，适配后的 Kimi-Dev 在 SWE-Agent 框架下拿到 <strong>48.6% pass@1</strong>，与 <strong>Claude 3.5 Sonnet（241022，49%）</strong>持平，并超过用同样数据训练的 SWE-agent-LM。更关键的是，它的 <strong>pass@10（74.0%）反超了 Agentless 的 pass@30（73.8%）</strong>——证明智能体框架的<strong>上限确实更高</strong>。
+    </div>
+
+    <h3>先验越强，适配越省：四个先验的「赛马」</h3>
+    <p>Agentless 配方有三步（中期训练 MT、冷启动 SFT、强化学习 RL）。作者把<strong>四个不同阶段的 checkpoint 当作「先验（prior）」</strong>，各自用<strong>不同量级</strong>的 SWE-Agent 轨迹去做 SFT，看谁适配得更快更好。一个好先验，应该<strong>用很少的样本就能快速适配</strong>。</p>
+    <div class="flow flow-4">
+      <div class="fnode"><div class="ftag">PRIOR 0</div><div class="fname">Base</div><div class="fdesc">原始 Qwen2.5-72B-Base，没经过任何 Agentless 训练。</div></div>
+      <div class="fnode"><div class="ftag">PRIOR 1</div><div class="fname">MT</div><div class="fdesc">仅做了中期训练。</div></div>
+      <div class="fnode"><div class="ftag">PRIOR 2</div><div class="fname">SFT</div><div class="fdesc">中期训练 + 长 CoT 冷启动。</div></div>
+      <div class="fnode hot"><div class="ftag">PRIOR 3</div><div class="fname">RL（= Kimi-Dev）</div><div class="fdesc">完整走完 RL 的最终模型。</div></div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig5_priors.png" alt="四个先验在不同 SWE-Agent SFT token 量下的表现对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 5（原论文 Figure 5）</span>：把 Base / MT / SFT / RL 四个先验，用不同量级的 SWE-Agent 轨迹微调后的 SWE-bench Verified 表现（pass@1/2/3）。<strong>RL 先验（红）几乎在所有设置下都领先</strong>。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：SWE-Agent SFT 用的 token 量，从 0（zero-shot）、2²¹（一步梯度下降）一直到 1.5×2²⁸（全部 5,016 条轨迹）。</li>
+          <li><b>纵轴</b>：适配后在 SWE-bench Verified 上的 pass rate（%）。每个先验有 Pass@1/2/3 三条曲线（●/■/▲）。</li>
+          <li><b>颜色 = 先验</b>：红=RL、橙=SFT、紫=MT、蓝=Base。颜色越「热」代表 Agentless 训练越充分。</li>
+          <li><b>核心观察 1</b>：<b>RL 先验（红）几乎全程领先</b>。要达到 Base 先验的最高 pass@1，RL 先验只需 <b>2²³</b> 个 SFT token，而 Base 先验要 <b>1.5×2²⁸</b>——相差约 <b>48 倍</b>。</li>
+          <li><b>核心观察 2</b>：MT 先验在极端缺数据时（0、2²¹）落后，但只要有 200 条轨迹（2²⁴）就追平 SFT/RL，说明中期训练后的适配效率已经很高。</li>
+          <li><b>核心观察 3</b>：SFT 先验大多与 RL 相当，但在 200 条轨迹处出现明显<b>掉点</b>——可能是少量数据塌缩到单一模式、靠记忆过拟合；而 RL 先验嵌入了更<b>可迁移</b>的技能，泛化更稳。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：Agentless 训练越充分，作为 SWE-Agent 先验就越省样本、越能泛化——这正是「技能先验」假设的最直接证据。</p>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">~48<span class="u">×</span></div><div class="k">RL 先验达到 Base 先验最佳 pass@1 所需 SFT token 之比（更省）</div></div>
+      <div class="metric"><div class="v">605<span class="u"> vs 484</span></div><div class="k">Stage-3 cutoff BugFixer 解决案例数（RL 先验 vs Base 先验）</div></div>
+      <div class="metric"><div class="v">+113<span class="u"> vs +94</span></div><div class="k">反思阶段额外解决案例（RL 先验 vs Base 先验）</div></div>
+      <div class="metric"><div class="v">&gt;70<span class="u"> 轮</span></div><div class="k">RL 先验适配后仍持续进步的交互轮数（Base 约 50）</div></div>
+    </div>
+
+    <h3>从长 CoT 到多轮交互：反思技能真的迁移了</h3>
+    <p>作者进一步拆开看：Agentless 训练里练出的<strong>自我反思（self-reflection）</strong>，能不能转化成多轮交互里的「能用更多轮、走更长的路去解题」？两组证据说「能」：</p>
+    <div class="twocol">
+      <div class="panel neutral">
+        <div class="ph">① 用得起更多轮（图 6 左）</div>
+        <ul>
+          <li>适配后，RL 先验在<strong>超过 70 轮</strong>后仍在持续解出新问题；</li>
+          <li>SFT / MT / Base 分别在约 <strong>70 / 60 / 50 轮</strong>就收益递减。</li>
+          <li>说明长链推理里的反思习惯，迁移成了「长时程交互」的耐力。</li>
+        </ul>
+      </div>
+      <div class="panel neutral">
+        <div class="ph">② 两项技能都更强（图 6 右）</div>
+        <ul>
+          <li><strong>BugFixer 技能</strong>：在第 3 阶段刚改完、还没拿到执行反馈的「切点」直接提交的成功数，从 Base 的 <strong>484</strong> 升到 RL 的 <strong>605</strong>。</li>
+          <li><strong>反思技能</strong>：从切点到轨迹结束的额外成功增量，从 <strong>+94</strong> 升到 <strong>+113</strong>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig6_skills.png" alt="四个先验的 BugFixer 与反思技能对比柱状图" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 6 右（原论文 Figure 6 right）</span>：用 Stage-3 切点的成功数刻画 BugFixer 技能（实心），用切点到结束的增量刻画反思技能（斜纹）。从 Base→MT→SFT→RL，两项技能都单调增强。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：四个先验适配后的模型 Base / MT / SFT / RL。</li>
+          <li><b>纵轴</b>：在 SWE-bench Verified 上 3 次运行内解决的案例总数。</li>
+          <li><b>实心柱（Bugfixer cutoff）</b>：智能体刚完成第 3 阶段「改完代码、还没重跑测试」时若直接提交的成功数——衡量纯 <b>BugFixer 技能</b>：484 → 542 → 584 → 605。</li>
+          <li><b>斜纹柱（Reflection）</b>：从切点继续跑到轨迹结束，额外多解出的案例数——衡量 <b>反思/重做技能</b>：+94 → +100 → +109 → +113。</li>
+          <li><b>读图重点</b>：两部分都随 Agentless 训练阶段<b>单调增长</b>，RL 先验在两项技能上都最强（总计 718）。</li>
+          <li><b>作者诚实备注</b>：反思这部分的度量偏粗——增量里也混入了智能体中途写测试的过程，更细粒度的隔离留作未来工作。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：BugFixer 和反思这两类技能，确实是被 Agentless 配方一阶段一阶段「练厚」的，并迁移进了多轮智能体。</p>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>更进一步：直接做端到端 SWE-Agent RL，RL 先验仍更优<span class="sub">点开看图 7 的对照实验</span></summary>
+      <div class="ex-body">
+        <p style="font-size:14px;color:var(--ink-soft)">为排除「只是模仿了 Claude 轨迹」的可能，作者在最小冷启动（仅 2²¹ token、一步梯度下降）之上，对 SFT 先验与 RL 先验分别做<strong>端到端 SWE-Agent RL</strong>。结果：<strong>RL 先验</strong>在 pass@1/3/5 上都<strong>略优于 SFT 先验</strong>（与图 5 的 SFT 结果一致）；而仅有中期训练的 <strong>MT 先验</strong>因可训练问题太少，10 步内 pass@1 就<strong>崩到 &lt;2%</strong>，反衬出冷启动 + RL 先验的重要性。</p>
+        <div class="figure" style="margin:6px 0 0">
+          <img src="assets/fig7_e2e_rl.png" alt="端到端 SWE-Agent RL 下 SFT 先验与 RL 先验的 pass@1 对比" loading="lazy">
+          <div class="fig-cap"><span class="lbl">图 7 左（原论文 Figure 7 left）</span>：端到端 RL 中，RL 先验（蓝）的 pass@1 在大部分训练步上略高于 SFT 先验（红），阴影为 5 次运行的 min–max 区间。</div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">07</span> 有意思的点</h2>
+    <p>除了主线，有几处设计取舍与发现值得单独拎出来——它们往往比 benchmark 数字更能帮你判断这套方法适不适合自己的场景。</p>
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">🪞</span>RL 先验「更可迁移」，SFT 先验易记忆过拟合</div>
+        <div class="xs">同样的技能，靠 RL 学到的比靠 SFT 学到的更能泛化到新框架。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>图 5 里，SFT 先验在 200 条轨迹处明显<b>掉点</b>：少量数据容易塌缩到单一模式，让 SFT 靠<b>记忆</b>过拟合。RL 先验则嵌入了更<b>结构化、可迁移</b>的技能，掉点更小、泛化更稳。</p>
+          <p><b>启发</b>：当你希望「学到的能力换个环境还能用」时，RL（探索式）可能比 SFT（模仿式）更划算。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚖️</span>执行式奖励 &gt; 文本相似度奖励</div>
+        <div class="xs">用「能不能跑通测试」判分，比用「补丁文本像不像」更可靠。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>对比 SWE-RL 用的<b>文本相似度奖励</b>，Kimi-Dev 全程采用<b>执行式信号</b>（补丁是否通过单测）。这更贴近「补丁究竟有没有修好 bug」，奖励质量更高。</p>
+          <p>同理，它的<b>两阶段 TestWriter</b> 比以往只写一个根级测试的做法更好地捕捉仓库上下文，更像真实开发者的工作流。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧭</span>诚实记录失败：TestWriter 假阳性</div>
+        <div class="xs">论文专门写了一节失败案例：测试因复现覆盖不足而误判。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>RL 训练中 TestWriter 偶尔出现<b>假阳性（false positive）</b>：写出的测试看似复现了 bug，实则因覆盖不全而误判。图 4 右也显示自对弈距 pass@N 上界还有约 14 个点的差距，瓶颈正是 TestWriter。</p>
+          <p><b>价值</b>：把短板摊开讲，比只报喜更可信，也指明了下一步——增强出题/边界用例能力。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">🎚️</span>把「框架之争」变成「训练阶段」</div>
+        <div class="xs">Agentless 与 agentic 不是二选一，而是同一条训练管线的先后两段。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>本文最大的观念转变：与其争论「该用工作流还是智能体」，不如把 Agentless 当作<b>诱导技能先验的前置阶段</b>，agentic 当作<b>释放上限的后续阶段</b>。</p>
+          <p><b>言下之意</b>：结构化的技能先验可以「搭脚手架」，让自主智能体的训练更稳、更省、更可泛化——这为构建通用编码智能体给出了一条有原则的路径。</p>
+        </div>
+      </div>
+    </div>
+
+    <p>论文附录还给了一个很能说明「自我反思技能」的 BugFixer 实例：模型在修 sympy 的 <code>Matrix.col_insert()</code> 时先写错了列偏移，随后<strong>自己发现并纠正</strong>。这正是被 Agentless 训练「烤」进去、又能迁移到多轮交互的那种反思能力。</p>
+    <details class="ex">
+      <summary><span class="mk">▸</span>具体示例：BugFixer 中途自我纠错（附录 E.1，col_insert）<span class="sub">点开看模型如何从写错到改对</span></summary>
+      <div class="ex-body">
+        <p style="font-size:14px;color:var(--ink-soft);margin-bottom:10px">bug：<code>col_insert</code> 插入若干列后，被插入列之后的原始列发生了错误偏移。模型先给了错误的索引计算，随后在 <code>&lt;think&gt;</code> 里推翻自己、用具体数字验证后改对。</p>
+        <pre class="code"><span class="cm"># issue: 把 V 插入 M 的第 3 列后，原来第 3/4/5 列被错误地搬到了开头</span>
+<span class="cm"># 模型最初写出的（错误）代码：</span>
+def entry(i, j):
+    if j &lt; pos:                 <span class="cm"># 插入点之前：原样</span>
+        return self[i, j]
+    elif pos &lt;= j &lt; pos + other.cols:   <span class="cm"># 插入的新列</span>
+        return other[i, j - pos]
+    return self[i, <span class="bad">j - pos - other.cols</span>]   <span class="cm"># ← 错：对原始列偏移算错了</span>
+
+<span class="em">&lt;think&gt;</span> ... Wait, let's think again. 原矩阵 6 列，在 pos=3 插入 2 列，新矩阵 8 列。
+原来的第 3/4/5 列应落到新位置 5/6/7。但按上式，j=5 时 j-pos-other.cols = 0，
+会把原始第 0 列搬到第 5 列 —— 明显错了。
+Ah, here's the mistake：被插入的列占了 other.cols 个位置，
+所以插入点之后的原始列只应右移 other.cols，正确索引应是 j - other.cols。<span class="em">&lt;/think&gt;</span>
+
+<span class="cm"># 模型自我纠正后的（正确）代码：</span>
+    return self[i, <span class="good">j - other.cols</span>]      <span class="cm"># ✓ 正确</span></pre>
+        <p class="muted" style="font-size:13px;margin-top:10px">模型用拟人化的「Wait... Ah, here's the mistake」打断自己、用一个具体例子验证、再回头改对——一个由 Agentless 训练催生、并能迁移到多轮交互的自我反思行为。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">08</span> 实验结论：一句话能说清</h2>
+    <p>一句话：<strong>Agentless 形态的 Kimi-Dev 在 SWE-bench Verified 上拿到工作流类开源 SoTA（60.4%）；轻量适配后的 SWE-Agent 形态达到 48.6% pass@1，与 Claude 3.5 Sonnet 持平</strong>，且只用了 5k 条公开轨迹。最核心的几个数字：</p>
+    <div class="metrics">
+      <div class="metric"><div class="v">60.4<span class="u">%</span></div><div class="k">SWE-bench Verified（Agentless）<br>工作流类开源 SoTA</div></div>
+      <div class="metric"><div class="v">48.6<span class="u">%</span></div><div class="k">SWE-bench Verified（SWE-Agent）<br>≈ Claude 3.5 Sonnet（49%）</div></div>
+      <div class="metric"><div class="v">72<span class="u">B</span></div><div class="k">参数量<br>基于 Qwen2.5-72B-Base</div></div>
+      <div class="metric"><div class="v">5,016</div><div class="k">适配为智能体所需的<br>公开轨迹条数</div></div>
+    </div>
+
+    <h3>Agentless 框架下的横评（原论文 Table 1）</h3>
+    <p>在标准的「40 补丁 + 40 测试」设置下，Kimi-Dev 以 <strong>72B</strong> 的体量超过了一众更大的模型：</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>模型</th><th>参数量</th><th>Resolve Rate (%)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Llama3-SWE-RL</td><td class="dim">70B</td><td class="dim">41.0</td></tr>
+          <tr><td>OpenAI-o1</td><td class="dim">—</td><td class="dim">48.9</td></tr>
+          <tr><td>DeepSeek-R1-0120</td><td class="dim">671B</td><td class="dim">49.2</td></tr>
+          <tr><td>Claude 3.5 Sonnet (241022)</td><td class="dim">—</td><td class="dim">50.8</td></tr>
+          <tr><td>MiniMax-M1</td><td class="dim">456B</td><td class="dim">56.0</td></tr>
+          <tr><td>DeepSeek-R1-0528</td><td class="dim">671B</td><td class="dim">57.6</td></tr>
+          <tr><td>SWE-SWISS</td><td class="dim">32B</td><td class="dim">58.2</td></tr>
+          <tr class="hl"><td>Kimi-Dev（本文）</td><td>72B</td><td>60.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>SWE-Agent 框架下的横评（原论文 Table 2，&lt;100B 开源段）</h3>
+    <p>适配为智能体后，Kimi-Dev 在同量级开源模型里具竞争力，并追平 Claude 3.5 Sonnet 的 SWE-Agent 成绩：</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>模型</th><th>框架</th><th>参数量</th><th>Pass Rate (%)</th></tr>
+        </thead>
+        <tbody>
+          <tr class="grp"><td colspan="4">参照：闭源 / 大模型</td></tr>
+          <tr><td>Claude 3.5 Sonnet (241022)</td><td class="dim">SWE-Agent</td><td class="dim">—</td><td class="dim">49.0</td></tr>
+          <tr><td>Claude 4.0 Sonnet</td><td class="dim">SWE-Agent</td><td class="dim">—</td><td class="dim">72.7</td></tr>
+          <tr><td>GPT-5</td><td class="dim">Internal</td><td class="dim">—</td><td class="dim">74.9</td></tr>
+          <tr class="grp"><td colspan="4">开源，&lt;100B</td></tr>
+          <tr><td>SWE-agent-LM</td><td class="dim">SWE-Agent</td><td class="dim">32B</td><td class="dim">40.2</td></tr>
+          <tr><td>DeepSWE</td><td class="dim">OpenHands</td><td class="dim">32B</td><td class="dim">42.2</td></tr>
+          <tr><td>Devstral-Small-2507</td><td class="dim">OpenHands</td><td class="dim">24B</td><td class="dim">53.6</td></tr>
+          <tr class="hl"><td>Kimi-Dev（SFT 适配）</td><td>SWE-Agent</td><td>72B</td><td>48.6</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px">注：表 2 还列了更大的闭源/开源模型（如 GPT-5 74.9%、DeepSeek-v3.1 66.0%、Qwen3-Coder 69.6%）。Kimi-Dev 的意义不在刷最高分，而在于<strong>用最少的智能体轨迹</strong>，就把一个 Agentless 训练出来的模型推到与 Claude 3.5 Sonnet 同档——印证「技能先验可迁移」。</p>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">09</span> 局限与结论</h2>
+    <p>作者也坦诚地指出了边界（这些往往比成绩单更能帮你判断它适不适合你的场景）：</p>
+    <ul class="tight">
+      <li><strong>TestWriter 是当前瓶颈</strong>：自对弈距「用 ground-truth 测试」的上界（74.8%）还有约 14 个点差距，根因是出题/复现覆盖不足，RL 中还会偶发假阳性。</li>
+      <li><strong>反思技能的度量偏粗</strong>：图 6 右的「反思增量」里混入了中途写测试的过程，未能干净地隔离 TestWriter 先验，更细粒度的评估留作未来工作。</li>
+      <li><strong>智能体训练仍是初步</strong>：第 4 节主要靠轻量 SFT（+ 小规模端到端 RL 验证），更先进的 agentic RL 技术留待后续。</li>
+      <li><strong>依赖可执行验证</strong>：整套方法建立在「补丁/测试能自动跑、对错可判」之上，天然适配代码任务；迁到无法自动验证的领域并不直接成立。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这篇论文最值得记住的一句话</div>
+      不要把 <strong>Agentless</strong> 和 <strong>SWE-Agent</strong> 当成互斥的两条岔路，而要看成<strong>一条训练管线的先后两段</strong>：先用 Agentless 训练把定位、改代码、自我反思「烤」成技能先验，再用极少的轨迹让它支撑起多轮自主交互——这就是构建可迁移编码智能体的一条有原则的路径。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对论文 <strong>《Kimi-Dev: Agentless Training as Skill Prior for SWE-Agents》</strong> 的中文导读可视化，内容基于 arXiv HTML 原文（2509.23045v3）正文、表格与 7 张原始图表构建。图 1（框架）、图 2–7（实验曲线/柱状图）均直接取自原论文；BugFixer/TestWriter 二人组与四步配方的示意为依据原文文字描述绘制，忠于原文流程。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2509.23045" target="_blank" rel="noopener">Kimi-Dev: Agentless Training as Skill Prior for SWE-Agents · arXiv:2509.23045 ↗</a> · 作者：Kimi Team / Moonshot AI · 2025.09（arXiv preprint，技术报告）</p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">关键结果：SWE-bench Verified 60.4%（Agentless，工作流类开源 SoTA）/ 48.6% pass@1（SWE-Agent，≈ Claude 3.5 Sonnet）。数字与图表均以原论文为准。</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明展开/收起（仅用于图片）
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// 四步配方步进动画
+var spIdx = 0;
+var spTotal = 4;
+function spRender(){
+  var steps = document.querySelectorAll('#recipe-pipe .sp-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === spIdx);
+  }
+  var dots = document.querySelectorAll('#recipe-pipe .sp-dot');
+  for (var j=0;j<dots.length;j++){
+    dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= spIdx);
+  }
+  document.getElementById('sp-counter').textContent = (spIdx+1) + ' / ' + spTotal;
+  document.getElementById('sp-prev').disabled = (spIdx === 0);
+  document.getElementById('sp-next').disabled = (spIdx === spTotal-1);
+}
+function spNext(){ if (spIdx < spTotal-1){ spIdx++; spRender(); } }
+function spPrev(){ if (spIdx > 0){ spIdx--; spRender(); } }
+function spReset(){ spIdx = 0; spRender(); }
+spRender();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seed2.0 Model Card · 面向真实世界复杂性的智能前沿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbf6ea; --bg2:#f4ead7; --bg3:#ede0c8; --line:#e0d2b8;
+    --ink:#2c2620; --ink2:#5d5446; --ink3:#8a7f6c;
+    --accent:#b06a2c; --accent-soft:#f0e2cd;
+    --card:#fffdf7; --shadow:0 1px 2px rgba(80,60,30,.06),0 6px 18px rgba(120,90,40,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,sans-serif;line-height:1.75;
+    font-size:17px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* header */
+  header.top{padding:54px 0 30px;border-bottom:1px solid var(--line)}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .badge{font-size:13px;font-weight:600;padding:4px 11px;border-radius:999px;
+    background:var(--bg3);color:var(--ink2);border:1px solid var(--line)}
+  .badge.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+  h1{font-size:34px;line-height:1.25;margin:.1em 0 .25em;font-weight:800;letter-spacing:-.01em}
+  .subtitle{font-size:18px;color:var(--ink2);font-weight:500;margin-bottom:18px}
+  .meta{font-size:14.5px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  .meta .src{font-weight:600}
+
+  /* nav */
+  nav.toc{position:sticky;top:0;z-index:20;background:rgba(251,246,234,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:8px}
+  nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding:10px 22px;scrollbar-width:none}
+  nav.toc .wrap::-webkit-scrollbar{display:none}
+  nav.toc a{font-size:13.5px;font-weight:600;color:var(--ink2);white-space:nowrap;
+    padding:5px 11px;border-radius:8px}
+  nav.toc a:hover{background:var(--bg3);text-decoration:none}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:25px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em}
+  h2 .k{color:var(--accent);font-weight:800;margin-right:8px}
+  .lead{color:var(--ink2);font-size:16px;margin:0 0 20px}
+  h3{font-size:19px;font-weight:700;margin:26px 0 8px}
+  p{margin:.7em 0}
+  strong{font-weight:700;color:var(--ink)}
+  ul{margin:.6em 0;padding-left:1.2em}
+  li{margin:.35em 0}
+
+  /* tldr */
+  .tldr{background:linear-gradient(180deg,#fffdf7,#fbf4e6);border:1px solid var(--line);
+    border-radius:16px;padding:22px 24px;box-shadow:var(--shadow);margin-top:26px}
+  .tldr h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px}
+  .tldr p{margin:.5em 0;font-size:16.5px}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+  .metric{background:var(--card);border:1px solid var(--line);border-radius:13px;
+    padding:15px 16px;box-shadow:var(--shadow)}
+  .metric .num{font-size:27px;font-weight:800;color:var(--accent);letter-spacing:-.02em;line-height:1.1}
+  .metric .num small{font-size:14px;color:var(--ink3);font-weight:600}
+  .metric .lab{font-size:13px;color:var(--ink2);margin-top:5px;font-weight:600}
+  .metric .sub{font-size:12px;color:var(--ink3);margin-top:2px}
+
+  /* figure */
+  figure{margin:22px 0;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+  figure img{width:100%;border-radius:8px;display:block;background:#fff}
+  .figcap{font-size:14px;color:var(--ink2);margin-top:10px}
+  .fig-toggle{display:inline-block;margin-top:9px;font-size:13.5px;font-weight:600;
+    color:var(--accent);cursor:pointer;user-select:none}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0}
+  .figure-detail.active{max-height:1400px;opacity:1;margin-top:10px}
+  .figure-detail ul{font-size:14.5px;color:var(--ink2)}
+  .figure-detail .end{font-size:14px;color:var(--ink);font-weight:600;margin-top:8px}
+
+  /* expandable cards */
+  .xcard{background:var(--card);border:1px solid var(--line);border-radius:13px;
+    margin:12px 0;box-shadow:var(--shadow);overflow:hidden}
+  .xcard .head{padding:15px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px}
+  .xcard .head .ic{font-size:20px;line-height:1.4}
+  .xcard .head .ht{flex:1}
+  .xcard .head .ht .t{font-weight:700;font-size:17px}
+  .xcard .head .ht .s{font-size:13.5px;color:var(--ink3);margin-top:2px}
+  .xcard .head .arw{color:var(--accent);font-size:14px;transition:transform .3s;margin-top:3px}
+  .xcard.open .head .arw{transform:rotate(90deg)}
+  .xcard .body{max-height:0;overflow:hidden;transition:max-height .45s ease;padding:0 18px}
+  .xcard.open .body{max-height:900px;padding:0 18px 18px}
+  .xcard .body p{font-size:15px;color:var(--ink2);margin:.5em 0}
+
+  /* dimension diagram */
+  .frame{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:20px;box-shadow:var(--shadow);margin:20px 0}
+  .frame .core{text-align:center;font-weight:700;font-size:15px;color:var(--accent);
+    background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;
+    padding:9px;margin-bottom:14px}
+  .dims{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .dim{border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:var(--bg)}
+  .dim .dt{font-weight:700;font-size:15px;display:flex;gap:7px;align-items:center}
+  .dim .dd{font-size:13.5px;color:var(--ink2);margin-top:5px}
+  .dim .db{font-size:12px;color:var(--ink3);margin-top:6px;font-family:"JetBrains Mono",monospace}
+
+  /* tabs */
+  .tabs{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 4px}
+  .tab{font-size:13.5px;font-weight:600;padding:6px 13px;border-radius:9px;cursor:pointer;
+    background:var(--bg3);color:var(--ink2);border:1px solid var(--line);user-select:none}
+  .tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .panel{display:none}
+  .panel.on{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;font-size:14.5px;margin:8px 0;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .tbl th,.tbl td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  .tbl th{background:var(--bg3);font-weight:700;color:var(--ink2);font-size:13px}
+  .tbl td.n{font-variant-numeric:tabular-nums;text-align:right;font-family:"JetBrains Mono",monospace}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl .me{background:var(--accent-soft)}
+  .tbl .me td{font-weight:700}
+  .note{font-size:13px;color:var(--ink3);margin-top:6px}
+
+  .quote{border-left:3px solid var(--accent);padding:6px 0 6px 16px;margin:18px 0;
+    color:var(--ink);font-size:16px}
+  .quote .zh{color:var(--ink2);font-size:14.5px;margin-top:5px}
+
+  .callout{background:var(--bg2);border:1px solid var(--line);border-radius:12px;
+    padding:14px 18px;margin:18px 0;font-size:15px;color:var(--ink2)}
+  .callout b{color:var(--accent)}
+
+  footer{padding:34px 0 60px;color:var(--ink3);font-size:14px}
+  footer a{font-weight:600}
+
+  @media(max-width:880px){
+    h1{font-size:27px}.wrap{padding:0 16px}.dims{grid-template-columns:1fr}
+    .metric .num{font-size:23px}body{font-size:16px}
+  }
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="badges">
+    <span class="badge accent">官方模型卡 Model Card</span>
+    <span class="badge">2026-02</span>
+    <span class="badge">ByteDance Seed</span>
+    <span class="badge">通用大模型 · Pro / Lite / Mini</span>
+  </div>
+  <h1>Seed2.0 Model Card</h1>
+  <div class="subtitle">Towards Intelligence Frontier for Real-World Complexity ——「面向真实世界复杂性的智能前沿」</div>
+  <div class="meta">
+    <span class="src">来源：<a href="https://seed.bytedance.com/zh/seed2" target="_blank" rel="noopener">官方模型卡 ↗</a></span>
+    <span>调用 ID：<code>Doubao-Seed-2.0-pro</code>（火山引擎）</span>
+  </div>
+</div></header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#tldr">速览</a>
+  <a href="#why">定位</a>
+  <a href="#deploy">真实部署</a>
+  <a href="#frame">四维框架</a>
+  <a href="#cap">核心能力</a>
+  <a href="#cost">成本</a>
+  <a href="#gap">差距与局限</a>
+  <a href="#end">结语</a>
+</div></nav>
+
+<div class="wrap">
+
+  <div class="tldr" id="tldr">
+    <h2>30 秒速览</h2>
+    <p><strong>Seed2.0 是字节跳动 Seed 团队的旗舰通用大模型系列（Pro / Lite / Mini）。</strong>它不追求只在竞赛题上刷分，而是把目标定在「<strong>真实世界复杂性</strong>」——服务于已覆盖数亿日活的产品生态（豆包、Trae 等）。</p>
+    <p>这是一份<strong>偏「能力 + 评测」的官方模型卡</strong>：它不公开架构与训练细节，而是先<strong>从真实用户需求出发</strong>抽象出一套四维评测框架（科学发现 / Vibe Coding / 上下文学习 / 真实世界任务），再用它来衡量与迭代模型。</p>
+    <p>结论：在数学、推理、视觉、搜索等核心能力上<strong>已进入国际第一梯队</strong>（AIME 2025 98.3、Codeforces Elo 3020、HMMT 97.3），API 价格<strong>比前沿模型低约一个数量级</strong>；但模型卡也<strong>诚实承认</strong>在代码工程（SWE-Evo、NL2Repo）与长尾知识（SimpleQA-Verified）上与 Claude / Gemini 仍有差距。</p>
+  </div>
+
+  <section id="why">
+    <h2><span class="k">01</span>它想解决什么：从「会做难题」到「能干真活」</h2>
+    <p class="lead">当前 LLM 出现了一个有趣的不对称：能解奥赛级难题，却常常无法端到端可靠地完成一件实际任务（比如一次性搭出一个设计良好的应用）。</p>
+    <p>模型卡指出造成这一落差的两个原因：</p>
+    <ul>
+      <li><strong>真实任务是长程、多阶段的</strong>——现有 agent 难以自主构建有效工作流，也难以在长时间尺度上积累经验。</li>
+      <li><strong>真实知识高度领域化、长尾化</strong>——只擅长数学和代码的模型，在专业场景里往往帮不上忙。Seed2.0 通过系统性地「吃进」长尾领域知识来应对。</li>
+    </ul>
+    <p>因此 Seed2.0 的设计直接对齐<strong>四个最影响真实交互质量的因素</strong>：</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">①</div><div class="lab">视觉/多模态查询</div><div class="sub">大量真实查询含截图、图表、扫描件</div></div>
+      <div class="metric"><div class="num">②</div><div class="lab">推理延迟</div><div class="sub">Pro/Lite/Mini 三档权衡速度与能力</div></div>
+      <div class="metric"><div class="num">③</div><div class="lab">复杂指令执行</div><div class="sub">多步、带约束的指令作为一等需求</div></div>
+      <div class="metric"><div class="num">④</div><div class="lab">编码协助</div><div class="sub">无缝的代码辅助体验</div></div>
+    </div>
+    <div class="callout">作为人类偏好的佐证：截至 2026-02-16，Seed 在 <b>LMSYS Chatbot Arena 文本榜（Overall）排第 6</b>、<b>视觉榜排第 3</b>。</div>
+  </section>
+
+  <section id="deploy">
+    <h2><span class="k">02</span>从真实部署里读需求</h2>
+    <p class="lead">模型卡难得地公开了一份「中国大陆 MaaS 使用分布」，这正是 Seed2.0 设计取舍的依据——先看清楚用户在用模型干什么。</p>
+
+    <figure>
+      <img src="assets/fig1_usage_distribution.png" alt="Seed2.0 MaaS 使用分布：左为行业流量分布，右为业务场景分布">
+      <div class="figcap"><strong>图 1（原文 Figure 1）：</strong>中国大陆 MaaS 使用分布。左：行业流量分布；右：业务客户使用场景分布（数据来自签署数据授权协议的「豆包协同激励计划」客户）。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>左图·行业流量：</strong>互联网行业压倒性领先，占绝大多数流量；消费电子、金融、新零售、商业服务紧随其后但差距明显；制造、汽车、通信等传统行业各自占比不足 1%。</li>
+          <li><strong>共同特征：</strong>领先行业普遍具有信息密度高、产品迭代快、模型与生产系统耦合紧密的特点——模型直接参与核心业务流程，而非边缘生产力工具。</li>
+          <li><strong>右图·场景分布（2026-01）：</strong>「非结构化信息处理与分析」占最大单一份额（&gt;50%）；教育、内容创作、搜索推荐为第二梯队；社交陪伴、专业咨询、客服销售、质检、编码、结构化信息处理等占比更小。</li>
+          <li><strong>技术含义：</strong>主导场景要求模型能处理长上下文、整合异构知识源、执行多步指令，并产出可供下游系统消费的结构化高保真输出。</li>
+        </ul>
+        <div class="end">一句话总结：真实需求集中在「大规模、工作流集成」的企业级场景，这决定了 Seed2.0 是面向工作流的 MaaS 底座，而不是轻量对话模型。</div>
+      </div>
+    </figure>
+
+    <p>在<strong>智能体编码（agentic coding）</strong>的轨迹数据里也有清晰画像：<strong>前端开发</strong>（页面布局、样式、UI 逻辑）的请求远超后端 / 客户端 / 全栈；框架上 <strong>Vue.js 的采用率是 React 的三倍多</strong>（反映中国大陆开发者生态）；按任务类型看，<strong>Bug 修复</strong>居首，其次是重构与文档——开发者主要把 AI 用于「反应式维护」，而非从零开发。</p>
+  </section>
+
+  <section id="frame">
+    <h2><span class="k">03</span>核心方法：先建评测框架，再迭代模型</h2>
+    <p class="lead">Seed2.0 最有意思的「方法论」不是某个网络结构，而是<strong>把评测本身当作开发的指南针</strong>。团队建立了一套四维框架，既是 benchmark 套件，也是迭代开发的导引。</p>
+
+    <div class="frame">
+      <div class="core">真实世界复杂性 · 长程 / 多阶段 agent 能力</div>
+      <div class="dims">
+        <div class="dim">
+          <div class="dt">🔬 Scientific Discovery 科学发现</div>
+          <div class="dd">能否实现并操作科学工作流中的计算过程、对交织的图文科学信息进行研究式推理。</div>
+          <div class="db">Ainstein Bench · BABE · FrontierSci</div>
+        </div>
+        <div class="dim">
+          <div class="dt">💻 Vibe Coding</div>
+          <div class="dd">能否端到端地完成一整个软件仓库的构建，而非只写片段代码。</div>
+          <div class="db">NL2Repo-Bench · ArtifactsBench</div>
+        </div>
+        <div class="dim">
+          <div class="dt">📚 Context Learning 上下文学习</div>
+          <div class="dd">能否严格依据用户提供的上下文 / 文档执行，而非凭记忆作答。</div>
+          <div class="db">DeR2 Bench · KORBench</div>
+        </div>
+        <div class="dim">
+          <div class="dt">🌍 Real-World Tasks 真实任务</div>
+          <div class="dd">面向端到端任务完成的细粒度内部评测，强调直接经济价值。</div>
+          <div class="db">XPert Bench · GDPVal · ToB 系列</div>
+        </div>
+      </div>
+      <div class="figcap" style="margin-top:14px"><strong>自制示意图（非原文配图）：</strong>依据模型卡 §3.4 文字描述绘制的四维评测框架，忠于原文维度划分，不代表具体实现。</div>
+    </div>
+
+    <p>这套框架的设计哲学贯穿全卡：</p>
+    <div class="quote">
+      “First, the Seed team identifies users’ real needs, and selects or abstracts a series of benchmarks based on these real needs … Based on the reliable and forward-looking evaluation system, Seed2.0 focuses on solving long-tail knowledge problems and complex instruction following problems.”
+      <div class="zh">先识别用户真实需求 → 据此抽象出可靠且前瞻的评测体系 → 再以此聚焦攻克长尾知识与复杂指令跟随问题。</div>
+    </div>
+
+    <h3>评测方法上的工程细节</h3>
+    <p>为了让 agentic 评测稳定可复现，团队做了不少「脏活」：统一执行环境到预构建镜像、修复退化或报错的参考脚本、用内部镜像替换外部包源；并做<strong>质量过滤</strong>剔除不可靠用例（多容器 Docker Compose、参考解自身都过不了的用例、跨次运行非确定性的用例、异常占盘 / 依赖网络的任务等）。为避免低估竞品，最终分数取「官方文档分」与「自测分」的<strong>最大值</strong>。</p>
+  </section>
+
+  <section id="cap">
+    <h2><span class="k">04</span>核心能力：已进入国际第一梯队</h2>
+    <p class="lead">在基础语言能力上，Seed2.0 Pro「舒适地处于国际领先集团之中」。下面挑出最能说明问题的数字（完整对比见原文 Table 3）。点击切换不同能力维度。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">98.3</div><div class="lab">AIME 2025</div><div class="sub">GPT-5.2 99.0 / Gemini-3-Pro 95.0</div></div>
+      <div class="metric"><div class="num">3020<small> Elo</small></div><div class="lab">Codeforces（无工具）</div><div class="sub">仅次于 GPT-5.2 的 3148</div></div>
+      <div class="metric"><div class="num">89.3</div><div class="lab">IMOAnswerBench（无工具）</div><div class="sub">该项最高分</div></div>
+      <div class="metric"><div class="num">第 1</div><div class="lab">Frames 长上下文榜</div><div class="sub">长文本理解排名第一</div></div>
+    </div>
+
+    <div class="tabs">
+      <span class="tab on" data-p="math" onclick="switchTab(this)">数学</span>
+      <span class="tab" data-p="code" onclick="switchTab(this)">代码</span>
+      <span class="tab" data-p="know" onclick="switchTab(this)">知识/科学</span>
+      <span class="tab" data-p="stem" onclick="switchTab(this)">STEM</span>
+    </div>
+
+    <div class="panel on" id="p-math">
+      <table class="tbl">
+        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
+        <tr><td>AIME 2025</td><td class="n">99.0</td><td class="n">95.0</td><td class="n">91.3</td><td class="n">98.3</td></tr>
+        <tr><td>HMMT Feb 2025</td><td class="n">100.0</td><td class="n">97.3</td><td class="n">92.9</td><td class="n">97.3</td></tr>
+        <tr class="me"><td>BeyondAIME</td><td class="n">86.0</td><td class="n">83.0</td><td class="n">69.0</td><td class="n">86.5</td></tr>
+        <tr class="me"><td>IMOAnswerBench（无工具）</td><td class="n">86.6</td><td class="n">83.3</td><td class="n">72.6</td><td class="n">89.3</td></tr>
+        <tr class="me"><td>MathArenaApex（shortlist）</td><td class="n">80.1</td><td class="n">71.4</td><td class="n">47.4</td><td class="n">82.1</td></tr>
+      </table>
+      <div class="note">高亮行为 Seed2.0 Pro 取得最高分的基准。数学是其最强项之一。</div>
+    </div>
+    <div class="panel" id="p-code">
+      <table class="tbl">
+        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
+        <tr><td>Codeforces Elo（无工具）</td><td class="n">3148</td><td class="n">2726</td><td class="n">1701</td><td class="n">3020</td></tr>
+        <tr><td>LiveCodeBench (v6)</td><td class="n">87.7</td><td class="n">90.7</td><td class="n">84.8</td><td class="n">87.8</td></tr>
+        <tr><td>AetherCode</td><td class="n">73.8</td><td class="n">57.8</td><td class="n">31.6</td><td class="n">60.6</td></tr>
+      </table>
+      <div class="note">竞赛级编码很强（Elo 3020），但仓库级工程仍是短板（见「差距与局限」）。</div>
+    </div>
+    <div class="panel" id="p-know">
+      <table class="tbl">
+        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
+        <tr><td>MMLU-Pro</td><td class="n">85.9</td><td class="n">90.1</td><td class="n">89.3</td><td class="n">87.0</td></tr>
+        <tr class="me"><td>Encyclo-K（长尾专业知识）</td><td class="n">61.0</td><td class="n">64.9</td><td class="n">63.3</td><td class="n">65.7</td></tr>
+        <tr><td>SuperGPQA</td><td class="n">67.9</td><td class="n">73.8</td><td class="n">70.6</td><td class="n">68.7</td></tr>
+        <tr><td>HealthBench</td><td class="n">63.3</td><td class="n">37.9</td><td class="n">36.3</td><td class="n">57.7</td></tr>
+        <tr><td>SimpleQA Verified</td><td class="n">36.8</td><td class="n">72.1</td><td class="n">48.6</td><td class="n">36.0</td></tr>
+      </table>
+      <div class="note">在为产品优化的长尾知识（Encyclo-K）上领先；但 SimpleQA-Verified 这类「冷僻事实记忆」明显落后 Gemini。</div>
+    </div>
+    <div class="panel" id="p-stem">
+      <table class="tbl">
+        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
+        <tr><td>GPQA Diamond</td><td class="n">92.4</td><td class="n">91.9</td><td class="n">86.9</td><td class="n">88.9</td></tr>
+        <tr><td>PhyBench</td><td class="n">74.0</td><td class="n">80.0</td><td class="n">69.0</td><td class="n">74.0</td></tr>
+        <tr class="me"><td>FrontierSci-research</td><td class="n">25.0</td><td class="n">15.0</td><td class="n">21.7</td><td class="n">25.0</td></tr>
+      </table>
+      <div class="note">研究级科学推理（FrontierSci-research）与最强基线并列居首，呼应其「科学发现」维度的投入。</div>
+    </div>
+
+    <h3>有意思的点：开始触碰研究前沿</h3>
+    <p>模型卡展示了几个超出「答题」范畴的能力切片：</p>
+    <ul>
+      <li><strong>攻克开放数学难题：</strong>给出了两道 <strong>Erdős 问题</strong>的证明（经迭代精炼流水线生成），并用 <strong>Seed-Prover 1.5 形式化了 Erdős 1051 的证明</strong>。</li>
+      <li><strong>科学编码（Scientific Coding）：</strong>能实现并操作科学工作流中的计算过程，在 AInstein Bench 上领先。</li>
+      <li><strong>长上下文：</strong>在 Frames 排行榜上排名第一。</li>
+    </ul>
+  </section>
+
+  <section id="cost">
+    <h2><span class="k">05</span>成本：能力对标前沿，价格低一个数量级</h2>
+    <p class="lead">Seed2.0 的一大卖点是成本结构。在能力对标前沿模型的同时，token 定价大约低一个数量级——这对高频、工作流集成的企业 MaaS 部署尤其关键。</p>
+    <table class="tbl">
+      <tr><th>模型</th><th>输入 / 1M tokens</th><th>输出 / 1M tokens</th></tr>
+      <tr><td>Claude-Opus-4.5-thinking</td><td class="n">$5.00</td><td class="n">$25.00</td></tr>
+      <tr><td>GPT-5.2 High</td><td class="n">$1.75</td><td class="n">$14.00</td></tr>
+      <tr><td>Gemini-3-Pro</td><td class="n">$2.00–4.00</td><td class="n">$12.00–18.00</td></tr>
+      <tr class="me"><td>Seed2.0 Pro</td><td class="n">$0.47</td><td class="n">$2.37</td></tr>
+      <tr class="me"><td>Seed2.0 Lite</td><td class="n">$0.09</td><td class="n">$0.53</td></tr>
+      <tr class="me"><td>Seed2.0 Mini</td><td class="n">$0.03</td><td class="n">$0.31</td></tr>
+    </table>
+    <div class="note">数据为原文 Table 1（USD / 1M tokens）。Gemini 为按上下文档位的区间价。</div>
+    <p>三档定位各司其职：</p>
+    <div class="xcard" onclick="toggleCard(this)"><div class="head">
+      <span class="ic">🚀</span><div class="ht"><div class="t">Seed2.0 Pro</div><div class="s">复杂推理与长上下文，能力优先</div></div><span class="arw">▸</span>
+    </div><div class="body"><p>面向能力至上的复杂推理、长上下文任务，是与国际前沿对标的主力型号（调用 ID <code>Doubao-Seed-2.0-pro</code>）。</p></div></div>
+    <div class="xcard" onclick="toggleCard(this)"><div class="head">
+      <span class="ic">⚖️</span><div class="ht"><div class="t">Seed2.0 Lite</div><div class="s">通用应用的平衡选择</div></div><span class="arw">▸</span>
+    </div><div class="body"><p>在效率型模型中表现稳健：多个真实世界 ToB 基准成绩强，部分高级任务上直接超过 GPT-5-Mini，同时延迟与成本更友好。</p></div></div>
+    <div class="xcard" onclick="toggleCard(this)"><div class="head">
+      <span class="ic">⚡</span><div class="ht"><div class="t">Seed2.0 Mini</div><div class="s">高吞吐、低延迟、极致单价</div></div><span class="arw">▸</span>
+    </div><div class="body"><p>输出价低于 $0.50/1M tokens，为「每次查询成本必须极低」的高吞吐、延迟敏感场景打开了可能性。</p></div></div>
+  </section>
+
+  <section id="gap">
+    <h2><span class="k">06</span>诚实的差距与局限</h2>
+    <p class="lead">模型卡难得地直接列出了自己与国际前沿的差距——这往往比漂亮的数字更能帮你判断它适不适合你的场景。</p>
+    <ul>
+      <li><strong>代码工程：</strong>与 <strong>Claude 在编码上仍有可观差距</strong>，典型如 <code>SWE-Evo</code> 与 <code>NL2Repo</code>。</li>
+      <li><strong>长尾知识：</strong>与 <strong>Gemini 在贴近用户体验的长尾知识上差距明显</strong>，典型如 <code>SuperGPQA</code> 与 <code>SimpleQA-Verified</code>。</li>
+      <li><strong>上下文学习 + Vibe Coding：</strong>在 <code>DeR2 Bench</code> 与 <code>NL2Repo-Bench</code> 上落后最强基线，说明长程上下文整合与仓库级代码生成仍是挑战——团队已将其列为优先研究方向。</li>
+    </ul>
+    <div class="callout">这份模型卡<b>不公开架构、参数量与训练细节</b>，本页所有内容均来自模型卡公开披露的能力与评测信息，未做任何架构层面的推断。</div>
+  </section>
+
+  <section id="end">
+    <h2><span class="k">07</span>结语</h2>
+    <p>Seed2.0 系列在「解决复杂真实世界任务」这条路上迈出了关键一步：<strong>先从用户真实需求出发建立可靠且前瞻的评测体系</strong>，再据此聚焦攻克长尾知识与复杂指令跟随问题，从而提升模型在复杂、长程真实任务上的可靠性。叠加世界领先的推理、视觉理解与搜索能力，它满足了海量用户最真实的需求；模型卡用大量真实用例证明——Seed2.0 已<strong>初步具备处理复杂真实世界任务的能力</strong>。</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">数亿</div><div class="lab">日活用户产品生态</div><div class="sub">豆包 / Trae 等</div></div>
+      <div class="metric"><div class="num">4</div><div class="lab">维评测框架</div><div class="sub">科学 / 编码 / 上下文 / 真实任务</div></div>
+      <div class="metric"><div class="num">3</div><div class="lab">模型档位</div><div class="sub">Pro / Lite / Mini</div></div>
+    </div>
+    <p>体验入口：<a href="https://www.volcengine.com/experience/ark" target="_blank" rel="noopener">火山引擎方舟 ↗</a> · 官方页面：<a href="https://seed.bytedance.com/zh/seed2" target="_blank" rel="noopener">seed.bytedance.com/zh/seed2 ↗</a></p>
+  </section>
+
+  <footer>
+    <p>本页为 Seed2.0 Model Card 的中文教学可视化精读，内容与数字均整理自官方模型卡原文，仅供学习参考。</p>
+    <p>原文：<a href="https://seed.bytedance.com/zh/seed2" target="_blank" rel="noopener">Seed2.0 Model Card: Towards Intelligence Frontier for Real-World Complexity · ByteDance Seed ↗</a></p>
+  </footer>
+
+</div>
+
+<script>
+  function toggleFigDetail(el){
+    var d=el.nextElementSibling;
+    d.classList.toggle("active");
+    el.textContent=d.classList.contains("active")?"收起 ▴":"展开说明 ▸";
+  }
+  function toggleCard(el){ el.classList.toggle("open"); }
+  function switchTab(el){
+    var p=el.getAttribute("data-p");
+    var tabs=el.parentElement.querySelectorAll(".tab");
+    tabs.forEach(function(t){ t.classList.remove("on"); });
+    el.classList.add("on");
+    document.querySelectorAll(".panel").forEach(function(pn){ pn.classList.remove("on"); });
+    document.getElementById("p-"+p).classList.add("on");
+  }
+</script>
+</body>
+</html>

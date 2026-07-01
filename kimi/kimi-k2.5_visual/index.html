@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi K2.5 · 中文导读：视觉智能体与 Agent Swarm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+table.data .win{color:var(--accent-deep);font-weight:700}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:640px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1400px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:14.5px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-2{grid-template-columns:1fr 1fr}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+
+/* reward decomposition diagram */
+.grpo{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.grpo .row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
+.gbox{flex:1;min-width:130px;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:12px 13px}
+.gbox .gh{font-weight:700;font-size:13.5px;color:var(--accent-deep);margin-bottom:3px}
+.gbox .gd{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.gbox .gd b{color:var(--accent-deep)}
+.garrow{align-self:center;color:var(--accent);font-weight:700;font-size:18px}
+
+/* two-track overview */
+.track{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:13px 0;box-shadow:var(--shadow)}
+.track.zero{border-left:3px solid var(--ink-faint)}
+.track.r1{border-left:3px solid var(--accent)}
+.track .th{font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.track .tbadge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft)}
+.track.r1 .tbadge{background:var(--accent-soft);color:var(--accent-deep)}
+.track .td{font-size:14px;color:var(--ink-soft);margin-top:6px;line-height:1.6}
+
+/* step animation */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:188px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-step .sb b{color:var(--accent-deep)}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-2,.flow-3,.sp-io{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Kimi K2.5 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#multimodal">文本×视觉</a>
+      <a href="#swarm">Agent Swarm</a>
+      <a href="#training">训练全景</a>
+      <a href="#insights">有意思的点</a>
+      <a href="#results">实验结论</a>
+      <a href="#limits">局限</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2602.02276" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">技术报告导读 · Visual Agentic Intelligence</div>
+    <h1>Kimi K2.5：把「会看图」和「会派活」装进一个万亿参数智能体</h1>
+    <p class="subtitle">Kimi K2.5: Visual Agentic Intelligence</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv preprint · 2026.02</span>
+      <span class="chip">arXiv:2602.02276</span>
+      <span class="chip">Moonshot AI · Kimi Team</span>
+      <span class="chip">1.04T MoE / 32B 激活</span>
+      <span class="chip">开源权重（Modified MIT）</span>
+    </div>
+    <p class="lead">一句话：K2.5 在 <strong>Kimi K2</strong> 这个万亿参数文本基座上，额外灌入约 <strong>15T 图文混合 token</strong>，做了两件事——① 让<strong>文本与视觉联合优化</strong>、互相增强；② 引入 <strong>Agent Swarm（智能体集群）</strong>，让一个可训练的「指挥官」把复杂任务拆成异构子任务、动态拉起最多约 100 个子智能体<strong>并行干活</strong>。结果：编码、视觉、推理、智能体任务全面 SOTA，长任务延迟最多降到原来的 <strong>1/4.5</strong>。</p>
+    <p class="muted" style="font-size:14px">本页基于 arXiv HTML 全文（v1，2026.02）的正文与原始图表构建。术语首次出现给出英文原词，便于对照原文。下文图均取自原报告并配中文说明。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>它是什么</strong>：一个<strong>原生多模态（native multimodal）</strong>的智能体模型——在 Kimi K2 文本基座上做<strong>持续预训练（continual pre-training）</strong>，把视觉能力「长」进同一个模型，而不是外挂一个视觉模块。</li>
+      <li><strong>贡献一：文本×视觉联合优化</strong>。报告给出一串反直觉做法——<strong>早期、低比例</strong>地把视觉 token 混进训练（而非后期高比例外挂）；用 <strong>zero-vision SFT</strong>（只用纯文本 SFT）就能激活视觉工具使用；联合 RL 时<strong>视觉 RL 还反过来提升了文本成绩</strong>。</li>
+      <li><strong>贡献二：Agent Swarm + PARL</strong>。一个<strong>可训练的 orchestrator（指挥官）</strong>动态拆解任务、实例化一批<strong>冻结的子智能体（frozen subagents）</strong>并行执行；用 <strong>Parallel-Agent RL（PARL）</strong>训练，只更新指挥官、冻结子智能体，绕开「功劳分配」和「训练不稳」两大难题。</li>
+      <li><strong>效果</strong>：在广搜场景，Agent Swarm 把 BrowseComp 从 60.6% 提到 <strong>78.4%</strong>（超过 GPT-5.2 Pro 的 77.9%），同时延迟最多降低 <strong>4.5×</strong>。模型权重已开源。</li>
+    </ul>
+    <div class="quote big">「并行不是天生就更好——要不要、何时、怎样并行，全部交给环境反馈和 RL 探索去学。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 释义自原文：parallelism is not presumed to be inherently advantageous; decisions … are explicitly learned through RL.</span></div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：通向「通用智能体」的两道坎</h2>
+    <p>大模型正快速朝<strong>智能体智能（agentic intelligence）</strong>演进：能把复杂问题拆成多步计划，再交替「推理 + 调用工具」一步步执行。但报告点出两个绕不过去的瓶颈：</p>
+    <ul class="tight">
+      <li><strong>多模态与文本「打架」</strong>：传统做法把视觉当成<strong>事后附加（post-hoc add-on）</strong>——在文本训练后期才大比例塞进视觉 token。结果常常是「视觉强了、语言弱了」，两种模态相互拖累，难以同时做好。</li>
+      <li><strong>串行执行 = 延迟爆炸</strong>：即便是能跑上百步的强智能体（如 Kimi K2-Thinking），工具调用也是<strong>一步接一步串行</strong>的，推理时间随步数<strong>线性增长</strong>。当任务变成「大规模检索 + 多分支推理」时，单个智能体的推理深度和工具预算会被迅速耗尽。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">本报告要回答的问题</div>
+      能不能让<strong>同一个模型</strong>既把文本和视觉<strong>一起练好</strong>（而非互相牺牲），又能在面对超复杂任务时<strong>自己学会并行</strong>——把「线性的步数」变成「并行的处理」？
+    </div>
+  </section>
+
+  <!-- PRIOR WORK -->
+  <section id="prior">
+    <h2><span class="num">02</span> 已有方案卡在哪</h2>
+    <p>报告没有罗列长篇 related work，而是把要对比的几条路线讲清楚，正好对应它自己的两个贡献。先建立画面感：</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧩</span>视觉「后期外挂」 <span class="xtag">传统 VLM</span></div>
+        <div class="xs">在文本骨干训练的后期，才大比例（如 50%+）加入视觉 token，把多模态当作语言能力之上的补丁。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：先把语言模型训得差不多，再在<b>后期</b>用高视觉比例做 continual training，快速「贴上」多模态能力。</p>
+          <p><b>卡在哪</b>：把视觉视为 add-on 容易造成<b>模态冲突</b>——要么牺牲语言、要么牺牲视觉；而且视觉 SFT 数据稀缺、<b>多样性差</b>，常把视觉推理限制在简单图表和 crop/rotate/flip 这类原始操作。</p>
+          <p><b>与本文关系</b>：K2.5 反其道而行——<b>早期、低比例</b>地全程混入视觉，并用 <b>zero-vision SFT</b> 绕开视觉数据稀缺问题。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⛓️</span>串行单智能体 <span class="xtag">主流 agent</span></div>
+        <div class="xs">一个智能体把任务当成一条「推理→工具→推理」的长链，逐步执行。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：单一上下文里串行地推理、调用工具，靠拉长步数（hundreds of steps）应对复杂任务。</p>
+          <p><b>卡在哪</b>：推理时间<b>随步数线性增长</b>，延迟难以接受；单个上下文不断膨胀，最终<b>耗尽推理深度与工具预算</b>，复杂任务做不动。</p>
+          <p><b>与本文关系</b>：Agent Swarm 把「一条长链」改成「多个并行短链」，用 <b>critical steps</b>（关键路径）而非总步数来衡量代价。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">✂️</span>被动式上下文管理 <span class="xtag">对比项</span></div>
+        <div class="xs">Hide-Tool-Result / Summary / Discard-all 等：等上下文撑爆了再去压缩或丢弃历史。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：在推理时对上下文做<b>事后截断</b>——隐藏工具结果、摘要化、或干脆丢弃累积历史，以控制 token 用量。</p>
+          <p><b>卡在哪</b>：这类方法本质是<b>被动反应（reactive）</b>，常常牺牲结构信息或中间推理痕迹。</p>
+          <p><b>与本文关系</b>：Agent Swarm 提供一种<b>主动（proactive）</b>的替代——把长任务拆成语义隔离的子任务，让上下文「分片（sharding）」而非「截断」。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MULTIMODAL -->
+  <section id="multimodal">
+    <h2><span class="num">03</span> 贡献一：让文本与视觉「互相成就」</h2>
+    <p>K2.5 的第一个核心论点是：<strong>文本与视觉的联合优化能同时增强两者、并避免冲突</strong>。这条主线由三个反直觉的发现 + 一个统一的视觉编码器架构支撑。</p>
+
+    <h3>3.1 原生多模态预训练：早一点、淡一点，反而更好</h3>
+    <p>核心设计问题：<strong>在固定的图文 token 预算下，什么样的「视觉注入时机 + 视觉比例」最优？</strong>传统智慧说「后期、高比例」。但 K2.5 的消融实验给出相反答案——<strong>早期融合（early fusion）+ 低视觉比例</strong>反而最好，且视觉比例对最终多模态表现影响很小。</p>
+
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>注入时机</th><th>视觉:文本</th><th>视觉知识</th><th>视觉推理</th><th>OCR</th><th>文本知识</th><th>文本推理</th><th>代码</th></tr>
+        </thead>
+        <tbody>
+          <tr class="hl"><td>Early（早）</td><td>10% : 90%</td><td>25.8</td><td>43.8</td><td>65.7</td><td>45.5</td><td>58.5</td><td>24.8</td></tr>
+          <tr><td>Mid（中）</td><td>20% : 80%</td><td>25.0</td><td>40.7</td><td>64.1</td><td>43.9</td><td>58.6</td><td>24.0</td></tr>
+          <tr><td>Late（晚）</td><td>50% : 50%</td><td class="dim">24.2</td><td class="dim">39.0</td><td class="dim">61.5</td><td class="dim">43.1</td><td class="dim">57.8</td><td class="dim">24.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px">原论文 Table 1：固定总预算下，<strong>早期 + 低视觉比例</strong>那一行（高亮）几乎在所有维度上领先。所以 K2.5 选择全程以恒定的低视觉比例混合训练，让模型在长期协同优化中自然长出均衡的多模态表征。</p>
+
+    <div class="figure">
+      <img src="assets/fig9_vision_ratio.png" alt="不同视觉比例下六类能力随训练步数的曲线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 9（原论文 Figure 9）</span>：三种「视觉:文本」配比（10:90 / 20:80 / 50:50）在六类能力上的训练曲线——粉色（早期低比例 10:90）整体最高、跑得最远。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>六个子图</b>分别是：视觉知识、视觉通用推理、OCR（上排，视觉类）；文本知识、文本通用推理、代码（下排，文本类）。</li>
+          <li><b>三条曲线</b>代表三种视觉:文本配比——<b>粉色 = 10%:90%（早期低比例）</b>、绿色 = 20%:80%、蓝色 = 50%:50%（后期高比例）。横轴是训练步数，纵轴是该能力的得分。</li>
+          <li><b>读图重点</b>：在固定总预算下，低视觉比例的粉色线消耗的训练步数最多（因为视觉占比小、同样 token 预算能训更久），最终在<b>视觉类</b>的得分也不输甚至更高。</li>
+          <li><b>关键</b>：即便是<b>文本类</b>能力（下排），低视觉比例同样不吃亏——说明「淡淡地、长期地」混入视觉，不会拖累语言能力。</li>
+          <li><b>结论</b>：视觉不该是「最后贴上去的补丁」，而应作为长期协同优化的一部分，从早期就低剂量参与。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：与其后期猛灌视觉，不如早期细水长流——多模态表征在长期共训中更均衡。</p>
+      </div>
+    </div>
+
+    <h3>3.2 Zero-Vision SFT：只用「纯文本」就能点亮视觉工具</h3>
+    <p>预训练后的视觉模型并不会自动「看图用工具」，这给多模态 RL 出了个<strong>冷启动（cold-start）</strong>难题。传统解法是人工标注视觉 CoT 数据，但这类数据少、多样性差。K2.5 的妙招是 <strong>zero-vision SFT</strong>：</p>
+    <ul class="tight">
+      <li><strong>只用纯文本 SFT 数据</strong>来激活视觉、智能体能力——因为高质量文本 SFT 数据「又多又杂」。</li>
+      <li>所有图像操作都<strong>用 IPython 里的程序化操作来代理（proxy）</strong>，相当于把传统「视觉工具使用」一般化：用代码做二值化数物体、估算尺寸、定位、计数、OCR……</li>
+      <li>反直觉的发现：<strong>在这一步加入人工设计的视觉轨迹，反而损害泛化</strong>；纯文本 SFT 表现更好——因为联合预训练已经建立了强视觉-文本对齐，能力能自然跨模态迁移。</li>
+    </ul>
+
+    <h3>3.3 联合多模态 RL：视觉 RL 竟然反哺了文本</h3>
+    <p>zero-vision SFT 之后，再用<strong>结果奖励（outcome-based RL）</strong>在「必须看图才能答对」的任务上精炼：视觉定位与计数、图表/文档理解、视觉关键的 STEM 题。随训练投入（RL FLOPs）增加，视觉能力持续提升（见下图）。</p>
+
+    <div class="figure">
+      <img src="assets/fig2_vision_rl.png" alt="从 zero-vision SFT 出发的视觉 RL 训练曲线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 2（原论文 Figure 2）</span>：从极简 zero-vision SFT 起步，仅靠扩大视觉 RL 的算力，四个视觉基准（MMMU Pro / MathVision / CharXiv / OCRBench）的准确率持续攀升。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>四个子图</b>对应四个视觉基准：MMMU Pro、MathVision、CharXiv(RQ)、OCRBench。横轴是 RL 训练算力（RL flops），纵轴是准确率。</li>
+          <li><b>灰色虚线（下）</b>＝起点，即 zero-vision SFT 刚结束时的水平；<b>彩色虚线（上）</b>＝目标/收敛水平。中间的彩色散点+曲线是 RL 训练过程。</li>
+          <li><b>OCRBench</b> 上升最快最陡（从 ~0.79 迅速冲到 ~0.91），说明字符识别这类「确定性强」的能力最容易被 RL 激活。</li>
+          <li><b>MMMU Pro / MathVision / CharXiv</b> 则是稳步爬升，体现复杂视觉推理需要更多 RL 算力慢慢打磨。</li>
+          <li><b>关键信息</b>：起点（zero-vision SFT）几乎没用任何视觉 SFT 数据，却足以让长程视觉 RL「接得住」——证明<b>纯文本激活 + 长程视觉 RL</b> 这条组合拳成立。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：视觉能力不是靠堆视觉 SFT 数据「教」出来的，而是靠纯文本激活 + 长程 RL「练」出来的。</p>
+      </div>
+    </div>
+
+    <p>最让人意外的是<strong>跨模态迁移（cross-modal transfer）</strong>：做完视觉 RL 后，去测<strong>纯文本</strong>基准，成绩不降反升。</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>纯文本基准</th><th>视觉 RL 之前</th><th>视觉 RL 之后</th><th>提升</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>MMLU-Pro</td><td class="dim">84.7</td><td>86.4</td><td class="win">+1.7</td></tr>
+          <tr><td>GPQA-Diamond</td><td class="dim">84.3</td><td>86.4</td><td class="win">+2.1</td></tr>
+          <tr><td>LongBench v2</td><td class="dim">56.7</td><td>58.9</td><td class="win">+2.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px">原论文 Table 2：视觉 RL 改善了「结构化信息抽取」类问题的校准（calibration），让模型在「类视觉但其实是纯文本」的问题（计数、OCR 式抽取）上更有把握。<strong>文本能力没有任何可观察的退化。</strong></p>
+    <div class="callout">
+      <div class="t">双向增强：text bootstraps vision，vision refines text</div>
+      正是基于「视觉能力能从 zero-vision SFT + 视觉 RL 中涌现，又能反哺文本」这一发现，K2.5 在后训练里干脆采用<strong>联合多模态 RL</strong>：RL 域不再按「输入模态」划分，而是按<strong>能力</strong>（知识 / 推理 / 编码 / 智能体……）划分，让纯文本与多模态 query 一起训，最大化跨模态能力迁移。
+    </div>
+
+    <h3>架构基石：MoonViT-3D —— 图像与视频共享同一套权重</h3>
+    <p>支撑上述训练的，是一个原生分辨率的视觉编码器 <strong>MoonViT-3D</strong>（继承自 Kimi-VL，初始化自 SigLIP-SO-400M）。它把「patch n' pack」的思路从空间推广到时间：</p>
+    <div class="flow flow-3">
+      <div class="fnode">
+        <div class="ftag">原生分辨率</div>
+        <div class="fname">NaViT 打包</div>
+        <div class="fdesc">图像按原始分辨率切 patch、拉平、串成 1D 序列，<strong>无需复杂的切图/拼图</strong>，可同时训练不同分辨率的图。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">时间维 3D</div>
+        <div class="fname">4 帧一组的时空块</div>
+        <div class="fdesc">每 <strong>4 帧连续视频</strong>当作一个时空体，2D patch 联合打包进同一 1D 序列，同一套注意力机制同时跨空间和时间。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">效率</div>
+        <div class="fname">4× 时间压缩</div>
+        <div class="fdesc">投影前做轻量时间池化，得到 <strong>4×</strong> 时间压缩，同一上下文窗口能处理 <strong>4 倍长</strong>的视频；图像与视频<strong>完全共享权重</strong>。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENT SWARM -->
+  <section id="swarm">
+    <h2><span class="num">04</span> 贡献二：Agent Swarm —— 让模型自己学会「派活并行」</h2>
+    <p>这是报告的招牌。与其把任务当成一条推理长链，K2.5 通过<strong>动态任务拆解 + 子智能体实例化 + 并行子任务调度</strong>发起一个「智能体集群」。下面这张架构图是全节最重要的图：</p>
+
+    <div class="figure">
+      <img src="assets/fig3_agent_swarm.png" alt="Agent Swarm 架构：可训练 orchestrator 动态创建冻结子智能体并行执行" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3（原论文 Figure 3）</span>：一个可训练的 <strong>Orchestrator（指挥官）</strong>动态创建一批专业化的<strong>冻结子智能体</strong>，把复杂任务拆成可并行的子任务，分布式执行后汇总成最终结果。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>最左侧蓝色长条 = Orchestrator（指挥官）</b>：唯一可训练的部分。它持有一组工具：<code>create_subagent</code>（创建子智能体）、<code>assign_task</code>（派发任务）、<code>search</code>、<code>browser</code> 等。</li>
+          <li><b>第一步「create subagents」</b>：指挥官根据任务，动态实例化一批<b>异构</b>子智能体——图中有 AI Researcher、Physics Researcher、Life Sciences Researcher、Anthropology Researcher、Fact Checker、Web Developer……每个都带自己的工具集（放大镜=搜索、Python=代码、窗口=浏览）。返回 <code>success</code>。</li>
+          <li><b>第二步「Assign Tasks」（上方大块）</b>：指挥官把任务批量分派——例如 AI Researcher 同时领 Task 1~4，Life Sciences Researcher 领 Task 96~99……图中一直排到 <b>Task 100</b>，对应「最多约 100 个子任务并行」。各子智能体跑完把 <code>task N result</code> 回传给指挥官（左侧一列箭头）。</li>
+          <li><b>第三步（下方块）= 又一轮 Assign Tasks</b>：拿到第一批结果后，指挥官可以再起新一批角色（Fact Checker 核查、File Downloader 下载、Web Developer 开发），说明拆解是<b>分阶段、动态</b>的，而非一次性静态划分。</li>
+          <li><b>最底部「Final Results」</b>：指挥官聚合所有子智能体的产出，合成最终答案（必要时还能临时 spawn 验证者 verifier）。</li>
+          <li><b>关键设计</b>：子智能体是<b>冻结的（frozen）</b>中间 checkpoint，它们的执行轨迹被当作「环境观测」、<b>不参与梯度更新</b>；只有指挥官被 RL 训练。这把「高层协调逻辑」与「底层执行能力」解耦。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：指挥官学会「创建谁、派什么、何时并行、如何汇总」，子智能体只管埋头执行——分工明确，所以好训。</p>
+      </div>
+    </div>
+
+    <h3>跟着指挥官走一遍：Agent Swarm 的生命周期</h3>
+    <p>点「下一步」，一阶段一阶段看清一个 swarm 从接到任务到给出答案的全过程：</p>
+
+    <div class="stepbox" id="swarmpipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+        <div class="sp-dot" data-dot="4"></div>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STEP 1</span>规划与拆解（Decompose）</div>
+          <div class="sb">指挥官在用户 query + 工具/上下文上做一次<strong>规划</strong>，判断任务能否并行、该拆成哪些<strong>异构子问题</strong>。注意：<b>是否并行不是预设的</b>，而是 RL 学出来的策略。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>复杂任务 + 可用工具</div>
+            <div class="io"><div class="iol">输出</div>一份并行子任务计划</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STEP 2</span>实例化子智能体（Spawn）</div>
+          <div class="sb">调用 <code>create_subagent(name, role, tools)</code>，从<strong>固定的中间策略 checkpoint</strong>动态拉起一批<strong>冻结</strong>子智能体，每个带专属角色与工具子集（搜索 / 代码 / 浏览）。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>子任务计划</div>
+            <div class="io"><div class="iol">输出</div>一组异构、冻结的子智能体</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STEP 3</span>并行执行（Execute in Parallel）</div>
+          <div class="sb">调用 <code>assign_task</code> 把子任务派出去，<strong>最多约 100 个子智能体并行运行</strong>。每个子智能体在<strong>独立、隔离的本地上下文</strong>里推理、调用工具，互不污染。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>子任务 + 各自工具</div>
+            <div class="io"><div class="iol">输出</div>并行产生的中间结果</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">STEP 4</span>选择性回传（Context Sharding）</div>
+          <div class="sb">子智能体只把<strong>任务相关的精炼输出</strong>（结构化结果 / 摘要 / 关键发现）回传，而非完整交互轨迹。这实现了「上下文<strong>分片</strong>」而非「上下文截断」，保住信息局部性与推理完整性。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>各子智能体的本地推理</div>
+            <div class="io"><div class="iol">输出</div>高信号摘要 → 指挥官</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="4">
+          <div class="sh"><span class="stg">STEP 5</span>聚合与收尾（Aggregate）</div>
+          <div class="sb">指挥官把所有回传结果<strong>合并进全局计划</strong>，必要时再起一轮子任务或临时 spawn 验证者，最终合成 <strong>Final Results</strong>。整段时长由「关键路径」而非总步数决定。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>多路子结果</div>
+            <div class="io"><div class="iol">输出</div>最终答案</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-controls">
+        <button id="sp-prev" onclick="spPrev()">‹ 上一步</button>
+        <button id="sp-next" class="primary" onclick="spNext()">下一步 ›</button>
+        <button onclick="spReset()">重置</button>
+        <span class="sp-counter" id="sp-counter">1 / 5</span>
+      </div>
+    </div>
+
+    <h3>PARL：为什么「冻结子智能体、只训指挥官」</h3>
+    <p>训练这套并行编排用的是 <strong>Parallel-Agent Reinforcement Learning（PARL）</strong>。它刻意采用<strong>解耦架构</strong>：可训练的指挥官 + 从固定中间 checkpoint 实例化的冻结子智能体。这样设计是为了绕开端到端协同优化的两个老大难：</p>
+    <ul class="tight">
+      <li><strong>功劳分配模糊（credit assignment ambiguity）</strong>：多智能体下，结果奖励既稀疏又嘈杂——最终答对不代表每个子智能体都执行完美，答错也不代表全员有错。把子智能体冻结、当作「环境观测」，就不必为它们的每一步分配梯度。</li>
+      <li><strong>训练不稳定（training instability）</strong>：解耦「高层协调」与「底层执行」后，收敛更稳。工程上还先用<strong>小号子智能体</strong>训指挥官，再切到大模型；并能动态调节子智能体与指挥官的推理实例配比，榨干集群资源。</li>
+    </ul>
+
+    <h3>PARL 奖励：一个主奖励 + 两个「纠偏」奖励</h3>
+    <p>并行编排的反馈是<strong>延迟、稀疏、非平稳</strong>的，所以奖励要专门设计来对抗两种退化行为：</p>
+    <div class="formula">
+      <div class="eq">r<sub>PARL</sub>(x,y) = λ₁·<b>r<sub>parallel</sub></b> + λ₂·<b>r<sub>finish</sub></b> + <b>r<sub>perf</sub></b>(x,y)</div>
+      <div class="cap">λ₁、λ₂ 是辅助奖励的权重，<b>训练中逐步退火到 0</b>，确保最终只为主目标（任务表现）优化。</div>
+    </div>
+    <div class="grpo">
+      <div class="row">
+        <div class="gbox">
+          <div class="gh">r<sub>perf</sub> · 任务表现</div>
+          <div class="gd">主奖励：评估最终解 y 对任务 x 的<b>整体成功与质量</b>。这是真正想优化的目标。</div>
+        </div>
+        <div class="garrow">+</div>
+        <div class="gbox">
+          <div class="gh">r<sub>parallel</sub> · 鼓励并行</div>
+          <div class="gd">对抗<b>串行坍缩（serial collapse）</b>——指挥官偷懒退化成单智能体。靠奖励「实例化子智能体」逼它去探索并行调度空间。</div>
+        </div>
+        <div class="garrow">+</div>
+        <div class="gbox">
+          <div class="gh">r<sub>finish</sub> · 鼓励完成</div>
+          <div class="gd">对抗<b>虚假并行（spurious parallelism）</b>——为刷并行指标乱开一堆没用的子智能体。靠奖励「子任务真正完成」逼它做有效拆解。</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>关键步数（Critical Steps）：用「关键路径」衡量真实耗时</h3>
+    <p>并行场景下，「总步数」不再等于「耗时」。报告类比计算图的<strong>关键路径（critical path）</strong>，定义关键步数——每个阶段的耗时由该阶段<strong>跑得最久的那个子智能体</strong>决定：</p>
+    <div class="formula">
+      <div class="eq">CriticalSteps = Σ<sub>t=1..T</sub> ( S<sub>main</sub><sup>(t)</sup> + <b>max<sub>i</sub></b> S<sub>sub,i</sub><sup>(t)</sup> )</div>
+      <div class="cap">每个阶段 t 的代价 = 主智能体步数 + 该阶段并行组里<b>最长子智能体</b>的步数。多开但不缩短最长分支 = 没收益。</div>
+    </div>
+    <p>用关键步数（而非总步数）来约束训练与评测，<strong>直接激励有效并行</strong>：只有把活均衡地铺开、缩短最长分支，才能降低端到端延迟；盲目堆并发或堆总工作量都没用。</p>
+
+    <h3>训练信号：并行度是「学」出来的</h3>
+    <div class="figure">
+      <img src="assets/fig4_parl_curves.png" alt="PARL 训练曲线：训练准确率与平均并行度都随训练上升" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 4（原论文 Figure 4）</span>：随训练推进，<strong>训练准确率（左）</strong>平滑上升的同时，<strong>平均并行度（右）</strong>也逐渐升高——指挥官在自我优化并行策略。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左图 Training Accuracy vs Steps</b>：横轴是 RL 训练算力，纵轴是训练准确率。蓝点是实测、红线是平滑曲线，从约 <b>37%</b> 平稳爬升到约 <b>64%</b>。</li>
+          <li><b>右图 Average Parallelism vs Steps</b>：纵轴是平均并行度（一个 episode 里平均同时跑多少子智能体）。早期在 ~8 附近<b>先小幅下探</b>（指挥官在试探），后期一路升到 <b>~14</b>。</li>
+          <li><b>两图对照</b>：准确率和并行度<b>同步上升</b>，说明并行不是被硬塞的——而是指挥官发现「并行确实能把任务做得更好更快」后，主动学来的策略。</li>
+          <li><b>呼应奖励设计</b>：r<sub>parallel</sub> 把它从串行坍缩里拽出来、r<sub>finish</sub> 防止它乱开子智能体，二者合力才有这条平滑上升的并行度曲线。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：并行度曲线是「指挥官学会派活」的最直接证据——它越训越愿意、也越会并行。</p>
+      </div>
+    </div>
+
+    <h3>子智能体是「现造」的，不是预设的</h3>
+    <p>子智能体并非提前定义好，而是指挥官<strong>根据 query 动态实例化</strong>——它会推断「需要几个、什么时候要、什么专长」。于是一个<strong>异构的智能体群</strong>会自然涌现：</p>
+    <div class="figure">
+      <img src="assets/fig7a_swarm_ctx.png" alt="测试中动态实例化的异构子智能体词云" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 6（原论文 Figure 6）</span>：词云展示了指挥官在各类测试中动态实例化的、五花八门的子智能体角色——Biography Researcher、Verification Specialist、Cross Reference Analyst……</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>这是一张词云</b>：字号越大，代表该角色被指挥官实例化得越频繁。</li>
+          <li><b>高频角色</b>：Biography Researcher、Verification Specialist、Cross Reference Analyst、University Researcher、Article Researcher、Timeline Researcher 等——大量是「研究 + 核查 + 交叉验证」类。</li>
+          <li><b>为什么是这些</b>：这些测试以<b>深度研究 / 广度检索</b>为主，所以涌现出大量「找资料 + 验证资料」的专业分工，正好对应需要并行探索多个信息源的场景。</li>
+          <li><b>关键</b>：没有人预先列出这份角色清单——它完全是 PARL 训出的<b>自适应分配策略</b>的副产物。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：角色清单不是写死的配置，而是指挥官「看任务下菜」临时造出来的。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRAINING OVERVIEW -->
+  <section id="training">
+    <h2><span class="num">05</span> 训练全景：从 K2 基座到 K2.5</h2>
+    <p>上面两个贡献都建立在一套完整的训练流程上。这里轻量过一遍「基座 → 预训练 → 后训练 → 基建」，不必逐一深究，知道每块在做什么即可。</p>
+
+    <h3>基座与预训练三阶段</h3>
+    <p>K2.5 的地基是 <strong>Kimi K2</strong>：万亿参数 MoE（1.04T 总参 / 32B 激活，384 专家选 8，MuonClip + QK-Clip 稳训），在 15T 文本 token 上预训练。在此之上，K2.5 用约 15T 图文混合 token 走三个预训练阶段：</p>
+    <div class="flow flow-3">
+      <div class="fnode">
+        <div class="ftag">STAGE 1 · ViT</div>
+        <div class="fname">视觉编码器预训练</div>
+        <div class="fdesc">从 SigLIP 继续训 MoonViT-3D，只用 caption 交叉熵（不含对比损失），对齐图/视频与语言。<strong>~1T token，序列长 4096</strong>。</div>
+        <div class="fseq">建立原生分辨率视觉编码器</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STAGE 2 · 联合</div>
+        <div class="fname">图文联合预训练</div>
+        <div class="fdesc">从近末期的 K2 checkpoint 继续，<strong>同时训 ViT 与 LLM</strong>，加大编码相关数据权重，控制每个数据源的最大 epoch。<strong>~15T token，序列长 4096</strong>。</div>
+        <div class="fseq">语言与多模态同步增强</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STAGE 3 · 长上下文</div>
+        <div class="fname">长上下文 mid-training</div>
+        <div class="fdesc">混入高质量数据 + 长文本/长视频，用 YaRN 逐步把上下文从 <strong>32K 扩到 262K</strong>。<strong>500B→200B token</strong>。</div>
+        <div class="fseq">长文档与长视频理解</div>
+      </div>
+    </div>
+
+    <h3>后训练：SFT + RL</h3>
+    <ul class="tight">
+      <li><strong>SFT</strong>：沿用 K2 流程，用 K2、K2-Thinking 和一批内部专家模型合成高质量候选回复，按领域定制管线、结合人工标注与多阶段验证，强调「交互式推理 + 精准工具调用」。</li>
+      <li><strong>RL（统一智能体 RL 环境）</strong>：策略优化用<strong>带 token 级裁剪（token-level clipping）</strong>的目标——只看 log-ratio 把「离策略漂移」框住（不论优势正负），对长程多步工具使用的稳定性至关重要；优化器仍是 MuonClip。</li>
+      <li><strong>奖励组合</strong>：可验证任务用<strong>规则奖励</strong>；通用任务用<strong>生成式奖励模型（GRM）</strong>捕捉「有用性、相关性、详略得当、美感、严格遵循指令」等细粒度偏好；视觉任务设计专门奖励（IoU 软匹配、归一化编辑距离、计数差等）。</li>
+    </ul>
+
+    <h3>Toggle：在「想得够」和「说得省」之间来回切</h3>
+    <p>测试时扩展（test-time scaling）拿算力换推理质量，但<strong>死扣预算会导致「长度过拟合」</strong>——模型学会截断推理，反而用不上更多算力。<strong>Toggle</strong> 是个交替训练启发式：每 m 轮在两个相位间切换——<strong>Phase 0 限预算</strong>（仅当该题平均正确率超阈值 λ 才施加，避免过早牺牲质量）与 <strong>Phase 1 放开扩展</strong>（鼓励用满算力）。</p>
+    <div class="figure">
+      <img src="assets/fig5_toggle_radar.png" alt="Toggle 前后在多个基准上的性能与 token 用量对比雷达图" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 5（原论文 Figure 5）</span>：在 K2 Thinking 上应用 Toggle 后，<strong>性能几乎不变（左）</strong>，但<strong>输出 token 大幅下降（右）</strong>——平均省 25%~30%。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左雷达图 = 性能（%）</b>：灰色 = Toggle 前，蓝色 = Toggle 后。各轴是 HMMT、GPQA Diamond、AIME2025、Overall、LiveCodeBenchV6、MMLUPro 等基准。绿标=提升、红标=下降，统计为「改善 5 项 / 退化 2 项」，且变动都很小（多在 ±2% 内）。</li>
+          <li><b>右雷达图 = token 用量</b>：橙色 = Toggle 后。每个轴上的绿标显示<b>减少的 token 数</b>（如 -7967、-8127、-6179），统计为「减少 7 项 / 增加 0 项」。</li>
+          <li><b>对照两图</b>：左边几乎不动、右边大幅缩小——说明 Toggle 把 CoT 里<b>重复验证、机械计算</b>这类冗余砍掉了，而没有牺牲答对率。</li>
+          <li><b>泛化</b>：即使只在数学和编程上训练，模型在 GPQA、MMLU-Pro 上也能稳定省 token，几乎不掉点。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：Toggle 让模型「该长则长、能短则短」，省下两三成 token 还几乎不掉分。</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">基建一笔带过：DEP（Decoupled Encoder Process）</div>
+      多模态训练里，视觉编码器和文本嵌入挤在流水线第一级（Stage-0），因图像数量/分辨率波动造成<strong>负载与显存剧烈抖动</strong>。DEP 把视觉编码器<strong>复制到所有 GPU</strong>，按负载均衡地先跑「视觉前向」，丢弃中间激活只留输出，再像纯文本一样高效训练主干，最后重算视觉反向。结果：<strong>多模态训练效率达到纯文本的 90%</strong>，且能直接复用 K2 的并行策略。
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">06</span> 有意思的点</h2>
+    <p>除了主线，有几处取舍与发现值得单独拎出来——它们往往比 benchmark 数字更能帮你判断这套方法适不适合自己的场景。</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔄</span>早期低比例融合反直觉地更好</div>
+        <div class="xs">固定预算下，「早期、淡淡地」混视觉胜过「后期、猛灌」视觉。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>传统智慧认为多模态是语言之上的 add-on，应后期高比例注入。K2.5 的消融却显示<b>视觉比例对最终表现影响很小</b>，而早期低比例反而最优。</p>
+          <p><b>启发</b>：把视觉当作长期协同优化的一等公民，而非临门一脚的补丁。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🚫</span>加人工视觉轨迹反而有害</div>
+        <div class="xs">激活视觉能力时，纯文本 SFT 胜过「文本+视觉」SFT。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>因为联合预训练已建立强视觉-文本对齐，能力能自然跨模态迁移；此时再塞入多样性差的人工视觉轨迹，<b>反而损害泛化</b>。</p>
+          <p><b>边界</b>：这条结论依赖「预训练阶段已做好图文对齐」——否则纯文本激活未必接得住。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">↔️</span>视觉 RL 反哺文本</div>
+        <div class="xs">做完视觉 RL，纯文本基准不降反升（MMLU-Pro/GPQA/LongBench 均 +1.7~+2.2）。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>分析认为视觉 RL 改善了「结构化信息抽取」类问题的校准，降低了「类视觉」查询上的不确定性，从而<b>跨模态泛化</b>到文本推理。</p>
+          <p><b>言下之意</b>：模态之间不是零和——对齐做得好，一种模态的进步能外溢到另一种。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧊</span>冻结子智能体 = 干净的功劳分配</div>
+        <div class="xs">只训指挥官、冻结子智能体，把多智能体 RL 的两大难题一并绕开。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>子智能体输出被当作「环境观测」、不参与梯度，从而<b>避免功劳分配模糊与训练不稳</b>。两个辅助奖励（r<sub>parallel</sub>/r<sub>finish</sub>）再分别防住串行坍缩与虚假并行。</p>
+          <p><b>价值</b>：这是一种很务实的「先把能训稳的部分训稳」的工程哲学。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⏱️</span>用「关键路径」而非「总步数」</div>
+        <div class="xs">Critical Steps 让「多开但不缩短最长分支」毫无收益。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>把每阶段代价定义为「主步数 + 最长子智能体步数」，奖励信号天然偏向<b>均衡拆解</b>，而非盲目堆并发或堆总工作量。</p>
+          <p><b>启发</b>：评测并行系统时，指标选错（总步数）会把模型带偏。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📐</span>Toggle 治「长度过拟合」</div>
+        <div class="xs">在限预算与放开扩展之间交替，省 25~30% token 还几乎不掉分。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>死扣预算会让模型学会截断推理、用不上更多算力（length-overfitting）。Toggle 用交替优化把「会推理」和「会省」两个目标调和起来。</p>
+          <p><b>边界</b>：限预算只在「该题平均正确率超阈值」时才施加，避免过早牺牲质量。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">07</span> 实验结论：一句话能说清</h2>
+    <p>一句话：<strong>Kimi K2.5 在推理、编码、视觉、视频、智能体等多个领域取得 SOTA 或接近顶尖闭源模型的成绩</strong>；而 Agent Swarm 在广搜类任务上既<strong>更准</strong>又<strong>更快</strong>。先看几个最核心的数字：</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">50.2<span class="u">%</span></div><div class="k">HLE-Full（带工具）<br>超过 Gemini 3 Pro / GPT-5.2</div></div>
+      <div class="metric"><div class="v">78.4<span class="u">%</span></div><div class="k">BrowseComp（Agent Swarm）<br>超过 GPT-5.2 Pro 77.9%</div></div>
+      <div class="metric"><div class="v">4.5<span class="u">×</span></div><div class="k">长任务延迟最多降低<br>同时性能反升</div></div>
+      <div class="metric"><div class="v">86.6<span class="u">%</span></div><div class="k">VideoMMMU（视频）<br>多项视频任务全球 SOTA</div></div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig1_main_result.png" alt="Kimi K2.5 与 GPT-5.2 / Claude Opus 4.5 / Gemini 3 Pro 的主结果对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 1）</span>：Kimi K2.5（蓝）与 GPT-5.2、Claude Opus 4.5、Gemini 3 Pro 在智能体、编码、图像、视频四大类基准上的对比总览。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>每组柱子</b>是一个基准，<b>每组里第一根蓝色柱子 = Kimi K2.5</b>，后面三根灰柱依次是 GPT-5.2 (xhigh)、Claude Opus 4.5、Gemini 3 Pro。</li>
+          <li><b>上排</b>：智能体类（HLE-Full 50.2、BrowseComp 74.9、DeepSearchQA 77.1）与编码类（SWE-bench Verified 76.8、Multilingual 73.0）——K2.5 在 HLE、DeepSearchQA、SWE-Multilingual 上领先。</li>
+          <li><b>下排</b>：图像类（MMMU Pro 78.5、MathVision 84.2、OmniDocBench 88.8）与视频类（VideoMMMU 86.6、LongVideoBench 79.8）——K2.5 在多数视觉/视频任务上拿到全球最高。</li>
+          <li><b>读图重点</b>：蓝柱在多数组里要么最高、要么紧咬第一，说明一个<b>开源</b>模型已能在广泛任务上对标甚至超过顶尖闭源模型。</li>
+          <li><b>注意</b>：OmniDocBench 用「1 − 归一化编辑距离 ×100」计分，越高越好；带 * 的为内部复测。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：这是全文的「成绩单」——一眼看清 K2.5 在编码、视觉、视频、智能体上的整体格局。</p>
+      </div>
+    </div>
+
+    <h3>Agent Swarm：把并行算力变成实打实的能力</h3>
+    <p>这是报告最有说服力的对照：同一个 K2.5，开了 Agent Swarm 后在三个广搜/深研基准上全面跃升，甚至反超 GPT-5.2 Pro。</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>基准</th><th>K2.5 Agent Swarm</th><th>K2.5 单智能体</th><th>Claude Opus 4.5</th><th>GPT-5.2 Pro</th></tr>
+        </thead>
+        <tbody>
+          <tr class="hl"><td>BrowseComp</td><td>78.4</td><td>60.6</td><td class="dim">37.0</td><td>77.9</td></tr>
+          <tr class="hl"><td>WideSearch (Item-F1)</td><td>79.0</td><td>72.7</td><td class="dim">76.2</td><td>—</td></tr>
+          <tr class="hl"><td>In-house Swarm Bench</td><td>58.3</td><td>41.6</td><td class="dim">45.8</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px">原论文 Table 6：BrowseComp <strong>+17.8</strong>（60.6→78.4，超 GPT-5.2 Pro 77.9）、WideSearch <strong>+6.3</strong>（72.7→79.0，超 Claude Opus 4.5 76.2 创 SOTA）、内部 Swarm Bench <strong>+16.7</strong>——专为奖励并行拆解设计的任务上提升最猛。</p>
+
+    <div class="twocol">
+      <div class="panel after">
+        <div class="ph">⚡ 更快：3×~4.5× 提速</div>
+        <ul>
+          <li>WideSearch 上，达到目标 Item-F1 所需的执行时间被压到单智能体的 <strong>1/3 ~ 1/4.5</strong></li>
+          <li>目标 F1 从 30% 升到 70% 时，单智能体耗时从 ~1.8× 飙到 ~7×，而 Swarm 几乎<strong>恒定低延迟（0.6×~1.6×）</strong></li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">🧠 更稳：主动式上下文管理</div>
+        <ul>
+          <li>子任务语义隔离、各自有界本地上下文——<strong>上下文分片</strong>而非被动截断</li>
+          <li>在 BrowseComp 上，同等步数下比 Discard-all <strong>又准又省</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig7b_swarm_ctx.png" alt="BrowseComp 上 Agent Swarm 与 Discard-all 上下文管理的性能对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 7（原论文 Figure 7）</span>：在 BrowseComp 上，相同步数下 Agent Swarm（红）的性能曲线始终高于 Discard-all 被动上下文截断（蓝）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>＝步数（对数刻度 log(steps)），<b>纵轴</b>＝性能（Performance）。</li>
+          <li><b>红点 = Agent Swarm</b>：起步后迅速攀升，约 ~78% 处收敛；<b>蓝点 = Discard-all 上下文管理</b>：上升更慢，最终停在约 ~75%。</li>
+          <li><b>读图重点</b>：在<b>任意给定步数</b>下，红线都压着蓝线——说明「主动分片」比「被动截断」在效率和准确率上都更优。</li>
+          <li><b>原因</b>：Discard-all 会丢掉累积历史里的结构信息；而 Swarm 把上下文按子任务隔离、只回传高信号摘要，既省 token 又保住推理完整性。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：与其等上下文爆了再删，不如一开始就把它拆成互不干扰的小块——主动优于被动。</p>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig8_time_savings.png" alt="Agent Swarm 与单智能体达到目标 Item-F1 的执行时间对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 8（原论文 Figure 8）</span>：在 WideSearch 上，随目标 Item-F1 从 30% 升到 70%，Agent Swarm 相对单智能体的提速从 3× 拉大到 4.5×。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>＝想要达到的目标 Item-F1（30%→70%），<b>纵轴</b>＝执行时间（以基线为 1×）。</li>
+          <li><b>蓝点 = Agent Swarm</b>：始终贴着底部，维持在约 <b>0.6×~1.6×</b> 的低延迟区间。</li>
+          <li><b>红点 = Single Agent</b>：随目标提高<b>陡峭上升</b>，从约 1.8× 一路涨到约 7.2×。</li>
+          <li><b>黑色虚线标注</b>：在各目标点上标出节省倍数——save ×3.0 / ×3.0 / ×3.2 / ×3.7 / <b>×4.5</b>，任务越难、并行的优势越大。</li>
+          <li><b>本质</b>：Swarm 把「串行工具调用」变成「并行操作」，阻止了完成时间随难度线性（乃至超线性）增长。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：任务越复杂，并行省下的时间越多——这正是 Agent Swarm 的意义所在。</p>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>更全的对比数字（节选自原论文 Table 4）<span class="sub">点开看 K2.5 vs Claude Opus 4.5 / GPT-5.2 / Gemini 3 Pro / DeepSeek-V3.2</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th>基准</th><th>Kimi K2.5</th><th>Claude Opus 4.5</th><th>GPT-5.2 (xhigh)</th><th>Gemini 3 Pro</th><th>DeepSeek-V3.2</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>AIME 2025</td><td>96.1</td><td class="dim">92.8</td><td>100</td><td class="dim">95.0</td><td class="dim">93.1</td></tr>
+              <tr><td>GPQA-Diamond</td><td>87.6</td><td class="dim">87.0</td><td>92.4</td><td>91.9</td><td class="dim">82.4</td></tr>
+              <tr><td>MMLU-Pro</td><td>87.1</td><td>89.3</td><td class="dim">86.7</td><td>90.1</td><td class="dim">85.0</td></tr>
+              <tr><td>HLE-Full（带工具）</td><td class="win">50.2</td><td class="dim">43.2</td><td class="dim">45.5</td><td class="dim">45.8</td><td class="dim">40.8</td></tr>
+              <tr><td>SWE-Bench Verified</td><td>76.8</td><td>80.9</td><td>80.0</td><td class="dim">76.2</td><td class="dim">73.1</td></tr>
+              <tr><td>LiveCodeBench (v6)</td><td class="win">85.0</td><td class="dim">82.2</td><td>—</td><td>87.4</td><td class="dim">83.3</td></tr>
+              <tr><td>BrowseComp（带上下文管理）</td><td class="win">74.9</td><td class="dim">57.8</td><td class="dim">59.2</td><td class="dim">67.6</td><td class="dim">—</td></tr>
+              <tr><td>Seal-0</td><td class="win">57.4</td><td class="dim">47.7</td><td class="dim">45.0</td><td class="dim">45.5</td><td class="dim">49.5</td></tr>
+              <tr><td>MMMU-Pro</td><td>78.5</td><td class="dim">74.0</td><td>79.5</td><td>81.0</td><td class="dim">—</td></tr>
+              <tr><td>MathVision</td><td class="win">84.2</td><td class="dim">77.1</td><td class="dim">83.0</td><td>86.1</td><td class="dim">—</td></tr>
+              <tr><td>VideoMMMU</td><td class="win">86.6</td><td class="dim">84.4</td><td class="dim">85.9</td><td>87.6</td><td class="dim">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px">数学/编码与一线闭源并肩；HLE（带工具）、LiveCodeBench、BrowseComp、Seal-0、MathVision、VideoMMMU 等多项领先或拿到全局最佳（蓝色高亮）。完整表见原文 Table 4（含 OCRBench 92.3、LVBench 75.9、OSWorld-Verified 63.3 等）。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">08</span> 怎么看这套方法 · 结论</h2>
+    <p>报告的结论很克制：<strong>可扩展、通用的智能体智能，可以靠「文本×视觉联合优化 + 并行智能体执行」来实现。</strong>这套思路的适用边界值得留意：</p>
+    <ul class="tight">
+      <li><strong>Agent Swarm 的甜区是「可并行」的任务</strong>：广搜、批量下载、超大规模文档阅读、长文写作——能被拆成相互独立子任务的场景收益最大；强串行依赖的任务并行不一定划算。</li>
+      <li><strong>子智能体是冻结的</strong>：当前只训指挥官。报告也指出，端到端协同训练（同时优化子智能体）仍是开放方向——现在是用「可训稳」换「上限」。</li>
+      <li><strong>评测口径需对齐</strong>：不少对比是内部复测（带 *），部分场景（如 BrowseComp）依赖特定上下文管理策略；跨报告比较时要看清设置。</li>
+      <li><strong>视觉激活依赖强预训练对齐</strong>：zero-vision SFT「纯文本激活视觉」之所以成立，前提是联合预训练已建立强图文对齐——这套配方不一定能直接照搬到对齐较弱的模型上。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这份报告最值得记住的一句话</div>
+      与其预设「并行更好」或「视觉是附加」，不如把这些<strong>决策交给环境反馈和 RL 去学</strong>——让模型自己决定何时看图、何时派活、何时并行。K2.5 用一条上升的并行度曲线和一张更快更准的成绩单，说明了这条路走得通。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对技术报告 <strong>《Kimi K2.5: Visual Agentic Intelligence》</strong> 的中文导读可视化，内容与图表均基于 arXiv HTML 全文（v1，2026.02）。所有架构图、训练曲线、结果图均直接取自原报告，图旁中文说明为本导读所撰。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2602.02276" target="_blank" rel="noopener">Kimi K2.5: Visual Agentic Intelligence · arXiv:2602.02276 ↗</a></p>
+    <p>相关资源：<a href="https://huggingface.co/moonshotai/Kimi-K2.5" target="_blank" rel="noopener">Hugging Face · moonshotai/Kimi-K2.5 ↗</a> · <a href="https://github.com/MoonshotAI/Kimi-K2.5/" target="_blank" rel="noopener">GitHub · MoonshotAI/Kimi-K2.5 ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">作者：Kimi Team（Moonshot AI）· arXiv 预印本 2026.02 · 本页仅作学习导读用途，数字以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// Agent Swarm 生命周期步进动画
+var spIdx = 0;
+var spTotal = 5;
+function spRender(){
+  var steps = document.querySelectorAll('#swarmpipe .sp-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === spIdx);
+  }
+  var dots = document.querySelectorAll('#swarmpipe .sp-dot');
+  for (var j=0;j<dots.length;j++){
+    dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= spIdx);
+  }
+  document.getElementById('sp-counter').textContent = (spIdx+1) + ' / ' + spTotal;
+  document.getElementById('sp-prev').disabled = (spIdx === 0);
+  document.getElementById('sp-next').disabled = (spIdx === spTotal-1);
+}
+function spNext(){ if (spIdx < spTotal-1){ spIdx++; spRender(); } }
+function spPrev(){ if (spIdx > 0){ spIdx--; spRender(); } }
+function spReset(){ spIdx = 0; spRender(); }
+spRender();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

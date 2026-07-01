@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seed-Thinking-v1.5 · 中文导读：把推理能力用强化学习「练」到顶尖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:600px;background:var(--surface)}
+table.data th,table.data td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:12.5px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data td.win{background:var(--accent-soft);font-weight:700;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+table.data tr.grp td{background:var(--surface-2);font-weight:700;color:var(--ink-soft);text-align:left;font-size:12px;letter-spacing:.04em}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:760px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* self-made diagram (figure) */
+.figure{margin:22px 0}
+.diagram{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:18px 16px;box-shadow:var(--shadow)}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1100px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+
+/* SRS loop diagram */
+.srs{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.srs .row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
+.sbox{flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:12px 13px}
+.sbox .gh{font-weight:700;font-size:13.5px;color:var(--accent-deep);margin-bottom:3px}
+.sbox .gd{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.sarrow{align-self:center;color:var(--accent);font-weight:700;font-size:18px}
+.spool{display:flex;flex-direction:column;gap:6px}
+.ssamp{display:flex;align-items:center;gap:8px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 9px}
+.ssamp .rw{margin-left:auto;font-family:"JetBrains Mono",monospace;font-weight:700}
+.ssamp .pos{color:var(--accent-deep)}
+.ssamp .neg{color:var(--ink-faint)}
+
+/* track overview */
+.track{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:13px 0;box-shadow:var(--shadow)}
+.track .th{font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.track .tbadge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent-deep)}
+.track .td{font-size:14px;color:var(--ink-soft);margin-top:6px;line-height:1.6}
+.track.t1{border-left:3px solid var(--accent)}
+.track.t2{border-left:3px solid #9c8f72}
+.track.t3{border-left:3px solid #7d9c72}
+
+/* step animation (training pipeline) */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:158px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-3,.sp-io{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Seed-Thinking-v1.5 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#pillars">三大支柱</a>
+      <a href="#data">数据</a>
+      <a href="#reward">奖励建模</a>
+      <a href="#method">训练流程</a>
+      <a href="#rl">RL 工具箱</a>
+      <a href="#frameworks">VAPO/DAPO</a>
+      <a href="#infra">基础设施</a>
+      <a href="#results">实验结论</a>
+      <a href="#insights">有意思的点</a>
+      <a href="#limits">局限</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2504.13914" target="_blank" rel="noopener">阅读原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">论文导读 · Reasoning Models via Reinforcement Learning</div>
+    <h1>Seed-Thinking-v1.5：用强化学习把推理能力「练」到顶尖</h1>
+    <p class="subtitle">Seed-Thinking-v1.5: Advancing Superb Reasoning Models with Reinforcement Learning</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv preprint · 2025.04</span>
+      <span class="chip">ByteDance Seed（字节跳动 Seed 团队）</span>
+      <span class="chip">MoE · 20B 激活 / 200B 总参</span>
+      <span class="chip">arXiv:2504.13914</span>
+      <span class="chip">又名 Seed1.5-Thinking</span>
+    </div>
+    <p class="lead">一句话：与其只押注某一个技巧，本文把<strong>「数据 + RL 算法 + RL 基础设施」三件事同时做到位</strong>，在一个<strong>体量不大的 MoE（20B 激活 / 200B 总参）</strong>上，把不稳定、易崩的强化学习训练跑得<strong>又稳又强</strong>，在数学、代码、科学、逻辑等任务上全面超过 DeepSeek R1，在 AIME 2024 上追平 o3-mini-high。</p>
+    <p class="muted" style="font-size:14px">本页基于已抓取的 arXiv 原文（v1，2025.04.10 生成）正文与表格构建。原论文只有两张图，且都是结果对比图（benchmark 柱状图、人评分布图）；按导读规范不嵌入实验图，方法示意图均依据原文文字自制并力求忠实。术语首次出现时给出英文原词。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>它是什么</strong>：ByteDance Seed 推出的<strong>推理大模型</strong>（先思考、再回答）。架构是 <strong>MoE</strong>，每 token 仅激活 <strong>20B</strong>、总参 <strong>200B</strong>，相比同级推理模型「身材小」却很能打。</li>
+      <li><strong>核心主张</strong>：训练顶尖推理模型有<strong>三个关键点——训练数据、RL 算法、RL 基础设施</strong>；本文把这三件事一次性讲透，而不是只公布一个分数。</li>
+      <li><strong>怎么做到稳</strong>：RL 训练推理模型<strong>极不稳定、经常崩</strong>（两次运行能差 10 分）。本文用 <strong>VAPO</strong>（value-based）和 <strong>DAPO</strong>（value-free）两套框架，配合 value 预训练、解耦 GAE、Clip-Higher 等一整套技巧，把训练「稳住」。</li>
+      <li><strong>结果</strong>：AIME 2024 <strong>86.7</strong>（追平 o3-mini-high）、AIME 2025 <strong>74.0</strong>、Codeforces pass@8 <strong>55.0</strong>、GPQA <strong>77.3</strong>；全面超过 DeepSeek R1，非推理任务人评<strong>胜率 +8%</strong>；ARC-AGI 上更是 39.9 vs R1 的 18.3。同时开源 <strong>BeyondAIME</strong> 等更难的评测集。</li>
+    </ul>
+    <div class="quote big">「打造高质量推理模型有三个关键点：训练数据、RL 算法、RL 基础设施。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 释义自原文 “There are three key points in the development of high-quality reasoning models: training data, RL algorithm, and RL infrastructure.”</span></div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：会推理不难，难的是「稳、强、可复现」</h2>
+    <p>过去一年，靠大规模强化学习训练的推理模型（OpenAI o1、DeepSeek R1、Gemini 2.5、Claude 3.7）突飞猛进。但要自己训出一个对标它们的模型，会撞上三堵墙：</p>
+    <ul class="tight">
+      <li><strong>方法被「藏」起来了</strong>：支撑可扩展 RL 训练的核心方法与算法，大多<strong>没有写进各家技术报告</strong>，社区难以复现。</li>
+      <li><strong>RL 训练极不稳定</strong>：推理模型的 RL 训练<strong>经常崩溃</strong>，尤其是没有 SFT 的情况下；论文坦言<strong>两次训练的分数能差到 10 分</strong>。稳定性才是成败关键。</li>
+      <li><strong>连「尺子」都不够用了</strong>：大家常用的 AIME 每年只有 <strong>30 道题</strong>，方差太大，已经<strong>区分不开顶尖模型</strong>。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">本文要回答的问题</div>
+      如何把易崩的 RL 训练做得<strong>稳定可靠</strong>，并把它<strong>系统性地讲清楚</strong>（数据怎么造、奖励怎么给、算法怎么稳、系统怎么快），最终在一个<strong>不算大的 MoE</strong> 上练出对标顶尖闭源模型的推理能力——同时再造一把更精准的「尺子」。
+    </div>
+  </section>
+
+  <!-- PILLARS / OVERVIEW -->
+  <section id="pillars">
+    <h2><span class="num">02</span> 方法总览：一套训练流水线，三根支柱</h2>
+    <p>整篇论文可以收敛成<strong>一条流水线</strong>和<strong>三根支柱</strong>。流水线是：先 <strong>SFT 冷启动</strong>，再 <strong>大规模 RL</strong>，得到 Seed-Thinking-v1.5；而支撑这条流水线跑通、跑稳、跑快的，是数据、算法、基础设施这三根支柱。</p>
+
+    <div class="figure">
+      <div class="diagram" role="img" aria-label="Seed-Thinking-v1.5 整体训练流水线示意图">
+        <svg viewBox="0 0 820 300" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Noto Sans SC, sans-serif">
+          <defs>
+            <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 Z" fill="#b27a2b"/>
+            </marker>
+          </defs>
+          <!-- main flow boxes -->
+          <rect x="14" y="60" width="150" height="64" rx="11" fill="#efe3cb" stroke="#d3c098"/>
+          <text x="89" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#2c2620">基座模型</text>
+          <text x="89" y="106" text-anchor="middle" font-size="11" fill="#6a6051">MoE · 20B激活/200B</text>
+
+          <rect x="200" y="60" width="180" height="64" rx="11" fill="#f0e1c2" stroke="#d3c098"/>
+          <text x="290" y="82" text-anchor="middle" font-size="14" font-weight="700" fill="#8f5f1d">① SFT 冷启动</text>
+          <text x="290" y="100" text-anchor="middle" font-size="11" fill="#6a6051">40 万条长思维链 (CoT)</text>
+          <text x="290" y="115" text-anchor="middle" font-size="11" fill="#6a6051">冷启动 + 拒绝采样</text>
+
+          <rect x="416" y="60" width="200" height="64" rx="11" fill="#f0e1c2" stroke="#b27a2b" stroke-width="1.6"/>
+          <text x="516" y="82" text-anchor="middle" font-size="14" font-weight="700" fill="#8f5f1d">② 大规模 RL</text>
+          <text x="516" y="100" text-anchor="middle" font-size="11" fill="#6a6051">VAPO / DAPO + 奖励建模</text>
+          <text x="516" y="115" text-anchor="middle" font-size="11" fill="#6a6051">统一融合多领域数据</text>
+
+          <rect x="652" y="60" width="154" height="64" rx="11" fill="#efe3cb" stroke="#d3c098"/>
+          <text x="729" y="86" text-anchor="middle" font-size="13.5" font-weight="700" fill="#2c2620">Seed-Thinking</text>
+          <text x="729" y="104" text-anchor="middle" font-size="11" fill="#6a6051">-v1.5（最终模型）</text>
+
+          <!-- arrows main -->
+          <line x1="164" y1="92" x2="196" y2="92" stroke="#b27a2b" stroke-width="2" marker-end="url(#arr)"/>
+          <line x1="380" y1="92" x2="412" y2="92" stroke="#b27a2b" stroke-width="2" marker-end="url(#arr)"/>
+          <line x1="616" y1="92" x2="648" y2="92" stroke="#b27a2b" stroke-width="2" marker-end="url(#arr)"/>
+
+          <!-- three pillars feeding RL -->
+          <rect x="200" y="196" width="125" height="74" rx="11" fill="#f5ecd9" stroke="#d3c098"/>
+          <text x="262" y="220" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2c2620">支柱①数据</text>
+          <text x="262" y="238" text-anchor="middle" font-size="10.5" fill="#6a6051">可验证 + 不可验证</text>
+          <text x="262" y="253" text-anchor="middle" font-size="10.5" fill="#6a6051">STEM/代码/逻辑</text>
+
+          <rect x="453" y="196" width="125" height="74" rx="11" fill="#f5ecd9" stroke="#d3c098"/>
+          <text x="515" y="220" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2c2620">支柱②算法</text>
+          <text x="515" y="238" text-anchor="middle" font-size="10.5" fill="#6a6051">VAPO / DAPO</text>
+          <text x="515" y="253" text-anchor="middle" font-size="10.5" fill="#6a6051">稳定化技巧</text>
+
+          <rect x="620" y="196" width="125" height="74" rx="11" fill="#f5ecd9" stroke="#d3c098"/>
+          <text x="682" y="220" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2c2620">支柱③系统</text>
+          <text x="682" y="238" text-anchor="middle" font-size="10.5" fill="#6a6051">流式 Rollout</text>
+          <text x="682" y="253" text-anchor="middle" font-size="10.5" fill="#6a6051">3× 迭代加速</text>
+
+          <line x1="262" y1="196" x2="470" y2="126" stroke="#c9b88f" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+          <line x1="515" y1="196" x2="516" y2="126" stroke="#c9b88f" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+          <line x1="682" y1="196" x2="560" y2="126" stroke="#c9b88f" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+          <text x="14" y="184" font-size="11.5" font-weight="700" fill="#8f5f1d">三根支柱共同支撑「大规模 RL」</text>
+        </svg>
+      </div>
+      <div class="fig-cap"><span class="lbl">图 A（本导读自制 · 依据原文文字）</span>：Seed-Thinking-v1.5 的整体训练流水线——基座 MoE → SFT 冷启动 → 大规模 RL → 最终模型；数据 / 算法 / 系统三根支柱共同支撑 RL 阶段。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>上方主链</b>（实线箭头）：从左到右是训练时间顺序——<b>基座模型</b>（MoE，每 token 激活 20B、总参 200B）先经过 <b>① SFT 冷启动</b>（40 万条长 CoT），再进入 <b>② 大规模 RL</b>，最终得到 <b>Seed-Thinking-v1.5</b>。</li>
+          <li><b>① SFT 冷启动</b>：用「模型合成 + 人工标注 + 拒绝采样」的迭代流程造出高质量长思维链数据，给 RL 一个可读、少幻觉、少有害的起点。</li>
+          <li><b>② 大规模 RL</b>（高亮框）：是全文重头戏，统一融合「可验证 / 不可验证 / 混合」三类数据，由 VAPO/DAPO 驱动、由奖励建模提供信号。</li>
+          <li><b>下方三根支柱</b>（虚线箭头汇入 RL）：<b>支柱①数据</b>决定「学什么」、<b>支柱②算法</b>决定「怎么稳着学」、<b>支柱③系统</b>决定「能多快地学」。三者缺一，RL 都跑不通。</li>
+          <li><b>一句话总结</b>：这张图就是本导读后续章节的目录——先看数据与奖励，再看算法与系统，最后看结果。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="track t1">
+      <div class="th">支柱① 数据 <span class="tbadge">学什么</span></div>
+      <div class="td">SFT 依赖<strong>长思维链（CoT）数据</strong>；RL 融合四类数据——<strong>STEM、代码、逻辑推理、非推理（创作/对话）</strong>。其中<strong>数学数据泛化能力极强</strong>，能带动各项任务一起涨；<strong>逻辑题</strong>则显著拉高 ARC-AGI。</div>
+    </div>
+    <div class="track t2">
+      <div class="th">支柱② RL 算法 <span class="tbadge" style="background:#ece4d2;color:#6a6051">怎么稳着学</span></div>
+      <div class="td">首创 <strong>VAPO</strong>（value-based）与 <strong>DAPO</strong>（value-free）两套框架，分别是各自范式下的 SOTA，专门针对 RL 训练的不稳定性，给出稳定、一致的训练轨迹。</div>
+    </div>
+    <div class="track t3">
+      <div class="th">支柱③ RL 基础设施 <span class="tbadge" style="background:#e2ecd9;color:#4f6a43">能多快地学</span></div>
+      <div class="td">用<strong>流式 Rollout 系统（SRS）</strong>异步处理「半成品」生成轨迹，迭代速度比同步框架<strong>快 3 倍</strong>；并支持混合精度训练与自动故障恢复。</div>
+    </div>
+  </section>
+
+  <!-- DATA -->
+  <section id="data">
+    <h2><span class="num">03</span> 数据：可验证的「硬」题 + 不可验证的「软」题</h2>
+    <p>RL 训练数据分两大类：<strong>有标准答案（verifiable）</strong>和<strong>没有标准答案（non-verifiable）</strong>。模型的推理能力主要来自前者，并能<strong>泛化</strong>到后者。</p>
+
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔬</span>STEM 数据 <span class="xtag">~10 万题</span></div>
+        <div class="xs">竞赛级数学/物理/化学题（数学占 80%+），经严格清洗与增强。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>清洗</b>：删除表述不清的题；用 Doubao-Pro 1.5 多次作答，<b>「最差 N 次都对」(woN=1) 的太简单题被剔除</b>；再用 SOTA 模型交叉验证、人工复核参考答案是否正确。</p>
+          <p><b>增强</b>：把选择题改成填空/简答<b>杜绝瞎猜</b>，并尽量把答案改成整数，便于稳定判分。训练时用 <b>Seed-Verifier</b> 判对错。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">💻</span>代码数据 <span class="xtag">竞赛 + 沙箱</span></div>
+        <div class="xs">来自高质量算法竞赛题，每题配「描述 + 单元测试 + checker 脚本」。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>评测</b>：RL 中无法实时提交官方平台，于是自建<b>离线评测集 + 内部代码沙箱</b>，直接执行模型代码；离线结果与官方判定<b>高度相关</b>。</p>
+          <p><b>关键</b>：沙箱要<b>稳定、高吞吐</b>，才能在 RL 中持续给出准确反馈。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧩</span>逻辑谜题 <span class="xtag">22 类 · ~1 万题</span></div>
+        <div class="xs">24 点、迷宫、数独等 22 种常见任务，每类配生成器 + 答案验证器。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>可控难度</b>：生成器能自动造大量训练/评测数据，并根据模型表现<b>动态调难度</b>（课程式）。验证器可直接当 RL 的奖励函数。</p>
+          <p><b>效果</b>：逻辑数据对 <b>ARC-AGI</b> 基准提升显著（Seed 39.9% vs R1 18.3%）。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">✍️</span>不可验证数据 <span class="xtag">人类偏好</span></div>
+        <div class="xs">创作、翻译、知识问答、角色扮演等，靠人类偏好打分。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>筛选</b>：用 SFT 模型对每个 prompt 采样多个候选并用奖励模型打分，<b>剔除分数方差太低、太简单</b>的样本（这类题过度优化会让探索空间过早坍缩）。</p>
+          <p><b>打分</b>：采用<b>成对（pairwise）比较</b>奖励，让模型更好理解用户偏好。prompt 源自 Doubao-1.5 Pro 的 RL 数据。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">🆕 顺手造了一把更准的尺子：BeyondAIME</div>
+      因为 AIME 每年只有 30 题、区分度不够，作者与数学专家合作<strong>原创了 100 道题</strong>，难度≥AIME 最难题，答案保证为整数、且<strong>绝不取题面里出现过的平凡值</strong>（防止瞎猜）。BeyondAIME 与内部 Codeforces 评测集都将<strong>公开发布</strong>。
+    </div>
+  </section>
+
+  <!-- REWARD MODELING -->
+  <section id="reward">
+    <h2><span class="num">04</span> 奖励建模：让「裁判」自己也会思考</h2>
+    <p>奖励是 RL 的指挥棒。本文没有用简单的字符串匹配规则，而是<strong>用 LLM 当裁判</strong>，并设计了<strong>两代递进式验证器</strong>来判断「可验证题」的答案对不对。</p>
+
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph">第一代：Seed-Verifier</div>
+        <ul>
+          <li>基于<strong>人工精心编写的原则</strong> + LLM 基础能力</li>
+          <li>输入「题目 + 参考答案 + 模型答案」三元组，判断是否<strong>本质等价</strong>，返回 YES / NO</li>
+          <li>不是字面精确匹配，而是按数学规则判等价</li>
+          <li>问题：遇到 <code>2^19 vs 524288</code> 这类等价表达时，<strong>有时 YES 有时 NO</strong>（不稳定）</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">第二代：Seed-Thinking-Verifier</div>
+        <ul>
+          <li>模仿人类判卷：<strong>先详细推理、再下结论</strong></li>
+          <li>把「判分」本身当作一个<strong>可验证任务</strong>来训练（与数学推理一起优化）</li>
+          <li>能<strong>逐项剖析</strong>参考答案与模型答案的异同</li>
+          <li>同时缓解三大顽疾：<strong>奖励作弊、判断不一致、边角案例失败</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="metrics metrics-3">
+      <div class="metric"><div class="v">82.7<span class="u">%</span></div><div class="k">Seed-Verifier<br>在人工标注难例集上的准确率</div></div>
+      <div class="metric"><div class="v">99.3<span class="u">%</span></div><div class="k">Seed-Thinking-Verifier<br>同一难例集，大幅跃升</div></div>
+      <div class="metric"><div class="v">456</div><div class="k">人工标注测试样本数<br>专挑 Seed-Verifier 搞不定的</div></div>
+    </div>
+    <p class="muted" style="font-size:14px">测试集（456 条）专门从「第一代验证器无法稳定处理」的案例里挑选，所以这是一场「专攻难点」的考试——会思考的裁判把准确率从 82.7% 拉到了 99.3%。代价是要消耗大量 GPU，但作者认为<strong>精准稳健的奖励信号对练出强推理至关重要</strong>。</p>
+
+    <div class="callout">
+      <div class="t">不可验证题怎么打分</div>
+      训练一个<strong>成对生成式奖励模型（pairwise generative RM）</strong>：比较两个回答谁更好，用「YES/NO」的概率作为奖励分。好处是在「可验证 + 不可验证」<strong>混合训练</strong>时，能减少两套奖励范式的<strong>打分分布冲突</strong>，让 RL 更稳。
+    </div>
+  </section>
+
+  <!-- METHOD: pipeline -->
+  <section id="method">
+    <h2><span class="num">05</span> 训练流程：先 SFT 打底，再 RL 拔高</h2>
+    <p>整体训练分两步走：<strong>监督微调（SFT）</strong>给一个稳的起点，<strong>强化学习（RL）</strong>把推理能力推上去。点「下一步」跟着 checkpoint 一步步演化：</p>
+
+    <div class="stepbox" id="pipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STAGE 1</span>SFT 冷启动（Supervised Fine-Tuning）</div>
+          <div class="sb">用 <strong>40 万条</strong>训练样本（<strong>30 万可验证 + 10 万不可验证</strong>）微调基座。长 CoT 数据通过「<strong>模型合成 + 人工标注 + 拒绝采样</strong>」的迭代流程产出：先由专家用 prompt engineering 造出几十条冷启动样本，训出一个会长思考的模型，再用 Seed-Verifier 做拒绝采样扩量。相比直接从基座做 RL，SFT 后<strong>输出更可读、幻觉更少、更安全</strong>。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>基座 MoE + 40 万条长 CoT 数据</div>
+            <div class="io"><div class="iol">配置</div>每条截断到 32k token，训练 2 个 epoch</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STAGE 2</span>统一 RL 框架：融合三类数据</div>
+          <div class="sb">在一个<strong>统一的 RL 框架</strong>里融合三类数据：<strong>可验证数据</strong>（由验证器给反馈）、<strong>通用数据</strong>（由奖励模型按人类偏好打分）、以及<strong>两者混合</strong>的数据。难点在于长 CoT 的 RLHF 有<strong>价值模型偏差</strong>与<strong>奖励信号稀疏</strong>两大问题。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>SFT checkpoint + 三类 RL 数据</div>
+            <div class="io"><div class="iol">输出</div>可同时优化推理与通用能力的策略</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STAGE 3</span>稳定化技巧 + 在线数据自适应</div>
+          <div class="sb">引入一整套<strong>稳定化技巧</strong>（见下一节 RL 工具箱）来对抗价值偏差与奖励稀疏；并用 <strong>在线数据分布自适应（Online Data Distribution Adaptation）</strong>，把固定的 prompt 分布变成随训练动态调整的分布，<strong>缓解不同领域数据之间的相互干扰</strong>，让各项能力更均衡地一起提升。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>多领域混合数据 + 多种打分机制</div>
+            <div class="io"><div class="iol">输出</div>稳定、均衡提升的训练轨迹</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">STAGE 4</span>得到 Seed-Thinking-v1.5</div>
+          <div class="sb">在数据、算法、系统三根支柱的共同支撑下，RL 稳定收敛，最终得到 <strong>Seed-Thinking-v1.5</strong>：AIME 2024 达 <strong>86.7</strong>、AIME 2025 达 <strong>74.0</strong>、Codeforces pass@8 达 <strong>55.0</strong>，并在非推理任务上比 DeepSeek R1 人评胜率高 <strong>8%</strong>。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>稳定 RL 训练 + 全套基础设施</div>
+            <div class="io"><div class="iol">输出</div><strong>Seed-Thinking-v1.5</strong>（最终模型）</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-controls">
+        <button id="sp-prev" onclick="spPrev()">‹ 上一步</button>
+        <button id="sp-next" class="primary" onclick="spNext()">下一步 ›</button>
+        <button onclick="spReset()">重置</button>
+        <span class="sp-counter" id="sp-counter">1 / 4</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">一个反直觉的发现</div>
+      作者还做了消融：用<strong>拒绝采样微调（RFT）</strong>初始化再做 RL，虽然<strong>前期涨得更快</strong>，但<strong>最终分数反而更低</strong>（基线 58% vs 带 RFT 54%）。说明「热身过头」会损害后续 RL 的上限。
+    </div>
+  </section>
+
+  <!-- RL TOOLBOX -->
+  <section id="rl">
+    <h2><span class="num">06</span> RL 工具箱：六个让训练「稳下来」的关键技巧</h2>
+    <p>长 CoT 的 RLHF 容易被两件事拖垮：<strong>价值模型有偏</strong>、<strong>奖励信号稀疏</strong>。本文借鉴前作（VAPO/DAPO 等）凝练出一套技巧，逐一对症下药：</p>
+
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">🎯</span>Value-Pretraining</div>
+        <div class="xs">先让价值模型与 SFT 策略「对齐」，再开始 RL。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>用固定策略（如 π_sft）采样，再用<b>蒙特卡洛回报</b>更新价值模型，使初始化的 value model 与策略<b>完全对齐</b>。</p>
+          <p>这对<b>保住模型的 CoT 模式</b>至关重要，能让它生成连贯、有逻辑的思维链。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔀</span>Decoupled-GAE</div>
+        <div class="xs">价值与策略用不同的 GAE 参数，互不拖累。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>设 <b>λ_value = 1.0</b>（让价值<b>无偏</b>更新）、<b>λ_policy = 0.95</b>（让策略<b>独立平衡</b>偏差与方差）。</p>
+          <p>解耦之后，两边各取所需，训练更高效、更稳定。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📏</span>Length-adaptive GAE</div>
+        <div class="xs">按回复长度自适应调 λ，长短序列一视同仁。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>令 <b>λ_policy = 1 − 1/(α·l)</b>，其中 l 是回复长度。</p>
+          <p>这样能让 <b>TD 误差</b>在长、短序列上分布更均匀，模型处理不同长度的序列时更稳。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⬆️</span>Clip-Higher</div>
+        <div class="xs">把 PPO 的上下裁剪边界解耦，给低概率 token 更多空间。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>把裁剪写成 <code>clip(r, 1−ε_low, 1+ε_high)</code>，<b>调高 ε_high</b>，给低概率 token 的概率上升留出空间。</p>
+          <p>效果：<b>鼓励探索</b>更广的回答空间，更容易发现新颖有效的解法（来自 DAPO）。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔤</span>Token-level Loss</div>
+        <div class="xs">损失定义在「每个 token」而非「整条回复」上。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>按 token 而非整句计算策略损失，纠正<b>不同长度回复对总损失贡献失衡</b>的问题。</p>
+          <p>确保每个 token 对训练的影响都被恰当计入，长回复不会被「稀释」。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">➕</span>Positive Example LM Loss</div>
+        <div class="xs">给正样本额外加一项语言模型损失，提高利用率。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>总损失 = <code>L_PPO + μ · L_NLL</code>，对正样本额外加一项带系数 μ 的 NLL（语言模型）损失。</p>
+          <p>目的：<b>提升正样本的利用效率</b>，让模型更充分地从「答对的样例」里学习。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="formula">
+      <div class="eq">L(θ) = L<sub>PPO</sub>(θ) + <b>μ</b> · L<sub>NLL</sub>(θ)</div>
+      <div class="cap">正样本语言模型损失：在标准 PPO 损失之外，对答对的样例再加一项 NLL 损失，提升正样本利用率。</div>
+    </div>
+  </section>
+
+  <!-- FRAMEWORKS -->
+  <section id="frameworks">
+    <h2><span class="num">07</span> VAPO 与 DAPO：两条稳定 RL 的技术路线</h2>
+    <p>上面的技巧分别归属于两套框架。本文首创这两套框架，分别拿下「价值法」与「无价值法」两个范式的 SOTA：</p>
+
+    <div class="twocol">
+      <div class="panel after">
+        <div class="ph">VAPO · value-based（有价值模型）</div>
+        <ul>
+          <li>依赖一个<strong>价值网络（critic）</strong>来估计优势</li>
+          <li>用上 value 预训练、解耦 GAE、长度自适应 GAE 等技巧驯服价值偏差</li>
+          <li><strong>价值法范式下的 SOTA</strong></li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">DAPO · value-free（无价值模型）</div>
+        <ul>
+          <li><strong>不用价值网络</strong>，靠 Clip-Higher、Token-level Loss、动态采样等稳住训练</li>
+          <li>更轻量，适合大规模扩展</li>
+          <li><strong>无价值法范式下的新 SOTA</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <p>论文做了一个很实用的观察：<strong>RL 算法的优劣排序在不同规模、不同架构的模型上是一致的</strong>。这意味着可以用小模型（Qwen-32B）当「<strong>代理模型（proxy）</strong>」来研究 RL 算法，省下大量算力：</p>
+
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>模型（AIME avg@32）</th><th>DAPO</th><th>VAPO</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Qwen-32B-Dense（稠密）</td><td>50%</td><td class="win">60%</td></tr>
+          <tr><td>Seed-150B-MoE</td><td>73%</td><td class="win">79%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px">两种模型上 <strong>VAPO &gt; DAPO</strong> 的排序一致（节选自原论文 Table 4；Seed-150B-MoE 为有限步数的消融实验结果）。说明 Qwen-32B 可作为研究 RL 算法的可靠代理。</p>
+  </section>
+
+  <!-- INFRA -->
+  <section id="infra">
+    <h2><span class="num">08</span> 基础设施：用「流式 Rollout」把训练加速 3 倍</h2>
+    <p>RL 训练里最耗时的环节之一是 <strong>rollout（让模型生成回答）</strong>：一个 batch 里有的回答短、几百 token 就完事，有的长、要上万 token，<strong>同步等待最慢的那个</strong>会浪费大量算力。流式 Rollout 系统（SRS）的做法是<strong>不等了</strong>：</p>
+
+    <div class="srs">
+      <div class="row">
+        <div class="sbox">
+          <div class="gh">① 最新模型</div>
+          <div class="gd">用<b>最新版本</b>模型生成一部分样本（on-policy，占比 α）。</div>
+        </div>
+        <div class="sarrow">+</div>
+        <div class="sbox">
+          <div class="gh">② 历史快照续写</div>
+          <div class="gd">剩下没生成完的部分（1−α）交给<b>历史版本快照</b>异步续写（off-policy）。</div>
+        </div>
+        <div class="sarrow">→</div>
+        <div class="sbox">
+          <div class="gh">③ 优先级样本池</div>
+          <div class="gspool spool">
+            <div class="ssamp">on-policy 片段<span class="rw pos">α</span></div>
+            <div class="ssamp">off-policy 续写<span class="rw neg">1−α</span></div>
+          </div>
+        </div>
+        <div class="sarrow">→</div>
+        <div class="sbox">
+          <div class="gh">④ 训练 → 更新</div>
+          <div class="gd">合并后训练并更新模型，再回到 ①。<b>on/off-policy 比例由 α 动态调节</b>。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="figure">
+      <div class="diagram" role="img" aria-label="流式 Rollout 系统将模型演化与运行时执行解耦">
+        <svg viewBox="0 0 820 200" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Noto Sans SC, sans-serif">
+          <defs>
+            <marker id="arr2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 Z" fill="#b27a2b"/>
+            </marker>
+          </defs>
+          <rect x="20" y="40" width="160" height="50" rx="10" fill="#f0e1c2" stroke="#b27a2b"/>
+          <text x="100" y="62" text-anchor="middle" font-size="12.5" font-weight="700" fill="#8f5f1d">最新模型 (on-policy)</text>
+          <text x="100" y="79" text-anchor="middle" font-size="11" fill="#6a6051">生成占比 α</text>
+
+          <rect x="20" y="118" width="160" height="50" rx="10" fill="#efe3cb" stroke="#c9b88f"/>
+          <text x="100" y="140" text-anchor="middle" font-size="12.5" font-weight="700" fill="#6a6051">历史快照 (off-policy)</text>
+          <text x="100" y="157" text-anchor="middle" font-size="11" fill="#6a6051">续写占比 1−α</text>
+
+          <rect x="320" y="78" width="170" height="52" rx="10" fill="#f5ecd9" stroke="#d3c098"/>
+          <text x="405" y="100" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2c2620">优先级样本池</text>
+          <text x="405" y="118" text-anchor="middle" font-size="11" fill="#6a6051">异步汇聚部分轨迹</text>
+
+          <rect x="620" y="78" width="170" height="52" rx="10" fill="#f0e1c2" stroke="#b27a2b"/>
+          <text x="705" y="100" text-anchor="middle" font-size="12.5" font-weight="700" fill="#8f5f1d">训练 / 更新模型</text>
+          <text x="705" y="118" text-anchor="middle" font-size="11" fill="#6a6051">3× 迭代加速</text>
+
+          <line x1="180" y1="65" x2="316" y2="95" stroke="#b27a2b" stroke-width="2" marker-end="url(#arr2)"/>
+          <line x1="180" y1="143" x2="316" y2="113" stroke="#c9b88f" stroke-width="2" marker-end="url(#arr2)"/>
+          <line x1="490" y1="104" x2="616" y2="104" stroke="#b27a2b" stroke-width="2" marker-end="url(#arr2)"/>
+          <path d="M705,130 L705,180 L100,180 L100,92" fill="none" stroke="#c9b88f" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arr2)"/>
+          <text x="400" y="176" text-anchor="middle" font-size="11" fill="#988d77">更新后的模型回到 on-policy 生成（闭环）</text>
+        </svg>
+      </div>
+      <div class="fig-cap"><span class="lbl">图 B（本导读自制 · 依据原文文字）</span>：流式 Rollout 系统（SRS）将「模型演化」与「运行时执行」解耦，用完成率 α 动态混合 on/off-policy 样本，迭代速度比同步框架快 3 倍。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>上路（实线）</b>：最新模型负责 on-policy 生成，占比为<b>完成率 α ∈ [0,1]</b>——即用最新模型现场生成的样本比例。</li>
+          <li><b>下路（实线）</b>：剩下「没生成完」的片段（<b>1−α</b>）交给历史版本快照，在独立资源上<b>异步续写</b>（off-policy），不让整个 batch 卡在最慢的长序列上。</li>
+          <li><b>中间「优先级样本池」</b>：把 on/off-policy 的部分轨迹异步汇聚起来，<b>解耦模型演化与运行时执行</b>。</li>
+          <li><b>右侧「训练/更新」</b>：合并样本训练并更新模型；<b>虚线闭环</b>表示更新后的模型回到 on-policy 端继续生成，形成持续迭代。</li>
+          <li><b>一句话总结</b>：通过「不等慢序列、异步续写、动态调 α」，SRS 把 RL 迭代周期压到同步框架的 1/3。此外还配合 FP8 rollout、TP/EP/SP 三级并行、KARP 序列均衡、AutoTuner、ByteCheckpoint 等系统优化。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">09</span> 实验结论：小身材，大能量</h2>
+    <p>一句话：<strong>Seed-Thinking-v1.5 在数学、代码、科学、逻辑等任务上全面超过 DeepSeek R1</strong>，在 AIME 2024 上追平 o3-mini-high；面对更强的 o3 / Gemini 2.5 Pro 在最难的几个集合上仍有差距。最核心的几个数字：</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">86.7</div><div class="k">AIME 2024<br>追平 o3-mini-high；R1 为 79.8</div></div>
+      <div class="metric"><div class="v">74.0</div><div class="k">AIME 2025<br>R1 为 65.0</div></div>
+      <div class="metric"><div class="v">55.0</div><div class="k">Codeforces pass@8<br>R1 为 45.0</div></div>
+      <div class="metric"><div class="v">77.3</div><div class="k">GPQA diamond<br>接近 o3 级；R1 为 71.5</div></div>
+    </div>
+    <div class="metrics metrics-3">
+      <div class="metric"><div class="v">39.9<span class="u">%</span></div><div class="k">ARC-AGI（逻辑推理）<br>远超 R1 的 18.3%</div></div>
+      <div class="metric"><div class="v">+8.0<span class="u">%</span></div><div class="k">非推理任务人评胜率<br>对比 DeepSeek R1</div></div>
+      <div class="metric"><div class="v">20B<span class="u">/200B</span></div><div class="k">激活 / 总参（MoE）<br>体量明显小于同级</div></div>
+    </div>
+
+    <p>下面是与四个对手的横向对比（节选自原论文 Table 2，单位 %，高亮列为 Seed-Thinking-v1.5）。注意作者很<strong>诚实</strong>地把弱项也摆出来了：</p>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>完整对比数字（节选 Table 2）<span class="sub">点开看 Seed vs R1 / o3-mini / Grok 3 / Gemini 2.5 Pro</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th>基准</th><th>Seed-Thinking-v1.5</th><th>DeepSeek R1</th><th>o3-mini</th><th>Grok 3 Beta</th><th>Gemini 2.5 Pro</th></tr>
+            </thead>
+            <tbody>
+              <tr class="grp"><td colspan="6">数学</td></tr>
+              <tr><td>AIME 2024</td><td class="win">86.7</td><td class="dim">79.8</td><td>87.3</td><td>83.9</td><td>92.0</td></tr>
+              <tr><td>AIME 2025</td><td class="win">74.0</td><td class="dim">65.0</td><td>86.5</td><td>77.3</td><td>86.7</td></tr>
+              <tr><td>BeyondAIME</td><td class="win">48.0</td><td class="dim">42.4</td><td>63.6</td><td>—</td><td>58.8</td></tr>
+              <tr class="grp"><td colspan="6">科学</td></tr>
+              <tr><td>GPQA diamond</td><td class="win">77.3</td><td class="dim">71.5</td><td>79.7</td><td>80.2</td><td>84.0</td></tr>
+              <tr><td>SuperGPQA</td><td class="win">62.1</td><td class="dim">60.5</td><td>52.2</td><td>62.8</td><td>65.3</td></tr>
+              <tr><td>MMLU-PRO</td><td class="win">87.0</td><td class="dim">85.6</td><td>82.4</td><td>84.6</td><td>86.3</td></tr>
+              <tr class="grp"><td colspan="6">代码</td></tr>
+              <tr><td>Codeforces pass@8</td><td class="win">55.0</td><td class="dim">45.0</td><td>67.5</td><td>—</td><td>56.3</td></tr>
+              <tr><td>LiveCodeBench v5</td><td class="win">64.9</td><td class="dim">64.3</td><td>74.1</td><td>70.6</td><td>70.4</td></tr>
+              <tr><td>SWE-bench verified</td><td class="win">47.0</td><td class="dim">49.2</td><td>49.3</td><td>—</td><td>63.8</td></tr>
+              <tr class="grp"><td colspan="6">逻辑 / 事实 / 指令</td></tr>
+              <tr><td>ARC-AGI</td><td class="win">39.9</td><td class="dim">18.3</td><td>25.8</td><td>31.9</td><td>27.6</td></tr>
+              <tr><td>SimpleQA（事实）</td><td class="win">12.9</td><td class="dim">30.1</td><td>13.8</td><td>43.6</td><td>52.9</td></tr>
+              <tr><td>IFEval（指令遵循）</td><td class="win">87.4</td><td class="dim">86.1</td><td>93.7</td><td>83.4</td><td>91.5</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px">数学题为 32 次作答平均、GPQA 为 8 次平均、Codeforces 报 pass@8、其余为单次结果。</p>
+      </div>
+    </details>
+
+    <p>读这张表有三个要点：<strong>① 对比 R1 几乎全面领先</strong>（尤其 ARC-AGI 39.9 vs 18.3、Collie 指令、AIME 系列）；<strong>② 对最强的 o3-mini / Gemini 2.5 Pro，在 BeyondAIME、Codeforces、SWE-bench 等最难集合上仍有差距</strong>；<strong>③ SimpleQA 偏弱（12.9）</strong>——但作者指出这是<strong>记忆类</strong>指标，更依赖预训练规模而非推理，不必苛求。另外，非推理任务的人类评测中，Seed-Thinking-v1.5 的总体<strong>胜率比 R1 高 8%</strong>，且在创作、人文知识等多种场景下都稳定占优。</p>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">10</span> 有意思的点</h2>
+    <p>除了分数，几处设计取舍与发现更能帮你判断这套方法适不适合自己的场景：</p>
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚖️</span>稳定性才是真瓶颈</div>
+        <div class="xs">论文罕见地承认 RL 训练「两次跑能差 10 分」。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>很多报告只报最好成绩，本文却把<b>不稳定、易崩</b>当成头号敌人来攻。VAPO/DAPO 和整套技巧的价值，正是把方差压下来、让结果<b>可复现</b>。</p>
+          <p><b>启发</b>：复现推理 RL 时，先解决稳定性，再谈刷分。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧠</span>会思考的裁判更准</div>
+        <div class="xs">让验证器自己也走一遍 CoT，准确率从 82.7% 跳到 99.3%。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>把「判分」当成可验证任务去训练（Seed-Thinking-Verifier），不仅更准，还能<b>抗奖励作弊、给一致判断、handle 边角案例</b>。</p>
+          <p><b>代价</b>：思考要花大量 GPU，但作者认为精准奖励对练强推理「值这个价」。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🌐</span>数学训练会「外溢」</div>
+        <div class="xs">GPQA（科学）的提升主要来自数学训练的泛化，而非加科学数据。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>论文明确指出：<b>数学数据泛化能力极强</b>，能带动多项任务一起涨；而<b>逻辑谜题</b>显著拉高 ARC-AGI。</p>
+          <p><b>言下之意</b>：练好「硬核可验证推理」，能力会向更广的领域迁移。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔬</span>小模型可当算法「代理」</div>
+        <div class="xs">RL 算法排序在不同规模/架构上一致，Qwen-32B 可代理实验。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>VAPO &gt; DAPO 的排序在 Qwen-32B-Dense 与 Seed-150B-MoE 上一致，说明可用<b>小模型省算力地做 RL 算法探索</b>。</p>
+          <p>另一反直觉发现：<b>RFT 初始化前期更快、最终更低</b>（58% → 54%），热身别过头。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">11</span> 局限与未来方向</h2>
+    <p>论文对短板也比较坦诚，这些往往比成绩单更能帮你判断它适不适合你的场景：</p>
+    <ul class="tight">
+      <li><strong>对最强模型仍有差距</strong>：在 BeyondAIME、AIME 2025、Codeforces、SWE-bench 等更难/更工程化的集合上，落后于 o3-level 与 Gemini 2.5 Pro。</li>
+      <li><strong>事实记忆偏弱</strong>：SimpleQA 仅 12.9，但这是<strong>记忆导向</strong>指标，更看预训练规模，并非真实推理能力的体现。</li>
+      <li><strong>奖励建模成本高</strong>：会思考的验证器虽准，却要<strong>消耗大量 GPU</strong>。</li>
+      <li><strong>未来方向</strong>：探索<strong>更高效的 RL 配方</strong>、挑战<strong>更难的思考任务</strong>，以及做出<strong>精度可比验证器的通用奖励模型</strong>。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这篇论文最值得记住的一句话</div>
+      训练顶尖推理模型不是靠某一个神奇技巧，而是把<strong>数据、RL 算法、RL 基础设施</strong>三件事同时做扎实——尤其是先把「易崩的 RL」<strong>训稳</strong>，剩下的分数才谈得上。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对论文 <strong>《Seed-Thinking-v1.5: Advancing Superb Reasoning Models with Reinforcement Learning》</strong>（又名 Seed1.5-Thinking）的中文导读可视化，内容基于已抓取的 arXiv 原文（2504.13914v1）正文与表格。原论文仅含两张结果对比图（benchmark 柱状图与人评分布图），按导读规范不予嵌入；文中「整体流水线」「流式 Rollout」等示意图为依据原文文字自制，力求忠于原文流程。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2504.13914" target="_blank" rel="noopener">arXiv:2504.13914 · Seed-Thinking-v1.5 ↗</a> · 全文 HTML：<a href="https://arxiv.org/html/2504.13914v1/" target="_blank" rel="noopener">arxiv.org/html/2504.13914v1 ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">作者：ByteDance Seed 团队 · arXiv preprint，发布于 2025.04 · 模型试用：volcengine.com/experience/ark</p>
+  </div>
+</footer>
+
+<script>
+// 图片/示意图说明展开收起
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// 训练流水线四步步进
+var spIdx = 0;
+var spTotal = 4;
+function spRender(){
+  var steps = document.querySelectorAll('#pipe .sp-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === spIdx);
+  }
+  var dots = document.querySelectorAll('#pipe .sp-dot');
+  for (var j=0;j<dots.length;j++){
+    dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= spIdx);
+  }
+  document.getElementById('sp-counter').textContent = (spIdx+1) + ' / ' + spTotal;
+  document.getElementById('sp-prev').disabled = (spIdx === 0);
+  document.getElementById('sp-next').disabled = (spIdx === spTotal-1);
+}
+function spNext(){ if (spIdx < spTotal-1){ spIdx++; spRender(); } }
+function spPrev(){ if (spIdx > 0){ spIdx--; spRender(); } }
+function spReset(){ spIdx = 0; spRender(); }
+spRender();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

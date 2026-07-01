@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSpark · 半自回归 + 置信度调度的投机解码</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf7ef; --bg2:#f5ecdb; --bg3:#efe3cd; --bg4:#e9dcc2;
+  --border:#e4d7bf; --border2:#d8c7a8;
+  --ink:#2a2620; --ink2:#5f574a; --ink3:#857a66;
+  --accent:#c06a3a; --accent-d:#a3552a; --accent-soft:rgba(192,106,58,.12);
+  --ok:#6f8f5a; --ok-soft:rgba(111,143,90,.16);
+  --no:#b5544a; --no-soft:rgba(181,84,74,.14);
+  --max:1080px;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Inter','Noto Sans SC',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);line-height:1.75;font-size:17px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 22px}
+section{padding:46px 0;border-top:1px solid var(--border)}
+h1,h2,h3,h4{line-height:1.3;font-weight:700;color:var(--ink)}
+h2{font-size:1.72rem;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:1.24rem;margin:30px 0 10px}
+h4{font-size:1.04rem;margin:18px 0 8px;color:var(--ink)}
+p{margin:12px 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+strong{font-weight:700;color:var(--ink)}
+.sec-tag{font-family:var(--mono);font-size:.74rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:4px}
+.lead{color:var(--ink2);font-size:1.06rem}
+.muted{color:var(--ink2)}
+ul{margin:12px 0;padding-left:22px}
+li{margin:7px 0}
+code{font-family:var(--mono);font-size:.86em;background:var(--bg3);
+  padding:1px 6px;border-radius:5px;color:var(--accent-d)}
+
+/* ---- nav ---- */
+nav{position:sticky;top:0;z-index:50;background:rgba(251,247,239,.9);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:var(--max);margin:0 auto;padding:10px 22px;display:flex;
+  align-items:center;gap:8px;flex-wrap:wrap}
+.nav-brand{font-weight:800;letter-spacing:-.02em;margin-right:6px}
+.nav-brand .dot{color:var(--accent)}
+.nav-links{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.nav-links a{font-size:.82rem;color:var(--ink2);padding:4px 9px;border-radius:7px}
+.nav-links a:hover{background:var(--bg3);text-decoration:none;color:var(--ink)}
+.nav-src{font-size:.82rem;font-weight:600;color:var(--accent);
+  border:1px solid var(--border2);padding:4px 11px;border-radius:7px;white-space:nowrap}
+.nav-src:hover{background:var(--accent-soft);text-decoration:none}
+
+/* ---- hero ---- */
+.hero{padding:52px 0 40px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.badge{font-family:var(--mono);font-size:.74rem;font-weight:500;padding:4px 10px;
+  border-radius:999px;background:var(--bg3);color:var(--ink2);border:1px solid var(--border)}
+.badge.hi{background:var(--accent-soft);color:var(--accent-d);border-color:transparent;font-weight:600}
+.hero h1{font-size:2.5rem;font-weight:800;letter-spacing:-.025em;margin:0 0 14px}
+.hero .sub{font-size:1.16rem;color:var(--ink2);max-width:760px}
+.authors{margin-top:18px;font-size:.92rem;color:var(--ink3)}
+.authors b{color:var(--ink2);font-weight:600}
+
+/* ---- tldr ---- */
+.tldr{background:linear-gradient(180deg,var(--bg2),var(--bg));
+  border:1px solid var(--border);border-radius:16px;padding:26px 26px 14px;margin-top:26px}
+.tldr h3{margin:0 0 6px;font-size:1.06rem;display:flex;align-items:center;gap:8px}
+.tldr h3 .k{font-family:var(--mono);font-size:.72rem;background:var(--accent);
+  color:#fff;padding:2px 8px;border-radius:6px;letter-spacing:.08em}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+.metric{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 14px}
+.metric .v{font-size:1.74rem;font-weight:800;color:var(--accent-d);letter-spacing:-.02em;font-family:var(--mono)}
+.metric .l{font-size:.82rem;color:var(--ink2);margin-top:4px;line-height:1.45}
+
+/* ---- figure ---- */
+figure{margin:24px 0;background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:16px}
+figure img{width:100%;display:block;border-radius:8px;background:#fff}
+.fig-cap{font-size:.9rem;color:var(--ink2);margin-top:12px}
+.fig-cap .fnum{font-weight:700;color:var(--accent-d)}
+.fig-toggle{display:inline-block;margin-top:10px;font-size:.84rem;font-weight:600;
+  color:var(--accent);cursor:pointer;user-select:none}
+.fig-toggle:hover{text-decoration:underline}
+.figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease,opacity .3s ease;opacity:0}
+.figure-detail.active{max-height:1400px;opacity:1;margin-top:12px}
+.figure-detail ul{margin:6px 0}
+.figure-detail li{font-size:.92rem;color:var(--ink2)}
+.figure-detail li b{color:var(--ink)}
+
+/* ---- callout / formula ---- */
+.note{background:var(--bg2);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;
+  padding:14px 18px;margin:18px 0;font-size:.96rem;color:var(--ink2)}
+.note b{color:var(--ink)}
+.quote{background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:18px 22px;margin:20px 0;font-size:1.02rem;color:var(--ink);position:relative}
+.quote::before{content:"“";font-size:2.6rem;color:var(--border2);position:absolute;left:10px;top:-2px;font-family:Georgia,serif}
+.quote .src{display:block;margin-top:8px;font-size:.84rem;color:var(--ink3)}
+.formula{background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:14px 18px;margin:16px 0;font-family:var(--mono);font-size:1rem;
+  text-align:center;color:var(--ink);overflow-x:auto}
+.formula .var{color:var(--accent-d)}
+.formula small{color:var(--ink3);font-family:var(--sans)}
+
+/* ---- cards (related work) ---- */
+.exp{border:1px solid var(--border);border-radius:14px;margin:16px 0;background:var(--bg2);overflow:hidden}
+.exp-head{padding:16px 20px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;user-select:none}
+.exp-head:hover{background:var(--bg3)}
+.exp-ico{flex-shrink:0;width:30px;height:30px;border-radius:8px;background:var(--accent-soft);
+  color:var(--accent-d);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;margin-top:2px}
+.exp-tt{flex:1}
+.exp-tt .nm{font-weight:700;font-size:1.06rem;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.exp-tt .tag{font-family:var(--mono);font-size:.68rem;font-weight:600;background:var(--bg4);
+  color:var(--ink2);padding:2px 7px;border-radius:5px}
+.exp-tt .summary{font-size:.9rem;color:var(--ink2);margin-top:4px}
+.exp-arrow{flex-shrink:0;color:var(--ink3);transition:transform .35s ease;margin-top:4px}
+.exp.open .exp-arrow{transform:rotate(90deg)}
+.exp-body{max-height:0;overflow:hidden;transition:max-height .5s ease}
+.exp-body-in{padding:4px 22px 20px}
+.exp-body-in p:first-child{margin-top:0}
+
+/* ---- compare table ---- */
+.tbl-wrap{overflow-x:auto;margin:18px 0}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:520px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--bg3);font-weight:600;color:var(--ink);font-size:.84rem}
+td{color:var(--ink2)}
+tbody tr:hover{background:var(--bg2)}
+td .best{color:var(--accent-d);font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+.panel{border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:var(--bg2)}
+.panel h4{margin-top:0}
+.panel.a{border-top:3px solid var(--ink3)}
+.panel.b{border-top:3px solid var(--accent)}
+
+/* ---- decode stepper ---- */
+.demo{border:1px solid var(--border);border-radius:16px;background:var(--bg2);padding:20px;margin:22px 0}
+.demo-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.demo-head .t{font-weight:700;font-size:1.04rem}
+.demo-ctrl{display:flex;gap:8px;align-items:center}
+.btn{font-family:var(--sans);font-size:.86rem;font-weight:600;border:1px solid var(--border2);
+  background:var(--bg);color:var(--ink);padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s}
+.btn:hover{background:var(--bg3)}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn.primary:hover{background:var(--accent-d)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.steps-bar{display:flex;gap:6px;margin:14px 0 18px;flex-wrap:wrap}
+.sdot{flex:1;min-width:60px;height:5px;border-radius:3px;background:var(--bg4)}
+.sdot.done{background:var(--accent)}
+.stage{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;margin:10px 0;
+  border:1px dashed var(--border2);background:var(--bg);opacity:.38;transition:all .4s ease}
+.stage.active{opacity:1}
+.stage.current{border-style:solid;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.stage .sidx{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--bg4);
+  color:var(--ink2);font-weight:800;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+.stage.active .sidx{background:var(--accent);color:#fff}
+.stage .sbody{flex:1}
+.stage .slabel{font-weight:600;font-size:.92rem}
+.stage .schips{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.chip{font-family:var(--mono);font-weight:600;font-size:.9rem;min-width:34px;text-align:center;
+  padding:5px 9px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--ink);position:relative}
+.chip.anchor{background:#f6e7c8;border-color:#e3c88a;color:#8a6a1e}
+.chip.draft{background:var(--accent-soft);border-color:transparent;color:var(--accent-d)}
+.chip.conf{font-size:.66rem;padding:3px 6px;min-width:0;background:var(--bg);color:var(--ink3)}
+.chip.drop{opacity:.34;text-decoration:line-through;background:var(--bg3);color:var(--ink3)}
+.chip.keep{box-shadow:0 0 0 2px var(--accent-soft)}
+.chip.accept{background:var(--ok-soft);border-color:var(--ok);color:#46622f}
+.chip.reject{background:var(--no-soft);border-color:var(--no);color:#7c352d}
+.chip .mk{position:absolute;top:-8px;right:-6px;font-size:.7rem}
+.step-desc{background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;margin-top:8px;font-size:.95rem;color:var(--ink2);min-height:54px}
+.step-desc b{color:var(--ink)}
+
+/* algorithm box */
+.algo{background:#2c2722;color:#ece3d2;border-radius:12px;padding:18px 20px;margin:16px 0;
+  font-family:var(--mono);font-size:.84rem;line-height:1.7;overflow-x:auto}
+.algo .kw{color:#e0a06a}.algo .cm{color:#9b9281}.algo .hl{color:#f3d29a}
+
+details{margin:14px 0;border:1px solid var(--border);border-radius:10px;background:var(--bg2);overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-weight:600;font-size:.92rem;color:var(--ink);list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸ ";color:var(--accent)}
+details[open] summary::before{content:"▾ "}
+details .d-in{padding:0 16px 16px;font-size:.92rem;color:var(--ink2)}
+details .d-in .ex{font-family:var(--mono);font-size:.84rem;background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;margin:8px 0;white-space:pre-wrap;color:var(--ink)}
+
+footer{border-top:1px solid var(--border);padding:34px 0 60px;color:var(--ink3);font-size:.9rem}
+footer a{font-weight:600}
+.foot-src{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:18px}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .hero h1{font-size:1.95rem}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .two{grid-template-columns:1fr}
+  .nav-links{display:none}
+  h2{font-size:1.45rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <span class="nav-brand">D<span class="dot">·</span>Spark</span>
+    <div class="nav-links">
+      <a href="#bg">背景</a>
+      <a href="#prior">已有方案</a>
+      <a href="#overview">DSpark 总览</a>
+      <a href="#semiar">半自回归</a>
+      <a href="#sched">置信度调度</a>
+      <a href="#insight">关键发现</a>
+      <a href="#exp">实验结论</a>
+    </div>
+    <a class="nav-src" href="https://github.com/deepseek-ai/DeepSpec/blob/main/DSpark_paper.pdf" target="_blank" rel="noopener">原文 PDF ↗</a>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <div class="badges">
+    <span class="badge hi">DeepSeek-AI · 北京大学</span>
+    <span class="badge">2026 · 技术报告 / Preprint</span>
+    <span class="badge">投机解码 Speculative Decoding</span>
+    <span class="badge">已开源 · DeepSpec</span>
+  </div>
+  <h1>DSpark：半自回归生成 + 置信度调度的投机解码</h1>
+  <p class="sub">一边用并行起草「写得快」，一边用一个轻量序列头「写得准」，再用一个懂硬件负载的调度器决定「该验证多长」——把更长的草稿块真正变成生产环境里的加速。</p>
+  <div class="authors">
+    <b>作者</b>：Xin Cheng, Xingkai Yu, Chenze Shao, Jiashi Li, Yunfan Xiong 等 · <b>机构</b>：DeepSeek-AI、Peking University ·
+    <a href="https://github.com/deepseek-ai/DeepSpec/blob/main/DSpark_paper.pdf" target="_blank" rel="noopener">阅读原文 ↗</a>
+  </div>
+
+  <div class="tldr">
+    <h3><span class="k">TL;DR</span> 30 秒抓住核心</h3>
+    <p style="margin:10px 0 0">投机解码的速度由公式 <code>L = (T_draft + T_verify) / τ</code> 决定：要么<strong>起草更快</strong>、要么<strong>起草更准（接受更多 token τ）</strong>、要么<strong>验证更聪明</strong>。并行起草器（如 DFlash）一次前向写完整块、起草极快，但各位置相互独立、缺乏依赖，导致<strong>后缀接受率快速衰减</strong>；而且不加区分地验证长草稿，会在高并发下<strong>挤占宝贵的批处理容量</strong>。DSpark 用两招同时解决：
+      <strong>① 半自回归</strong>——重并行骨干 + 轻量序列头注入块内依赖，几乎不增加延迟就遏制后缀衰减；
+      <strong>② 置信度调度验证</strong>——置信度头估计每个 token 的「存活概率」，硬件感知调度器按实时负载动态决定每个请求验证多长。线下接受长度大幅领先 SOTA，线上接入 DeepSeek-V4 后在同等吞吐下<strong>每用户生成速度提升 60%–85%</strong>，把服务系统的帕累托前沿整体外推。</p>
+    <div class="metrics">
+      <div class="metric"><div class="v">+16~18%</div><div class="l">接受长度优于并行 SOTA DFlash（Qwen3 系列）</div></div>
+      <div class="metric"><div class="v">+27~31%</div><div class="l">接受长度优于自回归 Eagle3</div></div>
+      <div class="metric"><div class="v">60~85%</div><div class="l">线上 V4-Flash 同等吞吐下每用户提速</div></div>
+      <div class="metric"><div class="v">+0.2~1.3%</div><div class="l">序列头带来的额外延迟（几乎可忽略）</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 背景 ============ -->
+<section id="bg" class="wrap">
+  <div class="sec-tag">Background · 问题定义</div>
+  <h2>为什么需要投机解码，它又卡在哪里</h2>
+  <p>大语言模型是<strong>自回归</strong>生成的：每写一个 token 都要带着前面所有 token 跑一次完整前向，于是推理延迟正比于输出长度，GPU 利用率低、用户等待久——这是生产环境（尤其是实时对话、多轮 agent）最主要的瓶颈。</p>
+  <p><strong>投机解码（Speculative Decoding）</strong>给出了一个无损的加速思路：让一个轻量<strong>草稿模型</strong>一次提出一整块候选 token，再让完整的<strong>目标模型</strong>用一次前向并行验证整块，通过拒绝采样接受「与目标分布一致的最长前缀」，并附带生成一个 bonus token。因为验证是并行的、且接受规则严格保持目标分布，所以加速<strong>不损失任何生成质量</strong>。</p>
+
+  <div class="formula">
+    平均每 token 延迟　<span class="var">L</span> = ( <span class="var">T<sub>draft</sub></span> + <span class="var">T<sub>verify</sub></span> ) / <span class="var">τ</span>　　<small>τ = 每轮被接受的 token 数</small>
+  </div>
+  <p>这条公式把所有改进压缩成<strong>三个杠杆</strong>：降低 <code>T_draft</code>（起草更快）、提高 <code>τ</code>（起草更准）、或降低有效的 <code>T_verify</code>（验证更聪明）。草稿模型的架构，决定了前两个杠杆之间怎么取舍。</p>
+
+  <div class="note"><b>核心张力：</b>起草要又快又准，但「快」和「准」天然冲突——条件依赖建模得越充分（准），起草往往越慢。DSpark 的整篇文章，就是围绕怎样同时拿到这三个杠杆展开的。</div>
+</section>
+
+<!-- ============ 已有方案 ============ -->
+<section id="prior" class="wrap">
+  <div class="sec-tag">Prior Art · 已有方案速览</div>
+  <h2>两类草稿器：自回归 vs 并行，各自的死结</h2>
+  <p>现有草稿器分成两大流派。它们正好落在「快」与「准」的两端，理解它们的取舍，才能看懂 DSpark 为什么要把两者缝起来。点开下面两张卡片看它们各自怎么做、卡在哪。</p>
+
+  <div class="exp" data-exp>
+    <div class="exp-head">
+      <div class="exp-ico">AR</div>
+      <div class="exp-tt">
+        <div class="nm">自回归草稿器 Eagle3 <span class="tag">ICLR'26 类</span></div>
+        <div class="summary">逐 token 起草、每个位置都条件于已采样的前文——建模强（τ 高），但起草延迟随块长线性增长，被迫用小块、浅网络。</div>
+      </div>
+      <div class="exp-arrow">▸</div>
+    </div>
+    <div class="exp-body"><div class="exp-body-in">
+      <p><b>它要解决什么：</b>让草稿尽可能贴近目标分布，从而每轮多接受几个 token。</p>
+      <p><b>怎么做：</b>沿用语言模型的自回归方式逐位置采样，第 <code>k</code> 个 token 显式条件于前面已经采样出来的 token。Eagle3 进一步用 Training-Time Test（TTT）方式训练，把 TTT 视野（7）对齐到块大小。这种显式依赖带来很强的建模能力。</p>
+      <p><b>卡在哪：</b>起草成本随块长线性增长，<code>T_draft ∝ γ</code>。要把 <code>T_draft</code> 压低，就只能用<strong>很小的块</strong>和<strong>很浅的网络</strong>。为弥补块短，常配合树状验证（tree attention）扩展候选，但大量验证 token 又会拖累整体服务吞吐。</p>
+      <div class="note" style="margin:8px 0 0"><b>一句话定位：</b>准，但慢且浅——延迟天花板锁死了它的潜力。</div>
+    </div></div>
+  </div>
+
+  <div class="exp" data-exp>
+    <div class="exp-head">
+      <div class="exp-ico">‖</div>
+      <div class="exp-tt">
+        <div class="nm">并行草稿器 DFlash <span class="tag">arXiv'26 · SOTA</span></div>
+        <div class="summary">一次前向写完整块，起草延迟几乎与块长无关——能开大块（如 γ=16），但各位置独立预测、缺乏块内依赖，后缀接受率快速衰减。</div>
+      </div>
+      <div class="exp-arrow">▸</div>
+    </div>
+    <div class="exp-body"><div class="exp-body-in">
+      <p><b>它要解决什么：</b>砍掉「逐 token」这个串行瓶颈，让起草延迟与块长解耦，从而<strong>负担得起更深的网络和更长的块</strong>。</p>
+      <p><b>怎么做（DSpark 的并行骨干就用它）：</b>DFlash 用「块扩散 / block-diffusion」思路，输入一个锚点 token + γ 个 mask token，一次前向就为所有 mask 位置产出 logits。关键设计是 <strong>KV 注入（context injection）</strong>：在 prefill 阶段把目标模型若干层的隐状态拼接、投影到草稿空间得到 <code>H_ctx</code>，再把它沿序列维拼进每个草稿层的 K/V：</p>
+      <div class="formula" style="font-size:.92rem">
+        <span class="var">H<sub>ctx</sub></span> = RMSNorm( W<sub>c</sub> [ H<sup>(l₁)</sup>; … ; H<sup>(lₘ)</sup> ] )　　
+        <span class="var">K<sub>i</sub></span> = [ W<sup>K</sup><sub>i</sub>H<sub>ctx</sub>; W<sup>K</sup><sub>i</sub>H<sub>d</sub> ]
+      </div>
+      <p>块内所有位置双向互相 attend，并都 attend 到注入的目标上下文；草稿模型复用目标模型（冻结的）embedding 与 LM head。因为起草只需一次前向（与块长无关），DFlash 能在同样的延迟预算下用更深的网络、更大的块。</p>
+      <p><b>卡在哪：</b>各位置<strong>相互独立</strong>地预测，无法建模 token 间依赖。当上下文有多个合理续写（例如「of course」与「no problem」）时，并行器可能产出「of problem」「no course」这类<strong>多模态碰撞（multi-modal collision）</strong>，导致<strong>后缀接受率快速衰减</strong>。此外，无差别验证整块草稿在高并发下会白白挤占目标模型的批处理容量。</p>
+      <div class="note" style="margin:8px 0 0"><b>一句话定位：</b>快且深，但块内各写各的——越往后越容易自相矛盾。</div>
+    </div></div>
+  </div>
+
+  <div class="two">
+    <div class="panel a">
+      <h4>自回归（Eagle3）</h4>
+      <ul style="margin:6px 0">
+        <li><b>T_draft</b>：∝ γ，随块长线性增长</li>
+        <li><b>依赖建模</b>：强（逐位置条件）</li>
+        <li><b>网络/块</b>：被迫浅、被迫小</li>
+        <li><b>后缀</b>：稳定甚至回升</li>
+      </ul>
+    </div>
+    <div class="panel b">
+      <h4>并行（DFlash）</h4>
+      <ul style="margin:6px 0">
+        <li><b>T_draft</b>：≈ 常数，与块长解耦</li>
+        <li><b>依赖建模</b>：无（各位置独立）</li>
+        <li><b>网络/块</b>：可深、可大</li>
+        <li><b>后缀</b>：快速衰减（多模态碰撞）</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted" style="font-size:.95rem">DSpark 的出发点正是这张对比表的「合取」：要并行器在第 1 个 token 上的深网络容量优势，又要自回归在后缀上的依赖建模能力。下一节看它怎么做到。</p>
+</section>
+
+<!-- ============ 总览 ============ -->
+<section id="overview" class="wrap">
+  <div class="sec-tag">Overview · 本文方法总览</div>
+  <h2>DSpark 的一次完整解码循环</h2>
+  <p>DSpark 在并行骨干之上，叠加了两个互补组件：<strong>半自回归生成</strong>（让草稿写得更连贯）与<strong>置信度调度验证</strong>（让验证只花在「有正期望回报」的 token 上）。下图是论文的核心架构图，把一轮解码的全流程画在了一起。</p>
+
+  <figure>
+    <img src="assets/fig1_arch.png" alt="DSpark 架构与解码循环">
+    <div class="fig-cap"><span class="fnum">图 1</span> ｜ DSpark 架构与解码循环：从提示 ABC 出发，目标模型先生成锚点 D，DSpark 用「重并行骨干 + 轻量序列头」产出草稿 EFGH 及置信度 c₁–c₄，硬件感知前缀调度器保留前缀 EFG、丢弃低置信的 H，最后目标模型并行验证（E、F 接受，G 被拒，重新生成修正 token G*）。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开逐模块说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>① 目标模型生成锚点：</b>提示 ABC 经目标模型走一步，产出下一个 token <b>D</b>。D 作为本轮起草的「锚点 / bonus token」，是后续所有草稿位置的起点。</li>
+          <li><b>并行块（Parallel Block，绿色）：</b>以 D + 若干 mask 为输入，一次前向为整块产出 base logits（图中四个 Logits）。这是计算量最重、但延迟与块长无关的部分。</li>
+          <li><b>② 序列块（Sequential Block，绿色）：</b>轻量的串行头，按顺序在 base logits 上叠加「依赖于前一个采样 token」的转移偏置，左到右采样出草稿 <b>E F G H</b>（虚线箭头表示每个位置回看前一个 token）。同时输出每个位置的置信度 <b>c₁–c₄</b>。</li>
+          <li><b>硬件感知前缀调度器（蓝色）：</b>读取 c₁–c₄，结合当前系统负载，决定验证多长——图中保留前缀 <b>EFG（Keep）</b>、丢弃低置信的 <b>H（Drop）</b>。c₄ 变灰即被裁掉。</li>
+          <li><b>③ 目标模型并行验证：</b>对调度后的前缀 EFG 做一次并行验证：<b>E ✓、F ✓</b> 被接受，<b>G ✗</b> 被拒；目标模型顺手生成修正 token <b>G*</b>，进入下一轮（G* 成为新锚点）。</li>
+        </ul>
+        <p style="font-size:.9rem;margin:6px 0 0"><b>一句话总结：</b>D→并行写草稿→序列头修正并打分→调度器按负载裁长度→目标模型并行验证并修正，循环往复。</p>
+      </div>
+    </div>
+  </figure>
+
+  <div class="demo" id="cycle">
+    <div class="demo-head">
+      <div class="t">▶ 一步步看：DSpark 的解码循环</div>
+      <div class="demo-ctrl">
+        <button class="btn" id="cyPrev">上一步</button>
+        <button class="btn primary" id="cyNext">下一步</button>
+        <button class="btn" id="cyReset">重置</button>
+      </div>
+    </div>
+    <div class="steps-bar" id="cyBar"></div>
+
+    <div class="stage" data-st="0">
+      <div class="sidx">1</div>
+      <div class="sbody">
+        <div class="slabel">目标模型生成锚点 D</div>
+        <div class="schips">
+          <span class="chip">A</span><span class="chip">B</span><span class="chip">C</span>
+          <span class="chip" style="border-style:dashed">→ Target</span>
+          <span class="chip anchor" id="cAnchor">D</span>
+        </div>
+      </div>
+    </div>
+    <div class="stage" data-st="1">
+      <div class="sidx">2</div>
+      <div class="sbody">
+        <div class="slabel">并行块：一次前向写出整块草稿</div>
+        <div class="schips">
+          <span class="chip draft">E</span><span class="chip draft">F</span><span class="chip draft">G</span><span class="chip draft">H</span>
+        </div>
+      </div>
+    </div>
+    <div class="stage" data-st="2">
+      <div class="sidx">3</div>
+      <div class="sbody">
+        <div class="slabel">序列头：注入块内依赖 + 输出置信度</div>
+        <div class="schips">
+          <span class="chip draft">E</span><span class="chip draft">F</span>
+          <span class="chip draft">G</span><span class="chip draft">H</span>
+        </div>
+        <div class="schips" id="confRow">
+          <span class="chip conf">c₁ = 0.95</span><span class="chip conf">c₂ = 0.90</span>
+          <span class="chip conf">c₃ = 0.74</span><span class="chip conf">c₄ = 0.31</span>
+        </div>
+      </div>
+    </div>
+    <div class="stage" data-st="3">
+      <div class="sidx">4</div>
+      <div class="sbody">
+        <div class="slabel">硬件感知调度器：按累积存活概率与负载裁长度</div>
+        <div class="schips">
+          <span class="chip draft" id="kE">E</span><span class="chip draft" id="kF">F</span>
+          <span class="chip draft" id="kG">G</span><span class="chip" id="kH">H</span>
+        </div>
+      </div>
+    </div>
+    <div class="stage" data-st="4">
+      <div class="sidx">5</div>
+      <div class="sbody">
+        <div class="slabel">目标模型并行验证 + 修正</div>
+        <div class="schips">
+          <span class="chip" id="vE">E</span><span class="chip" id="vF">F</span>
+          <span class="chip" id="vG">G</span><span class="chip" id="vGs" style="display:none">G*</span>
+        </div>
+      </div>
+    </div>
+    <div class="stage" data-st="5">
+      <div class="sidx">6</div>
+      <div class="sbody">
+        <div class="slabel">进入下一轮（G* 作为新锚点）</div>
+        <div class="schips">
+          <span class="chip accept">E</span><span class="chip accept">F</span>
+          <span class="chip anchor">G*</span><span class="chip" style="border-style:dashed">→ 下一轮起草</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-desc" id="cyDesc"></div>
+  </div>
+</section>
+
+<!-- ============ 半自回归 ============ -->
+<section id="semiar" class="wrap">
+  <div class="sec-tag">Component ① · 半自回归生成</div>
+  <h2>用一个轻量序列头，把「各写各的」改成「会回头看」</h2>
+  <p>并行器的根本毛病是：一次前向产出所有 logits，每个预测都无法条件于块内别处采样到的 token。当上下文允许多个合理续写时（「of course」 vs 「no problem」），并行器对每个位置都在<strong>所有可能前驱上做边缘化</strong>，于是可能拼出「of problem」这种自相矛盾的组合，接受率沿块快速衰减。DSpark 把起草拆成两段：</p>
+
+  <h3>并行阶段（重骨干）</h3>
+  <p>用一个并行骨干（本文用 DFlash）一次前向跑完整块，产出隐状态 <code>h₁…h_γ</code> 与 base logits <code>U₁…U_γ</code>。这部分承担绝大多数计算，保证 <code>T_draft</code> 几乎与块长 γ 无关。（DSpark 做了一个小改动：把锚点本身当作第一个预测位置，γ 个输入 token 产出 γ 个草稿 logits，省一点计算又不掉质量。）</p>
+
+  <h3>序列阶段（轻量头）</h3>
+  <p>序列头给 base logits 叠加一个<strong>依赖前缀的转移偏置</strong> <code>B_k(x₀, x&lt;k, x_k)</code>，让每个草稿位置能条件于块内已采样的 token。注意：它不是定义一个全局归一化的能量模型，而是通过<strong>自回归因式分解</strong>诱导出一个因果块分布——这一点很关键，保证每个 token 的概率仍是<strong>精确的 softmax</strong>，能满足投机解码拒绝采样所需的精确概率。</p>
+  <div class="formula">
+    P(X | x₀) = ∏<sub>k=1…γ</sub> p<sub>k</sub>(x<sub>k</sub> | x₀, x<sub>&lt;k</sub>)，　
+    p<sub>k</sub>(v) ∝ exp( <span class="var">U<sub>k</sub>(v)</span> + <span class="var">B<sub>k</sub>(x₀,x<sub>&lt;k</sub>,v)</span> )
+  </div>
+  <p>序列循环天生是串行的，所以这个头必须<strong>极轻</strong>（<code>T_sequential ≪ T_parallel</code>），让总起草延迟仍由并行阶段主导。论文给了两种实现：</p>
+
+  <div class="two">
+    <div class="panel b">
+      <h4>Markov 头（默认）</h4>
+      <p style="font-size:.93rem;margin:6px 0">只依赖前一个 token，把转移退化为一阶 <code>B(x_{k-1}, x_k)</code>。原本是 V×V 大矩阵，用<strong>低秩分解</strong> <code>B = W₁W₂</code>（r=256）近似：W₁ 当查表 embedding，W₂ 当 logit 投影，存储与单步计算都很小。</p>
+      <p style="font-size:.93rem;margin:6px 0"><b>直觉：</b>位置 1 采到「of」后，Markov 头在位置 2 抬高「course」、压低「problem」，跨模碰撞就被缓解了。</p>
+    </div>
+    <div class="panel b">
+      <h4>RNN 头</h4>
+      <p style="font-size:.93rem;margin:6px 0">Markov 头只记一步；RNN 头维护一个递归状态 <code>s_k</code>，累积整个块内前缀历史，每步做一次门控更新。表达力更强。</p>
+      <p style="font-size:.93rem;margin:6px 0"><b>取舍：</b>实验中 RNN 头相对 Markov 头只在长块上有边际收益，但实现更复杂、部署性质更差，所以默认用 Markov 头。</p>
+    </div>
+  </div>
+
+  <details>
+    <summary>原文跨模碰撞示例：并行器为什么会拼出「of problem」</summary>
+    <div class="d-in">
+      <p>当上下文同时允许「of course」和「no problem」两条路径时：</p>
+      <div class="ex">位置 1 的边缘分布： of / no  各占一半
+位置 2 的边缘分布： course / problem  各占一半
+
+并行器独立采样 → 可能得到：
+  ✓ of course      ✓ no problem
+  ✗ of problem     ✗ no course   ← 多模态碰撞
+
+Markov 头修正：一旦位置 1 采到「of」，
+  位置 2 的偏置 B(of, ·) 抬高 course、压低 problem。</div>
+    </div>
+  </details>
+
+  <h3>为什么这招有效：位置级接受率分析</h3>
+  <p>论文做了一个很有说服力的细粒度分析——<strong>位置级条件接受率</strong>：只统计「前面 1…k−1 都被接受」的样本，看第 k 个位置被接受的比例，从而剥离前缀错误的连带惩罚，露出每个位置的「真实预测质量」。</p>
+  <figure>
+    <img src="assets/fig2_position.png" alt="位置级条件接受率">
+    <div class="fig-cap"><span class="fnum">图 2</span> ｜ 三个领域（Math/Code/Chat）下各草稿位置的条件接受率（Qwen3-4B）。自回归 Eagle3（橙）随位置稳定甚至回升；并行 DFlash（蓝）出现明显后缀衰减；DSpark（绿）既有高起点又稳得住。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>位置 1 的容量优势：</b>第一个 token 只看目标上下文，差距纯粹来自架构容量。深网络的并行器 DFlash 起点显著高于浅网络的 Eagle3（Math 0.88 vs 0.81，Chat 0.72 vs 0.53）。</li>
+          <li><b>为什么位置 1 如此关键：</b>投机解码是严格的「前缀存活」过程，第一个 token 杠杆最大——它一旦被拒，整块立刻作废。所以起点高会被不成比例地放大到最终接受长度。</li>
+          <li><b>后缀的分化：</b>Eagle3 能利用「前文锁定后后文更可预测」，条件接受率维持甚至上升（Chat 从 0.53 升到 0.74）；DFlash 因独立预测而快速衰减（Code 0.87→0.78，Chat 0.72→0.63）。</li>
+          <li><b>DSpark 的合取：</b>绿线既继承了深并行骨干的高起点（Math 起于 0.93），又靠轻量序列头压住了后缀衰减，全程保持高而稳的条件接受率。</li>
+        </ul>
+        <p style="font-size:.9rem;margin:6px 0 0"><b>一句话总结：</b>并行赢在第一枪、自回归赢在后续，DSpark 把两者都拿到了手。</p>
+      </div>
+    </div>
+  </figure>
+  <div class="quote">并行起草器之所以常常整体打败自回归，是因为「位置 1 的深网络容量优势」在前缀存活机制下被放大；DSpark 再用一点点自回归补住后缀，于是全程领先。
+    <span class="src">—— 对应论文 §4.3.1「Why Can Parallel Generation Outperform Autoregression?」</span>
+  </div>
+</section>
+
+<!-- ============ 置信度调度 ============ -->
+<section id="sched" class="wrap">
+  <div class="sec-tag">Component ② · 置信度调度验证</div>
+  <h2>验证要「更聪明」，不是「更长」</h2>
+  <p>半自回归让 DSpark 能高效产出大草稿块。但<strong>产出更多 token ≠ 端到端更快</strong>：无差别地验证整块，在高并发下反而拉低整体吞吐。原因有两层——<strong>数据侧</strong>：代码这类结构化文本接受率天然高，开放闲聊则低；<strong>系统侧</strong>：轻载时多验一个 token 几乎免费，重载时每一次无谓验证都在挤占本可服务其他请求的批处理容量。</p>
+  <p>所以需要一个统一机制，把目标模型的算力<strong>只投向有正期望回报的 token</strong>。DSpark 用「置信度头 + 硬件感知前缀调度器」实现。</p>
+
+  <h3>置信度头：估计「存活概率」</h3>
+  <p>置信度头对每个草稿位置输出一个标量 <code>c_k ∈ (0,1)</code>，表示「在前面都被接受的前提下，第 k 个 token 通过验证的条件概率」。结构极简：一层线性投影 + sigmoid。</p>
+  <div class="formula">
+    <span class="var">c<sub>k</sub></span> = σ( wᵀ [ h<sub>k</sub> ; W₁[x<sub>k-1</sub>] ] )，　
+    监督目标 <span class="var">c*<sub>k</sub></span> = 1 − ½‖p<sup>d</sup><sub>k</sub> − p<sup>t</sup><sub>k</sub>‖₁　<small>(总变差距离 = 接受率)</small>
+  </div>
+
+  <h3>STS 后验校准：让概率「数值上可信」</h3>
+  <p>调度器需要的是<strong>累积存活概率的绝对数值</strong>（用来算期望接受长度 τ），而不仅是排序。但神经网络的置信度常常<strong>过度自信</strong>，直接用会扭曲吞吐估计。论文提出 <strong>Sequential Temperature Scaling（STS）</strong>：因为每个 c_i 是条件概率，前缀被接受的联合概率按链式法则是累积乘积 <code>∏ c_i</code>；STS 在留出验证集上从左到右逐位置做 1D 网格搜索，找到使累积乘积的期望校准误差（ECE）最小的温度标量。温度缩放是<strong>保序变换</strong>——只校正数值、不打乱排序。</p>
+  <figure>
+    <img src="assets/fig6_calib.png" alt="可靠性图 / 校准">
+    <div class="fig-cap"><span class="fnum">图 6</span> ｜ Alpaca 上的可靠性图。原始估计判别力强（AUC 0.81–0.91）但明显过度自信（ECE 3%–8%）；经 STS 校准后曲线贴近对角线，平均 ECE 降到约 1%。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴 / 纵轴：</b>横轴是预测的接受概率，纵轴是实际观测到的接受率；完美校准应落在对角虚线上。</li>
+          <li><b>橙线（校准前）：</b>系统性地位于对角线下方——预测值偏高，即过度自信。</li>
+          <li><b>绿线（校准后）：</b>经 STS 校准后明显回到对角线附近，数值变得可信。</li>
+          <li><b>四个子图（位置 1/3/5/7）：</b>不同块内位置都有校准收益，ECE 从 5.7%/8.2%/5.8%/3.3% 降到 2.0%/1.7%/0.8%/0.4%；AUC 0.818→0.907 说明判别力一直很强。</li>
+          <li><b>灰色直方图：</b>背景是各置信度区间的样本数量分布。</li>
+        </ul>
+        <p style="font-size:.9rem;margin:6px 0 0"><b>一句话总结：</b>判别力本来就够，STS 把「数值标定」补上，才能拿去算吞吐。</p>
+      </div>
+    </div>
+  </figure>
+
+  <h3>硬件感知前缀调度器：把验证长度当全局吞吐最优化</h3>
+  <p>过去的方法多用<strong>静态阈值</strong>裁剪验证长度，单请求下有效，但在高并发生产系统里次优——验证一个 token 的「值不值」高度依赖当前负载。DSpark 把它建模成一个<strong>全局吞吐最大化</strong>问题：</p>
+  <div class="formula">
+    存活概率 <span class="var">a<sub>r,j</sub></span> = ∏<sub>i≤j</sub> c<sub>r,i</sub>　|　
+    目标 <span class="var">Θ</span> = <span class="var">τ</span> · SPS(<span class="var">B</span>)　<small>(SPS=按批大小 B 的引擎吞吐曲线，开机时一次性 profile 成查表)</small>
+  </div>
+  <p>关键洞察让组合搜索退化为<strong>贪心</strong>：因为 <code>a_{r,j}</code> 关于 j 单调不增，把请求 r 的验证长度从 j−1 延到 j 带来的边际期望接受恰好是 <code>a_{r,j}</code>。于是把全局所有候选 token 按存活概率降序排，沿这条「贪心准入路径」逐个加入、用 O(1) 查表更新 Θ 即可。</p>
+
+  <div class="algo">
+<span class="cm"># Algorithm 1 · 硬件感知前缀调度器（贪心 + 早停）</span>
+输入: 各请求置信序列 c[r,1..γ]；profile 好的步速曲线 SPS(B)
+1  <span class="kw">for</span> 每个请求 r: 算累积存活 a[r,j] = ∏_{i≤j} c[r,i]
+2  候选池 E = {(r,j) | a[r,j] &gt; 0}，按 a[r,j] <span class="hl">降序排序</span>
+3  初始化: B=R, τ*=R, Θbest = R·SPS(R)
+4  <span class="kw">for</span> (r,j) <span class="kw">in</span> E 按序:
+5      ℓ_r=j;  B+=1;  τ*+=a[r,j]
+6      Θ = τ* · SPS(B)
+7      <span class="kw">if</span> Θ &gt; Θbest:  Θbest=Θ; 记录 ℓ*_r=ℓ_r
+8      <span class="kw">else</span>:  <span class="hl">break</span>   <span class="cm"># 早停：保证非预期性 / 无损</span>
+9  <span class="kw">return</span> 达到 Θbest 的各请求验证长度 ℓ*
+  </div>
+  <details>
+    <summary>为什么必须早停：无损投机解码的「非预期性」约束</summary>
+    <div class="d-in">
+      <p>无损投机解码要求<strong>非预期性（non-anticipating）</strong>：准入决策不能依赖未来的候选 token。由于置信度头用了「前一个采样 token」的 Markov 特征，计算下一个存活概率 <code>a_{r,k+1}</code> 需要已经实例化的候选 <code>x_{r,k}</code>——若做<strong>回溯式全局搜索</strong>，就会把 <code>x_{r,k}</code> 泄漏进第 k 步的准入决策，引入选择偏差，破坏对目标分布的精确还原（论文附录 A 给了反例）。</p>
+      <p><b>早停如何修复：</b>当吞吐一旦下降（Θ ≤ Θbest）立即 break，截断决策只依赖到该步为止的前缀，从而把准入事件与未来 token 隔离。代价是：这种逐步早停只有当 Θ 单峰时才取到全局最优，隐含假设硬件容量曲线平滑下降。</p>
+    </div>
+  </details>
+
+  <h3>诊断：静态阈值扫描验证置信度头确实能剪枝</h3>
+  <figure>
+    <img src="assets/fig5_threshold.png" alt="置信度阈值扫描">
+    <div class="fig-cap"><span class="fnum">图 5</span> ｜ 置信度阈值扫描（Qwen3-4B）。阈值为 0 即标准定长验证；阈值升高，置信度头剪掉本会被拒的尾部 token（斜纹柱），整体接受率随之上升。Chat 上接受率从 45.7% 飙到 95.7%；Math/Code 剪枝更温和（76.9%→92.5%、67.6%→92.0%）。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>绿色实柱 = 被接受 token，斜纹柱 = 被拒 token：</b>阈值越高，斜纹部分被剪得越多。</li>
+          <li><b>蓝线 = 整体接受率（右轴）：</b>随阈值单调上升，说明被剪的确实是低价值 token。</li>
+          <li><b>领域差异：</b>Chat 是高熵分布，定长验证最浪费，剪枝收益最大；Math/Code 结构化、接受率本就高，剪枝更温和、保留更多草稿。</li>
+          <li><b>启示：</b>这正说明「该验证多长」必须随数据与负载动态决定——静态阈值不够，需要硬件感知调度器（见 §5 线上结果）。</li>
+        </ul>
+      </div>
+    </div>
+  </figure>
+</section>
+
+<!-- ============ 关键发现 ============ -->
+<section id="insight" class="wrap">
+  <div class="sec-tag">Insights · 有意思的点</div>
+  <h2>几个反直觉但很关键的发现</h2>
+
+  <h3>一点点自回归，收益巨大</h3>
+  <p>固定块大小为 7、把 DSpark 层数从 1 加到 5：性能单调上升，且<strong>从 1 层到 2 层的边际收益最陡</strong>。最惊人的是——<strong>2 层的 DSpark 就全面超过 5 层的 DFlash</strong>。也就是说，注入局部自回归，比单纯堆深并行层，在「精度 / 参数」上划算得多。</p>
+  <figure>
+    <img src="assets/fig3_depth.png" alt="草稿器深度的影响">
+    <div class="fig-cap"><span class="fnum">图 3</span> ｜ 草稿器深度的影响。圆点大小表示层数（1L/2L/5L）。固定提案长度下，DSpark（绿）随层数增加而提升，且 2 层 DSpark 已超过 5 层 DFlash（蓝）。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>纵轴：</b>每轮接受长度（越高越好）；横轴是九个 benchmark，按 Math / Code / Chat 分三组。</li>
+          <li><b>点的大小 = 深度：</b>同色从小到大表示 1L→2L→5L；可见绿色随深度稳定上移。</li>
+          <li><b>核心对比：</b>每组里小号绿点（2L DSpark）普遍高于大号蓝点（5L DFlash）——少而精的序列建模 > 堆叠并行层。</li>
+        </ul>
+      </div>
+    </div>
+  </figure>
+
+  <h3>块越长，DSpark 相对优势越大——而延迟几乎不增</h3>
+  <p>固定 5 层、把草稿长度扫到 {4,8,12,16}：DSpark 在每个块长都胜过 DFlash，且<strong>块越长差距越大</strong>（DFlash 的后缀衰减让它边际效用递减）。γ=7 时领先 16%/15%/18%（math/code/chat），γ=15 时扩大到 30%/26%/22%。而序列头带来的额外延迟仅 <strong>0.2%–1.3%</strong>——因为在 batch=128 下验证由目标模型主导，串行小循环可忽略。</p>
+  <figure>
+    <img src="assets/fig4_proposal.png" alt="提案长度与延迟开销">
+    <div class="fig-cap"><span class="fnum">图 4</span> ｜ 提案长度与延迟开销。左三图：各块长下 DSpark（绿/橙）持续优于 DFlash（蓝），差距随块长拉大；最右图：序列头带来的每轮延迟增量极小（+0.2%~1.3%）。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左三面板（Math/Code/Chat）：</b>纵轴接受长度、横轴草稿长度；标注的 +16%/+23%/+30% 等是 DSpark 相对 DFlash 在该块长的增益，块越长增益越大。</li>
+          <li><b>绿 = Markov 头，橙 = RNN 头：</b>两者非常接近，RNN 仅在长块有微弱优势，印证默认用 Markov 头的选择。</li>
+          <li><b>最右面板（Latency）：</b>纵轴每轮延迟（ms）；从块长 4 到 16，DSpark 相对 DFlash 仅增加 0.6%~1.3%，几乎重合。</li>
+        </ul>
+        <p style="font-size:.9rem;margin:6px 0 0"><b>一句话总结：</b>用约 1% 的延迟，换最高约 30% 的接受长度。</p>
+      </div>
+    </div>
+  </figure>
+
+  <h3>一个聪明的系统取舍：异步调度反而「天然合法」</h3>
+  <p>把调度器搬上生产引擎要面对两个硬现实：真实硬件容量曲线 <code>SPS(B)</code> 是<strong>锯齿状离散</strong>的（不平滑），而动态变长的 token 数会与 CUDA Graph 重放、零开销调度（ZOS）冲突。DSpark 改成<strong>异步调度</strong>：用「两步之前」的置信度输出来预估即将到来的验证容量 K，把准入变成动态 top-K 选择。</p>
+  <div class="quote">异步设计意外地成了「因果屏障」：因为无约束的全局搜索只评估两步前的历史预测，准入决策天然与当前 token x_{r,k} 的实现隔离——既能跨越硬件锯齿最大化物理吞吐，又保持了对目标分布的精确还原。
+    <span class="src">—— 对应论文 §5.2「Hardware-Aware Prefix Scheduler in Practice」</span>
+  </div>
+  <p>正因为这层异步隔离，DSpark 得以<strong>去掉早停、放开全局搜索</strong>，避免被锯齿状容量曲线困在局部最优，同时不违反无损保证。</p>
+</section>
+
+<!-- ============ 实验结论 ============ -->
+<section id="exp" class="wrap">
+  <div class="sec-tag">Results · 实验结论</div>
+  <h2>线下领先，线上把帕累托前沿外推</h2>
+
+  <h3>线下：接受长度全面领先</h3>
+  <p>线下评测<strong>关掉调度器</strong>、所有草稿器都用定长块，单纯比草稿质量（每轮接受长度 τ）。DSpark 在所有目标模型、所有领域上都超过自回归 Eagle3 与并行 DFlash，并跨模型族（Qwen3、Gemma4）稳定成立。下表节选 Qwen3-4B 的代表性数字：</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Qwen3-4B · τ</th><th>GSM8K</th><th>MATH</th><th>MBPP</th><th>HumanEval</th><th>MT-Bench</th><th>Alpaca</th></tr></thead>
+      <tbody>
+        <tr><td>Eagle3（自回归）</td><td>5.14</td><td>4.62</td><td>3.69</td><td>4.16</td><td>2.39</td><td>2.26</td></tr>
+        <tr><td>DFlash（并行）</td><td>5.40</td><td>4.85</td><td>4.40</td><td>4.74</td><td>3.07</td><td>2.96</td></tr>
+        <tr><td><b>DSpark</b></td><td class="best">6.11</td><td class="best">5.70</td><td class="best">5.13</td><td class="best">5.38</td><td class="best">3.64</td><td class="best">3.54</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:.95rem">宏平均上，DSpark 相对 Eagle3 提升 30.9%/26.7%/30.0%（4B/8B/14B），相对 DFlash 提升 16.3%/18.4%/18.3%。表中也能看到强烈的领域效应：结构化任务（math/code）接受长度天然高于开放闲聊（chat）——这正是「定长验证浪费算力、需要动态调度」的动机。</p>
+
+  <h3>线上：接入 DeepSeek-V4，前沿整体外推</h3>
+  <p>把 DSpark-5（最大草稿长度 γ=5）接入 DeepSeek-V4-Flash / Pro 的生产引擎，对比旧生产基线 MTP-1（单 token）。注意：历史上之所以一直用 MTP-1，正是因为静态多 token 草稿（MTP-3/5）在高并发下会因过度验证而<strong>拉低</strong>聚合吞吐——所以这个对比直接说明 DSpark 能<strong>安全地</strong>释放大草稿块的潜力。</p>
+  <figure>
+    <img src="assets/fig7_pareto.png" alt="吞吐 vs 每用户速度 帕累托前沿">
+    <div class="fig-cap"><span class="fnum">图 7</span> ｜ 聚合吞吐（token/s/gpu）对每用户生成速度（TPS, token/s/user）。散点是真实线上流量采样，实线是拟合前沿。DSpark（绿）相对 MTP-1（蓝）把吞吐–交互性前沿整体外推。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>两个轴的权衡：</b>纵轴是每 GPU 聚合吞吐（服务多少用户），横轴是每用户生成速度（交互性）；右上方越远越好。</li>
+          <li><b>V4-Flash：</b>在 80 TPS SLA 下 DSpark 提升 51% 吞吐；在更严苛的 120 TPS SLA 下，MTP-1 已逼近运行边界、只能维持很小并发，DSpark 名义上达到 +661% 吞吐——更应理解为「DSpark 把可行的交互性边界往外推了」。同等实际吞吐下，每用户提速 60%–85%。</li>
+          <li><b>V4-Pro：</b>同样模式——35 TPS SLA 下 +52% 吞吐；50 TPS SLA 下 +406%（基线进入低并发区）；同等容量下每用户提速 57%–78%。</li>
+          <li><b>怎么读这些大数字：</b>极端 SLA 下的百分比之所以巨大，是因为基线几乎服务不了——重点是 DSpark 解锁了「以前根本达不到」的严格交互性档位。</li>
+        </ul>
+        <p style="font-size:.9rem;margin:6px 0 0"><b>一句话总结：</b>不是单点提速，而是把整条「吞吐 × 交互性」前沿往外推。</p>
+      </div>
+    </div>
+  </figure>
+
+  <h3>机制：调度器随负载自动伸缩验证预算</h3>
+  <figure>
+    <img src="assets/fig8_load.png" alt="随负载自适应的吞吐与验证预算">
+    <div class="fig-cap"><span class="fnum">图 8</span> ｜ 随并发自适应。上排：聚合吞吐随并发变化；下排：每请求平均验证预算。负载低时调度器把预算从 MTP-1 的固定 2 拉到约 4–6 个 token；负载升高时平滑收缩，先剪掉低置信尾部，保住批处理容量。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>上排（a,b）吞吐 vs 并发：</b>DSpark（绿）在各并发水平下都高于 MTP-1（蓝）。</li>
+          <li><b>下排（c,d）验证预算 vs 并发：</b>MTP-1 是固定的 2（蓝平线）；DSpark（绿）在轻载时升到 4–6，随并发升高平滑回落。</li>
+          <li><b>轻载：</b>利用空闲目标算力，多验证几个 token → 每次前向接受更多 → 吞吐增益。</li>
+          <li><b>重载：</b>目标容量饱和时自动收缩预算，在低置信 token 消耗关键批容量之前剪掉它们，稳住生产部署。</li>
+        </ul>
+        <p style="font-size:.9rem;margin:6px 0 0"><b>一句话总结：</b>闲时多验、忙时少验——同一套机制自动完成。</p>
+      </div>
+    </div>
+  </figure>
+
+  <div class="note"><b>局限（论文自陈）：</b>即便调度器把目标侧验证浪费降到最低，DSpark 仍有一笔<strong>固定的草稿侧开销</strong>——并行骨干生成初始 γ-token 块的算力。对于接受率天然很低的复杂查询，这笔前置算力不可回收。未来可在草稿模型内引入<strong>难度感知的提前退出</strong>，让这类请求跳过整块生成。</div>
+</section>
+
+<footer class="wrap">
+  <div class="foot-src">
+    <b>原文</b>：DSpark: Confidence-Scheduled Speculative Decoding with Semi-Autoregressive Generation ·
+    DeepSeek-AI &amp; Peking University · 2026 ·
+    <a href="https://github.com/deepseek-ai/DeepSpec/blob/main/DSpark_paper.pdf" target="_blank" rel="noopener">GitHub: deepseek-ai/DeepSpec ↗</a><br>
+    <span class="muted" style="font-size:.86rem">开源资产：DSpark checkpoints（V4-Flash/Pro preview）+ DeepSpec 训练仓库（含 Eagle3 / DFlash / DSpark）。</span>
+  </div>
+  <p class="muted">本页为面向中文读者的教学可视化，所有图表均取自原文 PDF；关键数字与结论以原文为准。建议结合原文阅读。</p>
+</footer>
+
+<script>
+// store original labels first, then define toggle
+document.querySelectorAll('.fig-toggle').forEach(function(t){ t.dataset.label = t.textContent; });
+function toggleFigDetail(el){
+  var d = el.nextElementSibling;
+  var on = d.classList.toggle('active');
+  el.textContent = on ? '收起 ▾' : (el.dataset.label || '展开说明 ▸');
+}
+
+// expandable cards
+document.querySelectorAll('[data-exp] .exp-head').forEach(function(h){
+  h.addEventListener('click', function(){
+    var card = h.closest('[data-exp]');
+    var body = card.querySelector('.exp-body');
+    var open = card.classList.toggle('open');
+    body.style.maxHeight = open ? (body.scrollHeight + 40) + 'px' : '0';
+  });
+});
+
+// ---- decode cycle stepper ----
+(function(){
+  var steps = [
+    {t:'<b>第 1 步 · 生成锚点。</b>提示 ABC 经目标模型走一次前向，产出下一个 token <b>D</b>。D 既是这一步的输出，也是本轮起草的「锚点」，后面所有草稿都以它为起点。'},
+    {t:'<b>第 2 步 · 并行起草。</b>并行块以 D + 若干 mask 为输入，<b>一次前向</b>就为整块产出草稿 <b>E F G H</b>。这一步计算量最重，但延迟几乎与块长无关——这是「写得快」。'},
+    {t:'<b>第 3 步 · 序列头修正 + 打分。</b>轻量序列头按顺序让每个位置<b>回看前一个采样 token</b>，在 base logits 上叠加转移偏置，缓解「of problem」式的跨模碰撞；同时置信度头输出每个位置的存活概率 <b>c₁..c₄</b>（这里 c₄=0.31 很低）。'},
+    {t:'<b>第 4 步 · 硬件感知调度。</b>调度器按<b>累积存活概率 × 当前负载</b>决定验证多长：保留高置信前缀 <b>E F G（Keep）</b>，丢弃低置信的 <b>H（Drop）</b>——别让它白占目标模型的批容量。'},
+    {t:'<b>第 5 步 · 并行验证 + 修正。</b>目标模型一次并行验证 EFG：<b>E ✓、F ✓</b> 通过，<b>G ✗</b> 被拒。一旦某位置被拒，其后全部作废；目标模型顺手生成修正 token <b>G*</b>。'},
+    {t:'<b>第 6 步 · 进入下一轮。</b>本轮净产出 <b>E、F、G*</b>，其中 <b>G*</b> 成为下一轮的新锚点。如此循环：起草→修正→调度→验证，每轮通常一次性吃下好几个 token。'}
+  ];
+  var N = steps.length;
+  var cur = 0;
+  var bar = document.getElementById('cyBar');
+  for (var i=0;i<N;i++){ var d=document.createElement('div'); d.className='sdot'; bar.appendChild(d); }
+  var dots = bar.children;
+  var stages = document.querySelectorAll('#cycle .stage');
+  var desc = document.getElementById('cyDesc');
+  var prev = document.getElementById('cyPrev');
+  var next = document.getElementById('cyNext');
+  var reset = document.getElementById('cyReset');
+
+  function setChip(id, cls, on){ var e=document.getElementById(id); if(e){ e.classList.toggle(cls, on); } }
+
+  function render(){
+    for (var i=0;i<N;i++){
+      stages[i].classList.toggle('active', i<=cur);
+      stages[i].classList.toggle('current', i===cur);
+      dots[i].classList.toggle('done', i<=cur);
+    }
+    // schedule states (step index 3)
+    setChip('kH','drop', cur>=3);
+    setChip('kE','keep', cur>=3); setChip('kF','keep', cur>=3); setChip('kG','keep', cur>=3);
+    // verify states (step index 4)
+    var v = cur>=4;
+    setChip('vE','accept', v); setChip('vF','accept', v); setChip('vG','reject', v);
+    var gs=document.getElementById('vGs'); if(gs){ gs.style.display = v? 'inline-block':'none'; }
+    // marks
+    setMark('vE','✓',v); setMark('vF','✓',v); setMark('vG','✗',v);
+
+    desc.innerHTML = steps[cur].t;
+    prev.disabled = (cur===0);
+    next.disabled = (cur===N-1);
+  }
+  function setMark(id, sym, on){
+    var e=document.getElementById(id); if(!e) return;
+    var m=e.querySelector('.mk');
+    if(on){ if(!m){ m=document.createElement('span'); m.className='mk'; e.appendChild(m);} m.textContent=sym; }
+    else if(m){ m.remove(); }
+  }
+  prev.addEventListener('click', function(){ if(cur>0){cur--; render();} });
+  next.addEventListener('click', function(){ if(cur<N-1){cur++; render();} });
+  reset.addEventListener('click', function(){ cur=0; render(); });
+  render();
+})();
+</script>
+</body>
+</html>

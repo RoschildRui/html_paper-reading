@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeepSeek-OCR 2:视觉因果流 · 图解精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg-soft:#f4ead7;
+    --bg-deep:#e8dcc7;
+    --line:#ddccae;
+    --ink:#2c261d;
+    --ink-soft:#5b5142;
+    --ink-mute:#897c66;
+    --accent:#b06a3c;
+    --accent-soft:#f0dcc4;
+    --accent-deep:#8a4f29;
+    --radius:14px;
+    --maxw:880px;
+    --shadow:0 1px 2px rgba(60,45,25,.06), 0 6px 18px rgba(60,45,25,.05);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    line-height:1.78;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+  /* ---------- top nav ---------- */
+  .topnav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(251,246,234,.9);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .topnav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;gap:14px;}
+  .topnav .brand{font-weight:700;font-size:15px;letter-spacing:.01em;color:var(--ink);white-space:nowrap;}
+  .topnav .links{display:flex;gap:18px;align-items:center;font-size:14px;}
+  .topnav .links a{color:var(--ink-soft);}
+  .topnav .links a.src{color:var(--accent);font-weight:600;}
+  @media(max-width:680px){.topnav .links a:not(.src){display:none;}}
+
+  /* ---------- header ---------- */
+  header.hero{padding:62px 0 30px;}
+  .eyebrow{
+    display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;
+    font-size:13px;color:var(--ink-soft);margin-bottom:20px;
+  }
+  .tag{
+    display:inline-block;padding:3px 10px;border-radius:999px;
+    background:var(--bg-soft);border:1px solid var(--line);
+    font-size:12.5px;color:var(--ink-soft);font-weight:500;
+  }
+  .tag.accent{background:var(--accent-soft);border-color:#e3c6a6;color:var(--accent-deep);}
+  h1.title{
+    font-family:"Inter","Noto Sans SC",sans-serif;
+    font-weight:800;font-size:40px;line-height:1.18;letter-spacing:-0.01em;
+    margin:0 0 12px;color:var(--ink);
+  }
+  h1.title .sub{color:var(--accent);}
+  .byline{color:var(--ink-soft);font-size:15px;margin-bottom:6px;}
+  .byline .en{font-style:italic;color:var(--ink-mute);}
+
+  /* ---------- tldr ---------- */
+  .tldr{
+    margin:30px 0 10px;padding:24px 26px;
+    background:var(--bg-soft);border:1px solid var(--line);
+    border-left:4px solid var(--accent);border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  .tldr h2{margin:0 0 10px;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-deep);}
+  .tldr p{margin:0 0 10px;font-size:17.5px;}
+  .tldr p:last-child{margin-bottom:0;}
+  .tldr strong{color:var(--ink);font-weight:700;}
+
+  /* metric strip */
+  .metric-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0 8px;}
+  .metric{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 14px;text-align:center;
+  }
+  .metric .num{font-size:26px;font-weight:800;color:var(--accent-deep);line-height:1.1;font-family:"Inter",sans-serif;}
+  .metric .lbl{font-size:12.5px;color:var(--ink-mute);margin-top:6px;line-height:1.4;}
+  @media(max-width:680px){.metric-strip{grid-template-columns:repeat(2,1fr);}}
+
+  /* ---------- sections ---------- */
+  section{padding:34px 0;border-top:1px solid var(--line);}
+  section:first-of-type{border-top:none;}
+  .kicker{font-size:13px;color:var(--accent);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+  h2.sec{font-size:27px;font-weight:800;letter-spacing:-0.01em;margin:0 0 6px;color:var(--ink);}
+  h3.sub{font-size:20px;font-weight:700;margin:30px 0 8px;color:var(--ink);}
+  p{margin:14px 0;}
+  .lead{font-size:18px;color:var(--ink-soft);}
+  ul.clean{margin:14px 0;padding-left:22px;}
+  ul.clean li{margin:8px 0;}
+  ul.clean li strong{color:var(--ink);}
+  .muted{color:var(--ink-mute);}
+
+  /* figure */
+  figure.fig{margin:26px 0;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);}
+  figure.fig img{width:100%;height:auto;border-radius:8px;display:block;background:#fff;}
+  .fig-cap{font-size:14px;color:var(--ink-soft);margin-top:12px;display:flex;gap:8px;align-items:baseline;}
+  .fig-cap .figlabel{color:var(--accent-deep);font-weight:700;white-space:nowrap;}
+  .fig-toggle{
+    display:inline-block;margin-top:10px;cursor:pointer;user-select:none;
+    font-size:13.5px;color:var(--accent);font-weight:600;
+  }
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{
+    max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease,margin .3s ease;
+    opacity:0;margin-top:0;
+  }
+  .figure-detail.active{max-height:1600px;opacity:1;margin-top:14px;}
+  .figure-detail ul{margin:0;padding-left:20px;}
+  .figure-detail li{margin:7px 0;font-size:14.5px;color:var(--ink-soft);}
+  .figure-detail li strong{color:var(--ink);}
+  .figure-detail .sum{margin:12px 0 0;padding-top:10px;border-top:1px dashed var(--line);font-size:14px;color:var(--ink-mute);}
+
+  /* expandable cards */
+  .ecard{background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius);margin:16px 0;overflow:hidden;}
+  .ecard .head{padding:16px 20px;cursor:pointer;user-select:none;display:flex;gap:14px;align-items:flex-start;}
+  .ecard .head .arrow{flex:none;margin-top:4px;transition:transform .3s ease;color:var(--accent);font-size:13px;}
+  .ecard.open .head .arrow{transform:rotate(90deg);}
+  .ecard .head .htext{flex:1;}
+  .ecard .head .t{font-weight:700;font-size:17px;color:var(--ink);}
+  .ecard .head .v{font-size:12px;color:var(--accent-deep);background:var(--accent-soft);border:1px solid #e3c6a6;border-radius:999px;padding:1px 9px;margin-left:8px;font-weight:600;white-space:nowrap;}
+  .ecard .head .s{font-size:13.5px;color:var(--ink-mute);margin-top:3px;line-height:1.5;}
+  .ecard .body{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .ecard.open .body{max-height:3000px;}
+  .ecard .body-inner{padding:4px 20px 20px;}
+  .ecard .body-inner p:first-child{margin-top:6px;}
+
+  /* two-col compare */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0;}
+  .compare .col{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;}
+  .compare .col h4{margin:0 0 10px;font-size:16px;color:var(--ink);}
+  .compare .col.old h4::before{content:"✕ ";color:var(--ink-mute);}
+  .compare .col.new h4::before{content:"✓ ";color:var(--accent);}
+  .compare .col p{margin:8px 0;font-size:14.5px;color:var(--ink-soft);}
+  @media(max-width:680px){.compare{grid-template-columns:1fr;}}
+
+  /* reading-order demo */
+  .ro-demo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0;}
+  .ro-panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;}
+  .ro-panel h4{margin:0 0 4px;font-size:15px;}
+  .ro-panel .cap{font-size:12.5px;color:var(--ink-mute);margin-bottom:14px;}
+  .ro-grid{position:relative;}
+  .ro-block{
+    border:1px solid var(--line);border-radius:7px;padding:9px 11px;margin:7px 0;
+    display:flex;align-items:center;gap:11px;font-size:13.5px;background:var(--bg);
+    transition:background .3s ease,border-color .3s ease;
+  }
+  .ro-num{
+    flex:none;width:24px;height:24px;border-radius:50%;
+    display:grid;place-items:center;font-size:12.5px;font-weight:700;
+    background:var(--bg-deep);color:var(--ink-soft);font-family:"JetBrains Mono",monospace;
+  }
+  .ro-panel.new .ro-num{background:var(--accent);color:#fff;}
+  @media(max-width:680px){.ro-demo{grid-template-columns:1fr;}}
+
+  /* stepper */
+  .stepper{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin:24px 0;box-shadow:var(--shadow);}
+  .pipe{display:flex;align-items:stretch;gap:6px;overflow-x:auto;padding-bottom:6px;}
+  .pipe .node{
+    flex:1;min-width:96px;border:1px solid var(--line);border-radius:10px;padding:11px 9px;text-align:center;
+    background:var(--bg);transition:all .3s ease;position:relative;
+  }
+  .pipe .node .ic{font-size:18px;}
+  .pipe .node .nm{font-size:12px;margin-top:4px;color:var(--ink-soft);line-height:1.35;font-weight:500;}
+  .pipe .node.active{background:var(--accent);border-color:var(--accent);box-shadow:0 4px 12px rgba(176,106,60,.25);}
+  .pipe .node.active .nm{color:#fff;}
+  .pipe .node.done{background:var(--accent-soft);border-color:#e3c6a6;}
+  .step-desc{margin-top:18px;padding:16px 18px;background:var(--bg-soft);border-radius:10px;border-left:3px solid var(--accent);min-height:84px;}
+  .step-desc .st{font-weight:700;color:var(--ink);font-size:16px;}
+  .step-desc .sd{font-size:14.5px;color:var(--ink-soft);margin-top:4px;}
+  .step-ctrl{display:flex;gap:10px;align-items:center;margin-top:16px;}
+  .btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:8px 16px;border-radius:9px;font-size:14px;cursor:pointer;font-weight:600;
+    font-family:inherit;transition:all .2s ease;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.primary:hover{background:var(--accent-deep);color:#fff;}
+  .step-count{margin-left:auto;font-size:13px;color:var(--ink-mute);font-family:"JetBrains Mono",monospace;}
+
+  /* callout / interesting */
+  .callout{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:18px 20px;margin:18px 0;}
+  .callout .ct{font-weight:700;color:var(--ink);margin-bottom:4px;display:flex;gap:8px;align-items:center;}
+  .callout p{margin:6px 0 0;font-size:15px;color:var(--ink-soft);}
+
+  /* quote */
+  blockquote.q{margin:22px 0;padding:16px 22px;background:var(--bg-soft);border-radius:12px;border-left:4px solid var(--accent);font-size:16px;color:var(--ink);}
+  blockquote.q .src{display:block;margin-top:8px;font-size:13px;color:var(--ink-mute);font-style:normal;}
+
+  /* formula */
+  .formula{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:16px 0;font-family:"JetBrains Mono",monospace;font-size:14px;overflow-x:auto;color:var(--ink);}
+  .formula .cm{color:var(--ink-mute);}
+
+  /* details (tables) */
+  details.tbl{margin:18px 0;background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  details.tbl summary{padding:14px 18px;cursor:pointer;font-weight:600;font-size:15px;color:var(--ink);list-style:none;}
+  details.tbl summary::-webkit-details-marker{display:none;}
+  details.tbl summary::before{content:"▸ ";color:var(--accent);}
+  details.tbl[open] summary::before{content:"▾ ";}
+  details.tbl summary .ds{font-weight:400;color:var(--ink-mute);font-size:13px;}
+  details.tbl .tinner{padding:0 18px 18px;overflow-x:auto;}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;}
+  table th,table td{border:1px solid var(--line);padding:7px 10px;text-align:center;}
+  table th{background:var(--bg-deep);color:var(--ink);font-weight:600;}
+  table td.l,table th.l{text-align:left;}
+  table tr.hl td{background:var(--accent-soft);font-weight:600;}
+  table .up{color:var(--accent-deep);font-weight:700;}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:34px 0 60px;color:var(--ink-mute);font-size:14px;}
+  footer a{color:var(--accent);}
+  footer .fline{margin:6px 0;}
+
+  .note-bg{font-size:12.5px;color:var(--ink-mute);background:var(--bg-deep);border-radius:6px;padding:2px 8px;display:inline-block;margin-bottom:6px;}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <div class="brand">DeepSeek-OCR 2 · 图解精读</div>
+    <div class="links">
+      <a href="#problem">问题</a>
+      <a href="#method">方法</a>
+      <a href="#fun">亮点</a>
+      <a href="#exp">结论</a>
+      <a class="src" href="https://arxiv.org/abs/2601.20552" target="_blank" rel="noopener">原文 ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">
+      <span class="tag accent">2026.01 · arXiv preprint</span>
+      <span class="tag">cs.CV 计算机视觉</span>
+      <span class="tag">DeepSeek-AI</span>
+      <span class="tag">OCR / 视觉 token 压缩</span>
+    </div>
+    <h1 class="title">DeepSeek-OCR 2:<span class="sub">视觉因果流</span><br/>让视觉编码器学会「按语义重排」</h1>
+    <div class="byline">Haoran Wei · Yaofeng Sun · Yukun Li　|　<span class="en">DeepSeek-OCR 2: Visual Causal Flow</span></div>
+    <div class="byline muted">提交于 2026 年 1 月 28 日 ·　<a href="https://arxiv.org/abs/2601.20552" target="_blank" rel="noopener">arXiv:2601.20552</a> ·　<a href="https://github.com/deepseek-ai/DeepSeek-OCR-2" target="_blank" rel="noopener">代码与权重 ↗</a></div>
+
+    <div class="tldr">
+      <h2>TL;DR · 一分钟抓住核心</h2>
+      <p>普通多模态模型(VLM)把图像 patch 按<strong>「从左上到右下」的光栅顺序</strong>死板地拉平成 1D 序列再喂给 LLM——这违背了人眼「按语义逻辑跳读」的方式,在复杂版面/表格/公式上尤其吃亏。</p>
+      <p>DeepSeek-OCR 2 把视觉编码器里的 <strong>CLIP 换成一个小号 LLM(Qwen2-0.5B)</strong>,并引入一组叫 <strong>causal flow query(因果流查询)</strong> 的可学习 token。通过定制的注意力掩码,编码器能在把内容交给解码器之前,<strong>主动按图像语义把视觉 token 重新排好序</strong>,模拟人类阅读顺序。</p>
+      <p>结果:在 OmniDocBench v1.5 上达到 <strong>91.09%</strong>(比 DeepSeek-OCR 提升 <strong>+3.73%</strong>),阅读顺序错误率(R-order Edit)从 0.085 降到 0.057,而且视觉 token 上限只用到 <strong>1120</strong>(更省)。本质上,它用<strong>两个级联的 1D 因果推理结构</strong>去逼近真正的 2D 推理。</p>
+    </div>
+
+    <div class="metric-strip">
+      <div class="metric"><div class="num">91.09%</div><div class="lbl">OmniDocBench v1.5 总分<br/>(DeepSeek-OCR 87.36%)</div></div>
+      <div class="metric"><div class="num">+3.73</div><div class="lbl">相对 OCR-1 的<br/>总分提升</div></div>
+      <div class="metric"><div class="num">0.085→0.057</div><div class="lbl">阅读顺序<br/>编辑距离(越低越好)</div></div>
+      <div class="metric"><div class="num">≤1120</div><div class="lbl">每页视觉 token 上限<br/>(对比中最低)</div></div>
+    </div>
+  </header>
+
+  <!-- ========== 问题 ========== -->
+  <section id="problem">
+    <div class="kicker">问题 · Why it matters</div>
+    <h2 class="sec">视觉 token 的「顺序」,其实是个被忽视的大问题</h2>
+
+    <p class="lead">LLM 天生是为 <strong>1D 序列</strong>训练的,而图像是 <strong>2D 结构</strong>。当一张图被切成 patch、拉平成一串视觉 token 时,主流 VLM 都默认用<strong>光栅扫描</strong>(raster-scan,从左上到右下)的固定顺序,再配上固定位置编码送进 LLM。</p>
+
+    <p>论文用了一个很形象的类比:人眼的注视点(fixation)其实就像视觉 token——局部清晰、全局有感知。但<strong>人不会从左上角一行行扫到右下角</strong>。看一张螺旋图时,眼睛会顺着「内在逻辑」流动,每一次注视都因果地依赖上一次。换句话说,视觉 token 应该<strong>按语义来决定先看谁、后看谁</strong>,而不是按像素坐标。</p>
+
+    <ul class="clean">
+      <li><strong>光栅顺序带来错误的归纳偏置</strong>:强行按空间坐标排序,忽略了元素之间真正的语义关系。</li>
+      <li><strong>文档场景最受伤</strong>:多栏排版、表格、公式都带有「视觉因果逻辑」(该先读哪栏、表格怎么连),死板的顺序会读串行、读重复。</li>
+      <li><strong>这正是 OCR 作为试验场的原因</strong>:文档阅读把「阅读顺序」这个难点放大到了极致,是验证新架构的理想 benchmark。</li>
+    </ul>
+
+    <p>下面用一个最小例子直观感受「光栅顺序」和「语义因果顺序」的差别——同一张双栏论文页,两种读法给出的 token 序完全不同:</p>
+
+    <div class="ro-demo">
+      <div class="ro-panel old">
+        <h4>光栅扫描(传统 VLM)</h4>
+        <div class="cap">严格从上到下、从左到右,跨栏时读串行</div>
+        <div class="ro-grid">
+          <div class="ro-block"><span class="ro-num">1</span>左栏标题</div>
+          <div class="ro-block"><span class="ro-num">2</span>右栏作者信息</div>
+          <div class="ro-block"><span class="ro-num">3</span>左栏正文第一段</div>
+          <div class="ro-block"><span class="ro-num">4</span>右栏摘要</div>
+          <div class="ro-block"><span class="ro-num">5</span>左栏正文第二段</div>
+        </div>
+      </div>
+      <div class="ro-panel new">
+        <h4>视觉因果流(本文)</h4>
+        <div class="cap">按语义把同一逻辑块连续读完,再跳到下一块</div>
+        <div class="ro-grid">
+          <div class="ro-block"><span class="ro-num">1</span>左栏标题</div>
+          <div class="ro-block"><span class="ro-num">2</span>右栏作者信息</div>
+          <div class="ro-block"><span class="ro-num">3</span>右栏摘要</div>
+          <div class="ro-block"><span class="ro-num">4</span>左栏正文第一段</div>
+          <div class="ro-block"><span class="ro-num">5</span>左栏正文第二段</div>
+        </div>
+      </div>
+    </div>
+    <p class="muted" style="font-size:14px">注:此示意图为帮助理解而绘制,用以说明「重排序」要解决的问题;论文未给出该具体页面的 token 序样例。</p>
+  </section>
+
+  <!-- ========== 相对 OCR-1 的改进 ========== -->
+  <section id="vs1">
+    <div class="kicker">相对 OCR-1 的改进 · From CLIP to LLM-style encoder</div>
+    <h2 class="sec">一句话改动:把编码器里的 CLIP,换成一个会「因果思考」的小 LLM</h2>
+
+    <p>要理解 OCR 2,先要知道它的前作 <a href="https://arxiv.org/abs/2510.18234" target="_blank" rel="noopener">DeepSeek-OCR</a>(2025)长什么样。OCR-1 的核心是 <strong>DeepEncoder</strong>:先用一个 80M 参数的视觉 tokenizer(SAM + 卷积)把图像做 <strong>16× 压缩</strong>,再交给 <strong>CLIP ViT(300M)</strong> 提取并压缩视觉知识。它解决的是「用尽量少的视觉 token 表示一页文档」的光学压缩问题。</p>
+
+    <p>DeepSeek-OCR 2 几乎沿用了整套管线(tokenizer、解码器、数据都基本不变),<strong>唯一的关键升级在编码器</strong>:把 CLIP 换成 LLM 风格架构(称为 <strong>DeepEncoder V2</strong>),并在视觉 token 后面追加一组可学习的 <strong>causal flow query</strong>。正因为其他部分都对齐,作者认为可以把 OCR-1 当成干净的对照基线。</p>
+
+    <figure class="fig">
+      <img src="assets/x1.png" alt="DeepEncoder vs DeepEncoder V2 对比图" loading="lazy" />
+      <div class="fig-cap"><span class="figlabel">图 1</span><span>DeepEncoder(左)用 CLIP 提特征;DeepEncoder V2(右)用 LLM 风格编码器 + 因果流查询,实现视觉因果流。</span></div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>共同的前端 Tokenizer(紫色框,80M / 16×)</strong>:左右两边都先用同一个 tokenizer 把图像压成视觉 token,这部分继承自 OCR-1,负责省算力。</li>
+          <li><strong>左侧 DeepEncoder</strong>:视觉 token 之间是 <strong>non-causal(双向)</strong>注意力,送进 <strong>CLIP ViT(300M)</strong> 提特征;底部的 ⊕ 表示与输入做残差融合后整体输出。</li>
+          <li><strong>右侧 DeepEncoder V2</strong>:在视觉 token(non-causal)之后<strong>额外拼接一组 learnable query(绿/红/蓝小方块)</strong>,标注为「new reading order」,它们之间是 <strong>causal(因果)</strong>注意力。</li>
+          <li><strong>核心载体换成 LM(Qwen2 500M)</strong>:用一个小号语言模型当视觉编码器,让它既保留 CLIP 的知识压缩能力,又能对视觉序列做因果建模。</li>
+          <li><strong>那条红线是点睛之笔</strong>:V2 把前半段的视觉 token <strong>划掉丢弃</strong>,只把后半段「重排好序」的 causal query 输出往下传——这就是从「死板顺序」转向「语义顺序」的开关。</li>
+        </ul>
+        <div class="sum">一句话总结:同样的 tokenizer 打底,V2 用「LLM 编码器 + 因果查询」替换 CLIP,让编码器在输出前先把视觉信息重排成符合阅读逻辑的顺序。</div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ========== 已有方案 ========== -->
+  <section id="related">
+    <div class="kicker">已有方案速览 · Related work</div>
+    <h2 class="sec">「可学习查询」并不新鲜,新鲜的是让它们「有先后」</h2>
+
+    <p>用一组可学习 query 去和视觉特征交互,这个套路在视觉领域早有先例。但论文指出:<strong>过去的 query 之间都是双向(并行、无序)注意力</strong>,而本文第一次让这些 query 之间走<strong>因果(有序)注意力</strong>。点开下面两张卡片,看清楚「前人怎么用 query」,就能明白本文创新点的落点。</p>
+
+    <figure class="fig">
+      <img src="assets/x2.png" alt="DETR 与 BLIP2 Q-former 的并行查询" loading="lazy" />
+      <div class="fig-cap"><span class="figlabel">图 2</span><span>DETR 的解码器(目标检测)与 BLIP2 的 Q-former(视觉 token 压缩),两者的 query 之间都是双向自注意力。</span></div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>左:DETR</strong>。ResNet 提特征 → Decoder 通过 <strong>cross-attention</strong> 让 100 个 object query 去「问」特征图,query 之间是 <strong>non-causal(双向)自注意力</strong>,并行预测所有目标框 → Detect head。</li>
+          <li><strong>右:BLIP2 的 Q-former</strong>。CLIP 出一堆 vision token → 32 个 token query 通过 cross-attention 压缩这些视觉 token,query 之间同样是 <strong>双向自注意力</strong> → 压缩结果喂给 LLM。</li>
+          <li><strong>共同点</strong>:query 是「一把抓」的并行集合,彼此平等、没有先后顺序——适合「检测一堆物体」或「压缩成固定几个 token」。</li>
+          <li><strong>与本文的关键差异</strong>:本文把 query 之间改成<strong>因果注意力</strong>(第 i 个 query 只能看前 i-1 个),于是 query 序列本身就编码了「先读谁、后读谁」的阅读顺序。</li>
+        </ul>
+        <div class="sum">一句话总结:前人用并行 query 做检测/压缩;本文沿用「query + 视觉特征」的形式,但把 query 间的注意力从双向改成因果,从而注入阅读顺序。</div>
+      </div>
+    </figure>
+
+    <div class="ecard" onclick="toggleCard(this)">
+      <div class="head">
+        <span class="arrow">▶</span>
+        <div class="htext">
+          <span class="t">DETR:解码器里的并行查询</span><span class="v">ECCV'20</span>
+          <div class="s">用 100 个 object query 并行预测目标框,首次把 Transformer 引入检测——但 query 之间无先后。</div>
+        </div>
+      </div>
+      <div class="body"><div class="body-inner">
+        <p><strong>要解决什么</strong>:传统检测器(Faster R-CNN、YOLO)依赖手工锚框和 NMS。DETR 想用纯 Transformer 端到端出框。</p>
+        <p><strong>怎么做</strong>:ResNet 提特征图后,引入一组预设的、可学习的 <strong>object query(100 个)</strong>。这些 query 通过 cross-attention 读取特征图,通过 query 间的 <strong>双向 self-attention</strong> 互相协调,从而并行输出所有目标框,绕开了串行解码的效率瓶颈。</p>
+        <p><strong>在本文叙事中的角色</strong>:DETR 奠定了「Transformer 用并行可学习 query」这一范式,是本文 causal flow query 的思想源头——本文借用其「query」形式,但改写了 query 之间的注意力。</p>
+      </div></div>
+    </div>
+
+    <div class="ecard" onclick="toggleCard(this)">
+      <div class="head">
+        <span class="arrow">▶</span>
+        <div class="htext">
+          <span class="t">BLIP-2 Q-former:投影器里的并行查询</span><span class="v">ICML'23</span>
+          <div class="s">用 32 个可学习 query 把上百个 CLIP 视觉 token 压缩对齐到 LLM 空间——同样是并行无序。</div>
+        </div>
+      </div>
+      <div class="body"><div class="body-inner">
+        <p><strong>要解决什么</strong>:VLM 多采用「编码器-投影器-LLM」结构,投影器要把视觉 token 对齐到 LLM 的词嵌入空间。</p>
+        <p><strong>怎么做</strong>:Q-former 采用类 BERT 架构,借鉴 DETR 的 object query,用 <strong>32 个可学习 query</strong> 通过 cross-attention 去「吸收」上百个 CLIP 视觉 token,得到压缩后的表示再送入 LLM。query 之间仍是双向注意力。</p>
+        <p><strong>在本文叙事中的角色</strong>:Q-former 证明了「并行可学习 query」不仅能做检测,还能做<strong>视觉 token 压缩与跨模态对齐</strong>。本文的 causal flow query 正是「压缩 + 重排序」二合一,可视为 Q-former 的因果化升级。</p>
+      </div></div>
+    </div>
+
+    <div class="callout">
+      <div class="ct">🧩 还有一条线:用 LLM 权重初始化多模态</div>
+      <p>论文也提到 Fuyu、Chameleon(视觉)和 VALL-E(语音)等工作,它们证明了<strong>预训练 LLM 的权重可以直接拿来初始化多模态模型</strong>,甚至做到几乎无编码器。这为「干脆用一个 LLM 当视觉编码器」提供了底气——正是 DeepEncoder V2 的出发点。</p>
+    </div>
+  </section>
+
+  <!-- ========== 本文方法 ========== -->
+  <section id="method">
+    <div class="kicker">本文做法 · The method(重头戏)</div>
+    <h2 class="sec">DeepEncoder V2:把「重排序」做进编码器里</h2>
+
+    <p class="lead">整体管线和 OCR-1 一样是「编码器 + 解码器」,但编码器升级成了 DeepEncoder V2。先看全景图,再逐个模块拆。</p>
+
+    <figure class="fig">
+      <img src="assets/x3.png" alt="DeepSeek-OCR 2 整体架构图" loading="lazy" />
+      <div class="fig-cap"><span class="figlabel">图 3</span><span>DeepSeek-OCR 2 完整架构:Tokenizer → LM 视觉编码器(双流注意力)→ 只取因果查询 → DeepSeek-3B MoE 解码器。</span></div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>① 输入与切块(最左)</strong>:文档图像被切成 <strong>n×16×16 的 patch</strong> 序列送入管线。</li>
+          <li><strong>② Tokenizer(SAM VITDET 80M + Conv 16×)</strong>:用 SAM 做局部窗口注意力提特征,再用卷积做 16× 压缩;隐藏维度从 1024 降到 <strong>896(low activation,省显存)</strong>。</li>
+          <li><strong>③ LM as Vision Encoder(Qwen2 500M,粉色大框)</strong>:这是 V2 的心脏。输入是「视觉 token(non-causal 双向)+ 因果流查询(causal)」拼接的序列。</li>
+          <li><strong>④ cascade causal(顶部虚线箭头)</strong>:编码器把序列重排后,<strong>只把后半段 n/16 个因果查询</strong>输出向右传——前半段视觉 token 不再往下走。</li>
+          <li><strong>⑤ DeepSeek-3B(MoE-A570M)解码器(右)</strong>:接收重排好的视觉表示 + 文本 Prompt(绿色),自回归生成最终 Output(仍是 causal)。解码器相对 OCR-1 没动。</li>
+        </ul>
+        <div class="sum">一句话总结:图像→压缩成视觉 token→LM 编码器按语义重排成因果查询→只把这串「排好序」的查询交给 MoE 解码器去读出文字。这就是「两段式级联因果推理」。</div>
+      </div>
+    </figure>
+
+    <h3 class="sub">① Vision tokenizer:沿用 OCR-1 的省钱前端</h3>
+    <p>第一段是视觉 tokenizer:<strong>80M 的 SAM-base + 两层卷积</strong>,通过窗口注意力实现 <strong>16× token 压缩</strong>,用极少参数大幅降低后续全局注意力的算力和激活显存。唯一改动是把最后一层卷积的输出维度<strong>从 1024 降到 896</strong>,以对齐后面的 LM 编码器。作者强调这个压缩 tokenizer 不是必须的,也可以换成简单的 patch embedding,保留它纯粹是因为省。</p>
+
+    <h3 class="sub">② Language model as vision encoder:双流注意力是关键</h3>
+    <p>原来这里是 CLIP ViT,现在换成 <strong>Qwen2-0.5B(500M,与 CLIP 的 300M 量级相当)</strong>,并用一种<strong>双流注意力</strong>:</p>
+    <ul class="clean">
+      <li><strong>视觉 token 走双向注意力</strong>——保留 CLIP 那样的全局建模能力。</li>
+      <li><strong>因果流查询走因果注意力</strong>——这些可学习 query 作为后缀拼在视觉 token 之后,每个 query 能看到「所有视觉 token + 它前面的 query」。</li>
+      <li><strong>查询数量 = 视觉 token 数量</strong>——这样在不改变 token 总数的前提下,对视觉特征做语义排序和蒸馏。</li>
+      <li><strong>最终只把因果查询的输出</strong>喂给 LLM 解码器。</li>
+    </ul>
+
+    <div class="callout">
+      <div class="ct">⚠️ 一个关键的设计取舍:prefix 拼接,不能用 cross-attention</div>
+      <p>作者试过 mBART 式的「编码器-解码器 + cross-attention」结构,<strong>结果不收敛</strong>。他们推测:把视觉 token 隔离在独立编码器里会导致视觉信息交互不足。而「视觉 token 作前缀直接拼接」的设计,能让视觉 token 在<strong>所有层都保持活跃</strong>,持续和因果查询交换信息——这是 V2 能 work 的隐性前提。</p>
+    </div>
+
+    <h3 class="sub">③ Causal flow query:数量与多裁剪策略</h3>
+    <p>因果查询的数量等于视觉 token 数,即 <span class="mono">W×H / (16²×16)</span>。为避免给不同分辨率维护多套 query,论文采用<strong>多裁剪(multi-crop)</strong>策略 + 固定查询配置:</p>
+    <ul class="clean">
+      <li><strong>全局视图</strong>:分辨率 1024×1024,对应 <strong>256 个</strong>查询(query<sub>global</sub>)。</li>
+      <li><strong>局部裁剪</strong>:分辨率 768×768,裁剪数 <strong>k 从 0 到 6</strong>,所有局部视图共享 <strong>144 个</strong>查询(query<sub>local</sub>)。</li>
+      <li><strong>总 token 数 = k×144 + 256,范围 [256, 1120]</strong>。这个上限 1120 低于 OCR-1 的 1156(Gundam 模式),且正好对齐 Gemini-3 Pro 的最大视觉 token 预算。</li>
+    </ul>
+
+    <figure class="fig">
+      <img src="assets/x4.png" alt="DeepEncoder V2 的 token 数计算" loading="lazy" />
+      <div class="fig-cap"><span class="figlabel">图 4</span><span>token 数计算:局部视图(768²,每个 144 token)× k 个 + 全局视图(1024²,256 token)= [256, 1120]。</span></div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>左半:局部视图(Local view)</strong>。原图被切成 <strong>B=0~6</strong> 个 768×768 的裁剪块,每块经 DeepEncoder V2 后产生 <strong>N2 = 768/16/... = 144</strong> 个查询(Q1=144),特征维度 D=896。</li>
+          <li><strong>右半:全局视图(Global view)</strong>。整图缩放到 1024×1024,经同一个 DeepEncoder V2 产生 <strong>N4 = 256</strong> 个查询(Q2=256)。</li>
+          <li><strong>「+」号</strong>:两路结果拼接,总数 = <strong>k×144 + 256</strong>。k=0 时只有全局的 256;k=6 时达到 6×144+256 = 1120。</li>
+          <li><strong>为什么这样设计</strong>:全局视图保证整页布局感知,局部裁剪补足细节分辨率;用固定的 144/256 两套 query 就覆盖所有分辨率,无需为每种尺寸单独训练。</li>
+        </ul>
+        <div class="sum">一句话总结:用「全局 256 + 每个局部裁剪 144」的可加组合,把任意分辨率文档的视觉 token 控制在 256~1120 之间。</div>
+      </div>
+    </figure>
+
+    <h3 class="sub">④ Attention mask:一个分块矩阵把两种注意力缝在一起</h3>
+    <p>DeepEncoder V2 的注意力掩码由两块拼成:<strong>左区对视觉 token 用双向掩码</strong>(像 ViT,token 之间全可见),<strong>右区对因果流 token 用三角因果掩码</strong>(像 decoder-only LLM,只能看前面)。沿序列维度拼接后得到掩码 M:</p>
+    <div class="formula">
+      M = [ <strong>1</strong><sub>m×m</sub> &nbsp; <strong>0</strong><sub>m×n</sub> ;&nbsp; <strong>1</strong><sub>n×m</sub> &nbsp; LowerTri(n) ] <span class="cm">,  其中 n = m</span><br/>
+      <span class="cm">m = 视觉 token 数,n = 因果查询数,LowerTri = 下三角矩阵</span>
+    </div>
+    <p>注意右上角是 <strong>0</strong>(m×n):<strong>视觉 token 看不到因果查询</strong>(单向信息流);而左下角是 <strong>1</strong>(n×m):<strong>因果查询能看到所有视觉 token</strong>。这正是「视觉信息向查询单向汇聚 + 查询之间因果有序」的数学表达。</p>
+
+    <figure class="fig">
+      <img src="assets/x5.png" alt="DeepEncoder V2 注意力掩码结构" loading="lazy" />
+      <div class="fig-cap"><span class="figlabel">图 5</span><span>把 ViT 的双向掩码与 LM 的三角因果掩码拼成 DeepEncoder V2 的分块掩码。</span></div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>左:ViT 掩码(no-causal)</strong>。全是绿色「can attend」,任意 token 互相可见——这是视觉 token 区域的双向注意力。</li>
+          <li><strong>中:LM 掩码(causal)</strong>。下三角绿色、上三角粉色「cannot attend」——这是 decoder-only LLM 的因果注意力。</li>
+          <li><strong>右:拼出的 DeepEncoder V2 掩码</strong>。行/列分成 <strong>vision token + causal query</strong> 两段:对视觉 token 部分全可见(左侧绿),对因果查询部分则逐行多看一个(右侧呈阶梯下三角)。</li>
+          <li><strong>图例</strong>:绿色方块=可注意(1),白圈=自注意(1),粉色=不可注意(0)。第 i 行的因果查询只能看到第 0~i 个查询。</li>
+        </ul>
+        <div class="sum">一句话总结:用一张「左半全绿 + 右半阶梯」的掩码,同时实现「视觉特征全局共享」和「查询按顺序逐步生成」。</div>
+      </div>
+    </figure>
+
+    <h3 class="sub">⑤ 解码器:保持不变</h3>
+    <p>因为 OCR 2 聚焦在编码器改进,解码器原封不动地沿用 OCR-1 的 <strong>3B 参数 MoE 结构(约 500M 激活参数)</strong>。完整前向可写成:先用 tokenizer ℰ 把图像映射成 m 个视觉 token,与 n 个因果查询拼接后过 L 层带掩码 M 的 Transformer,投影算子 π<sub>Q</sub> <strong>只取最后 n 个 token</strong>,再交给语言解码器 𝒟 输出 logits。</p>
+
+    <!-- stepper -->
+    <h3 class="sub">动手走一遍:视觉因果流的完整流程</h3>
+    <p>下面这个分步演示把上面的模块串起来。点「下一步」按自己的节奏看每一阶段到底发生了什么。</p>
+    <div class="stepper">
+      <div class="pipe" id="pipe">
+        <div class="node"><div class="ic">🖼️</div><div class="nm">图像切 patch</div></div>
+        <div class="node"><div class="ic">🗜️</div><div class="nm">Tokenizer 16×压缩</div></div>
+        <div class="node"><div class="ic">➕</div><div class="nm">追加因果查询</div></div>
+        <div class="node"><div class="ic">🔀</div><div class="nm">LM 编码器重排</div></div>
+        <div class="node"><div class="ic">✂️</div><div class="nm">只取后半查询</div></div>
+        <div class="node"><div class="ic">📝</div><div class="nm">MoE 解码出文本</div></div>
+      </div>
+      <div class="step-desc" id="stepDesc">
+        <div class="st">第 1 步:图像切成 patch</div>
+        <div class="sd">输入文档图像被切成 n×16×16 的 patch 序列,这一步还是传统的光栅顺序——「顺序问题」此刻尚未解决。</div>
+      </div>
+      <div class="step-ctrl">
+        <button class="btn" id="prevBtn" onclick="stepMove(-1)">上一步</button>
+        <button class="btn primary" id="nextBtn" onclick="stepMove(1)">下一步 →</button>
+        <button class="btn" onclick="stepReset()">重置</button>
+        <span class="step-count" id="stepCount">1 / 6</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 有意思的点 ========== -->
+  <section id="fun">
+    <div class="kicker">有意思的点 · What's clever</div>
+    <h2 class="sec">几个值得单独拎出来的设计</h2>
+
+    <div class="callout">
+      <div class="ct">💡 用两个「1D 因果推理器」级联,去逼近真正的 2D 推理</div>
+      <p>这是全文最大的哲学野心。编码器先做<strong>「阅读逻辑推理」</strong>(用查询 token 因果地重排视觉信息),解码器再做<strong>「视觉任务推理」</strong>(在排好序的表示上自回归)。两个 1D 因果推理器一级联,作者认为这<strong>有望通向真正的 2D 推理</strong>——而不是把 2D 强行拍平成 1D。</p>
+    </div>
+
+    <div class="callout">
+      <div class="ct">💡 查询数 = 视觉 token 数,给「回看」留足容量</div>
+      <p>作者特意让因果查询和视觉 token 数量相等(还带 padding/边框冗余),目的是给模型<strong>足够的「重新注视(re-fixation)」容量</strong>。他们甚至展望:若要支持多次回看、多跳重排,未来可能需要<strong>比原视觉序列更长</strong>的因果流 token。</p>
+    </div>
+
+    <div class="callout">
+      <div class="ct">💡 只留后半、丢掉前半(图 1 那条红线)</div>
+      <p>编码器输出里,前半的视觉 token 被直接丢弃,只有后半「排好序」的因果查询往下走。这意味着解码器<strong>从一开始拿到的就是符合阅读逻辑的序列</strong>,天然对齐 LLM 的单向注意力,弥合了 2D 空间结构与 1D 因果语言建模之间的鸿沟。</p>
+    </div>
+
+    <div class="callout">
+      <div class="ct">💡 通往统一的「全模态编码器」</div>
+      <p>既然能用 LLM 当视觉编码器,那同一个编码器(共享 Wk/Wv 投影、注意力、FFN)理论上只要换<strong>模态专属的查询嵌入</strong>,就能同时压缩文本、提取语音特征、重排视觉内容。更妙的是,它能<strong>自然继承 LLM 社区的基建</strong>:MoE、高效注意力等优化拿来即用。</p>
+    </div>
+
+    <blockquote class="q">
+      「这种两个 1D 因果推理器的级联,有望带来真正的 2D 推理:编码器执行阅读逻辑推理,解码器在因果有序的表示上执行视觉任务推理。」
+      <span class="src">—— 原文 §6.1 Towards Genuine 2D Reasoning(译)</span>
+    </blockquote>
+  </section>
+
+  <!-- ========== 实验结论 ========== -->
+  <section id="exp">
+    <div class="kicker">实验结论 · Results in one breath</div>
+    <h2 class="sec">用更少的 token,把阅读顺序读得更对</h2>
+
+    <p class="lead">主战场是 <strong>OmniDocBench v1.5</strong>(1355 页文档,9 大类,中英文混合)。一句话结论:DeepSeek-OCR 2 在<strong>对比中最低的视觉 token 预算</strong>下,拿到了端到端模型里很强的成绩,尤其是阅读顺序明显变好。</p>
+
+    <div class="metric-strip">
+      <div class="metric"><div class="num">91.09%</div><div class="lbl">总分(OCR-1: 87.36%)<br/>token 上限仅 1120</div></div>
+      <div class="metric"><div class="num">+6.17</div><div class="lbl">公式 CDM 提升<br/>84.14 → 90.31</div></div>
+      <div class="metric"><div class="num">0.100</div><div class="lbl">整体编辑距离<br/>低于 Gemini-3 Pro 的 0.115</div></div>
+      <div class="metric"><div class="num">6.25%→4.17%</div><div class="lbl">线上图片重复率<br/>显著下降</div></div>
+    </div>
+
+    <ul class="clean">
+      <li><strong>阅读顺序是最大亮点</strong>:R-order 编辑距离从 0.085 降到 0.057,直接验证了「视觉因果流编码器能按图像信息选取并排列视觉 token」。</li>
+      <li><strong>同等 token 预算下超过 Gemini-3 Pro</strong>:整体编辑距离 0.100 < Gemini-3 Pro 0.115(同为 1120 token 预算),且远低于 OCR-1 的 0.129。</li>
+      <li><strong>生产环境更可靠</strong>:作为给 LLM 喂数据的 OCR,生产中拿不到 ground truth,主要看重复率——线上图片 6.25%→4.17%,PDF 数据 3.69%→2.88%。</li>
+    </ul>
+
+    <div class="callout">
+      <div class="ct">⚖️ 诚实的局限:报纸类还很弱</div>
+      <p>论文坦言 OCR 2 在<strong>报纸</strong>等文字超密集类别上文本编辑距离 >0.13。原因有二:(1)较低的 token 上限可能不够装下超密集文本(未来加局部裁剪即可缓解);(2)训练数据不足——报纸相关样本只有 25 万,不够训好 DeepEncoder V2。不过在<strong>所有 9 类</strong>上,阅读顺序指标都稳定优于 OCR-1。</p>
+    </div>
+
+    <details class="tbl">
+      <summary>表 1 · OmniDocBench v1.5 综合评测 <span class="ds">— DeepSeek-OCR 2 vs 各家(节选关键行)</span></summary>
+      <div class="tinner">
+        <table>
+          <thead><tr><th class="l">模型</th><th>V-token max ↓</th><th>总分 ↑</th><th>文本 Edit ↓</th><th>公式 CDM ↑</th><th>表格 TEDS ↑</th><th>R-order Edit ↓</th></tr></thead>
+          <tbody>
+            <tr><td class="l">Gemini-2.5 Pro</td><td>—</td><td>88.03</td><td>0.075</td><td>85.82</td><td>85.71</td><td>0.097</td></tr>
+            <tr><td class="l">Qwen3-VL-235B</td><td>&gt;6000</td><td>89.15</td><td>0.069</td><td>88.14</td><td>86.21</td><td>0.068</td></tr>
+            <tr><td class="l">MinerU2.5(pipeline)</td><td>—</td><td>90.67</td><td>0.047</td><td>88.46</td><td>88.22</td><td>0.044</td></tr>
+            <tr><td class="l">PaddleOCR-VL(pipeline)</td><td>—</td><td>92.86</td><td>0.035</td><td>91.22</td><td>90.89</td><td>0.043</td></tr>
+            <tr><td class="l">DeepSeek-OCR(9-crops)</td><td>1156</td><td>87.36</td><td>0.073</td><td>84.14</td><td>85.25</td><td>0.085</td></tr>
+            <tr class="hl"><td class="l">DeepSeek-OCR 2</td><td>1120</td><td>91.09</td><td>0.048</td><td>90.31</td><td>87.75</td><td>0.057</td></tr>
+            <tr><td class="l muted">相对 OCR-1</td><td class="up">↓36</td><td class="up">↑3.73</td><td class="up">↓0.025</td><td class="up">↑6.17</td><td class="up">↑2.5</td><td class="up">↓0.028</td></tr>
+          </tbody>
+        </table>
+        <p class="muted" style="font-size:13px;margin-top:10px">注:Pipeline 类(如 PaddleOCR-VL)是多模块流水线,总分更高但视觉 token 不可比;DeepSeek-OCR 2 是端到端模型且 token 预算最低。数据来自原文表 1。</p>
+      </div>
+    </details>
+
+    <details class="tbl">
+      <summary>表 2 · 各类文档元素编辑距离 <span class="ds">— 同等 token 预算下与 Gemini-3 Pro / Seed-1.8 对比</span></summary>
+      <div class="tinner">
+        <table>
+          <thead><tr><th class="l">模型</th><th>V-token max ↓</th><th>文本 ↓</th><th>公式 ↓</th><th>表格 ↓</th><th>R-order ↓</th><th>整体 Edit ↓</th></tr></thead>
+          <tbody>
+            <tr><td class="l">Gemini-3 Pro</td><td>1120</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0.115</td></tr>
+            <tr><td class="l">Seed-1.8</td><td>5120</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0.106</td></tr>
+            <tr><td class="l">DeepSeek-OCR</td><td>1156</td><td>0.073</td><td>0.236</td><td>0.123</td><td>0.085</td><td>0.129</td></tr>
+            <tr class="hl"><td class="l">DeepSeek-OCR 2</td><td>1120</td><td>0.048</td><td>0.198</td><td>0.096</td><td>0.057</td><td>0.100</td></tr>
+          </tbody>
+        </table>
+        <p class="muted" style="font-size:13px;margin-top:10px">数据来自原文表 2。所有指标越低越好。</p>
+      </div>
+    </details>
+
+    <details class="tbl">
+      <summary>表 4 · 生产环境表现 <span class="ds">— 重复率(Repetition rate)越低越好</span></summary>
+      <div class="tinner">
+        <table>
+          <thead><tr><th class="l">模型</th><th>指标</th><th>线上用户日志(图片)</th><th>预训练数据(PDF)</th></tr></thead>
+          <tbody>
+            <tr><td class="l">DeepSeek-OCR</td><td>重复率 ↓</td><td>6.25%</td><td>3.69%</td></tr>
+            <tr class="hl"><td class="l">DeepSeek-OCR 2</td><td>重复率 ↓</td><td>4.17%(↓2.08%)</td><td>2.88%(↓0.81%)</td></tr>
+          </tbody>
+        </table>
+        <p class="muted" style="font-size:13px;margin-top:10px">数据来自原文表 4。生产中无 ground truth,重复率是主要可观测质量指标。</p>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <div class="fline"><strong>原文</strong>:DeepSeek-OCR 2: Visual Causal Flow · Haoran Wei, Yaofeng Sun, Yukun Li(DeepSeek-AI)· 2026.01</div>
+    <div class="fline"><a href="https://arxiv.org/abs/2601.20552" target="_blank" rel="noopener">arXiv:2601.20552</a> ·　<a href="https://arxiv.org/html/2601.20552v1" target="_blank" rel="noopener">HTML 版</a> ·　<a href="https://github.com/deepseek-ai/DeepSeek-OCR-2" target="_blank" rel="noopener">GitHub 代码 / 权重</a></div>
+    <div class="fline">背景前作:<a href="https://arxiv.org/abs/2510.18234" target="_blank" rel="noopener">DeepSeek-OCR(arXiv:2510.18234)</a></div>
+    <div class="fline muted" style="margin-top:14px">本页为教学性图解精读,所有图片来自论文 arXiv HTML 版(已逐一校验可访问),核心数字与原文表 1/2/3/4 对齐。仅供学习交流。</div>
+  </footer>
+
+</div>
+
+<script>
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    var open = d.classList.toggle('active');
+    el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+  }
+  function toggleCard(el){
+    el.classList.toggle('open');
+  }
+
+  var steps = [
+    {t:'第 1 步:图像切成 patch', d:'输入文档图像被切成 n×16×16 的 patch 序列,这一步还是传统的光栅顺序——「顺序问题」此刻尚未解决。'},
+    {t:'第 2 步:Tokenizer 做 16× 压缩', d:'80M 的 SAM + 卷积 tokenizer 通过窗口注意力把 patch 压成视觉 token,数量减少 16 倍,隐藏维度对齐到 896,大幅省算力与显存。'},
+    {t:'第 3 步:在末尾追加因果流查询', d:'在视觉 token 之后拼接一组等量的可学习 causal flow query。视觉 token 走双向注意力(全局可见),查询 token 走因果注意力(只能看前面)。'},
+    {t:'第 4 步:LM 编码器按语义重排', d:'Qwen2-0.5B 风格编码器让每个查询关注「所有视觉 token + 它前面的查询」,从而按图像语义生成一个全新的阅读顺序——这就是「视觉因果流」。'},
+    {t:'第 5 步:只取后半的因果查询', d:'丢弃前半的视觉 token,只把后半「排好序」的因果查询往下传(图 1 中那条红线)。解码器拿到的从此就是符合阅读逻辑的序列。'},
+    {t:'第 6 步:MoE 解码器读出文本', d:'DeepSeek-3B MoE(约 500M 激活)解码器结合文本 Prompt,在因果有序的视觉表示上自回归生成最终的 OCR 文本输出。'}
+  ];
+  var cur = 0;
+  function renderStep(){
+    var nodes = document.querySelectorAll('#pipe .node');
+    nodes.forEach(function(n,i){
+      n.classList.remove('active','done');
+      if(i < cur) n.classList.add('done');
+      if(i === cur) n.classList.add('active');
+    });
+    var sd = document.getElementById('stepDesc');
+    sd.innerHTML = '<div class="st">'+steps[cur].t+'</div><div class="sd">'+steps[cur].d+'</div>';
+    document.getElementById('stepCount').textContent = (cur+1)+' / '+steps.length;
+    document.getElementById('prevBtn').disabled = (cur===0);
+    document.getElementById('nextBtn').disabled = (cur===steps.length-1);
+    document.getElementById('prevBtn').style.opacity = (cur===0)?.45:1;
+    document.getElementById('nextBtn').style.opacity = (cur===steps.length-1)?.45:1;
+  }
+  function stepMove(dir){
+    cur = Math.min(steps.length-1, Math.max(0, cur+dir));
+    renderStep();
+  }
+  function stepReset(){ cur=0; renderStep(); }
+  renderStep();
+
+  // make pipe nodes clickable
+  document.querySelectorAll('#pipe .node').forEach(function(n,i){
+    n.style.cursor='pointer';
+    n.addEventListener('click', function(){ cur=i; renderStep(); });
+  });
+</script>
+
+</body>
+</html>

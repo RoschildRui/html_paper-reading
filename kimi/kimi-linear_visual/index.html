@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi Linear · 中文导读：又快又强的混合线性注意力</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+table.data .mono{font-family:"JetBrains Mono",monospace;font-size:12.5px}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:720px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.figure img.tight{max-width:520px;margin:0 auto}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1400px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+pre.code .rm{color:#a8534f}
+pre.code .gn{color:#5d7a3a}
+.code-label{font-size:12.5px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+.dualcode{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dualcode .ct{font-size:12px;font-weight:700;margin-bottom:6px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-2{grid-template-columns:1fr 1fr}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+
+/* decay granularity chain */
+.chain{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:22px 0}
+.cstep{flex:1;min-width:135px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px;box-shadow:var(--shadow)}
+.cstep.hot{border-color:var(--border-strong);background:var(--accent-soft)}
+.cstep .cn{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;color:var(--accent)}
+.cstep .cname{font-weight:700;font-size:14.5px;margin:2px 0 5px}
+.cstep .cdesc{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.carrow{align-self:center;color:var(--accent);font-weight:700;font-size:17px}
+
+/* step animation */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:208px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-eq{font-family:"JetBrains Mono",monospace;font-size:13.5px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:11px 0;color:var(--ink);overflow-x:auto;line-height:1.6}
+.sp-eq b{color:var(--accent-deep)}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-2,.flow-3,.sp-io,.dualcode{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+  .carrow{display:none}
+  .cstep{min-width:0}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Kimi Linear 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#overview">核心思路</a>
+      <a href="#delta">Delta 规则</a>
+      <a href="#kda">KDA</a>
+      <a href="#dplr">高效内核</a>
+      <a href="#arch">架构</a>
+      <a href="#insights">有意思的点</a>
+      <a href="#results">实验结论</a>
+      <a href="#limits">边界</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2510.26692" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">论文导读 · Efficient Attention Architecture</div>
+    <h1>Kimi Linear：第一次，混合线性注意力又快又强地「超过」了全注意力</h1>
+    <p class="subtitle">Kimi Linear: An Expressive, Efficient Attention Architecture</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv 预印本 · Technical Report</span>
+      <span class="chip">发表 2025.10（v1 10.30 / v2 11.01）</span>
+      <span class="chip">Moonshot AI · Kimi Team</span>
+      <span class="chip">48B 总参 / 3B 激活（MoE）</span>
+      <span class="chip">arXiv:2510.26692</span>
+    </div>
+    <p class="lead">一句话：把廉价的<strong>线性注意力</strong>（固定大小记忆、随长度线性增长的成本）做得足够「聪明」，再用少量<strong>全注意力</strong>兜底，最终在<strong>短上下文、长上下文、RL 后训练</strong>三种场景下，都<strong>同时赢了质量和效率</strong>——这在过去的混合架构里是没做到过的。</p>
+    <p class="muted" style="font-size:14px">核心是 <strong>Kimi Delta Attention（KDA）</strong>：给 Gated DeltaNet 换上<strong>按通道的细粒度遗忘门</strong>，并用一个受约束的 DPLR 形式把它做到硬件高效。下文术语首次出现时附英文原词，方便对照原文。本页所有原始图均取自论文 PDF（无 arXiv HTML 版，由 PDF 高清渲染裁剪）。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>问题</strong>：当大模型变成「智能体」、要做长链推理与 RL 测试时扩展（RL test-time scaling）时，标准 softmax 注意力的<strong>二次方计算</strong>与<strong>线性增长的 KV 缓存</strong>成了瓶颈。</li>
+      <li><strong>做法</strong>：提出 <strong>KDA（Kimi Delta Attention）</strong>——在 Gated DeltaNet 的基础上，把<strong>整头共用一个标量遗忘门</strong>换成<strong>每个通道独立的细粒度门</strong>，从而更精细地利用有限的 RNN 状态记忆。</li>
+      <li><strong>跑得快</strong>：KDA 用一个受约束的 <strong>DPLR（对角 + 低秩）</strong>形式，配合定制的分块并行算法，内核速度比通用 DPLR 快约 <strong>2×</strong>。</li>
+      <li><strong>组装</strong>：按 <strong>3:1</strong> 的比例交错堆叠「3 层 KDA + 1 层全注意力（MLA）」，并对 MLA 层用 <strong>NoPE</strong>（不加位置编码）。48B 总参 / 3B 激活的 MoE 模型，1.4T token 公平对比。</li>
+      <li><strong>结果</strong>：同一训练配方下，全面优于全注意力 MLA；<strong>KV 缓存最多省 75%</strong>，<strong>1M 上下文解码吞吐最高 6×</strong>。</li>
+    </ul>
+    <div class="quote big">「Kimi Linear 可以作为全注意力架构的<strong>直接替换（drop-in replacement）</strong>，在质量与效率上都更优——包括输入更长、输出更长的任务。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 释义自论文摘要</span></div>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">75<span class="u">%</span></div><div class="k">KV 缓存最多减少<br>（长序列生成）</div></div>
+      <div class="metric"><div class="v">6<span class="u">×</span></div><div class="k">1M 上下文解码吞吐<br>vs 全注意力 MLA</div></div>
+      <div class="metric"><div class="v">1.16<span class="u">×</span></div><div class="k">计算效率（scaling law）<br>compute-optimal 训练</div></div>
+      <div class="metric"><div class="v">3:1</div><div class="k">KDA : 全注意力<br>层间混合比</div></div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig1_summary.png" alt="Kimi Linear 性能 vs 加速、以及 TPOT vs 解码长度" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 1）</span>：左图——质量 vs 解码加速，Kimi Linear 在质量和速度上同时占优（Pareto 最优）；右图——每输出 token 时延（TPOT）随解码长度的增长，在 1M 上 Kimi Linear 比 MLA 快 6.3×。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左图横轴 = 解码加速倍数，纵轴 = 任务质量</b>。红星是 MMLU-Pro（4k 短上下文），蓝圈是 RULER（128k 长上下文）。越靠<b>右上角</b>越好（又快又强）。</li>
+          <li><b>红星组</b>：在相近速度下，Kimi Linear 质量 51.0，高于 GDN-H（47.9）与 MLA（47.2）——短上下文也不吃亏。</li>
+          <li><b>蓝圈组</b>：Kimi Linear 同时拿到最高质量（RULER 84.3）<b>和</b> 3.98× 的解码加速，处在 Pareto 前沿；MLA 质量相近但慢得多。</li>
+          <li><b>右图</b>：横轴是解码长度（4K→1M，对数轴），纵轴是 TPOT（每个输出 token 的毫秒数）。虚线 MLA 随长度<b>急剧上扬</b>，而 Kimi Linear（蓝）几乎贴着 GDN-H 保持平稳。</li>
+          <li><b>红色箭头</b>标注差距：256K 处 4.8×、512K 处 5.7×、1M 处 6.3×（1.84ms vs 11.48ms）——长度越长，线性注意力的优势越夸张。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：这张图是全文的「成绩单 + 效率单」，直接说明 Kimi Linear 在质量与速度两个维度上同时压过全注意力。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：为什么标准注意力撑不住「长 + 多」的未来</h2>
+    <p>大模型正在变成需要长时间自主行动的<strong>智能体（agent）</strong>：要处理超长轨迹、反复调用工具、在推理时反复「想更久」（即 <strong>RL 测试时扩展</strong>）。这把标准 softmax 注意力的两个老问题彻底放大了：</p>
+    <ul class="tight">
+      <li><strong>二次方计算（quadratic time）</strong>：注意力要算一张 T×T 的相似度矩阵，序列越长，计算量增长得越快。</li>
+      <li><strong>KV 缓存线性膨胀</strong>：每生成一个 token，都要把所有历史 key/value 留在显存里。上下文到百万级时，显存与带宽成了硬约束，拖慢吞吐、限制批大小、伤害实时交互。</li>
+    </ul>
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph">全注意力（Softmax / MLA）</div>
+        <ul>
+          <li>计算复杂度 <code>O(T²)</code>，长序列代价高</li>
+          <li>KV 缓存随长度<strong>线性增长</strong>，永不丢弃</li>
+          <li>能精确检索任意历史 token（这是它的强项）</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">线性注意力（Linear Attention）</div>
+        <ul>
+          <li>把历史压进<strong>固定大小</strong>的状态矩阵 <code>S</code></li>
+          <li>计算与显存随长度<strong>线性 / 常数</strong>增长</li>
+          <li>代价：有限状态记忆 → 精确检索 / 复制天然吃亏</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="t">本文要回答的核心问题</div>
+      能不能造一个注意力架构，<strong>在质量上追平甚至超过全注意力</strong>，<strong>同时</strong>在速度和显存上拿到线性注意力级别的巨大收益？过去的混合架构要么规模太小、要么评测不全，<strong>      没有真正同时做到</strong>。
+    </div>
+  </section>
+
+  <!-- PRIOR -->
+  <section id="prior">
+    <h2><span class="num">02</span> 已有方案卡在哪</h2>
+    <p>Kimi Linear 不是凭空冒出来的，它站在一条清晰的演进链上。理解这几条路线「各自强在哪、卡在哪」，才能看懂 KDA 为什么这样设计。下面四张卡片按从弱到强排列：</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📐</span>线性注意力 <span class="xtag">起点, 2020</span></div>
+        <div class="xs">用一个固定大小的状态矩阵累加 key-value 关联，把 O(T²) 降到线性。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：维护状态 <code>S_t = S_{t-1} + k_t v_tᵀ</code>，输出 <code>o_t = S_tᵀ q_t</code>。从「快权重 / 在线学习」视角看，<code>S</code> 是一张随时间更新的联想记忆表。</p>
+          <p><b>卡在哪</b>：这等于在做一个<b>只奖励、不遗忘</b>的目标——旧关联永远累加，状态被无关信息撑爆，长上下文里互相干扰。表达力明显弱于 softmax。</p>
+          <p><b>与本文关系</b>：所有后续改进（含 KDA）都是在给这个朴素累加<b>加上「该忘什么、该纠正什么」的判据</b>。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🚪</span>门控 / 衰减 <span class="xtag">RetNet · Mamba2 · GLA</span></div>
+        <div class="xs">给状态加一个遗忘门（forget gate），让旧记忆按比例衰减。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：在递推里乘一个衰减因子 α。RetNet 用<b>固定标量</b>衰减；Mamba2 用<b>数据相关的标量</b>衰减；GLA 进一步用<b>按通道的对角门</b> Diag(α_t)，每个特征维度有自己的遗忘率。</p>
+          <p><b>卡在哪</b>：衰减能控制记忆寿命、缓解干扰，但<b>缺少「主动纠错」</b>——它只会按比例淡忘，不会针对性地覆盖写入冲突的旧关联，精确检索仍偏弱。</p>
+          <p><b>与本文关系</b>：KDA 的<b>细粒度通道门</b>正是借鉴了 GLA 这一路的「per-channel 衰减」。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">✏️</span>Delta 规则 <span class="xtag">DeltaNet · GDN</span></div>
+        <div class="xs">把记忆更新看作对「重构损失」做一步梯度下降，主动纠正旧关联。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：DeltaNet 把更新写成 <code>S_t = (I − β_t k_t k_tᵀ) S_{t-1} + β_t k_t v_tᵀ</code>，相当于让记忆朝「k→v 的正确映射」<b>自我修正</b>（rank-1 更新，可分块并行）。Gated DeltaNet（GDN）再叠加一个<b>标量</b>遗忘门。</p>
+          <p><b>卡在哪</b>：GDN 的遗忘门是<b>整头共用一个标量</b>（head-wise scalar），无法对不同特征维度区别对待——这正是 KDA 要改的地方。</p>
+          <p><b>与本文关系</b>：KDA = <b>GDN + 把标量门换成按通道的对角门</b>。这是本文最核心的一步。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧩</span>混合架构 <span class="xtag">Jamba · MiniMax · …</span></div>
+        <div class="xs">大部分用快的线性层，穿插少量全注意力层兜底全局检索。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：纯线性注意力在「精确复制 / 极长检索」上始终偏弱，于是把线性层与少量全注意力层<b>交错堆叠</b>，兼顾效率与质量。</p>
+          <p><b>卡在哪</b>：之前的混合模型<b>要么规模有限、要么评测不全面</b>，没能在公平对比下证明「混合能稳稳超过全注意力」。</p>
+          <p><b>与本文关系</b>：Kimi Linear 用<b>层间（inter-layer）3:1 混合 + KDA + NoPE</b>，并在 1.4T token 规模做公平验证，第一次把这件事坐实。</p>
+        </div>
+      </div>
+
+    </div>
+    <p class="muted" style="font-size:14px">下面一节先用一个分步演示，把「线性注意力 → DeltaNet → GDN → KDA」这条演进链走一遍，你就能直观看到 KDA 到底改了什么。</p>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <h2><span class="num">03</span> 核心思路：三件事拼成 Kimi Linear</h2>
+    <p>论文把贡献明确拆成三块，正好对应「<strong>算子怎么设计 → 怎么拼成模型 → 怎么证明它真的好</strong>」三个层次：</p>
+    <div class="flow flow-3">
+      <div class="fnode">
+        <div class="ftag">① 算子</div>
+        <div class="fname">KDA 细粒度门控</div>
+        <div class="fdesc">在 gated delta rule 上引入<strong>按通道的对角遗忘门</strong>，让有限状态记忆被更精确地管理；并保持可分块并行、硬件高效。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">② 架构</div>
+        <div class="fname">3:1 层间混合</div>
+        <div class="fdesc">3 层 KDA 配 1 层全注意力（MLA），MLA 层用 <strong>NoPE</strong>。在大幅降显存的同时，靠少量全局层保住全局信息流。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">③ 验证</div>
+        <div class="fname">公平的大规模实验</div>
+        <div class="fdesc">1.4T token 训练，在<strong>短 / 长上下文 + RL</strong> 三类场景全面对比全注意力与其它基线，并开源内核、vLLM 集成与权重。</div>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="t">一句话串起来</div>
+      <strong>KDA</strong> 是发动机（让线性注意力变聪明），<strong>3:1 混合 + NoPE</strong> 是底盘（拼成可用的大模型），<strong>大规模公平实验</strong>是路测（证明又快又强）。接下来按这三层依次展开。
+    </div>
+  </section>
+
+  <!-- DELTA RULE -->
+  <section id="delta">
+    <h2><span class="num">04</span> 背景演进：从「只会累加」到「按通道遗忘」</h2>
+    <p>要看懂 KDA 改了什么，最好把它放回演进链里。下面四步，每一步都<strong>只在前一步上加一个小改动</strong>，记忆状态 <code>S</code> 也随之越来越「会管理自己」。点「下一步」跟着看：</p>
+
+    <div class="stepbox" id="deltapipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STEP 1</span>线性注意力 · 只累加不遗忘</div>
+          <div class="sb">把每个 key-value 关联直接<strong>加</strong>进记忆矩阵 <code>S</code>。简单、线性，但旧信息永远不删。</div>
+          <div class="sp-eq">S_t = S_{t-1} + <b>k_t v_tᵀ</b>　　o_t = S_tᵀ q_t</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">核心机制</div>无条件累加 key→value 关联</div>
+            <div class="io"><div class="iol">短板</div>状态无界膨胀，长上下文相互干扰</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STEP 2</span>DeltaNet · 学会「纠错」</div>
+          <div class="sb">把更新重新解释为对<strong>重构损失</strong> ½‖Sᵀk−v‖² 做一步梯度下降：记忆会主动朝「k→v 的正确映射」修正，而不是盲目累加。</div>
+          <div class="sp-eq">S_t = <b>(I − β_t k_t k_tᵀ)</b> S_{t-1} + β_t k_t v_tᵀ</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">新增</div>rank-1 的「擦除-重写」纠错项（delta rule）</div>
+            <div class="io"><div class="iol">仍缺</div>没有遗忘机制，过时关联会一直留着</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STEP 3</span>Gated DeltaNet · 加一个遗忘门</div>
+          <div class="sb">在纠错之上再乘一个<strong>标量遗忘门</strong> α_t∈[0,1]，相当于对「快权重」做数据相关的权重衰减（weight decay），控制记忆寿命。</div>
+          <div class="sp-eq">S_t = <b>α_t</b>(I − β_t k_t k_tᵀ) S_{t-1} + β_t k_t v_tᵀ</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">新增</div>可控遗忘 → 稳定性 / 长上下文更好</div>
+            <div class="io"><div class="iol">局限</div>α_t 是<strong>整头一个标量</strong>，所有通道同一个遗忘率</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">STEP 4</span>KDA · 把标量门换成「按通道」门</div>
+          <div class="sb">本文的关键一步：把 GDN 的标量 α_t 换成<strong>对角矩阵</strong> Diag(α_t)，<strong>每个特征维度都有独立的遗忘率</strong>。有限的状态记忆因此被更精细地分配——该记的牢牢记住，该忘的快快忘掉。</div>
+          <div class="sp-eq">S_t = (I − β_t k_t k_tᵀ) <b>Diag(α_t)</b> S_{t-1} + β_t k_t v_tᵀ</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">新增</div>channel-wise 细粒度门（借鉴 GLA 的对角门）</div>
+            <div class="io"><div class="iol">收益</div>更强的检索 / 复制 / 状态跟踪，且仍可分块并行</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-controls">
+        <button id="dp-prev" onclick="dpPrev()">‹ 上一步</button>
+        <button id="dp-next" class="primary" onclick="dpNext()">下一步 ›</button>
+        <button onclick="dpReset()">重置</button>
+        <span class="sp-counter" id="dp-counter">1 / 4</span>
+      </div>
+    </div>
+
+    <h3>一张表看清「遗忘门」的粒度进化</h3>
+    <p>所有这些方法都可以统一写成「衰减旧状态 + 写入新关联」，区别就在<strong>遗忘门 A_t 的粒度</strong>：从固定标量 → 数据相关标量 → 按通道对角，再叠加 delta 规则的纠错项。KDA 站在这条链的末端。</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>方法</th><th>遗忘门粒度</th><th>带 Delta 纠错</th><th>状态更新规则（简化）</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Linear Attn</td><td>无</td><td>否</td><td class="mono">S = S + kvᵀ</td></tr>
+          <tr><td>RetNet</td><td>固定标量 α</td><td>否</td><td class="mono">S = αS + βkvᵀ</td></tr>
+          <tr><td>Mamba2</td><td>数据相关标量 α_t</td><td>否</td><td class="mono">S = α_t S + βkvᵀ</td></tr>
+          <tr><td>GLA</td><td>按通道 Diag(α_t)</td><td>否</td><td class="mono">S = Diag(α_t)S + kvᵀ</td></tr>
+          <tr><td>GDN</td><td>标量 α_t</td><td>是</td><td class="mono">S = (I−βkkᵀ)α_t S + βkvᵀ</td></tr>
+          <tr class="hl"><td>KDA（本文）</td><td>按通道 Diag(α_t)</td><td>是</td><td class="mono">S = (I−βkkᵀ)Diag(α_t)S + βkvᵀ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13px">表内容整理自原论文 Table（不同注意力的 TTT 视角更新规则），省略了归一化与激活项。KDA 同时拥有「按通道遗忘 + delta 纠错」，这是它表达力的来源。</p>
+  </section>
+
+  <!-- KDA -->
+  <section id="kda">
+    <h2><span class="num">05</span> KDA：细粒度门控为什么更「expressive」</h2>
+    <p>KDA 的全称是 <strong>Kimi Delta Attention</strong>。它和 GDN 只差一个改动，但这个改动直击线性注意力的命门——<strong>有限状态记忆的利用率</strong>。核心对比就在「遗忘门的粒度」：</p>
+
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph">GDN / Mamba2 · head-wise 标量门</div>
+        <ul>
+          <li>整个注意力头<strong>共用一个</strong>遗忘率 α_t</li>
+          <li>所有特征维度被「一刀切」地同速衰减</li>
+          <li>无法对「重要维度多记、噪声维度快忘」做区分</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">KDA · channel-wise 对角门</div>
+        <ul>
+          <li>每个特征维度有<strong>独立</strong>遗忘率 Diag(α_t)</li>
+          <li>记忆寿命可以<strong>逐通道</strong>精细调节</li>
+          <li>有限的 RNN 状态被更充分地利用 → 检索 / 复制更准</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      <div class="eq">S_t = (I − β_t k_t k_tᵀ) <b>Diag(α_t)</b> S_{t-1} + β_t k_t v_tᵀ</div>
+      <div class="cap">KDA 的递推：<b>Diag(α_t)</b> 是按通道的细粒度衰减（红色高亮项），<b>(I − β_t k_t k_tᵀ)</b> 是 delta 规则的擦除-重写。两者结合 = 既能精细遗忘、又能主动纠错。</div>
+    </div>
+
+    <p>论文还给了一个很漂亮的视角：<strong>这种数据相关、可学习的衰减，本质上是一种「学出来的位置编码」</strong>。RoPE 用固定频率的旋转矩阵给不同维度注入位置信息；KDA 的 Diag(α_t) 则是<strong>数据相关、逐通道</strong>的乘性变换，放松了 RoPE 的正交约束，理论上更灵活——这也是为什么 Kimi Linear 敢对全注意力层「不加任何位置编码（NoPE）」，把位置感知的活儿全交给 KDA（详见<a href="#insights">「有意思的点」</a>）。</p>
+
+    <h3>神经参数化：KDA 块里还藏着哪些组件</h3>
+    <p>真正落地时，q/k/v 不是直接喂进去的。KDA 在输入侧和输出侧都加了若干轻量组件来提升表达力与稳定性：</p>
+    <ul class="tight">
+      <li><strong>ShortConv + Swish</strong>：对 q、k、v 先做一个短卷积捕捉局部依赖，再过 Swish 激活。</li>
+      <li><strong>L2Norm（仅 q、k）</strong>：归一化以稳定特征值，避免递推发散。</li>
+      <li><strong>低秩门</strong>：按通道遗忘门 α_t 与输出门都用低秩投影（rank = head dim）参数化，控制参数量、便于公平对比。</li>
+      <li><strong>head-wise RMSNorm + Sigmoid 输出门</strong>：在输出投影前做归一化与数据相关门控，缓解「注意力沉降（attention sink）」。</li>
+    </ul>
+  </section>
+
+  <!-- DPLR -->
+  <section id="dplr">
+    <h2><span class="num">06</span> 让它跑得快：受约束的 DPLR + 分块并行</h2>
+    <p>细粒度门控好是好，但有个隐患：<strong>表达力越强，往往越难算得快</strong>。KDA 在表达力上等价于更一般的 <strong>DPLR（Diagonal-Plus-Low-Rank，对角 + 低秩）</strong>形式 <code>S_t = (D − a_t b_tᵀ)S_{t-1} + k_t v_tᵀ</code>，但通用 DPLR 计算昂贵、难并行。KDA 的高效，来自一个聪明的约束。</p>
+
+    <div class="callout">
+      <div class="t">关键技巧：把 a、b 都绑定到 k</div>
+      在通用 DPLR 里，<code>a_t</code> 和 <code>b_t</code> 是两个独立向量。KDA 强制令 <code>a_t = β_t k_t</code>、<code>b_t = k_t ⊙ α_t</code>，即<strong>都由 k_t 派生</strong>。这看似只是个约束，却让 KDA 既保持了 DPLR 级别的细粒度衰减，又<strong>更贴近经典 delta 规则</strong>、还大幅省掉了冗余计算。
+    </div>
+
+    <p>这个约束带来两处实打实的提速（对照论文的 DPLR vs KDA 伪代码）：</p>
+    <ul class="tight">
+      <li><strong>少两次二级分块（secondary chunking）</strong>：通用 DPLR 在分块输出里要除以累积衰减 1/Γ，会有数值不稳定，得靠全精度二级分块来救；KDA 通过 a=b=k 的约束直接<strong>免掉这两步</strong>，不再需要额外的 I/O 与计算。</li>
+      <li><strong>少约三次矩阵乘</strong>：在 inter-chunk 与输出计算阶段，KDA 进一步消掉了约 3 个矩阵乘法，带来内核级加速。</li>
+    </ul>
+
+    <div class="figure">
+      <img src="assets/fig2_kernel.png" alt="KDA 与通用 DPLR 内核执行时间随输入长度的对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 2（原论文 Figure 2）</span>：固定 batch、16 个头时，KDA（实线）与通用 DPLR（虚线）的内核执行时间对比——随输入长度增长，KDA 始终更快，到 64K 时约为 DPLR 速度的 2 倍。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：输入序列长度（2K → 64K）。<b>纵轴</b>：单次内核执行时间（ms，越低越快）。</li>
+          <li><b>虚线 = 通用 DPLR</b>：随长度增长执行时间快速抬升，到 64K 时接近 60ms。</li>
+          <li><b>实线 = KDA（ours）</b>：增长平缓得多，64K 时约 30ms，差不多是 DPLR 的一半。</li>
+          <li><b>差距来源</b>：正是上面说的「免去两次二级分块 + 消掉约三次矩阵乘」——约束换来了实打实的算子加速。</li>
+          <li><b>读图重点</b>：序列越长，KDA 相对 DPLR 的优势越明显（曲线越拉越开），这对长上下文场景尤其关键。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：KDA 用一个「a=b=k」的约束，在几乎不损失表达力的前提下把内核做到了约 2× 的速度。</p>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>DPLR vs KDA 分块伪代码对比<span class="sub">点开看 KDA 省掉了哪些计算（绿色为 KDA 新增/简化，红色为 DPLR 中被去掉的步骤）</span></summary>
+      <div class="ex-body">
+        <div class="dualcode">
+          <div>
+            <div class="ct" style="color:#a8534f">通用 DPLR（更多矩阵乘 / 二级分块）</div>
+            <pre class="code"><span class="cm"># 需要 4 个交互矩阵</span>
+Aab,Aak,Aqb,Aqk = zeros(...)
+for i in range(C):
+  <span class="rm">Aqk[..i] = (q_i*k *s1).sum(-1)</span>
+  <span class="rm">Aqb[..i] = (q_i*b *s1).sum(-1)</span>
+  <span class="rm">Aab[..i] = (a_i*b *s2).sum(-1)</span>
+  <span class="rm">Aak[..i] = (a_i*k *s2).sum(-1)</span>
+...
+o1 = <span class="rm">Aqk @ v_i</span>
+o2 = <span class="rm">Aqb @ (u+w@S)</span>
+o3 = <span class="rm">(q*g.exp()) @ S</span>
+S += <span class="rm">(k*decay)ᵀ @ v</span>
+S += <span class="rm">(b*decay)ᵀ @ (u+w@S)</span></pre>
+          </div>
+          <div>
+            <div class="ct" style="color:#5d7a3a">KDA（a=b=k，更精简）</div>
+            <pre class="code"><span class="cm"># 只需 2 个交互矩阵</span>
+Aqk,Akk = zeros(...)
+for i in range(C):
+  <span class="gn">Aqk[..i] = (q_i*k*s1).sum(-1)</span>
+  <span class="gn">Akk[..i] = (k_i*k*s2).sum(-1)</span>
+...
+<span class="cm"># 输出一步到位</span>
+o = <span class="gn">(q*g.exp())@S + Aqk@(u−w@S)</span>
+S = S * g_last.exp()
+S += <span class="gn">(k*decay)ᵀ @ v</span>
+<span class="cm"># 无需第二条 S 更新</span></pre>
+          </div>
+        </div>
+        <p class="muted" style="font-size:13px;margin-top:10px">对照可见：DPLR 维护 4 个交互矩阵、两条状态更新；KDA 因为 a=b=k 只需 2 个交互矩阵、一条状态更新，输出也合并成一行——这就是约 2× 加速的来源。（伪代码改写自论文 Listing。）</p>
+      </div>
+    </details>
+
+    <h3>训练 / 推理两套内核 + 固定大小状态</h3>
+    <ul class="tight">
+      <li><strong>预填充（prefill）</strong>用 FLOP 密集的分块内核，吃满 Tensor Core；<strong>自回归解码</strong>切换到更省的递归内核。</li>
+      <li>KDA 的状态<strong>恒为 d_k×d_v（128×128）</strong>，与序列长度无关——这正是 KV 缓存能省到 75%、解码能快数倍的根本原因。</li>
+    </ul>
+  </section>
+
+  <!-- ARCH -->
+  <section id="arch">
+    <h2><span class="num">07</span> Kimi Linear 架构：3 层 KDA + 1 层 MLA 的混合塔</h2>
+    <p>有了高效的 KDA 算子，剩下的问题是<strong>怎么拼成一个能打的大模型</strong>。Kimi Linear 的骨架沿用 Moonlight，每个 block = 一层「token 混合」+ 一层「MoE 通道混合」。关键在于 token 混合层<strong>按 3:1 交错</strong>使用 KDA 与全注意力。这张架构图是全文最重要的一张：</p>
+
+    <div class="figure">
+      <img src="assets/fig3_arch.png" alt="Kimi Linear 模型架构：KDA 与 MLA 层间混合、MoE、以及 KDA 模块内部结构" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3（原论文 Figure 3）</span>：Kimi Linear 整体架构。左侧是层间混合的堆叠方式（N 个 KDA block + 1 个 MLA block，N=3）；右上是 MoE 通道混合层（共享专家 + 路由专家）；右下是 KDA token 混合模块的内部结构。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左侧整体堆叠</b>：模型由两种 block 交错堆成。下方标注 <b>N×</b> 的是 <b>KDA block</b>（Norm → KDA → 残差，再 Norm → MoE → 残差）；上方标注 <b>1×</b> 的是 <b>MLA block</b>（把 KDA 换成全注意力 MLA）。每 3 个 KDA block 配 1 个 MLA block，即 <b>3:1</b>。</li>
+          <li><b>为什么是层间（layerwise）而非头间（headwise）</b>：整层切换比「层内混头」基础设施更简单、训练更稳，KV 缓存管理也更规整。</li>
+          <li><b>右上 MoE 层</b>：通道混合用专家混合（Mixture-of-Experts）。绿色是<b>共享专家（Shared Expert）</b>（每个 token 都过），蓝色是<b>路由专家（Routed Expert）</b>，由下方 <b>Router</b> 按打分稀疏选取（图中柱状即路由权重，⊗ 表示按权重缩放）。本文配置为 256 选 8 + 1 共享，48B 总参 / 3B 激活。</li>
+          <li><b>右下 KDA 模块内部</b>：输入分别经过 <b>Linear → Conv（ShortConv）</b> 得到 q、k；q/k 还要过 <b>L2</b> 归一化；几路梯形是低秩投影，σ 表示 sigmoid 门（生成遗忘门 α、写入强度 β、输出门）。这些汇入中间的 <b>Kimi Delta Attention</b>，输出再过 <b>Norm</b> 与输出门（⊗），最后 <b>Linear</b> 投影回主干。</li>
+          <li><b>数据流主线</b>：每个 block 都是「归一化 → 混合算子 → 残差相加」的标准结构；竖直主干就是 token 表示一路向上流动、被 KDA / MLA / MoE 逐层精炼。</li>
+          <li><b>NoPE</b>：所有 MLA（全注意力）层都<b>不加位置编码</b>，位置信息完全交给 KDA 层承担（见下一节）。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：大部分层用便宜的 KDA 扛主力，少数 MLA 层负责全局精确检索，MoE 负责扩容量——三者按固定节奏堆叠，既省显存又保质量。</p>
+      </div>
+    </div>
+
+    <h3>为什么 3:1 是「甜点比例」</h3>
+    <p>论文专门做了混合比例的消融，结论很干净：</p>
+    <ul class="tight">
+      <li><strong>3:1 最优</strong>：训练与验证 loss 都最低。</li>
+      <li><strong>7:1（更多 KDA）</strong>：训练 loss 接近，但验证明显变差——全局层太少，泛化受损。</li>
+      <li><strong>1:1（更多全注意力）</strong>：验证相当，但推理开销大增，得不偿失。</li>
+      <li><strong>0:1（纯全注意力）</strong>：表现最差——印证了「适度混入线性层反而更好」。</li>
+    </ul>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">08</span> 有意思的点</h2>
+    <p>除了主线，有几处设计取舍值得单独拎出来——它们解释了 Kimi Linear 一些「反直觉」的选择。</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧭</span>KDA = 学出来的位置编码</div>
+        <div class="xs">数据相关的细粒度衰减，可被看作比 RoPE 更灵活的乘性位置编码。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>RoPE 用<b>固定频率</b>的旋转矩阵给每对维度注入相对位置；而 gated delta rule 的累积转移矩阵是<b>数据相关、可学习</b>的，相当于放松了 RoPE 的正交约束，理论上更强。</p>
+          <p>RoPE 的固定频率还会导致<b>外推（extrapolation）</b>困难（容易过拟合到训练时见过的长度）。把位置感知交给可学习的 KDA，反而更容易扩展上下文窗口。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🚫</span>全注意力层干脆 NoPE</div>
+        <div class="xs">既然 KDA 已经在编码位置，MLA 层就不再加任何位置编码。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>Kimi Linear 把位置感知的责任<b>全部委托给 KDA 层</b>，MLA 全注意力层用 <b>NoPE</b>。好处有二：① 推理时 MLA 可转成高效的纯 <b>MQA（多查询注意力）</b>；② 长上下文训练更简单，不用调 RoPE 频率基或上 YaRN。</p>
+          <p>消融显示：Kimi Linear（NoPE）在长上下文上稳定胜过 RoPE 版，因为位置偏置在各层间分布得更均衡，外推更鲁棒。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🎚️</span>输出门：Sigmoid 完胜 Swish</div>
+        <div class="xs">一个小小的门控激活选择，对最终质量影响不小。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>消融对比了「无门 / Swish 门 / Sigmoid 门」三种输出门：去掉门会掉点；GDN 采用的 <b>Swish 门明显差于 Sigmoid</b>。本文因此全程用 <b>Sigmoid 输出门</b>（含 GDN-H 基线），还能缓解注意力沉降。</p>
+          <p><b>启发</b>：在这类线性注意力里，输出门的设计不是细枝末节，值得认真消融。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚖️</span>线性 vs 稀疏：两条不同的路</div>
+        <div class="xs">论文专门讨论了线性注意力与稀疏注意力的本质区别。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>稀疏注意力</b>（NSA / MoBA / DSA 等）擅长精确检索细粒度历史，但<b>仍要存整份 KV 缓存</b>来做 token 选择，表达上界也只是全注意力。</p>
+          <p><b>线性注意力</b>秉持「压缩即智能」，用<b>固定大小状态</b>泛化，配合 delta 规则可获得理论上更强的表达力；弱在检索，但能用状态扩展等手段弥补。</p>
+          <p><b>言下之意</b>：两者并不互斥，未来可结合「线性的压缩 + 稀疏的精检」。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">09</span> 实验结论：一句话能说清</h2>
+    <p>一句话：在<strong>同样的训练配方与参数量</strong>下，Kimi Linear 在<strong>预训练、SFT、长上下文、RL</strong> 各阶段都稳压全注意力 MLA 与混合 GDN-H 基线，同时把<strong>显存和解码速度</strong>做到线性注意力级别。下面只挑最核心的几个证据。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">84.3</div><div class="k">RULER（128k）<br>长上下文检索，最佳</div></div>
+      <div class="metric"><div class="v">54.5</div><div class="k">长上下文平均分<br>超过 MLA / GDN-H</div></div>
+      <div class="metric"><div class="v">~2<span class="u">×</span></div><div class="k">KDA 内核 vs 通用 DPLR<br>（64k 长度）</div></div>
+      <div class="metric"><div class="v">2.9<span class="u">×</span></div><div class="k">1M 预填充速度<br>vs 全注意力 MLA</div></div>
+    </div>
+
+    <h3>表达力：合成任务上线性注意力的「试金石」</h3>
+    <p>在 Palindrome（逆序复制）、MQAR（多查询联想检索）、Stack（栈状态跟踪）三个专门考验记忆的合成任务上，KDA 的细粒度门控优势最直观。</p>
+    <div class="figure">
+      <img src="assets/fig4_syn.png" alt="KDA、GDN、Mamba2 在 Palindrome / MQAR / Stack 三个合成任务上的准确率对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 4（原论文 Figure 4）</span>：三个合成任务上 KDA（蓝）、GDN（绿）、Mamba2（橙）的准确率。上排=随序列长度变化的峰值准确率，下排=固定 1024 长度下的收敛速度。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>三列任务</b>：(a) Palindrome 逆序复制、(b) MQAR 多查询检索、(c) Stack 栈状态跟踪——都要求模型从压缩记忆里精确取回历史。</li>
+          <li><b>上排（vs 序列长度 256→2048）</b>：KDA 在所有任务、所有长度上都拿到最高准确率；长度增大时其它方法掉得更快。</li>
+          <li><b>下排（vs 训练步数）</b>：尤其在 Palindrome 和 MQAR 上，KDA <b>收敛明显快于 GDN</b>——细粒度遗忘让它更早学会「选择性记忆」。</li>
+          <li><b>Mamba2（橙）几乎全军覆没</b>：它只有乘性衰减、没有 delta 纠错，在这些设置下基本做不到精确检索。</li>
+          <li><b>结论</b>：「按通道遗忘 + delta 纠错」的组合，在最考验记忆的任务上带来质的差距，这是 KDA 表达力的直接证据。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：合成任务证明 KDA 的细粒度门控不是纸面优化，而是真的提升了有限状态记忆的检索能力。</p>
+      </div>
+    </div>
+
+    <h3>规模化：scaling law 上更省算力</h3>
+    <div class="figure">
+      <img src="assets/fig5_scaling.png" alt="MLA 与 Kimi Linear 的拟合 scaling law 曲线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 5（原论文 Figure 5）</span>：MLA 与 Kimi Linear 的 scaling law 拟合曲线（loss vs 计算量）。在 compute-optimal 训练下，Kimi Linear 达到约 1.16× 的计算效率。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：训练算力（PFLOP/s-days，对数轴）。<b>纵轴</b>：验证 loss（越低越好）。</li>
+          <li><b>两条拟合线</b>：蓝=MLA，红=Kimi Linear；星点是不同规模模型的实测值。</li>
+          <li><b>红线整体在蓝线下方</b>：相同算力下 Kimi Linear loss 更低，或达到相同 loss 所需算力更少。</li>
+          <li><b>「1.16×」箭头</b>：在 loss≈2.1 处横向比较，Kimi Linear 只需约 MLA 的 1/1.16 算力即可追平——即约 16% 的算力节省。</li>
+          <li><b>含义</b>：优势不是来自某个规模的偶然，而是<b>随规模稳定成立</b>的趋势；论文还指出更细致的调参可能让 KDA 曲线更好。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：scaling law 表明 Kimi Linear 的效率优势是「可规模化」的，不是小模型上的偶然。</p>
+      </div>
+    </div>
+
+    <h3>效率：长上下文越长，优势越大</h3>
+    <div class="figure">
+      <img src="assets/fig7_speed.png" alt="MLA、GDN-H、Kimi Linear 的预填充时延与解码 TPOT 对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 7（原论文 Figure 7）</span>：(a) 预填充时延 vs 长度，(b) 解码 TPOT vs 长度。Kimi Linear（蓝）几乎贴着 GDN-H，远低于 MLA（虚线），且长度越大差距越夸张。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左图（预填充）</b>：纵轴是处理整段输入的时延（s）。MLA 因 O(T²) 在 512K/1M 处急剧上升，Kimi Linear 分别快约 <b>2.3× / 2.9×</b>。</li>
+          <li><b>右图（解码）</b>：纵轴是每输出 token 时延 TPOT（ms，batch=1）。Kimi Linear 在 512K/1M 处快约 <b>1.8× / 2.2×</b>。</li>
+          <li><b>三条线的关系</b>：Kimi Linear 与 GDN-H 几乎重合 → 细粒度门控带来的额外开销可忽略，没有牺牲速度。</li>
+          <li><b>为什么短长度差不多</b>：4K–16K 时全注意力还不贵，优势不明显；瓶颈在长序列才暴露，所以曲线在 128K 之后才拉开。</li>
+          <li><b>与图 1 的 6.3× 关系</b>：本图是 batch=1 的纯时延；省下的显存还能换更大 batch，于是吞吐口径下 1M 解码可达约 <b>6×</b>。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：上下文越长，线性注意力的固定状态优势越压倒性——这正是 agentic / 长生成场景最需要的。</p>
+      </div>
+    </div>
+
+    <h3>RL：收敛更快、上限更高</h3>
+    <div class="figure">
+      <img src="assets/fig6_rl.png" alt="Kimi Linear 与 MLA 在数学 RL 训练中的训练/测试准确率曲线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 6（原论文 Figure 6）</span>：数学 RL 训练中，Kimi Linear（紫）与 MLA（绿虚）的训练集、MATH500、AIME 2025 准确率曲线。Kimi Linear 全程领先且差距渐扩。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>三幅图</b>：(a) 训练集准确率、(b) MATH500 测试、(c) AIME 2025 测试，横轴均为 RL 训练步数。</li>
+          <li><b>起点相近</b>：两条线初始水平接近，说明对比公平（算法与超参完全一致）。</li>
+          <li><b>增长更快</b>：Kimi Linear（紫）训练准确率上升速率明显高于 MLA，<b>差距随训练逐渐拉大</b>。</li>
+          <li><b>测试集同样领先</b>：在 MATH500 与 AIME2025 上 Kimi Linear 都更快、更高地提升。</li>
+          <li><b>含义</b>：在推理密集、长生成的 RL 场景里，Kimi Linear 不只是更快，<b>最终质量也更好</b>——这正是「RL 测试时扩展」最看重的。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：RL 阶段 Kimi Linear 对 MLA 形成稳定优势，呼应了它为「测试时扩展」而生的设计初衷。</p>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>更全的对比数字（节选自原论文 Table 3 / Table 5）<span class="sub">点开看预训练与长上下文上 Kimi Linear vs MLA / GDN-H</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th>基准（1.4T 预训练）</th><th>MLA</th><th>GDN-H</th><th>Kimi Linear</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>MMLU</td><td class="dim">71.6</td><td class="dim">72.2</td><td>73.8</td></tr>
+              <tr><td>MMLU-Pro</td><td class="dim">47.2</td><td class="dim">47.9</td><td>51.0</td></tr>
+              <tr><td>BBH</td><td class="dim">71.6</td><td class="dim">70.6</td><td>72.9</td></tr>
+              <tr><td>GSM8K（数学）</td><td class="dim">83.7</td><td class="dim">81.7</td><td>83.9</td></tr>
+              <tr><td>CMMLU（中文）</td><td class="dim">79.5</td><td class="dim">80.7</td><td>80.8</td></tr>
+              <tr><td>RULER（128k 长上下文）</td><td class="dim">81.3</td><td class="dim">80.5</td><td>84.3</td></tr>
+              <tr><td>RepoQA（长上下文）</td><td class="dim">63.0</td><td class="dim">63.0</td><td>68.5</td></tr>
+              <tr class="hl"><td>长上下文平均</td><td>52.2</td><td>51.2</td><td>54.5</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px">一个有意思的反转：预训练/SFT 阶段排序是 Kimi Linear &gt; GDN-H &gt; MLA；但到了长上下文，GDN-H 反而掉到 MLA 之后，Kimi Linear 仍稳居第一。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">10</span> 适用边界与展望</h2>
+    <p>论文整体是一份「捷报」，但它也诚实地交代了线性注意力路线的内在权衡与未尽之处——这些往往比成绩单更能帮你判断它适不适合你的场景：</p>
+    <ul class="tight">
+      <li><strong>纯线性注意力仍有检索短板</strong>：精确复制、超长检索是固定状态记忆的天然弱项，所以 Kimi Linear 必须靠少量全注意力层兜底（这也是「混合」而非「纯线性」的原因）。</li>
+      <li><strong>依赖底层基础设施</strong>：线性注意力长期受限于硬件实现与推理基建。本文专门开源了 KDA 内核与 vLLM 集成来补这一环，但这也说明<strong>没有好内核，理论收益难落地</strong>。</li>
+      <li><strong>稀疏注意力是互补而非对手</strong>：稀疏注意力在精检上更强但要存全量 KV。作者认为未来可把「线性的压缩泛化 + 稀疏的精细检索」结合，进一步提升。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这篇报告最值得记住的一句话</div>
+      只要把线性注意力的<strong>记忆管理（细粒度门控 + delta 纠错）</strong>和<strong>硬件效率（受约束 DPLR）</strong>同时做扎实，再用少量全注意力兜底，混合架构就能<strong>第一次在公平对比下，同时赢下质量与效率</strong>——并成为全注意力的直接替换。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对技术报告 <strong>《Kimi Linear: An Expressive, Efficient Attention Architecture》</strong> 的中文导读可视化。内容与数据基于已抓取的 arXiv 原文（PDF + LaTeX 源码）。所有原始图（图 1–7）均直接取自论文 PDF（该论文暂无 arXiv HTML 版，故由 PDF 高清渲染后裁剪）；演进链分步演示与对比表为依据原文文字/公式整理。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2510.26692" target="_blank" rel="noopener">Kimi Linear: An Expressive, Efficient Attention Architecture · arXiv:2510.26692 ↗</a></p>
+    <p>代码与权重：<a href="https://github.com/MoonshotAI/Kimi-Linear" target="_blank" rel="noopener">GitHub · MoonshotAI/Kimi-Linear ↗</a> · <a href="https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct" target="_blank" rel="noopener">Hugging Face · Kimi-Linear-48B-A3B-Instruct ↗</a> · KDA 内核：<a href="https://github.com/fla-org/flash-linear-attention/tree/main/fla/ops/kda" target="_blank" rel="noopener">flash-linear-attention/kda ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">作者：Kimi Team（Moonshot AI）· 预印本 2025.10.30（v1）/ 2025.11.01（v2）· 本页为非官方导读，如有出入以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明展开/收起（仅用于图片）
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// 演进链四步动画
+var dpIdx = 0;
+var dpTotal = 4;
+function dpRender(){
+  var steps = document.querySelectorAll('#deltapipe .sp-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === dpIdx);
+  }
+  var dots = document.querySelectorAll('#deltapipe .sp-dot');
+  for (var j=0;j<dots.length;j++){
+    dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= dpIdx);
+  }
+  document.getElementById('dp-counter').textContent = (dpIdx+1) + ' / ' + dpTotal;
+  document.getElementById('dp-prev').disabled = (dpIdx === 0);
+  document.getElementById('dp-next').disabled = (dpIdx === dpTotal-1);
+}
+function dpNext(){ if (dpIdx < dpTotal-1){ dpIdx++; dpRender(); } }
+function dpPrev(){ if (dpIdx > 0){ dpIdx--; dpRender(); } }
+function dpReset(){ dpIdx = 0; dpRender(); }
+dpRender();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

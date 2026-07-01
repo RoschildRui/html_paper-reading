@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimina-Prover Preview · 中文导读：用强化学习训练会「思考」的形式化证明大模型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:760px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.figure img.tall{max-width:430px;margin:0 auto}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1400px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .fl{color:var(--accent-deep);font-weight:600}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+pre.code .nl{color:#6a6051}
+.code-label{font-size:12.5px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:14.5px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px;text-align:left}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-2{grid-template-columns:1fr 1fr}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+
+/* track overview */
+.track{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:13px 0;box-shadow:var(--shadow)}
+.track.a{border-left:3px solid var(--ink-faint)}
+.track.b{border-left:3px solid var(--accent)}
+.track.c{border-left:3px solid var(--border-strong)}
+.track .th{font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.track .tbadge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft)}
+.track.b .tbadge{background:var(--accent-soft);color:var(--accent-deep)}
+.track .td{font-size:14px;color:var(--ink-soft);margin-top:6px;line-height:1.6}
+
+/* step animation */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:172px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-2,.flow-3,.sp-io{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Kimina-Prover 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#overview">方法总览</a>
+      <a href="#pattern">推理范式</a>
+      <a href="#data">数据与自动形式化</a>
+      <a href="#rl">RL 训练</a>
+      <a href="#emergent">涌现与缩放</a>
+      <a href="#results">实验结论</a>
+      <a href="#limits">局限</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2504.11354" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">论文导读 · Formal Reasoning via Reinforcement Learning</div>
+    <h1>Kimina-Prover Preview：让大模型像人一样「思考」着写 Lean 4 证明</h1>
+    <p class="subtitle">Kimina-Prover Preview: Towards Large Formal Reasoning Models with Reinforcement Learning</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv preprint · Technical Report</span>
+      <span class="chip">发表 2025.04</span>
+      <span class="chip">arXiv:2504.11354</span>
+      <span class="chip">Numina &amp; Kimi Team</span>
+      <span class="chip">基座 Qwen2.5-72B</span>
+    </div>
+    <p class="lead">一句话：以往的神经定理证明器要靠<strong>外挂的树搜索算法</strong>（BFS / MCTS）在证明空间里硬搜，又慢又复杂，还基本不随模型变大而变强。本文换了个思路——用<strong>大规模强化学习</strong>，让一个 72B 大模型学会一种<strong>「形式推理范式」</strong>：在 <code>&lt;think&gt;</code> 里边用自然语言想、边写 Lean 4 代码片段，最后拼成完整证明。它把搜索<strong>内化进自己的推理</strong>，在 miniF2F 上拿到 <strong>80.7% (pass@8192)</strong> 的新 SOTA，并第一次展现出「越大越强」的规模效应。</p>
+    <p class="muted" style="font-size:14px">本页基于已抓取的 arXiv 原文（2504.11354v1）正文、表格与全部原始图表构建。术语首次出现时给出英文原词，便于对照原文。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>要解决的问题</strong>：形式化定理证明（在 Lean 4 里写出能被编译器验证的证明）需要<strong>严密、结构化、非线性</strong>的推理。过去的神经证明器要么靠外部搜索（开销大、不 scalable），要么用浅层 CoT，且<strong>不随模型规模变强</strong>。</li>
+      <li><strong>核心做法</strong>：把 <strong>Kimi k1.5 的 RL 推理流水线</strong>搬到形式数学，从 <strong>Qwen2.5-72B</strong> 出发做大规模 RL。设计一种 <strong>形式推理范式（formal reasoning pattern）</strong>——思维链里自然语言推理与 Lean 4 代码片段交替，最后组装成完整证明。奖励信号简单粗暴：<strong>Lean 编译器判对错（0/1）</strong>。</li>
+      <li><strong>关键配套</strong>：训练一个 <strong>Kimina-Autoformalizer</strong> 把自然语言题目自动翻译成 Lean 4 命题，攒出 <strong>20 万道</strong>形式问题；再用高效的 <strong>Lean Server</strong>（缓存 + 并行，10× 提速）做实时验证。</li>
+      <li><strong>结果</strong>：miniF2F-test 达 <strong>80.74% (pass@8192)</strong>，<strong>pass@1 就有 52.94%</strong>（样本效率极高）；首次出现<strong>随模型规模（1.5B→7B→72B）稳定提升</strong>的趋势；并涌现出探索多路径、反思修正、小例归纳等<strong>类人证明风格</strong>。</li>
+    </ul>
+    <div class="quote big">「与其外挂一个搜索算法去探索证明空间，不如让模型用<strong>自己的推理</strong>来隐式地搜索——由它自己决定『搜什么、怎么搜』。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 释义自原文：Kimina-Prover implicitly flattens the step-wise search, allowing the model to decide both how and what to search.</span>    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：形式化定理证明，难在哪</h2>
+    <p>先说清楚舞台：<strong>形式化定理证明</strong>是在 <strong>Lean 4</strong> 这样的<strong>交互式证明助手（proof assistant）</strong>里写证明。它的好处是<strong>每一步都能被编译器机械地验证</strong>——证出来就是真证出来了，没有「看起来对」的模糊地带。这也带来一个绝佳的训练信号：<strong>证明对不对，编译器说了算</strong>，天然适合强化学习。</p>
+    <p>但要让 LLM 把 Lean 4 证明写对，有几道坎绕不过去：</p>
+    <ul class="tight">
+      <li><strong>推理是深层、结构化、非线性的</strong>：复杂证明往往要先想出一个证明草图、引入辅助引理、分情况讨论，再回头填坑。LLM 擅长「模式匹配 + 顺序生成」，但<strong>标准 SFT 或浅层思维链（CoT）不足以激发</strong>这种推理。</li>
+      <li><strong>依赖外部搜索，又慢又复杂</strong>：主流做法是让模型生成<strong>单步 tactic</strong>，再外挂 <strong>BFS / MCTS</strong> 去探索证明空间。搜索带来巨大的<strong>计算开销和系统复杂度</strong>，限制了规模化。</li>
+      <li><strong>不随模型变大而变强</strong>：以往专门为形式数学训练的神经证明器，<strong>几乎没有展现出「模型越大、性能越好」</strong>的规模效应——这说明它们没能把大模型的容量真正用在推理上。</li>
+      <li><strong>informal 与 formal 之间有鸿沟</strong>：人类的非形式数学直觉（草稿纸上的推导）和严格的 Lean 4 代码之间<strong>缺乏对齐的训练数据</strong>，模型很难把「想法」翻译成「能编译的证明」。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">本文要回答的问题</div>
+      能不能<strong>不靠外部搜索</strong>，直接用<strong>大规模强化学习</strong>，把大模型的「长链推理」能力迁移到形式定理证明上？让模型像解 informal 数学题那样，<strong>在思维链里自己探索证明空间</strong>，并且<strong>越大越强</strong>？
+    </div>
+  </section>
+
+  <!-- PRIOR WORK -->
+  <section id="prior">
+    <h2><span class="num">02</span> 已有方案卡在哪</h2>
+    <p>本文没有罗列一长串 related work，而是聚焦几条与自己形成对比的技术路线。理解它们「卡在哪」，才能看懂 Kimina-Prover 为什么这么设计。点开每张卡片看具体做法与瓶颈：</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🌳</span>单步 tactic + 树搜索 <span class="xtag">主流路线</span></div>
+        <div class="xs">模型预测下一步 tactic，外挂 BFS / MCTS 在证明空间里系统搜索（如 DeepSeek-Prover、InternLM-StepProver、BFS-Prover）。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：把证明看成一棵搜索树，模型在每个证明状态预测候选 tactic，由 <b>Best-First Search</b> 或 <b>Monte Carlo Tree Search</b> 根据启发式评分挑选、扩展最有希望的分支。</p>
+          <p><b>卡在哪</b>：搜索组件是核心，但<b>计算开销巨大</b>（动辄上百万次采样）、系统复杂；价值/启发式难训。这条路<b>受限于 scalability</b>。</p>
+          <p><b>与本文关系</b>：Kimina-Prover<b>不外挂任何搜索</b>，把「探索」内化进模型自己的思维链，pass@8192 即可超过它们的 pass@百万级。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📜</span>整段证明生成 <span class="xtag">Whole-proof</span></div>
+        <div class="xs">给定证明状态，一次性生成整段 Lean 4 证明（如 DeepSeek-Prover-V1.5、Goedel-Prover）。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：跳过逐步搜索，直接让模型从题面生成完整证明脚本，再交给 Lean 编译验证；失败就重采样。</p>
+          <p><b>卡在哪</b>：缺乏<b>深层、可解释的推理过程</b>；模型只是「一口气写完」，难以在写之前规划证明草图，复杂题命中率低，需要海量采样。</p>
+          <p><b>与本文关系</b>：Kimina-Prover 也是 whole-proof，但<b>先在 <code>&lt;think&gt;</code> 里推理、规划</b>再落笔，因此样本效率高得多。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔗</span>嵌入 informal 推理的尝试 <span class="xtag">Lean-STaR / MA-LoT</span></div>
+        <div class="xs">在预测 tactic 前先生成自然语言「想法」，或让 informal 推理与 Lean 验证交互。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：Lean-STaR 在每步 tactic 前插入非形式思考；MA-LoT 用多智能体让自然语言推理与 Lean 4 验证结构化交互。</p>
+          <p><b>卡在哪</b>：它们用的是<b>较短的 CoT</b>，或依赖从通用推理任务<b>迁移 + SFT</b> 得到的模型，<b>而非直接用 RL</b> 训练长链形式推理。深度不够。</p>
+          <p><b>与本文关系</b>：本文指出「在形式证明里直接做 RL 驱动的长链推理」此前<b>无人验证过可行性</b>，Kimina-Prover 是第一次。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧠</span>通用推理大模型 <span class="xtag">o3 / Gemini 2.5</span></div>
+        <div class="xs">OpenAI o3-mini、Gemini 2.5 Pro 等通用推理模型，能解 informal 数学题。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：靠大规模 RL 练出长链推理，在 AIME、IMO 等比赛上 informal 解题能力很强。</p>
+          <p><b>卡在哪</b>：<b>会解题却不会形式化</b>。o3 倾向给出 informal、无法验证的答案；Gemini 有形式推理能力但常<b>幻觉、生成无法编译的伪证明</b>。在 miniF2F 上 pass@32 仅 24.6% / 37.7%。</p>
+          <p><b>与本文关系</b>：这正是 <b>informal-formal 鸿沟</b>的直接证据——Kimina-Prover（68.85%）说明专门为形式推理做 RL 是必要的。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <h2><span class="num">03</span> 方法总览：三根支柱撑起一条 RL 闭环</h2>
+    <p>Kimina-Prover 的训练配方（autoformalization + SFT + RL）可以拆成<strong>三根支柱</strong>，它们最终拧成一条强化学习闭环。先建立整体画面，后面几节再逐根展开。</p>
+
+    <div class="track a">
+      <div class="th">① 自动形式化（Autoformalization）<span class="tbadge">造题目</span></div>
+      <div class="td">RL 需要海量、多样、可验证的形式问题，但人工写 Lean 4 命题太贵。于是训练一个 <strong>Kimina-Autoformalizer-7B</strong>，把自然语言数学题自动翻译成<strong>语法合法的 Lean 4 命题</strong>，配合人工标注，攒出 <strong>20 万道</strong>难度均衡的题库。</td>
+    </div>
+
+    <div class="track b">
+      <div class="th">② 形式推理范式（Formal Reasoning Pattern）<span class="tbadge">怎么想</span></div>
+      <div class="td">设计一种结构化的思考格式：在 <code>&lt;think&gt;</code> 里让<strong>自然语言推理与 Lean 4 代码片段交替出现</strong>，强制思维块里的代码片段大部分要出现在最终证明里——以此<strong>对齐 informal 直觉与 formal 代码</strong>。再用 ~20K Claude 合成数据 + Kimi k1.5 的 informal 思考数据做<strong>冷启动 SFT</strong>。</td>
+    </div>
+
+    <div class="track c">
+      <div class="th">③ 强化学习（Reinforcement Learning）<span class="tbadge">练到强</span></div>
+      <div class="td">从 <strong>Qwen2.5-72B</strong> 出发，沿用 <strong>Kimi k1.5</strong> 的 RL 流水线。每轮采样一批题、每题生成 8 个候选证明，交给 <strong>Lean 编译器验证</strong>，<strong>对就给 1、错给 0</strong>。再加上格式过滤、防崩溃技巧，迭代提升策略。还蒸馏出 1.5B / 7B 小模型并开源。</td>
+    </div>
+
+    <div class="callout">
+      <div class="t">为什么这套组合能成</div>
+      三根支柱缺一不可：<strong>没有题库</strong>，RL 无米下锅；<strong>没有推理范式</strong>，大模型的长链推理用不到形式证明上；<strong>没有 RL</strong>，模型只会模仿冷启动数据、无法自我超越。把它们接成闭环，模型就能在「自己造的题 + 编译器的对错反馈」里不断进化。
+    </div>
+  </section>
+
+  <!-- FORMAL REASONING PATTERN -->
+  <section id="pattern">
+    <h2><span class="num">04</span> 形式推理范式：边想边写代码，最后拼成证明</h2>
+    <p>这是全文最核心的设计。难点在于：人类做数学是先在草稿纸上<strong>非形式地</strong>想思路，而 Lean 4 要求<strong>严格形式化</strong>的代码，两者之间缺乏对齐数据。Kimina-Prover 的解法是让模型在一个<strong>统一的思考格式</strong>里同时做两件事——把非形式直觉和形式代码<strong>逐块对齐</strong>。</p>
+
+    <div class="figure">
+      <img src="assets/formal-reasoning-pattern.png" alt="Kimina-Prover 的形式推理范式：输入自然语言+形式命题，输出多个推理块，每块含非形式推理+Lean代码片段，最后拼成完整 Lean 4 代码" class="tall" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 2 左）</span>：形式推理范式的输入输出结构——模型把证明拆成若干「非形式推理 + Lean 4 代码片段」的块，最后组装成完整证明。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>输入（Input，上方蓝框）</b>：每道题同时给出两种形式——<b>自然语言题面</b>（natural language problem statement）和<b>形式化命题</b>（formal language problem statement，即 Lean 4 的 theorem 声明）。两者并排，是「对齐 informal 与 formal」的起点。</li>
+          <li><b>中间箭头</b>：标注 <code>Kimina-Prover</code>，表示模型读入这对输入后开始生成。</li>
+          <li><b>输出（Output，下方黄框）</b>：不是一口气写完整证明，而是<b>一连串 Reasoning Block</b>。</li>
+          <li><b>每个 Reasoning Block</b>：内容是<b>「非形式推理 + 一小段 Lean 4 代码片段」</b>。模型先用自然语言想清楚这一步要干什么，再把它翻译成对应的 Lean 4 代码——这就是 informal↔formal 的逐块对齐。</li>
+          <li><b>Final Lean 4 Code（最底部红框）</b>：把前面所有代码片段<b>组装成一份完整、可编译的 Lean 4 证明</b>。训练时强制要求：思维块里大部分代码片段必须真的出现在最终证明里，避免「想一套、写一套」。</li>
+          <li><b>一句话总结</b>：这个范式把「人类做数学的草稿过程」结构化进了思维链，让大模型的长链推理能力<b>真正落到可验证的 Lean 代码上</b>，同时让证明过程<b>可读、可解释</b>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>这个范式还有个副产品：<strong>可解释性</strong>。思维块把模型「内心戏」完整暴露出来，用户能看到它为什么这么证、卡在哪——这是搜索式证明器给不了的，也让它能当教学工具。论文给了一个完整的 running example，跟着走一遍就懂：</p>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>Running Example：等差数列求第 21 项（mathd_algebra_354）<span class="sub">点开看模型完整的「想→写代码→拼证明」过程</span></summary>
+      <div class="ex-body">
+        <div class="code-label">① 输入：自然语言 + 形式命题</div>
+        <pre class="code"><span class="cm">-- 已知等差数列第 7 项为 30、第 11 项为 60，求第 21 项。</span>
+theorem mathd_algebra_354 (a d : ℝ) (h₀ : a + 6 * d = 30) (h₁ : a + 10 * d = 60) :
+    a + 20 * d = 135 := by</pre>
+        <div class="code-label" style="margin-top:14px">② 思维块 <span class="em">&lt;think&gt;</span>：先用自然语言推导（节选）</div>
+        <pre class="code"><span class="em">&lt;think&gt;</span>
+通项 aₙ = a + (n−1)d。已知 a+6d=30、a+10d=60。
+两式相减：4d = 30  ⟹  d = 15/2。
+代回第一式：a + 6·(15/2) = 30  ⟹  a + 45 = 30  ⟹  a = −15。
+于是 a + 20d = −15 + 20·(15/2) = −15 + 150 = 135。
+<span class="cm">现在把它形式化为 Lean 4：</span></pre>
+        <div class="code-label" style="margin-top:14px">③ 思维块里穿插的 Lean 4 代码片段</div>
+        <pre class="code"><span class="cm">-- 先解出 d</span>
+have hd : d = 15 / 2 := by linarith
+<span class="cm">-- 再解出 a</span>
+have ha : a = -15 := by linarith [h₀, hd]
+<span class="em">&lt;/think&gt;</span></pre>
+        <div class="code-label" style="margin-top:14px">④ 最终组装出的完整 Lean 4 证明</div>
+        <pre class="code">theorem mathd_algebra_354 (a d : ℝ) (h₀ : a + 6 * d = 30) (h₁ : a + 10 * d = 60) :
+    a + 20 * d = 135 := by
+  have hd : d = 15 / 2 := by linarith
+  have ha : a = -15 := by linarith [h₀, hd]
+  linarith [ha, hd]</pre>
+        <p class="muted" style="font-size:13px;margin-top:10px">注意：思维块里出现的 <code>have hd</code>、<code>have ha</code> 等代码片段，<b>原封不动地出现在最终证明里</b>——这正是范式强制的 informal↔formal 对齐。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- DATA / AUTOFORMALIZATION -->
+  <section id="data">
+    <h2><span class="num">05</span> 数据引擎：自动形式化造出 20 万道题</h2>
+    <p>RL 是「在线」的——每一轮都要从题库里采题让模型练习。可形式问题极其稀缺，人工写 Lean 4 命题又慢又贵。于是本文专门训练了一个<strong>自动形式化模型 Kimina-Autoformalizer-7B</strong>，把自然语言题目翻译成 Lean 4 命题。这件事的难点是：<strong>没有现成的对错奖励</strong>——一个翻译出来的命题「忠不忠于原题」，编译通过并不代表语义正确。</p>
+
+    <div class="flow flow-3">
+      <div class="fnode">
+        <div class="ftag">STEP 1 · 初始化</div>
+        <div class="fname">SFT 学会 Lean 4 风格</div>
+        <div class="fdesc">以 <strong>Qwen2.5-Coder-7B</strong> 为底，用 PutnamBench、miniF2F、ProofNet、Compfiles 的形式命题做 SFT，学会写<strong>语法合法的竞赛级 Lean 4 命题</strong>（实验发现混入 Mathlib 风格数据反而有害）。</div>
+        <div class="fseq">能写合法命题</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STEP 2 · 专家迭代</div>
+        <div class="fname">编译 + LLM 评审双过滤</div>
+        <div class="fdesc">对候选翻译先<strong>用 Lean 4 过编译</strong>，再用 <strong>QwQ-32B 当裁判</strong>判断语义是否忠于原题（多次采样 + 一致投票降假阳性）。过两关的样本加入训练，迭代提升。</div>
+        <div class="fseq">质量越滚越高</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STEP 3 · 题库构建</div>
+        <div class="fname">20 万道难度均衡题</div>
+        <div class="fdesc">自动形式化产出 ~10 万 + 人工标注 ~1 万（重采样到 1:1），用 QwQ-32B 给难度评级、构造均衡分布，得到 <strong>20 万道</strong>题；并用否定证明、自适应剪枝持续净化。</div>
+        <div class="fseq">RL 的弹药库</div>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/autoformalizer_performance.png" alt="自动形式化模型在专家迭代中的编译率与准确率曲线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 2（原论文 Figure 5）</span>：Kimina-Autoformalizer 随专家迭代次数提升——一次性编译率升到约 90%，语义准确率升到约 66%。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：专家迭代（expert iteration）的轮数，1 到 17 轮。</li>
+          <li><b>纵轴</b>：百分比（Percentage）。</li>
+          <li><b>蓝线 Compilation Rate</b>：生成的 Lean 4 命题<b>一次性通过编译的比例</b>，从约 66% 稳步升到约 <b>90%</b>——说明模型越来越会写合法语法。</li>
+          <li><b>橙线 Accuracy</b>：既能编译、又被 LLM 裁判判定<b>语义忠于原题</b>的比例，从约 37% 升到约 <b>66%</b>——这是更难的指标，因为它要求翻译「对得上意思」。</li>
+          <li><b>读图重点</b>：两条线都随迭代单调上升，且<b>编译率始终高于准确率</b>——印证了「能编译 ≠ 语义正确」，这也是为什么需要 LLM 裁判 + 人工监督这道额外关卡。</li>
+          <li><b>一句话总结</b>：专家迭代（生成→双过滤→回灌训练）是一个有效的自提升循环，把自动造题的质量从「勉强能用」滚到「可支撑大规模 RL」。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="t">一个诚实的警告</div>
+      论文特别指出：在这种<strong>没有硬性对错信号</strong>的任务上，模型会反复犯一些<strong>编译能过、但 LLM 裁判抓不到</strong>的错误，必须靠 Lean 专家持续监督。作者认为这揭示了「<strong>在不可验证领域应用 RL</strong>」的一大挑战。
+    </div>
+  </section>
+
+  <!-- RL TRAINING -->
+  <section id="rl">
+    <h2><span class="num">06</span> 强化学习：编译器当裁判，0/1 当奖励</h2>
+    <p>冷启动 SFT 之后，真正让模型变强的是 RL。整条流水线是一个<strong>自我迭代的闭环</strong>：采题 → 生成证明 → Lean 编译验证 → 给奖励 → 更新策略。下面是原论文的流程图：</p>
+
+    <div class="figure">
+      <img src="assets/rl-pipeline.png" alt="Kimina-Prover 的 RL 流水线：Prompt Set 采样、Kimina-Prover 生成 rollout、格式检查、Lean Server 验证给奖励、过滤后回灌更新策略" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3（原论文 Figure 2 右）</span>：形式 RL 流水线。左侧是数据源（题库 + 冷启动数据），中间是策略模型 Kimina-Prover，右侧是作为「环境」的 Lean Server，整体构成一条策略迭代闭环。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>Activation Data（左上）</b>：20 万条「形式推理范式」示例，仅在<b>初始化（mini-SFT）时</b>用一次，给模型植入正确的思考格式——注意箭头标注 <code>initialization only</code>，它不参与后续 RL 循环。</li>
+          <li><b>Prompt Set（左下）→ Prompt Batch</b>：题库含「自动形式化 10 万 + 人工标注 1 万×10」。<b>每轮迭代采样 1000 道</b>题（含 informal 与 formal 命题）组成一个 batch。</li>
+          <li><b>Kimina-Prover（Agent，中央）</b>：策略模型本体。对采样到的题做 <b>Roll-out</b>，每题生成多个候选证明（Action Data：形式推理范式样本，规模约 8K × 32K tokens）。</li>
+          <li><b>Format Checking（中下菱形）</b>：对每个候选做<b>格式过滤</b>。通过（Yes）才送去验证；不通过（No）<b>直接丢弃（Discarded）</b>——这是防止训练「格式崩溃」的关键闸门。</li>
+          <li><b>Lean Server（Environment，右）</b>：作为强化学习的「环境」，用 <b>Lean 编译器</b>严格验证证明是否正确，并 <b>Assign Reward</b>（正确 1 / 错误 0）。</li>
+          <li><b>Roll-out Data（顶部）→ Policy Update</b>：把带奖励、过滤后的 rollout 数据集回灌，执行<b>策略更新</b>，箭头指回 Kimina-Prover，完成一轮 <code>RL Policy Iteration</code>。</li>
+          <li><b>一句话总结</b>：整张图就是一条「<b>题库采样 → 模型生成 → 格式过滤 → 编译器打分 → 回灌更新</b>」的闭环，Lean 编译器提供了天然、不可作弊的奖励信号。</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>把这条闭环里「一轮迭代」拆开看，关键参数和动作如下。点「下一步」跟着走一遍：</p>
+
+    <div class="stepbox" id="rlpipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+        <div class="sp-dot" data-dot="4"></div>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STEP 1</span>采样一批题（N = 1000）</div>
+          <div class="sb">从 20 万道题库里采样 <strong>N = 1000</strong> 道问题，每道题都带<strong>自然语言题面 + Lean 4 形式命题</strong>。难度经过均衡，避免太简单或太难。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>20 万题库</div>
+            <div class="io"><div class="iol">输出</div>1000 道题的 batch</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STEP 2</span>每题生成 k = 8 个候选证明</div>
+          <div class="sb">当前策略对每道题<strong>采样 k = 8 个 rollout</strong>，每个都是一段「形式推理范式」的完整输出（<code>&lt;think&gt;</code> 推理 + 最终 Lean 4 证明）。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>1000 道题</div>
+            <div class="io"><div class="iol">输出</div>1000 × 8 个候选证明</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STEP 3</span>格式过滤防崩溃</div>
+          <div class="sb">先做<strong>格式检查</strong>：① 至少含一个 tactic 代码块；② 这些代码块要<strong>覆盖最终证明 ≥ 60%</strong> 的 Lean 代码。不合格直接丢弃，防止模型学会「想一套写一套」。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>8000 个候选</div>
+            <div class="io"><div class="iol">输出</div>格式合格的候选</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">STEP 4</span>Lean 编译器打分（0/1）</div>
+          <div class="sb">把每个合格证明交给 <strong>Lean Server</strong> 编译验证：<strong>完全正确给 1，否则给 0</strong>。这是不可作弊的硬奖励。高效的缓存 + 并行让验证不成为瓶颈。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>合格候选证明</div>
+            <div class="io"><div class="iol">输出</div>每个证明一个 0/1 奖励</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="4">
+          <div class="sh"><span class="stg">STEP 5</span>更新策略（含 KL 约束）</div>
+          <div class="sb">用 Kimi k1.5 的损失更新模型：<strong>用这组奖励的经验均值近似基线</strong>，无需独立价值网络；以 <strong>τ = 0.4</strong> 的 KL 项把策略拉住、别偏离 SFT 太远；并随机丢弃一半负梯度样本（ω = 0.5）进一步防崩溃。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>带奖励的 rollout 数据</div>
+            <div class="io"><div class="iol">输出</div>更新后的策略 → 下一轮</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-controls">
+        <button id="sp-prev" onclick="spPrev()">‹ 上一步</button>
+        <button id="sp-next" class="primary" onclick="spNext()">下一步 ›</button>
+        <button onclick="spReset()">重置</button>
+        <span class="sp-counter" id="sp-counter">1 / 5</span>
+      </div>
+    </div>
+
+    <div class="formula">
+      <div class="eq">L(θ) = E<sub>(x,y*)~D</sub> [ E<sub>(y,z)~π_old</sub> [ <b>r(x,y,y*)</b> − τ·log Z − <b>τ·log</b> ( π_θ(y,z|x) / π_old(y,z|x) ) ] ]</div>
+      <div class="cap">RL 损失（沿用 Kimi k1.5，公式 1）。<b>r</b> 是 Lean 编译器给的 0/1 奖励；<b>log Z</b> 用一组奖励的<b>经验均值</b>近似（因此不需要单独的价值网络）；<b>τ = 0.4</b> 的 KL 项控制策略对初始 SFT 模型的偏移，保证训练稳定。学习率恒定 2×10⁻⁶。</div>
+    </div>
+
+    <h3>两个「防崩溃」细节，决定训练成败</h3>
+    <p>形式 RL 的训练数据稀少、格式刚性，早期很容易出现 <strong>format collapse（格式崩溃）</strong>——负梯度把模型推向乱写。论文用两招稳住：</p>
+    <div class="twocol">
+      <div class="panel after">
+        <div class="ph">✓ 格式过滤 Format filtering</div>
+        <ul>
+          <li>每个样本<strong>至少一个 tactic 代码块</strong></li>
+          <li>代码块要<strong>覆盖最终证明 ≥ 60%</strong>，强制思维块与证明对齐</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">✓ 随机丢弃负梯度</div>
+        <ul>
+          <li>以概率 <strong>ω = 0.5</strong> 丢掉负梯度样本</li>
+          <li>叠加 informal 数学数据混训，<strong>稳住训练、促进更复杂的推理</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Lean Server：让验证不再是瓶颈</h3>
+    <p>RL 每轮要验证成千上万个证明，验证速度直接决定能不能跑。本文用的 <strong>Numina Lean Server</strong> 基于官方 LeanREPL，靠两招提速：</p>
+    <ul class="tight">
+      <li><strong>LRU 缓存</strong>：按 import 头复用已加载好的环境，省掉重复加载 Mathlib 的巨大开销。</li>
+      <li><strong>多进程并行</strong>：同时管理多个 Lean REPL 进程，吃满多核 CPU。</li>
+      <li><strong>效果</strong>：验证吞吐 <strong>提速 10×</strong>，64 核机器上可达 <strong>100 次验证/秒</strong>；整个训练只需 <strong>640 个 CPU 核</strong>，而以往同类方法常要<strong>数千核</strong>。</li>
+    </ul>
+
+    <h3>蒸馏出小模型并开源</h3>
+    <p>用训好的 72B 模型 rollout 数据，对 <strong>Qwen2.5-Math-1.5B / 7B</strong> 做 SFT，得到 <strong>Distill-1.5B</strong> 和 <strong>Distill-7B</strong> 两个开源小模型（cosine 学习率 2×10⁻⁵，3 个 epoch）。小模型也能继承不错的形式推理能力（见实验一节）。</p>
+  </section>
+
+  <!-- EMERGENT & SCALING -->
+  <section id="emergent">
+    <h2><span class="num">07</span> 有意思的点：会缩放，也会「像人一样想」</h2>
+    <p>除了刷分，这套方法最有价值的几个发现，往往比 benchmark 数字更能说明它「为什么不一样」。</p>
+
+    <h3>① 第一次：形式证明也「越大越强」</h3>
+    <p>以往神经定理证明器有个尴尬：<strong>模型变大，性能却不怎么涨</strong>。Kimina-Prover 第一次打破了这一点。</p>
+    <div class="figure">
+      <img src="assets/model_size_scale.png" alt="Kimina-Prover 在 1.5B / 7B / 72B 三种规模、pass@1/32/1024 三种预算下的 miniF2F 通过率柱状图" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 4（原论文 Figure 3）</span>：1.5B → 7B → 72B 三种规模下的 miniF2F 通过率。模型越大，各采样预算下的成绩都越高，且高预算下差距更明显。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：模型规模，分 1.5B、7B、72B 三组。</li>
+          <li><b>纵轴</b>：miniF2F 通过率（Pass Rate %）。</li>
+          <li><b>三种颜色柱子</b>对应三种采样预算：浅米色 <code>pass@1</code>、深灰 <code>pass@32</code>、蓝色 <code>pass@1024</code>。</li>
+          <li><b>趋势</b>：同一预算下，柱子<b>随模型变大单调升高</b>。以 pass@1024 为例：1.5B 的 61.9% → 7B 的 70.0% → 72B 的 77.9%。</li>
+          <li><b>关键细节</b>：规模增益在<b>高采样预算下更突出</b>——72B 相对 7B 在三档预算上分别提升 +0.44%、+5.75%、+7.87%，说明大模型不只是「会算」，而是<b>推理能力本身在随规模增长</b>。</li>
+          <li><b>一句话总结</b>：这是<b>第一个在形式数学上稳定体现 model scaling</b> 的神经证明系统，意味着继续堆规模有望继续变强。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>② 测试时缩放：学会「想得更久」</h3>
+    <p>随着训练推进，模型自发学会用<strong>更长的思考</strong>去解更难的题——这是 reasoning model 的标志能力。</p>
+    <div class="figure">
+      <img src="assets/Time_scaling.png" alt="训练过程中 miniF2F pass@32 准确率（蓝）与平均输出 token 长度（橙）随迭代上升的曲线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 5（原论文 Figure 4）</span>：训练迭代中，平均输出长度（橙）从约 2,500 涨到 10,000+ tokens，miniF2F pass@32 准确率（蓝）随之从约 61.8% 升到近 69%。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：RL 训练迭代数（0 到 200）。</li>
+          <li><b>左纵轴 / 蓝线</b>：miniF2F 测试准确率（pass@32）。</li>
+          <li><b>右纵轴 / 橙线</b>：模型平均输出 token 长度（average token length）。</li>
+          <li><b>橙线趋势</b>：平稳上升，从约 <b>2,500</b> token 涨到 <b>10,000+</b>——模型自发学会写更长、更完整的推理与证明。</li>
+          <li><b>蓝线趋势</b>：整体上升（约 61.8% → 近 69%），但<b>明显比 informal 数学模型更「颠簸」</b>，中段（50–150 迭代）常有跳变甚至回退。论文归因于：形式推理结构复杂、形式训练数据有限，模型在适应过程中不稳定。</li>
+          <li><b>读图重点</b>：两条线<b>正相关</b>——更长的思考换来更高的准确率，证明「测试时缩放」在形式证明里同样成立，只是过程更动荡。</li>
+          <li><b>一句话总结</b>：即便缺乏海量预训练语料，形式推理依然能靠 RL 实现 test-time scaling，这暗示该方法可迁移到其它「领域知识稀缺」的任务。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>③ 涌现出类人的证明风格</h3>
+    <p>初始化 + RL 之后，模型自发表现出一系列<strong>没有被显式编程</strong>的人类解题行为。点开卡片看原文给的真实案例：</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧭</span>探索多条思路</div>
+        <div class="xs">面对难题会一口气尝试多种代换/技巧，失败后回溯，再锁定可行路径。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>案例（IMO 1983 P6 不等式）</b>：模型先后尝试对称性、Ravi 代换、因式分解恒等式等<b>多种思路</b>，多次碰壁后<b>回到最初的代换方法深入分析</b>，最终发现可化为平方和（sum of squares）而证明完成。</p>
+          <p><b>意义</b>：这是「试错—回溯—精炼」的人类式探索，搜索被<b>内化进了思维链</b>，而非外挂算法。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔍</span>小例归纳 + 反思修正</div>
+        <div class="xs">先算几个小例子找规律，提出猜想，再严格分情况证明。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>案例（数论 72826：大偶数拆成两奇数积之和）</b>：模型先<b>试算 n=40,42,44,…</b> 找出规律，策略性地固定 a=3，再按 <b>n mod 6</b> 分三类构造、逐一严格证明。</p>
+          <p><b>意义</b>：「观察小例 → 形成猜想 → 严格证明」是数学家最常用的套路，模型把它自发学了出来。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧱</span>用 have 分解，证明更可读</div>
+        <div class="xs">大量使用 have 把证明拆成命名小步，结构清晰，像人写的。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>对比 BFS-Prover</b>：在同一道 IMO 1962 P2 上，Kimina-Prover 用一连串 <code>have</code> 语句把论证拆成<b>有清晰目的的小步骤</b>；而 BFS-Prover 靠逐步 tactic 搜索，<b>很难从代码看出每步意图</b>。</p>
+          <p><b>意义</b>：体现了强大的<b>证明草图规划能力</b>，也让证明可读、可教学。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🌉</span>有望弥合 informal–formal 鸿沟</div>
+        <div class="xs">学会在形式系统里推理后，反而获得更深的结构理解。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>通用模型（o3、Gemini）能 informal 解题却<b>无法形式化</b>；Kimina-Prover 证明了形式数学能力<b>可以与非形式推理互补</b>。作者推测：学会在形式系统里推理，能反过来增强 informal 数学能力——这是一个令人兴奋的未来方向。</p>
+        </div>
+      </div>
+
+    </div>
+
+    <h3>但它也会犯错：不完整的分情况讨论</h3>
+    <p>论文诚实地给了一个失败案例，比成绩单更能帮你判断它的边界。</p>
+    <details class="ex">
+      <summary><span class="mk">▸</span>失败案例：aime_1987_p5（incomplete case analysis）<span class="sub">点开看模型在哪一步「想当然」了</span></summary>
+      <div class="ex-body">
+        <pre class="code">theorem aime_1987_p5 (x y : ℤ) (h₀ : y^2 + 3*(x^2*y^2) = 30*x^2 + 517) :
+    3*(x^2*y^2) = 588 := by
+  <span class="cm">-- 模型想证明 x² ≤ 4，于是只检验了 x²=9、x²=16</span>
+  <span class="cm">-- 发现它们让 y² 不是整数，就断定「只有 x² ≤ 4 可能」</span>
+  have h3 : x^2 ≤ 4 := by
+    ...
+    nlinarith [sq_nonneg (y:ℤ), h2]  <span class="cm">-- 这一步并不能真正关掉目标</span></pre>
+        <p class="muted" style="font-size:13px;margin-top:10px">问题所在：模型只验证了 x=±3、x=±4 会让 y 非整数，就<b>断言更大的 x 也不可能</b>，却没有真正排除所有更大的情形。这种<b>不完整的分情况讨论</b>是它当前的典型失败模式之一。</p>
+      </div>
+    </details>
+    <details class="ex">
+      <summary><span class="mk">▸</span>成功案例：新证出一道此前无人解出的 IMO 题<span class="sub">imo_1968_p5_1，点开看模型如何先立辅助引理再收尾</span></summary>
+      <div class="ex-body">
+        <p class="muted" style="font-size:13.5px;margin:0 0 8px">Kimina-Prover 证出了一道<b>此前所有公开模型都没解出</b>的题（imo_1968_p5_1）。它先陈述并花多行证明一个关键辅助引理 <code>h2</code>，再用 <code>use 2*a</code> 猜出正确答案，最后靠 <code>h2</code> 完成复杂推理链——展现出清晰的<b>证明草图规划</b>能力。</p>
+        <pre class="code">theorem imo_1968_p5_1 (a : ℝ) (f : ℝ → ℝ) (h₀ : 0 &lt; a)
+    (h₁ : ∀ x, f (x + a) = 1/2 + Real.sqrt (f x - f x ^ 2)) :
+    ∃ b &gt; 0, ∀ x, f (x + b) = f x := by
+  have h2 : ∀ x, 0 ≤ f x ∧ f x ≤ 1 := by   <span class="cm">-- 先立关键辅助引理</span>
+    intro x
+    have h1 := h₁ (x - a)
+    rw [show x - a + a = x by ring] at h1
+    ...
+  use 2 * a                                  <span class="cm">-- 猜出周期 b = 2a</span>
+  constructor
+  · linarith [h₀]
+  · intro x
+    ...                                      <span class="cm">-- 用 h2 完成收尾</span></pre>
+      </div>
+    </details>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">08</span> 实验结论：一句话能说清</h2>
+    <p>一句话：<strong>Kimina-Prover 在 miniF2F 上刷新 SOTA（80.74% pass@8192），样本效率远超树搜索方法，且大幅碾压通用推理大模型在形式证明上的表现。</strong>下面是最核心的几个数字：</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">80.7<span class="u">%</span></div><div class="k">miniF2F-test pass@8192<br>新 SOTA（前 SOTA ≈72.9%）</div></div>
+      <div class="metric"><div class="v">52.9<span class="u">%</span></div><div class="k">仅 pass@1 就达到<br>样本效率极高</div></div>
+      <div class="metric"><div class="v">68.9<span class="u">%</span></div><div class="k">pass@32 通过率<br>o3-mini 仅 24.6%</div></div>
+      <div class="metric"><div class="v">10<span class="u">×</span></div><div class="k">Lean 验证提速<br>仅需 640 CPU 核</div></div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/main_result.png" alt="miniF2F-test 上各证明方法的通过率随采样预算变化曲线，Kimina-Prover 在最左上方" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 6（原论文 Figure 1）</span>：miniF2F-test 通过率 vs 采样预算（横轴对数刻度）。Kimina-Prover（蓝线）位于<strong>最左上方</strong>——用最少的采样达到最高的通过率。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴（对数刻度）</b>：采样预算（Sample Budget），即调用模型的次数，从 10⁰ 到约 10⁶。</li>
+          <li><b>纵轴</b>：miniF2F-test 通过率（Pass Rate %）。</li>
+          <li><b>方法分两类</b>：图例左侧是 <b>Whole-Proof Generation</b>（整段证明生成），右侧是 <b>Tree Search Method</b>（树搜索）。</li>
+          <li><b>蓝线 Kimina-Prover</b>：稳居<b>最左上角</b>——在仅约 10¹ 次采样时就达到 65%，10³ 时约 78%，10⁴ 时达 80.7%。</li>
+          <li><b>对比树搜索方法</b>（BFS-Prover、InternLM2.5-StepProver 等，图右）：要到 <b>10⁵–10⁶ 次采样</b>才追到 66–71%，整整差了几个数量级的算力。</li>
+          <li><b>读图重点</b>：横轴是对数刻度，所以「位置越靠左」意味着<b>算力需求指数级更小</b>。Kimina-Prover 同时做到了<b>更高准确率 + 更低采样成本</b>。</li>
+          <li><b>一句话总结</b>：这张图是全文成绩单——把搜索内化进推理，比外挂树搜索<b>又准又省</b>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>对比表 1：与各类证明系统在 miniF2F-test 上的对比<span class="sub">点开看不同采样预算下的成绩</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th>系统</th><th>规模</th><th>采样预算</th><th>miniF2F-test</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>DeepSeek-Prover-V1.5-RL + RMaxTS</td><td>7B</td><td class="dim">32×16×400</td><td>63.5%</td></tr>
+              <tr><td>InternLM2.5-StepProver</td><td>7B</td><td class="dim">256×32×600</td><td>65.9%</td></tr>
+              <tr><td>HunyuanProver + BFS</td><td>7B</td><td class="dim">600×8×400</td><td>68.4%</td></tr>
+              <tr><td>BFS-Prover（前 SOTA）</td><td>7B</td><td class="dim">2048×2×600</td><td>70.8%</td></tr>
+              <tr><td>DeepSeek-Prover-V1.5-RL（whole）</td><td>7B</td><td class="dim">102400</td><td>60.2%</td></tr>
+              <tr><td>Goedel-Prover-SFT</td><td>7B</td><td class="dim">25600</td><td>64.7%</td></tr>
+              <tr><td>Kimina-Prover-Distill-7B</td><td>7B</td><td class="dim">1024</td><td>70.8%</td></tr>
+              <tr><td>Kimina-Prover-Preview</td><td>72B</td><td class="dim">1</td><td>52.94%</td></tr>
+              <tr><td>Kimina-Prover-Preview</td><td>72B</td><td class="dim">32</td><td>68.85%</td></tr>
+              <tr><td>Kimina-Prover-Preview</td><td>72B</td><td class="dim">1024</td><td>77.87%</td></tr>
+              <tr class="hl"><td>Kimina-Prover-Preview</td><td>72B</td><td>8192</td><td>80.74%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px">树搜索方法的预算写成「宽×深×次数」相乘，实际采样量远大于 whole-proof 方法。Kimina-Prover 仅 pass@1 (52.94%) 就已逼近部分系统的高预算结果。</p>
+      </div>
+    </details>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>对比表 2：vs 通用推理大模型（o3-mini / Gemini 2.5 Pro）<span class="sub">点开看 informal–formal 鸿沟有多大</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th>模型</th><th>预算</th><th>miniF2F</th><th>IMO 子集</th><th>AIME 子集</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>OpenAI o3-mini</td><td class="dim">32</td><td class="dim">24.59%</td><td class="dim">0%</td><td class="dim">6.67%</td></tr>
+              <tr><td>Gemini-2.5-Pro</td><td class="dim">32</td><td class="dim">37.70%</td><td class="dim">5%</td><td class="dim">13.33%</td></tr>
+              <tr class="hl"><td>Kimina-Prover</td><td>32</td><td>68.85%</td><td>20.00%</td><td>46.67%</td></tr>
+              <tr class="hl"><td>Kimina-Prover</td><td>8192</td><td>80.74%</td><td>40.00%</td><td>86.67%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px">关键反差：Gemini 2.5 与 o3-mini 用 informal 推理能解出 miniF2F 里全部 15 道 AIME 题，但<b>几乎无法把它们形式化</b>——这就是 informal 与 formal 之间的鸿沟。</p>
+      </div>
+    </details>
+
+    <p>蒸馏小模型也很能打：<strong>Distill-7B</strong> 在 pass@1024 达 <strong>70.8%</strong>（追平前 SOTA BFS-Prover），<strong>Distill-1.5B</strong> 也有 61.9%；连 pass@1 都分别有 52.5% / 42.6%。两个小模型均已开源。</p>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">09</span> 局限与未来方向</h2>
+    <p>作者对边界和后续方向也很坦诚（这些往往比成绩单更能帮你判断它适不适合你的场景）：</p>
+    <ul class="tight">
+      <li><strong>不完整的分情况讨论</strong>：典型失败模式——验证了几个小情形就「想当然」推广到所有情形（见上面 aime_1987_p5 案例）。</li>
+      <li><strong>测试时缩放过程颠簸</strong>：形式推理的准确率曲线不像 informal 数学那样平滑上升，中段常有跳变与回退，归因于形式训练数据有限。</li>
+      <li><strong>过度依赖高级 tactic</strong>：有时会滥用 <code>nlinarith</code>、<code>norm_num</code> 等强力自动化 tactic「暴力」收尾，未来计划过滤这类输出以提升证明质量。</li>
+      <li><strong>自动形式化的隐性错误</strong>：在缺乏硬奖励的自动形式化任务上，模型会犯编译能过、裁判抓不到的语义错误，需人工监督——这也是「不可验证领域 RL」的开放难题。</li>
+    </ul>
+    <p>论文给出的后续方向包括：用 <strong>Lean 编译器反馈做迭代式纠错</strong>、接入<strong>外部工具</strong>（库检索、计算引擎）来缓解生成难题。</p>
+    <div class="callout">
+      <div class="t">这篇报告最值得记住的一句话</div>
+      当任务的对错<strong>能被编译器自动验证</strong>时，与其外挂一个搜索算法，不如用<strong>大规模 RL 让模型把搜索内化进自己的长链推理</strong>——这样不仅更省算力、样本效率更高，还第一次让形式证明<strong>随模型规模一起变强</strong>。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对技术报告 <strong>《Kimina-Prover Preview: Towards Large Formal Reasoning Models with Reinforcement Learning》</strong> 的中文导读可视化，内容与图表均基于已抓取的 arXiv 原文（2504.11354v1）正文、表格与原始图片。方法部分的流程/步进示意由原论文 Figure 2 与正文文字组织而成，所有图均取自原论文。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2504.11354" target="_blank" rel="noopener">arXiv:2504.11354 · Kimina-Prover Preview（Numina &amp; Kimi Team）↗</a></p>
+    <p>开源代码与模型：<a href="https://github.com/MoonshotAI/Kimina-Prover-Preview" target="_blank" rel="noopener">github.com/MoonshotAI/Kimina-Prover-Preview ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">发表 2025.04 · arXiv preprint（Technical Report）· 基座 Qwen2.5-72B · RL 流水线沿用 Kimi k1.5</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明展开/收起（仅用于图片）
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// RL 五步步进动画
+var spIdx = 0;
+var spTotal = 5;
+function spRender(){
+  var steps = document.querySelectorAll('#rlpipe .sp-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === spIdx);
+  }
+  var dots = document.querySelectorAll('#rlpipe .sp-dot');
+  for (var j=0;j<dots.length;j++){
+    dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= spIdx);
+  }
+  document.getElementById('sp-counter').textContent = (spIdx+1) + ' / ' + spTotal;
+  document.getElementById('sp-prev').disabled = (spIdx === 0);
+  document.getElementById('sp-next').disabled = (spIdx === spTotal-1);
+}
+function spNext(){ if (spIdx < spTotal-1){ spIdx++; spRender(); } }
+function spPrev(){ if (spIdx > 0){ spIdx--; spRender(); } }
+function spReset(){ spIdx = 0; spRender(); }
+spRender();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>
+

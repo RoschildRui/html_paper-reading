@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniMax Sparse Attention（MSA）图解 · 论文精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg2:#f7efdf;
+    --card:#f4ead7;
+    --card2:#efe3cd;
+    --panel:#fdfaf2;
+    --line:#e6d8bf;
+    --line2:#d9c8a8;
+    --ink:#2c2620;
+    --ink-soft:#5d5444;
+    --muted:#8a7d66;
+    --accent:#b06a32;
+    --accent-soft:#c98a4f;
+    --accent-bg:#f0dcc4;
+    --ok:#5f7a4a;
+    --radius:14px;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.78;font-size:16.5px;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .wrap{max-width:980px;margin:0 auto;padding:0 24px;}
+
+  /* header */
+  header.top{
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#fdf8ee,#fbf6ea);
+    padding:30px 0 24px;
+  }
+  .eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;}
+  h1.title{font-size:33px;line-height:1.25;margin:12px 0 6px;font-weight:800;letter-spacing:-.01em;}
+  h1.title .en{font-family:var(--sans);}
+  .subtitle{color:var(--ink-soft);font-size:17px;margin:0 0 16px;font-weight:500;}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13.5px;color:var(--muted);}
+  .pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:500;color:var(--ink-soft);}
+  .pill.accent{background:var(--accent-bg);border-color:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .src-link{margin-left:auto;}
+  .src-link a{font-weight:600;display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:7px 15px;border-radius:999px;}
+  .src-link a:hover{background:#9a5b29;text-decoration:none;}
+
+  /* nav */
+  nav.toc{position:sticky;top:0;z-index:20;background:rgba(251,246,234,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding:9px 24px;}
+  nav.toc a{white-space:nowrap;font-size:13.5px;color:var(--ink-soft);padding:5px 12px;border-radius:999px;font-weight:500;}
+  nav.toc a:hover{background:var(--card);text-decoration:none;}
+
+  section{padding:40px 0 8px;}
+  h2.sec{font-size:25px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em;}
+  h2.sec .num{color:var(--accent);font-family:var(--mono);font-size:18px;margin-right:10px;font-weight:700;}
+  .sec-lead{color:var(--muted);font-size:14.5px;margin:0 0 22px;}
+  p{margin:14px 0;}
+  strong{font-weight:700;color:var(--ink);}
+  .soft{color:var(--ink-soft);}
+
+  /* TL;DR */
+  .tldr{background:var(--card);border:1px solid var(--line2);border-radius:var(--radius);padding:24px 26px;margin:8px 0 6px;}
+  .tldr h3{margin:0 0 8px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;}
+  .tldr p{margin:10px 0;font-size:17px;}
+  .tldr .big{font-size:18.5px;font-weight:600;line-height:1.7;}
+
+  ul.clean{margin:14px 0;padding-left:0;list-style:none;}
+  ul.clean li{position:relative;padding-left:26px;margin:9px 0;}
+  ul.clean li::before{content:"";position:absolute;left:6px;top:12px;width:7px;height:7px;border-radius:2px;background:var(--accent-soft);transform:rotate(45deg);}
+
+  /* cards grid */
+  .card-grid{display:grid;grid-template-columns:1fr;gap:14px;margin:18px 0;}
+  .xcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;transition:border-color .2s;}
+  .xcard.open{border-color:var(--accent-soft);}
+  .xcard .head{padding:16px 20px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;user-select:none;}
+  .xcard .head:hover{background:var(--bg2);}
+  .xcard .tagno{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;background:var(--accent-soft);border-radius:6px;padding:3px 8px;margin-top:3px;flex-shrink:0;}
+  .xcard .htext{flex:1;}
+  .xcard .htext .name{font-weight:700;font-size:17px;}
+  .xcard .htext .one{font-size:13.5px;color:var(--muted);margin-top:2px;}
+  .xcard .htext .venue{font-family:var(--mono);font-size:11.5px;color:var(--accent);margin-top:4px;}
+  .xcard .chev{margin-top:4px;color:var(--muted);font-size:13px;transition:transform .25s;flex-shrink:0;}
+  .xcard.open .chev{transform:rotate(90deg);}
+  .xcard .body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+  .xcard.open .body{max-height:1400px;}
+  .xcard .body-inner{padding:2px 20px 20px;border-top:1px solid var(--line);}
+  .xcard .body-inner p{font-size:15px;}
+
+  /* figures */
+  figure.fig{margin:24px 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+  figure.fig img{width:100%;height:auto;border-radius:8px;display:block;background:#fff;border:1px solid var(--line);}
+  .fig-cap{font-size:13.5px;color:var(--muted);margin-top:12px;}
+  .fig-cap b{color:var(--ink-soft);}
+  .fig-toggle{display:inline-block;margin-top:10px;font-size:13.5px;color:var(--accent);font-weight:600;cursor:pointer;user-select:none;}
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .figure-detail.active{max-height:1600px;}
+  .figure-detail .fd-inner{padding-top:12px;margin-top:10px;border-top:1px dashed var(--line2);}
+  .figure-detail ul{margin:6px 0;padding-left:0;list-style:none;}
+  .figure-detail li{position:relative;padding-left:22px;margin:8px 0;font-size:14.5px;color:var(--ink-soft);}
+  .figure-detail li::before{content:"";position:absolute;left:4px;top:10px;width:6px;height:6px;border-radius:50%;background:var(--accent-soft);}
+  .figure-detail li b{color:var(--ink);}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0;}
+  .metric{background:var(--card);border:1px solid var(--line2);border-radius:var(--radius);padding:18px 16px;text-align:center;}
+  .metric .v{font-size:30px;font-weight:800;color:var(--accent);font-family:var(--mono);letter-spacing:-.02em;}
+  .metric .l{font-size:13px;color:var(--ink-soft);margin-top:6px;line-height:1.45;}
+  .metric .s{font-size:11.5px;color:var(--muted);margin-top:3px;}
+
+  /* method overview steps */
+  .branchgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0;}
+  .branch{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+  .branch h4{margin:0 0 6px;font-size:16.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .branch .dot{width:10px;height:10px;border-radius:3px;}
+  .branch.idx .dot{background:#7c9b5e;}
+  .branch.main .dot{background:var(--accent-soft);}
+  .branch p{font-size:14.5px;margin:8px 0;}
+  .branch .mini{font-family:var(--mono);font-size:12.5px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink-soft);margin-top:8px;}
+
+  /* step animation */
+  .demo{background:var(--panel);border:1px solid var(--line2);border-radius:var(--radius);padding:22px;margin:22px 0;}
+  .demo-title{font-weight:700;font-size:16px;margin:0 0 4px;}
+  .demo-sub{font-size:13px;color:var(--muted);margin:0 0 16px;}
+  .blocks{display:flex;gap:6px;align-items:flex-end;justify-content:center;flex-wrap:wrap;min-height:120px;padding:6px 0 4px;}
+  .blk{width:54px;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .blk .bar{width:30px;background:var(--line2);border-radius:4px 4px 0 0;height:6px;transition:height .5s ease,background .4s ease;}
+  .blk .box{width:46px;height:38px;border-radius:8px;border:1.5px solid var(--line2);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--muted);transition:all .4s ease;position:relative;}
+  .blk .lbl{font-size:10.5px;color:var(--muted);height:13px;font-weight:600;}
+  /* states */
+  .blk.scored .bar{background:var(--accent-soft);}
+  .blk.selected .box{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:700;box-shadow:0 1px 0 var(--accent-soft);}
+  .blk.local .box{border-color:#7c9b5e;background:#e7eedd;color:#4d6636;font-weight:700;}
+  .blk.query .box{border-color:var(--ink);background:var(--ink);color:#fff;font-weight:700;}
+  .blk.dropped .box{opacity:.32;}
+  .blk.dropped .bar{opacity:.3;}
+  .blk.attend .box{outline:2px solid var(--accent);outline-offset:2px;}
+  .demo-controls{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap;}
+  .btn{font-family:var(--sans);font-size:14px;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:999px;padding:8px 18px;cursor:pointer;transition:background .2s;}
+  .btn:hover{background:#9a5b29;}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn.ghost:hover{background:var(--accent-bg);}
+  .step-pill{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;}
+  .demo-explain{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-height:60px;}
+  .demo-explain .et{font-weight:700;font-size:14.5px;color:var(--accent);}
+  .demo-explain .ed{font-size:14px;color:var(--ink-soft);margin-top:4px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:14px;height:14px;border-radius:4px;display:inline-block;border:1.5px solid var(--line2);}
+  .legend i.q{background:var(--ink);border-color:var(--ink);}
+  .legend i.s{background:var(--accent-bg);border-color:var(--accent);}
+  .legend i.l{background:#e7eedd;border-color:#7c9b5e;}
+  .legend i.d{background:var(--bg2);opacity:.4;}
+
+  /* code / algorithm */
+  details.code{margin:18px 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  details.code summary{cursor:pointer;padding:14px 18px;font-weight:600;font-size:14.5px;color:var(--ink);list-style:none;}
+  details.code summary::-webkit-details-marker{display:none;}
+  details.code summary .hint{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:3px;}
+  details.code[open] summary{border-bottom:1px solid var(--line);}
+  pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.7;color:var(--ink-soft);background:var(--bg2);}
+  pre .kw{color:var(--accent);font-weight:600;}
+  pre .cm{color:var(--muted);font-style:italic;}
+
+  .formula{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--accent-soft);border-radius:8px;padding:12px 16px;font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);margin:14px 0;overflow-x:auto;}
+
+  .callout{background:var(--accent-bg);border:1px solid var(--accent-soft);border-radius:var(--radius);padding:16px 20px;margin:18px 0;font-size:15px;color:#6e431f;}
+  .callout b{color:#5a3618;}
+
+  table.cmp{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:var(--panel);border-radius:var(--radius);overflow:hidden;}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:10px 12px;text-align:left;}
+  table.cmp th{background:var(--card2);font-weight:700;font-size:13px;}
+  table.cmp td:first-child{font-weight:600;}
+  table.cmp .me{color:var(--accent);font-weight:700;}
+
+  footer{margin-top:50px;border-top:1px solid var(--line);background:var(--bg2);padding:28px 0 40px;}
+  footer .wrap{font-size:13.5px;color:var(--muted);}
+  footer a{font-weight:600;}
+  footer .fl{margin:6px 0;}
+
+  @media (max-width:880px){
+    .wrap{padding:0 18px;}
+    h1.title{font-size:26px;}
+    .branchgrid{grid-template-columns:1fr;}
+    .metrics{grid-template-columns:1fr;}
+    .src-link{margin-left:0;width:100%;}
+    nav.toc .wrap{padding:9px 18px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">论文图解 · 高效长上下文注意力</div>
+    <h1 class="title">MiniMax Sparse Attention <span class="en">（MSA）</span></h1>
+    <p class="subtitle">为 GQA 量身打造的「分块稀疏注意力」：让百万级上下文的注意力开销不再随长度暴涨</p>
+    <div class="meta-row">
+      <span class="pill">MiniMax</span>
+      <span class="pill">浙大 / 华科 / 北大 等</span>
+      <span class="pill accent">arXiv preprint · 2026.06</span>
+      <span class="pill">arXiv:2606.13392v1</span>
+      <span class="src-link"><a href="https://arxiv.org/abs/2606.13392" target="_blank" rel="noopener">阅读原文 / Source ↗</a></span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#idea">核心思想</a>
+    <a href="#problem">问题</a>
+    <a href="#prior">已有方案</a>
+    <a href="#method">MSA 方法</a>
+    <a href="#demo">选择过程</a>
+    <a href="#train">训练</a>
+    <a href="#kernel">Kernel 协同</a>
+    <a href="#pattern">学到的模式</a>
+    <a href="#exp">实验结论</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ TL;DR ============ -->
+  <section id="idea">
+    <div class="tldr">
+      <h3>TL;DR · 一句话核心</h3>
+      <p class="big">MSA 在标准 GQA 上挂一个<strong>极轻量的「索引分支」</strong>：它用分块打分为每个 GQA 组独立挑出 <strong>Top-k 个 KV 块</strong>，「主分支」只对这些被选中的块做精确 softmax 注意力。于是每个 token 的注意力预算被<strong>固定</strong>下来，不再随序列长度增长。</p>
+      <p class="soft">结果：在 109B MoE 模型上，MSA 质量与稠密 GQA 基本持平，但在 1M 上下文下把每 token 注意力计算量降到 <strong>1/28.4</strong>，配合自研 kernel 实现 <strong>14.2× 预填充</strong> 与 <strong>7.6× 解码</strong> 的真实墙钟加速（H800）。</p>
+    </div>
+    <ul class="clean">
+      <li><strong>简单优先（奥卡姆剃刀）</strong>：相比 NSA 的三分支、DSA 的 token 级索引，MSA 只加 2 个投影矩阵，做「按组、按块」的 Top-k 选择，更易在各类 GPU 上高效落地。</li>
+      <li><strong>分组独立检索</strong>：每个 GQA 组挑自己的块，既保留多样性，又让 KV 读取保持连续、对硬件友好。</li>
+      <li><strong>算法 × kernel 协同设计</strong>：免 exp 的 Top-k、KV-outer 的稀疏注意力排布，把理论稀疏真正变成墙钟加速。</li>
+    </ul>
+  </section>
+
+  <!-- ============ PROBLEM ============ -->
+  <section id="problem">
+    <h2 class="sec"><span class="num">01</span>要解决什么问题</h2>
+    <p class="sec-lead">长上下文正在成为前沿大模型的刚需，但稠密注意力的二次方开销让它在部署时「算不起」。</p>
+    <p>智能体工作流、仓库级代码推理、持久记忆——这些场景都要求模型同时关注<strong>几十万到上百万</strong>个 token。但传统 softmax 注意力的计算量是 <span class="formula" style="display:inline-block;padding:2px 8px;margin:0;">Θ(2·H<sub>q</sub>·N²·d<sub>h</sub>)</span>，随序列长度 N <strong>二次方增长</strong>。当上下文拉到百万级，注意力就成了训练和推理（尤其是生产部署的延迟/吞吐）的最大瓶颈。</p>
+    <p>社区的核心矛盾是：<strong>在「模型质量」和「效率」之间找平衡点</strong>。怎样在几乎不损失能力的前提下，把注意力开销从「随长度暴涨」压成「与长度脱钩」？这就是 MSA 要回答的问题。</p>
+    <div class="callout">
+      关键观察：对每个 query 来说，真正贡献注意力质量的 key 其实<strong>非常少且高度集中</strong>（局部邻域 + 少数远程位置 + 起始 sink）。既然如此，与其对全部 N 个 token 做注意力，不如<strong>只挑出真正重要的少量块</strong>来算——这就是「稀疏注意力」的直觉。
+    </div>
+  </section>
+
+  <!-- ============ PRIOR ============ -->
+  <section id="prior">
+    <h2 class="sec"><span class="num">02</span>已有方案怎么做、卡在哪</h2>
+    <p class="sec-lead">三条主要路线，各有取舍。MSA 属于其中第三条「原生可训练稀疏」，并在该家族内做了简化。点击卡片展开细节。</p>
+
+    <div class="card-grid">
+
+      <div class="xcard" id="card-linear">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="tagno">A</span>
+          <div class="htext">
+            <div class="name">线性 / 混合 / 滑窗注意力</div>
+            <div class="one">用更便宜的算子「替换」一部分 softmax 注意力</div>
+            <div class="venue">Lightning/Linear Attention · Mamba · MiniMax-01/M1 等</div>
+          </div>
+          <span class="chev">▸</span>
+        </div>
+        <div class="body"><div class="body-inner">
+          <p><strong>做了什么：</strong>把昂贵的 softmax kernel 换成线性复杂度的近似（线性注意力），或换成状态空间模型（Mamba）的选择性递归；混合架构则把一部分全注意力层替换为线性层或滑动窗口层，只保留少量二次方层。</p>
+          <p><strong>怎么做：</strong>核心是降低或消除对全序列的二次方依赖，用固定大小的状态或固定窗口来概括历史。</p>
+          <p><strong>卡在哪：</strong>这类方法或多或少<strong>牺牲了精确 softmax 的表达能力</strong>，长程精确检索能力可能受限；滑动窗口是「位置固定、与内容无关」的模式，难以动态命中远处真正重要的 token。MSA 的消融也显示：在等算力预算下，<strong>固定滑窗的困惑度明显高于动态选择</strong>。</p>
+        </div></div>
+      </div>
+
+      <div class="xcard" id="card-infer">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="tagno">B</span>
+          <div class="htext">
+            <div class="name">推理期稀疏化（训练仍是稠密）</div>
+            <div class="one">在已训练好的全注意力模型上，仅在服务时做稀疏</div>
+            <div class="venue">H2O · SnapKV · Quest · MInference · InfLLM</div>
+          </div>
+          <span class="chev">▸</span>
+        </div>
+        <div class="body"><div class="body-inner">
+          <p><strong>做了什么：</strong>在一个稠密预训练好的骨干上，<strong>只在推理时</strong>构造稀疏支撑：H2O / SnapKV 按累计注意力统计裁剪 KV cache；Quest 做按页的重要性估计；MInference / FlexPrefill 在预填充阶段分派按头的稀疏 kernel；InfLLM 维护 sink + 局部窗口 + 可检索 chunk。</p>
+          <p><strong>怎么做：</strong>用启发式或统计量近似「哪些 KV 重要」，不改动训练。</p>
+          <p><strong>卡在哪：</strong>它们<strong>仍要承担全注意力的训练成本</strong>，并且至少有一个推理阶段接近稠密速度；训练与推理不一致也可能带来质量损失。MSA 选择把索引器<strong>在预训练阶段就一起学好</strong>，让模型从一开始就适配稀疏模式。</p>
+        </div></div>
+      </div>
+
+      <div class="xcard" id="card-native">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="tagno">C</span>
+          <div class="htext">
+            <div class="name">原生可训练稀疏注意力（最接近 MSA）</div>
+            <div class="one">在预训练中就一起训练「选择器」，是 MSA 的直接对照</div>
+            <div class="venue">NSA · MoBA · DSA(DeepSeek-V3.2) · InfLLM-v2 · 2025</div>
+          </div>
+          <span class="chev">▸</span>
+        </div>
+        <div class="body"><div class="body-inner">
+          <p><strong>做了什么：</strong>把稀疏选择器作为模型的一部分原生训练。<strong>NSA</strong> 面向 MQA/MHA，用三条并行分支（压缩注意力做粗粒度全局、选择注意力做细粒度块、滑动窗口做局部）；<strong>MoBA</strong> 也基于 GQA，但用很大的 KV 块、靠块平均 key 打分，且索引器只靠语言建模梯度训练；<strong>DSA</strong> 架在 MLA 的 MQA 模式上，用多头 ReLU 轻量索引器对 token 逐个打分，所有 query 头共享一份 Top-k，是 token 级选择。</p>
+          <p><strong>怎么做：</strong>共同点是「先选后算」——先由索引器决定关注哪些 key/块，再在子集上做注意力。</p>
+          <p><strong>MSA 在这家族里的差异（两点同时成立）：</strong></p>
+          <ul class="clean">
+            <li><strong>按 GQA 组共享 Top-k</strong>：每个组独立选块，得到多组、块粒度的检索多样性。</li>
+            <li><strong>块级选择 + 连续 KV 读取</strong>：保持对张量核友好的访存，并放宽了 NSA 等对 head 维度的约束，更易在更广的 GPU 上高效执行。</li>
+          </ul>
+        </div></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ METHOD ============ -->
+  <section id="method">
+    <h2 class="sec"><span class="num">03</span>本文方法：MSA 的两条分支</h2>
+    <p class="sec-lead">这是全文重头戏。MSA 把「稀疏注意力」拆成两个阶段：先由<strong>索引分支</strong>选块，再由<strong>主分支</strong>在选中的块上做精确注意力。</p>
+
+    <figure class="fig">
+      <img src="assets/msa_arch.png" alt="MSA 架构总览：索引分支与主分支">
+      <div class="fig-cap"><b>图 1 · MSA 架构总览。</b>左侧为索引分支（Index Branch），右侧为主分支（Main Branch），最右展示两个 query 组各自不同的块稀疏掩码。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="fd-inner">
+        <ul>
+          <li><b>共享输入：</b>两条分支都从同一份 Hidden States 出发，各自做 Linear Projection 与 Norm &amp; RoPE。注意索引分支的输入被施加了 stop-gradient（梯度截断），与主干解耦。</li>
+          <li><b>索引分支（左，绿色）：</b>只生成轻量的 <b>Q<sub>idx</sub> / K<sub>idx</sub></b>，算出打分 Score = Q<sub>idx</sub>K<sub>idx</sub><sup>⊤</sup>，再做 <b>Block Max Pooling</b>（把 token 级分数按块取最大值）得到块分数，最后 <b>Top-K Index</b> 选出 k 个 KV 块。</li>
+          <li><b>主分支（右，蓝色）：</b>正常算 <b>Q / K / V</b>，但只取索引分支选出的 <b>Top-K KV Block</b>，做 <b>Sparse Attention</b> 输出结果。绿色箭头表示「索引结果」在控制主分支读哪些块。</li>
+          <li><b>最右掩码（数据流的产物）：</b>纵轴是 Query、横轴是 Key Block，下三角为因果可见区。Query Group 1（紫）与 Query Group 2（棕）在共享局部对角线之外，<b>选中的远程块各不相同</b>——这正是「分组独立 Top-k」的可视化。</li>
+          <li><b>一句话总结：</b>左边「廉价地决定看哪里」，右边「精确地只算那几块」；预算固定为 k 个块，因此与序列长度脱钩。</li>
+        </ul>
+      </div></div>
+    </figure>
+
+    <div class="branchgrid">
+      <div class="branch idx">
+        <h4><span class="dot"></span>索引分支 Index Branch</h4>
+        <p>为每个 GQA 组配一个索引 query 头，所有组共享一个索引 key 头（只新增 2 个投影矩阵 W<sub>q</sub><sup>idx</sup>、W<sub>k</sub><sup>idx</sup>）。</p>
+        <p>对每个 query 位置 i 与组 r：先算 token 级分数，再<strong>按块取最大值</strong>聚合成块分数 M，最后选 <strong>Top-k</strong> 个块。</p>
+        <div class="mini">M[i,b] = max<sub>j∈块b, j≤i</sub> ( Q<sub>idx</sub>·K<sub>idx</sub><sup>⊤</sup> / √d<sub>idx</sub> )<br>I = TopK(M, k) ∪ {当前局部块}</div>
+      </div>
+      <div class="branch main">
+        <h4><span class="dot"></span>主分支 Main Branch</h4>
+        <p>拿到块索引集合 I 后，只对这些块里「因果可见」的 token 做标准缩放点积注意力；同组的多个 query 头共享同一份块选择，但各保留自己的 query 投影。</p>
+        <p>由于选中块最多含 k·B<sub>k</sub> 个 token，单 query 的注意力代价从 <strong>O(N)</strong> 降到 <strong>O(k·B<sub>k</sub>)</strong>——一个<strong>不随 N 增长的固定预算</strong>。</p>
+        <div class="mini">O<sub>i</sub> = softmax( Q<sub>i</sub>·K[I]<sup>⊤</sup> / √d<sub>h</sub> ) · V[I]</div>
+      </div>
+    </div>
+
+    <p>论文里采用的默认配置是 <strong>块大小 B<sub>k</sub>=128、每组每 query 选 k=16 个块</strong>，对应每个 query 仅 <strong>2,048 个 token</strong> 的注意力预算（无论上下文是 128K 还是 1M）。此外，<strong>当前位置所在的局部块永远被选入</strong>，保证 query 至少能看到自己的邻域，稳定训练。</p>
+
+    <h3 style="font-size:18px;margin:26px 0 4px;">复杂度：差距随 N 线性拉开</h3>
+    <div class="formula">
+      F<sub>GQA</sub>(N) = 2·H<sub>q</sub>·d<sub>h</sub>·N²<br>
+      F<sub>MSA</sub>(N) = <span style="color:#6f8a52;">H<sub>kv</sub>·d<sub>idx</sub>·N²</span> <span class="cm">（索引分支，轻量）</span> + <span style="color:var(--accent);">4·H<sub>q</sub>·d<sub>h</sub>·N·k·B<sub>k</sub></span> <span class="cm">（主分支，与 N 线性）</span>
+    </div>
+    <p>GQA 的主注意力路径随上下文长度二次方增长；MSA 的主分支只花费固定预算 k·B<sub>k</sub>，再加一个轻量的索引计算。当 k·B<sub>k</sub> ≪ N 且 H<sub>kv</sub>·d<sub>idx</sub> ≪ H<sub>q</sub>·d<sub>h</sub> 时，两者的 FLOPs 差距随 N 越拉越大——这正是长上下文下加速比不断变大的根源。</p>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section id="demo">
+    <h2 class="sec"><span class="num">04</span>一步步看：MSA 如何选块</h2>
+    <p class="sec-lead">下面用一个 GQA 组、12 个块的玩具例子，复现 MSA「打分 → Top-k → 稀疏注意力」的真实流程。点「下一步」推进。</p>
+
+    <div class="demo">
+      <div class="demo-title">单个 GQA 组的 Top-k 块选择（演示 k=3 远程块 + 局部块）</div>
+      <div class="demo-sub">最右侧绿色块是当前 query 所在的局部块（恒被选入）；query 只能因果地看到自己左侧（含自身）的块。</div>
+
+      <div class="blocks" id="blockRow"><!-- filled by JS --></div>
+
+      <div class="legend">
+        <span><i class="l"></i>query 所在的局部块（恒选）</span>
+        <span><i class="s"></i>Top-k 选中的远程块</span>
+        <span><i class="d"></i>未选中（跳过）</span>
+      </div>
+
+      <div class="demo-controls">
+        <button class="btn" id="nextBtn" onclick="msaNext()">下一步 ▸</button>
+        <button class="btn ghost" onclick="msaReset()">重置</button>
+        <span class="step-pill" id="stepPill">步骤 1 / 4</span>
+      </div>
+
+      <div class="demo-explain">
+        <div class="et" id="explainTitle"></div>
+        <div class="ed" id="explainDesc"></div>
+      </div>
+    </div>
+    <p class="soft" style="font-size:14px;">注：真实配置每组每 query 选 <strong>16</strong> 个块（每块 128 token），且<strong>每个 GQA 组各选各的</strong>——上图若换成另一个组，被选中的远程块会不同，但局部块与起始 sink 块通常被共享。</p>
+  </section>
+
+  <!-- ============ TRAIN ============ -->
+  <section id="train">
+    <h2 class="sec"><span class="num">05</span>怎么训练这个「选择器」</h2>
+    <p class="sec-lead">Top-k 选择不可导，语言建模损失无法直接训练索引投影。MSA 用一个 KL 对齐损失把索引器「教会」，再配三个稳定化技巧。</p>
+
+    <ul class="clean">
+      <li><strong>KL 对齐损失：</strong>让索引分支的打分分布 P<sup>idx</sup> 去逼近主分支（按组内多头平均后的）注意力分布 P。这给了索引器一个直接的学习信号，使它选出的块「在语义上确实是主分支想看的块」。</li>
+      <li><strong>梯度截断（Gradient Detach）：</strong>对索引分支的输入做 stop-gradient，并对教师分布 P 做 detach。于是 KL 损失<strong>只更新两个索引投影</strong> W<sub>q</sub><sup>idx</sup>、W<sub>k</sub><sup>idx</sup>，既不污染主分支，也不会经由 X 反传回主干——索引器成为一个干净的「纯选择器」。</li>
+      <li><strong>索引器预热（Indexer Warmup）：</strong>前若干步两条分支都跑全注意力，只用 KL 训练新加的索引投影；预热后再切换到稀疏注意力。把稠密 checkpoint 转稀疏时同样用这套预热，先对齐索引再交给它控制路由。</li>
+      <li><strong>强制局部块（Local Block）：</strong>当前 query 所在块在训练/推理中永远入选，预留一个槽位给邻域，避免退化选择。</li>
+    </ul>
+
+    <p>总损失为 <span class="formula" style="display:inline-block;padding:2px 10px;margin:0;">ℒ = ℒ<sub>LM</sub> + λ · Σ<sub>layers</sub> ℒ<sub>KL</sub></span>，即语言建模损失加上各层 KL 对齐损失的加权和。</p>
+
+    <details class="code">
+      <summary>查看 Algorithm 1：单个 MSA 层的训练前向 + KL 损失
+        <span class="hint">伪代码 7 行：投影 → 索引打分 → Top-k → 稀疏注意力 → 输出 → 计算 KL</span>
+      </summary>
+<pre><span class="cm"># 输入：hidden states X ∈ R^(N×d_model)；块大小 B_k；选块数 k</span>
+1: <span class="kw">Q, K, V</span>        ← X·W_q , X·W_k , X·W_v            <span class="cm">// 主分支 Q/K/V</span>
+2: <span class="kw">Q_idx, K_idx</span>  ← stopgrad(X)·W_q^idx , stopgrad(X)·W_k^idx   <span class="cm">// 索引投影，已 detach</span>
+3: <span class="kw">M_idx</span>        ← BlockMaxPool(Q_idx, K_idx, B_k)   <span class="cm">// 块分数，按组、因果</span>
+4: <span class="kw">I</span>            ← TopK(M_idx, k)                    <span class="cm">// 选中块；局部块强制并入</span>
+5: <span class="kw">O</span>            ← TopKAttn(Q, K, V, I)              <span class="cm">// 只对选中块做注意力</span>
+6: <span class="kw">output</span>       ← O·W_o
+7: <span class="kw">L_KL</span>         ← KLdiv(Q_idx, K_idx, stopgrad(Q), stopgrad(K), I)
+<span class="kw">return</span> output, L_KL</pre>
+    </details>
+  </section>
+
+  <!-- ============ KERNEL ============ -->
+  <section id="kernel">
+    <h2 class="sec"><span class="num">06</span>有意思的点：算法 × Kernel 协同</h2>
+    <p class="sec-lead">理论上的稀疏不等于真实的加速。MSA 专门把算法和 GPU 执行路径一起设计，才把 FLOPs 节省兑现成墙钟时间。</p>
+
+    <ul class="clean">
+      <li><strong>免 exp 的 Top-k：</strong>因为 softmax 是保序的（s<sub>i</sub>≤s<sub>j</sub> ⇔ softmax(s)<sub>i</sub>≤softmax(s)<sub>j</sub>），选 Top-k 只需对<strong>原始分数</strong>排序即可，前向直接<strong>跳过 max/exp/sum</strong>，把原始分数喂给选择。</li>
+      <li><strong>面向小 k 的寄存器级 Top-k：</strong>B<sub>k</sub>=128、k=16 这个甜点区让通用 Top-k kernel（radix / bitonic）反而不划算。MSA 让 warp 的 32 个 lane 各扫一段、各维护一个 k 元最小堆，最后做 k 轮 shuffle 归并；共享内存按 lane 映射到固定 bank，避免冲突。</li>
+      <li><strong>KV-outer 的稀疏注意力：</strong>把选中的 KV 块放在外层循环，让每个 KV 块「召回」关注它的 query 并拼满张量核 MMA；用预排程分块 + 两阶段合并来应对「块热度极不均衡」，无需原子更新。</li>
+      <li><strong>训练侧融合：</strong>把稀疏 KL 损失所需的辅助 LSE 计算融进前向；反向用持久化负载均衡。</li>
+    </ul>
+
+    <div class="callout">
+      <b>Top-k kernel 实测（H800，fp32）：</b>在部署设定（128K 序列、k=16）下，MSA 自研 Top-k 比 <span style="font-family:var(--mono);">torch.topk</span> 快约 <b>5.1×</b>、比 TileLang radix-select 快约 <b>3.7×</b>，且所有实现产出完全一致的索引集合。
+    </div>
+  </section>
+
+  <!-- ============ PATTERN ============ -->
+  <section id="pattern">
+    <h2 class="sec"><span class="num">07</span>索引器到底学到了什么模式</h2>
+    <p class="sec-lead">把学到的索引分支「选择概率」画成热图，可以直接看到稀疏结构——它自发地恢复了稠密注意力里最关键的几类结构。</p>
+
+    <figure class="fig">
+      <img src="assets/vis_analysis_layer18.png" alt="Layer 18 各头索引分支选择概率热图">
+      <div class="fig-cap"><b>图 5(b) · Layer 18 的四个 GQA 组（头）。</b>横轴 Key Block、纵轴 Query Block，下三角为因果区；颜色越深表示该块被选中的概率越高。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="fd-inner">
+        <ul>
+          <li><b>深色对角线：</b>所有头都给「局部对角线」高概率——离 query 最近的块几乎总被选中，对应强制保留的局部块与邻域偏好。</li>
+          <li><b>深色最左列（sink）：</b>每个头都稳定选中起始块（attention sink）。值得注意：即使<b>不强制</b>，索引器也会自发把高概率分给第一个块。</li>
+          <li><b>少数远程条纹：</b>剩余预算被分给少量长程相对位置，形成几条淡色斜条纹。</li>
+          <li><b>分组各异：</b>不同 GQA 组（Head 0–3）的远程条纹<b>明显不同</b>——这证明「分组独立 Top-k」确实学出了组特定的稀疏模式，而非塌缩成单一全局选择。</li>
+          <li><b>随深度变化：</b>对比浅层（Layer 1）远程选择更发散，到 Layer 18 收敛成更锐利、更稀疏的几条条纹。</li>
+          <li><b>一句话总结：</b>学到的模式 = 局部对角线 + 起始 sink + 少量组特定远程条纹，与「重要 key 高度集中」的直觉吻合。</li>
+        </ul>
+      </div></div>
+    </figure>
+
+    <p>论文进一步发现：即使<strong>不显式强制</strong>选第一个 KV 块，学到的索引器也会跨所有层和头都给起始块很高的选择概率——<strong>attention sink 现象在稀疏机制下依然自发涌现且普遍存在</strong>。</p>
+  </section>
+
+  <!-- ============ EXPERIMENT ============ -->
+  <section id="exp">
+    <h2 class="sec"><span class="num">08</span>实验结论（一句话版）</h2>
+    <p class="sec-lead">在 109B MoE、3T token 的大规模设定下：MSA 质量与稠密 GQA 基本持平，同时换来随上下文越来越大的真实加速。</p>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="v">28.4×</div>
+        <div class="l">每 token 注意力 FLOPs 下降</div>
+        <div class="s">@ 1M 上下文 vs GQA</div>
+      </div>
+      <div class="metric">
+        <div class="v">14.2×</div>
+        <div class="l">预填充（Prefill）墙钟加速</div>
+        <div class="s">@ 1M · H800</div>
+      </div>
+      <div class="metric">
+        <div class="v">7.6×</div>
+        <div class="l">解码（Decode）墙钟加速</div>
+        <div class="s">@ 1M · H800</div>
+      </div>
+    </div>
+
+    <p>训练动态上，原生稀疏预训练（MSA-PT）与全注意力基线的 <strong>LM loss 曲线几乎重合</strong>、梯度范数同量级，说明大规模下训练稀疏模型和训练稠密基线一样稳定。两条落地路线各有所长：</p>
+    <ul class="clean">
+      <li><strong>MSA-PT（从头原生稀疏训练）：</strong>全程学习稀疏模式，在不少数学、图像、视频、长上下文检索基准上表现最强。</li>
+      <li><strong>MSA-CPT（从稠密 checkpoint 转换）：</strong>仅用 400B token 续训（含 40B 预热）即可，更保守地保留原稠密模型行为，是「已有稠密 checkpoint 时」的实用转换路线。</li>
+    </ul>
+
+    <table class="cmp">
+      <thead><tr><th>设定</th><th>关键配置</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td>模型规模</td><td>109B 总参 / 6B 激活，41 层 MoE</td><td>原生多模态训练，64 query 头 / 4 KV 头 / 头维 128</td></tr>
+        <tr><td>稀疏预算</td><td class="me">B<sub>k</sub>=128, k=16 → 2,048 token/query</td><td>无论上下文多长，主分支预算固定</td></tr>
+        <tr><td>训练预算</td><td>3T tokens（PT）／ +400B（CPT）</td><td>PT 含 40B 索引器预热</td></tr>
+        <tr><td>能力保持</td><td class="me">与 GQA 全注意力基本持平</td><td>语言/推理/多模态/智能体 PPL 无明显退化</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <b>动态选择 vs 固定滑窗：</b>在等算力预算下，去掉索引分支、改用「首块 + 局部窗口」的固定模式，其在智能体任务上的困惑度<b>始终高于</b> MSA。说明对这些任务而言，<b>内容相关的动态选择优于位置固定的稀疏模式</b>。
+    </div>
+
+    <p class="soft"><strong>局限与展望：</strong>论文坦言仍存在<strong>残余的长上下文检索差距</strong>，可通过更长的稀疏训练、推理时更大的选择预算、或更丰富的索引打分函数来缩小。由于 MSA 的三个核心决策（分组独立选择、块级粒度、KL 对齐训练的索引器）都与主流开源前沿模型共享的 GQA 骨干兼容，作者认为该配方可低成本迁移到强化学习后训练、智能体部署等长上下文成本占主导的场景。</p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fl"><strong>论文：</strong>MiniMax Sparse Attention（MSA） · MiniMax 等 · arXiv preprint 2026.06</div>
+    <div class="fl"><strong>阅读原文：</strong><a href="https://arxiv.org/abs/2606.13392" target="_blank" rel="noopener">arXiv:2606.13392 ↗</a> &nbsp;·&nbsp; <a href="https://arxiv.org/html/2606.13392v1" target="_blank" rel="noopener">arXiv HTML 版 ↗</a></div>
+    <div class="fl"><strong>开源 kernel：</strong><a href="https://github.com/MiniMax-AI/MSA" target="_blank" rel="noopener">github.com/MiniMax-AI/MSA ↗</a> &nbsp;·&nbsp; <strong>模型：</strong><a href="https://huggingface.co/MiniMaxAI/MiniMax-M3" target="_blank" rel="noopener">MiniMax-M3 on HuggingFace ↗</a></div>
+    <div class="fl" style="margin-top:12px;color:var(--line2);">本页为教学性中文图解，图 1 / 图 5 取自论文 arXiv HTML 原图；数据与结论以原文为准。</div>
+  </div>
+</footer>
+
+<script>
+  function toggleCard(header){
+    header.parentElement.classList.toggle('open');
+  }
+
+  function toggleFigDetail(el){
+    var detail = el.nextElementSibling;
+    var open = detail.classList.toggle('active');
+    el.classList.toggle('active', open);
+    el.textContent = open ? '收起说明 ▾' : '展开说明 ▸';
+  }
+
+  /* ---------- MSA step-through demo ---------- */
+  var NUM_BLOCKS = 12;
+  var QUERY_IDX = 11;                 // 当前 query 所在块
+  var LOCAL_IDX = 11;                 // 局部块（恒选）
+  // 各块的索引分数（演示用，0~1）；query 块本身不参与远程打分
+  var SCORES = [0.92,0.18,0.12,0.63,0.27,0.10,0.74,0.21,0.16,0.34,0.47,0];
+  var SELECTED = [0,3,6];            // 远程 Top-3（按分数：块0=0.92, 块6=0.74, 块3=0.63）
+
+  var STEPS = [
+    {
+      t:'步骤 1 · 因果分块',
+      d:'把上下文按 B_k 个 token 切成块。当前 query 所在的局部块（最右绿色块）恒被选入；query 只能因果地看到它左侧及自身的块。此刻还没有任何打分。'
+    },
+    {
+      t:'步骤 2 · 索引分支打分（Block Max Pooling）',
+      d:'轻量的 Q_idx·K_idx 对每个可见块打分，并按块取最大值得到块分数（柱子越高分越高）。块 0（起始 sink）与块 3、6 分数明显更高。'
+    },
+    {
+      t:'步骤 3 · Top-k 选择 + 强制局部块',
+      d:'取分数最高的 k 个远程块（这里 k=3：块 0、6、3），并强制并入当前局部块（块 11）。其余块被直接跳过，不参与注意力。'
+    },
+    {
+      t:'步骤 4 · 主分支稀疏注意力',
+      d:'主分支只对选中的 4 个块（0、3、6、11）里因果可见的 token 做精确 softmax 注意力。预算固定 = k·B_k，与序列长度无关。'
+    }
+  ];
+
+  var msaStep = 0;
+
+  function buildBlocks(){
+    var row = document.getElementById('blockRow');
+    var html = '';
+    for(var i=0;i<NUM_BLOCKS;i++){
+      var lbl = '';
+      if(i===QUERY_IDX){ lbl='query'; }
+      else if(i===0){ lbl='sink'; }
+      html += '<div class="blk" id="blk'+i+'">'
+            +   '<div class="bar" id="bar'+i+'"></div>'
+            +   '<div class="box">'+i+'</div>'
+            +   '<div class="lbl">'+lbl+'</div>'
+            + '</div>';
+    }
+    row.innerHTML = html;
+  }
+
+  function renderMSA(){
+    for(var i=0;i<NUM_BLOCKS;i++){
+      var blk = document.getElementById('blk'+i);
+      var bar = document.getElementById('bar'+i);
+      blk.className = 'blk';
+      bar.style.height = '6px';
+
+      var isLocal = (i===LOCAL_IDX);   // 局部块即 query 所在块，恒选
+      var isSel = SELECTED.indexOf(i) !== -1;
+
+      // 局部块从一开始就高亮，标明这是 query 所在、恒被选入的块
+      if(isLocal){ blk.classList.add('local'); }
+
+      // step 2+: 对可被打分的远程块显示索引分数
+      if(msaStep>=1 && !isLocal){
+        bar.style.height = (10 + SCORES[i]*52) + 'px';
+        blk.classList.add('scored');
+      }
+      // step 3+: Top-k 选择状态
+      if(msaStep>=2 && !isLocal){
+        if(isSel){ blk.classList.add('selected'); }
+        else { blk.classList.add('dropped'); }
+      }
+      // step 4: 真正被注意力关注的块（局部块 + 选中远程块）
+      if(msaStep>=3){
+        if(isLocal || isSel){ blk.classList.add('attend'); }
+      }
+    }
+    document.getElementById('explainTitle').textContent = STEPS[msaStep].t;
+    document.getElementById('explainDesc').textContent = STEPS[msaStep].d;
+    document.getElementById('stepPill').textContent = '步骤 ' + (msaStep+1) + ' / ' + STEPS.length;
+    document.getElementById('nextBtn').textContent = (msaStep===STEPS.length-1) ? '回到开头 ↺' : '下一步 ▸';
+  }
+
+  function msaNext(){
+    msaStep = (msaStep+1) % STEPS.length;
+    renderMSA();
+  }
+  function msaReset(){
+    msaStep = 0;
+    renderMSA();
+  }
+
+  buildBlocks();
+  renderMSA();
+</script>
+
+</body>
+</html>

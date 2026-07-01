@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quest：用全合成任务训练前沿深度研究智能体 · 可视化导读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf7ee; --bg2:#f5ecdb; --bg3:#efe2c9; --card:#fffdf8;
+  --border:#e6d8bd; --border2:#d8c4a0;
+  --ink:#2b2620; --ink2:#5c5246; --ink3:#8b7d68;
+  --accent:#b4632f; --accent-d:#974e22; --accent-soft:rgba(180,99,47,.10);
+  --green:#5f7d52; --gold:#a9842f;
+  --maxw:1080px;
+  --sans:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:17px;line-height:1.78;-webkit-font-smoothing:antialiased;}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- top nav ---------- */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,247,238,.9);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+.topnav .inner{max-width:var(--maxw);margin:0 auto;padding:10px 24px;
+  display:flex;align-items:center;gap:18px;}
+.topnav .brand{font-weight:800;letter-spacing:.3px;font-size:15px;white-space:nowrap}
+.topnav .brand b{color:var(--accent)}
+.topnav .links{display:flex;gap:16px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink2);font-size:13.5px;font-weight:500;white-space:nowrap;padding:4px 2px}
+.topnav .links a:hover{color:var(--accent);text-decoration:none}
+.topnav .src{font-size:13px;font-weight:600;white-space:nowrap}
+
+/* ---------- layout ---------- */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+section{padding:46px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.eyebrow{font-size:12.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--accent);margin:0 0 10px}
+h1{font-size:40px;line-height:1.18;font-weight:800;margin:0 0 14px;letter-spacing:-.5px}
+h2{font-size:28px;font-weight:800;margin:0 0 16px;letter-spacing:-.3px}
+h3{font-size:20px;font-weight:700;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+.lead{font-size:18.5px;color:var(--ink2)}
+.muted{color:var(--ink3)}
+ul{margin:0 0 16px;padding-left:0;list-style:none}
+ul li{position:relative;padding-left:22px;margin-bottom:9px}
+ul li::before{content:"";position:absolute;left:4px;top:11px;width:6px;height:6px;
+  border-radius:50%;background:var(--accent);opacity:.7}
+code{font-family:var(--mono);font-size:.88em;background:var(--bg3);
+  padding:1px 6px;border-radius:5px;color:var(--accent-d)}
+
+/* ---------- hero ---------- */
+.hero{padding-top:54px}
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.tag{font-size:12.5px;font-weight:600;padding:4px 11px;border-radius:999px;
+  background:var(--bg2);border:1px solid var(--border);color:var(--ink2)}
+.tag.v{background:var(--accent-soft);border-color:#e3c3a7;color:var(--accent-d)}
+.authors{color:var(--ink2);font-size:15px;margin-bottom:4px}
+.affil{color:var(--ink3);font-size:14px;margin-bottom:22px}
+.srcbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:30px}
+.srcbar a{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;
+  background:var(--card);border:1px solid var(--border);border-radius:9px;padding:7px 13px}
+.srcbar a:hover{border-color:var(--accent);text-decoration:none}
+
+/* ---------- tldr ---------- */
+.tldr{background:linear-gradient(180deg,#fffdf8,#fbf3e4);border:1px solid var(--border2);
+  border-radius:16px;padding:26px 28px;margin-top:8px}
+.tldr h2{font-size:17px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.tldr p{font-size:17.5px;color:var(--ink);margin-bottom:0}
+
+/* ---------- metric cards ---------- */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0 4px}
+.metric{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 16px}
+.metric .num{font-size:30px;font-weight:800;color:var(--accent);letter-spacing:-.5px;line-height:1.1}
+.metric .num small{font-size:16px;font-weight:700}
+.metric .lab{font-size:13px;color:var(--ink2);margin-top:5px;line-height:1.5}
+
+/* ---------- generic cards ---------- */
+.grid{display:grid;gap:16px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.cap-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+.cap-card .ic{font-size:22px;margin-bottom:8px}
+.cap-card h4{margin:0 0 6px;font-size:17px;font-weight:700}
+.cap-card .meta{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;
+  text-transform:uppercase;letter-spacing:.6px}
+.cap-card p{font-size:14.5px;color:var(--ink2);margin:0}
+
+/* ---------- figures ---------- */
+figure{margin:24px 0;background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:16px;overflow:hidden}
+figure img{display:block;width:100%;height:auto;border-radius:8px}
+.figcap{font-size:13.5px;color:var(--ink3);margin-top:12px;line-height:1.6}
+.figcap b{color:var(--ink2)}
+.fig-toggle{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;
+  color:var(--accent);cursor:pointer;user-select:none}
+.fig-toggle:hover{text-decoration:underline}
+.figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0}
+.figure-detail.active{max-height:1600px;opacity:1;margin-top:12px}
+.figure-detail ul{margin:0}
+.figure-detail li{font-size:14px;color:var(--ink2)}
+.figure-detail li b{color:var(--ink)}
+
+/* ---------- callout / quote ---------- */
+.quote{border-left:3px solid var(--accent);background:var(--accent-soft);
+  padding:14px 20px;border-radius:0 10px 10px 0;margin:22px 0;font-size:15.5px;color:var(--ink2)}
+.quote b{color:var(--accent-d)}
+
+/* ---------- flow steps (static) ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:18px 0}
+.flow .step{flex:1;min-width:130px;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:13px 14px;position:relative}
+.flow .step .n{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);
+  background:var(--accent-soft);border-radius:6px;padding:1px 7px;display:inline-block;margin-bottom:6px}
+.flow .step h5{margin:0 0 4px;font-size:14.5px;font-weight:700}
+.flow .step p{margin:0;font-size:12.8px;color:var(--ink2);line-height:1.5}
+.flow .arr{align-self:center;color:var(--border2);font-weight:800;font-size:18px}
+
+/* ---------- interactive: rubric scoring ---------- */
+.demo{background:var(--card);border:1px solid var(--border2);border-radius:16px;
+  padding:22px 24px;margin:22px 0}
+.demo .dh{font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--accent);margin-bottom:14px}
+.seg{display:inline-flex;background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:3px;margin-bottom:18px;gap:3px}
+.seg button{border:none;background:transparent;font-family:var(--sans);font-size:13.5px;
+  font-weight:600;color:var(--ink2);padding:7px 15px;border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.rubric-wrap{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
+.tree{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px}
+.node{border-radius:9px;padding:9px 13px;font-size:14px;font-weight:600;margin:7px 0;
+  border:1px solid var(--border2);background:var(--card)}
+.node.root{background:var(--bg3);border-color:var(--border2)}
+.leaves{margin-left:26px;border-left:2px dashed var(--border2);padding-left:16px}
+.leaf{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--card);border:1px solid var(--border);border-radius:9px;
+  padding:8px 12px;margin:8px 0;font-size:13.5px;cursor:pointer;transition:.18s}
+.leaf:hover{border-color:var(--accent)}
+.leaf .st{font-family:var(--mono);font-weight:600;font-size:12.5px;padding:2px 8px;border-radius:6px}
+.leaf.pass .st{background:rgba(95,125,82,.14);color:var(--green)}
+.leaf.fail .st{background:var(--accent-soft);color:var(--accent-d)}
+.score-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.score-panel .big{font-size:40px;font-weight:800;color:var(--accent);line-height:1}
+.score-panel .lbl{font-size:12.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.score-panel .exp{font-size:13.5px;color:var(--ink2);margin-top:14px;line-height:1.6}
+.hint{font-size:12.5px;color:var(--ink3);margin-top:12px}
+
+/* ---------- interactive: context stepper ---------- */
+.stepper-nav{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.stepper-nav button{width:38px;height:38px;border-radius:10px;border:1px solid var(--border2);
+  background:var(--card);font-size:17px;cursor:pointer;color:var(--ink);font-weight:700}
+.stepper-nav button:disabled{opacity:.35;cursor:default}
+.dots{display:flex;gap:7px;flex:1}
+.dots i{height:6px;flex:1;border-radius:3px;background:var(--border);transition:.25s}
+.dots i.on{background:var(--accent)}
+.step-stage{font-family:var(--mono);font-size:12.5px;color:var(--ink3)}
+.ctx-view{min-height:188px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px 22px}
+.ctx-view h4{margin:0 0 8px;font-size:18px;font-weight:700}
+.ctx-view p{margin:0;font-size:14.8px;color:var(--ink2)}
+.buckets{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.bucket{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:13px;
+  border-left-width:3px}
+.bucket.t{border-left-color:var(--green)}
+.bucket.u{border-left-color:var(--accent)}
+.bucket.q{border-left-color:var(--gold)}
+.bucket .bi{font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.bucket .bi .badge{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-size:12px;color:#fff;font-weight:700}
+.bucket.t .badge{background:var(--green)}
+.bucket.u .badge{background:var(--accent)}
+.bucket.q .badge{background:var(--gold)}
+.bucket p{font-size:12.5px;color:var(--ink2);margin:0;line-height:1.5}
+
+/* ---------- training tabs ---------- */
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tabs button{font-family:var(--sans);font-size:14.5px;font-weight:700;cursor:pointer;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 18px;color:var(--ink2)}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.tab-body{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px}
+.tab-body h4{margin:0 0 4px;font-size:18px}
+.tab-body .role{font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px}
+.tab-panel{display:none}
+.tab-panel.on{display:block}
+.kv{display:flex;gap:10px;font-size:14px;margin:7px 0;color:var(--ink2)}
+.kv b{min-width:96px;color:var(--ink);font-weight:700}
+
+/* ---------- formula ---------- */
+.formula{font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);
+  border-radius:12px;padding:18px 22px;font-size:17px;text-align:center;color:var(--ink);margin:18px 0;
+  overflow-x:auto}
+.formula .hl{color:var(--accent-d);font-weight:600}
+
+/* ---------- expandable deep cards ---------- */
+details.deep{background:var(--card);border:1px solid var(--border);border-radius:13px;
+  margin:12px 0;overflow:hidden}
+details.deep summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;
+  align-items:flex-start;gap:12px}
+details.deep summary::-webkit-details-marker{display:none}
+details.deep summary .tw{transition:.25s;color:var(--accent);font-weight:700;margin-top:1px}
+details.deep[open] summary .tw{transform:rotate(90deg)}
+details.deep summary .st{flex:1}
+details.deep summary h4{margin:0;font-size:16.5px;font-weight:700}
+details.deep summary .sub{font-size:13px;color:var(--ink3);margin-top:3px;font-weight:400}
+details.deep summary .pin{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);
+  background:var(--accent-soft);border-radius:6px;padding:2px 8px;white-space:nowrap;margin-top:1px}
+.deep .body{padding:0 20px 18px 52px}
+.deep .body p{font-size:14.5px;color:var(--ink2);margin:0 0 11px}
+.deep .body p:last-child{margin-bottom:0}
+
+/* ---------- funnel ---------- */
+.funnel{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px}
+.funnel .fr{display:flex;align-items:center;gap:12px}
+.funnel .bar{height:30px;background:linear-gradient(90deg,var(--accent),#d08a5c);
+  border-radius:7px;display:flex;align-items:center;padding-left:12px;color:#fff;
+  font-weight:700;font-size:13px;font-family:var(--mono);min-width:60px}
+.funnel .fl{font-size:13px;color:var(--ink2);flex:1}
+
+/* ---------- key takeaways ---------- */
+.takeaways{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px}
+.ta{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 20px}
+.ta .h{font-weight:700;font-size:15.5px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.ta .h .d{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.ta p{font-size:14px;color:var(--ink2);margin:0}
+
+/* ---------- footer ---------- */
+footer{background:var(--bg2);padding:34px 0 44px;color:var(--ink2);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-start}
+footer a{font-weight:600}
+footer .note{font-size:12.5px;color:var(--ink3);max-width:560px;margin-top:8px}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  h1{font-size:30px}h2{font-size:23px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .g3,.g2,.takeaways,.buckets{grid-template-columns:1fr}
+  .rubric-wrap{grid-template-columns:1fr}
+  .flow .arr{display:none}
+  .topnav .links{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="inner">
+    <div class="brand"><b>Quest</b> · 导读</div>
+    <div class="links">
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#rubric">评分树</a>
+      <a href="#synthesis">数据合成</a>
+      <a href="#context">上下文管理</a>
+      <a href="#training">三阶段训练</a>
+      <a href="#extra">有意思的点</a>
+      <a href="#results">实验结论</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2605.24218" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <div class="tag-row">
+    <span class="tag v">arXiv preprint · 2026.05</span>
+    <span class="tag">深度研究智能体</span>
+    <span class="tag">合成数据 · 可验证奖励</span>
+    <span class="tag">Agent 训练配方</span>
+  </div>
+  <p class="eyebrow">Deep Research Agent · Fully Synthetic Training</p>
+  <h1>Quest：用全合成任务<br>训练前沿深度研究智能体</h1>
+  <p class="lead">Training Frontier Deep Research Agents with Fully Synthetic Tasks</p>
+  <p class="authors">Jian Xie, Tianhe Lin, Zilu Wang, Yuting Ning, Yuekun Yao, Tianci Xue, Zhehao Zhang, Zhongyang Li, Boyu Gou, Shijie Chen, Mingzhe Han, Yifei Wang, Xinpeng Wei, Yu Su, Huan Sun 等</p>
+  <p class="affil">The Ohio State University（OSU NLP）· Amazon AGI SF Lab</p>
+  <div class="srcbar">
+    <a href="https://arxiv.org/abs/2605.24218" target="_blank" rel="noopener">📄 arXiv 原文</a>
+    <a href="https://arxiv.org/pdf/2605.24218" target="_blank" rel="noopener">📥 PDF</a>
+    <a href="https://osu-nlp-group.github.io/QUEST" target="_blank" rel="noopener">🌐 项目主页</a>
+    <a href="https://github.com/OSU-NLP-Group/QUEST" target="_blank" rel="noopener">💻 GitHub</a>
+    <a href="https://huggingface.co/osunlp/QUEST-35B-RL" target="_blank" rel="noopener">🤗 模型权重</a>
+  </div>
+
+  <div class="tldr">
+    <h2>TL;DR · 一句话抓住核心</h2>
+    <p>深度研究智能体要在长程任务里自己<strong>搜索、阅读、核实、综合</strong>信息。卡点不在模型，而在<strong>训练数据</strong>：现有开源做法大多只用「一题配一个标准答案」的数据，只能教会找事实、奖励还是 0/1 的粗信号。Quest 的核心是把所有任务统一表示成 <strong>rubric tree（评分树）</strong>——一棵把"好答案该满足的约束"层层拆开的树。它能同时覆盖唯一答案、多解、开放式三类任务，可<strong>全自动合成、可自动验证打分</strong>，还能给出比 0/1 更细的部分分作为强化学习奖励。再配合<strong>结构化上下文管理</strong>与<strong>中训练 → SFT → RL 三阶段流程</strong>，仅用 <strong>8K 条合成任务</strong>，Quest-35B 就在 8 个 benchmark 上追平甚至超过闭源的 OpenAI DeepResearch。</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">8K</div><div class="lab">合成训练任务（SFT+RL 共用），无任何人工标注答案</div></div>
+    <div class="metric"><div class="num">2B–35B</div><div class="lab">开放模型家族，全部权重、数据、训练脚本开源</div></div>
+    <div class="metric"><div class="num">8</div><div class="lab">覆盖事实查找 / 引用接地 / 报告综合的评测基准</div></div>
+    <div class="metric"><div class="num">48.2<small>%</small></div><div class="lab">DeepResearch Bench，超过 OpenAI-DR 的 47.0%</div></div>
+  </div>
+</header>
+
+<!-- ================= PROBLEM ================= -->
+<section id="problem" class="wrap">
+  <p class="eyebrow">问题定义</p>
+  <h2>深度研究智能体要解决什么？为什么难训？</h2>
+  <p>网络检索正在从「人工翻页找信息」走向「智能体自主取证 + 综合」。传统搜索引擎返回排序网页让人自己看，RAG 系统检索文档再让大模型作答，而<strong>深度研究智能体</strong>更进一步：给一个复杂的信息需求，它会自己把任务拆成子目标、执行多轮搜索、阅读外部网页，最后产出<strong>有引用支撑</strong>的回答。</p>
+  <p>难点在于：它不只要会"答题"，还要在<strong>长程交互</strong>中学会搜索、核实、记忆与综合。但前沿系统几乎都是闭源的——模型、数据、训练流程都不透明；而现有开源智能体往往只擅长某一类任务，<strong>泛化很差</strong>。作者指出，深度研究任务按"答案如何评判"分成两大类：</p>
+  <ul>
+    <li><strong>客观任务（objective）</strong>：输出能对照外部证据被验证对错。</li>
+    <li><strong>开放式任务（open-ended）</strong>：输出只能靠主观判断（覆盖度、组织、清晰度等）评分。</li>
+  </ul>
+  <p>由此作者提炼出通用深度研究智能体应同时具备的<strong>三大能力</strong>——而现有 benchmark 与系统都只<strong>孤立地</strong>支持其中一两项，没有人在统一框架里把三者一起做好：</p>
+
+  <div class="grid g3">
+    <div class="cap-card">
+      <div class="ic">🔎</div>
+      <div class="meta">客观 · Fact Seeking</div>
+      <h4>事实查找</h4>
+      <p>通过多跳网络搜索定位一个具体、难找的事实。代表基准 <strong>BrowseComp</strong>，专门考冷僻、相互纠缠的事实。</p>
+    </div>
+    <div class="cap-card">
+      <div class="ic">🔗</div>
+      <div class="meta">客观 + 开放 · Citation Grounding</div>
+      <h4>引用接地</h4>
+      <p>每条论断都要有可靠、最新、可核验的来源 URL 支撑。代表基准 <strong>Mind2Web 2</strong>，靠显式约束 + 引用回溯来评分。</p>
+    </div>
+    <div class="cap-card">
+      <div class="ic">📝</div>
+      <div class="meta">开放 · Report Synthesis</div>
+      <h4>报告综合</h4>
+      <p>把多来源信息综合成连贯、结构化、可读的长报告。代表基准 <strong>DeepResearch Bench</strong>，按 rubric 评判覆盖/组织/清晰度。</p>
+    </div>
+  </div>
+
+  <div class="quote">关键洞察：<b>一个智能体能做什么，是由它的"数据合成配方"决定的。</b>只用单答案问题训练，就只会找事实；要做通用深度研究，先得有一种能覆盖所有任务类型的训练数据表示。</div>
+</section>
+
+<!-- ================= PRIOR ================= -->
+<section id="prior" class="wrap">
+  <p class="eyebrow">已有方案卡在哪</p>
+  <h2>现有开源智能体：各管一段，配方不全</h2>
+  <p>近期一批开源工作（Tongyi-DR、DR Tulu、OpenResearcher、RedSearcher 等）开始公开权重与训练策略，但大多只覆盖部分能力。下图把它们与 Quest 沿多个维度对照：覆盖了哪些能力、用什么<strong>验证方式</strong>（精确匹配 vs 评分树）、有没有<strong>上下文管理</strong>、训练流程是否完整、是否真正全开源。</p>
+
+  <figure>
+    <img src="assets/fig2_recipe.png" alt="Figure 2：深度研究智能体训练配方对比">
+    <div class="figcap"><b>图 2：</b>深度研究智能体训练配方对比。Quest 同时覆盖事实查找、引用接地、报告综合，并给出可复现训练所需的完整开放配方。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左侧（Benchmark Coverage）：</b>把 8 个评测基准按"事实查找 / 报告综合 / 引用接地"三色标注覆盖关系——可见多数基准只落在一两个能力上，Quest 的目标是把三列都覆盖。</li>
+          <li><b>Capability 列：</b>每个系统支持的能力标签。Tongyi-DR 偏事实查找+部分报告，DR Tulu 偏报告综合+引用，OpenResearcher 偏事实查找，单独看都不完整。</li>
+          <li><b>Verification 列：</b>验证方式。多数系统用 <code>Exact Match</code>（单答案精确匹配）或部分 <code>Rubric</code>；只有 Quest 用统一的 <code>Rubric Tree</code> 评分树，能给细粒度部分分。</li>
+          <li><b>Context Management 列：</b>是否有显式上下文管理。多数系统为空（✗），Quest 有（✓）。</li>
+          <li><b>Training Pipeline 列：</b>训练阶段构成。Quest 是完整的 <code>MT → SFT → RL</code> 三段；其它系统多缺少中训练或 RL。</li>
+          <li><b>Open-Sourced 三列：</b>数据 / 合成脚本 / 训练代码是否开放。Quest 三项全开（✓✓✓），这正是"可复现配方"的含义。</li>
+        </ul>
+        一句话总结：别人都只点亮了能力矩阵的一角，Quest 想用一套统一配方把整张表填满，并把它完全开源。
+      </div>
+    </div>
+  </figure>
+
+  <p>作者用三个有代表性的开源基线说明"数据配方决定能力边界"这一论点：</p>
+
+  <details class="deep">
+    <summary><span class="tw">▸</span><span class="st"><h4>Tongyi DeepResearch</h4><div class="sub">单答案合成数据 → 强于事实查找，但开放式偏弱</div></span><span class="pin">基线 · 30B</span></summary>
+    <div class="body">
+      <p><strong>做法：</strong>提出一套完整训练框架，把中训练、监督微调、强化学习组合起来训练开源大模型作为智能体。数据合成以"复杂问题 + 单一可验证答案"为主（BrowseComp 式）。</p>
+      <p><strong>卡点：</strong>单答案监督主要锻炼 <em>fact seeking</em>，奖励是二元正确/错误，难以迁移到需要多来源聚合与综合的开放式任务。论文实测它在 BrowseComp、HLE、GAIA 这些重事实查找的基准上确实最强，但在 Mind2Web 2、DeepResearch Bench 上落后于 Quest。</p>
+    </div>
+  </details>
+
+  <details class="deep">
+    <summary><span class="tw">▸</span><span class="st"><h4>OpenResearcher</h4><div class="sub">离线检索式合成 → 贴合 BrowseComp-Plus，但泛化差</div></span><span class="pin">基线 · 30B</span></summary>
+    <div class="body">
+      <p><strong>做法：</strong>通过自动数据生成策略（蒸馏、图结构任务合成等）扩展智能体训练数据规模。</p>
+      <p><strong>卡点：</strong>其合成配方与 <strong>BrowseComp-Plus</strong>（一个完全离线的基准）高度吻合，因此在该基准上表现最好；但换到其它分布上明显掉队——再次印证"能力被数据配方塑形"。</p>
+    </div>
+  </details>
+
+  <details class="deep">
+    <summary><span class="tw">▸</span><span class="st"><h4>DR Tulu</h4><div class="sub">擅长开放式报告，却几乎不会做客观任务</div></span><span class="pin">基线 · 8B</span></summary>
+    <div class="body">
+      <p><strong>做法：</strong>通过强化学习探索智能体训练，偏向报告综合方向。</p>
+      <p><strong>卡点：</strong>作者亲自在 Mind2Web 2 上评测发现它擅长以报告综合为主的开放式任务，但在客观任务上几乎不可用（M2W2 仅 1.6%），于是没有继续在其它客观基准上评测——典型的"偏科"。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ================= RUBRIC TREE ================= -->
+<section id="rubric" class="wrap">
+  <p class="eyebrow">核心抽象</p>
+  <h2>Rubric Tree：一棵评分树统一所有任务</h2>
+  <p>Quest 的方法基石源自 Mind2Web 2 的 <strong>rubric tree</strong>——把"一个合格答案应满足的约束"做<strong>层级化拆解</strong>。但 Mind2Web 2 依赖人工写任务、人工修评分脚本；Quest 则<strong>全自动</strong>生成评分树（再加严格的精炼与验证），才让大规模数据合成成为可能。一棵评分树的结构是：</p>
+  <ul>
+    <li><strong>根节点（灰）</strong>：整体得分，由子节点聚合而来。</li>
+    <li><strong>内部节点（蓝）</strong>：更高层的约束，被递归拆成更细的子节点，得分由孩子聚合。</li>
+    <li><strong>叶子节点（红）</strong>：可直接验证的具体约束（事实是否正确、是否有来源），自动验证得到 0/1 的二元分。</li>
+  </ul>
+  <p>这个设计一举解决了"单答案监督"的两个毛病：① 它表示的是<strong>约束</strong>而非唯一答案，于是能同时容纳<strong>唯一答案、多解、开放式多维评价</strong>三类任务，用一套框架生成多样数据；② 根节点的<strong>部分分</strong>提供了比 0/1 细得多的训练信号，反映"答案满足了多少约束"。</p>
+
+  <div class="demo">
+    <div class="dh">交互 · 评分如何在树里传播</div>
+    <p style="margin-top:-4px;font-size:14.5px;color:var(--ink2)">同一组叶子检查，<strong>聚合方式</strong>不同，奖励信号就不同。点叶子切换"通过/失败"，再切换聚合模式，看根节点得分如何变化。</p>
+    <div class="seg" role="tablist">
+      <button id="rb-crit" class="on" onclick="setCrit(true)">CRIT · 关键节点（任一失败 → 0）</button>
+      <button id="rb-noncrit" onclick="setCrit(false)">NON-CRIT · 取平均（部分分）</button>
+    </div>
+    <div class="rubric-wrap">
+      <div class="tree">
+        <div class="node root" id="rb-root">Root · 整体得分</div>
+        <div class="leaves" id="rb-leaves"></div>
+      </div>
+      <div class="score-panel">
+        <div class="lbl">根节点得分</div>
+        <div class="big" id="rb-score">1.00</div>
+        <div class="exp" id="rb-exp"></div>
+        <div class="hint" id="rb-hint"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quote">这正是 Quest 区别于"二元正确奖励"的地方：<b>客观任务里关键叶子可设为 CRIT，错一个就归零（强可验证）；而 FCC 合规这类任务把检查按主题分组、用 NON-CRIT 取平均，于是部分完成也能拿到部分分</b>，给 RL 一个更可分、更平滑的奖励梯度。</div>
+</section>
+
+<!-- ================= DATA SYNTHESIS ================= -->
+<section id="synthesis" class="wrap">
+  <p class="eyebrow">本文方法 · 重头戏（一）</p>
+  <h2>数据合成流水线：从趋势词到可验证任务</h2>
+  <p>整条流水线以评分树为中心，同时产出客观与开放式训练数据。每条数据 = <strong>一个复杂 query + 一棵专属评分树 + 一套评估协议</strong>。给定智能体的回答，评估协议依据评分树把回答映射到 \([0,1]\) 的分数。全流程里负责生成的强模型记作 \(G_{syn}\)（默认 <strong>Claude Sonnet 4.5</strong>）。</p>
+
+  <figure>
+    <img src="assets/fig3_pipeline.png" alt="Figure 3：Quest 数据合成流水线与两个评分树示例">
+    <div class="figcap"><b>图 3：</b>Quest 数据合成流水线（上）与客观 / 开放式两个评分树示例（下）。灰=根、蓝=分组的中间约束、红=可直接验证的叶子约束。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>客观任务行（蓝）：</b>Trending Keywords（从 Google Trends 采样趋势词作种子）→ Autonomous Web Exploration（\(G_{syn}\) 自主浏览取证）→ Verifiable Constraints（抽出可验证约束，如预算/材质/来源 URL）→ Iterative Refinement（迭代精炼+验证，结构不可靠就丢弃）→ 产出 <b>Question</b>（把树翻译成自然语言问题）+ <b>Python Script</b>（GPT-5 生成可执行评估脚本）。</li>
+          <li><b>开放式任务行（紫）：</b>同样从趋势词 + 网页探索出发，但分两路：一路给出固定的四维 <b>Criteria</b>（指令遵循/全面性/可读性/洞察），一路产出 Open-ended Question；再走 <b>Reference Report Generation</b>（参考报告）→ <b>Pairwise Comparison</b>（候选 vs 参考报告做成对比较打分）。</li>
+          <li><b>中间的 Unified Rubric Tree：</b>两条路汇聚到同一种"评分树"表示——这就是"统一框架"的可视化核心，绿勾叶=满足、红叉叶=不满足，分数沿树向上聚合。</li>
+          <li><b>下方左树（客观示例）：</b>"2024 美国李斯特菌爆发"任务。Root 下分 Outbreak 1 / Outbreak 2 / Comparison，每个再挂"来源"和"死亡人数"等可直接核验的叶子——这是一棵深而顺序的树。</li>
+          <li><b>下方右树（开放式示例）：</b>"评估苹果折叠屏入局"任务。Root 下固定挂四个维度（全面性/洞察/指令遵循/可读性），每个维度再展开任务专属子标准——这是一棵宽而分主题的树。</li>
+        </ul>
+        一句话总结：左边把"自主取证"沉淀为"可验证约束树"，右边把"约束树"翻译回"问题 + 自动评分协议"，于是数据生产闭环、且天然带可验证奖励。
+      </div>
+    </div>
+  </figure>
+
+  <h3>客观任务：树 → 问题 → Python 评分脚本</h3>
+  <div class="flow">
+    <div class="step"><span class="n">1</span><h5>趋势词种子</h5><p>从 Google Trends 采样趋势关键词，保证话题相关、时效多样、贴近真实需求。</p></div>
+    <div class="arr">→</div>
+    <div class="step"><span class="n">2</span><h5>自主取证</h5><p>\(G_{syn}\) 自主浏览网页，收集信息并抽出一组可验证约束，组织成评分树。</p></div>
+    <div class="arr">→</div>
+    <div class="step"><span class="n">3</span><h5>精炼 + 验证</h5><p>对树做迭代精炼与验证；无法解析成一致可评估结构的任务直接丢弃。</p></div>
+    <div class="arr">→</div>
+    <div class="step"><span class="n">4</span><h5>生成问题 + 脚本</h5><p>\(G_{syn}\) 把树翻译成自然语言问题，GPT-5 生成可执行 Python 脚本逐节点验证并算最终分。</p></div>
+  </div>
+
+  <h3>开放式任务：固定四维 + 自适应子标准 + 成对比较</h3>
+  <p>开放式任务前半段（采样关键词、网页探索）一样，区别在评分树构造：第二层<strong>固定为四个共享维度</strong>（指令遵循、全面性、可读性、洞察，沿用 DeepResearch Bench），第三层是 \(G_{syn}\) 按问题<strong>自适应</strong>生成的任务专属子标准；每个节点的权重由 \(G_{syn}\) 给出（跑三次取平均更稳）。评估协议含三件套：<strong>参考报告 + rubric 判分模型 + 成对归一化规则</strong>。判分模型<strong>同时</strong>看候选报告与参考报告（一起看比独立打分能分得更细），对每个叶子给 0–10 分，沿树加权聚合得到 \(J(r_{cand})\) 与 \(J(r_{ref})\)，最终：</p>
+  <div class="formula">Score = <span class="hl">J(r<sub>cand</sub>)</span> / ( J(r<sub>cand</sub>) + J(r<sub>ref</sub>) ) &nbsp;&nbsp;→&nbsp;&nbsp; &gt; 0.5 即候选报告已优于参考报告</div>
+
+  <h3>严格过滤：低留存换高质量</h3>
+  <p>为保证任务与评分树可靠，作者用了很激进的过滤策略——留存率很低，但换来的是干净、可自动评估的数据。客观任务的过滤漏斗：</p>
+  <div class="funnel">
+    <div class="fr"><div class="bar" style="width:100%">17,000</div><div class="fl">初始生成的客观任务</div></div>
+    <div class="fr"><div class="bar" style="width:51%">8,737</div><div class="fl">经评分树精炼后</div></div>
+    <div class="fr"><div class="bar" style="width:37%">6,230</div><div class="fl">经评分树验证后</div></div>
+    <div class="fr"><div class="bar" style="width:35%">5,934</div><div class="fl">剔除 Python 脚本报错后（最终保留）</div></div>
+  </div>
+  <p class="muted" style="font-size:13.5px">作者还抽 50 个任务请 4 名 CS 研究生人工核验：仅 2 个脚本不可执行、6 个含评分错误——大多数自动生成的脚本能正确解读任务、忠实实现规则。</p>
+</section>
+
+<!-- ================= CONTEXT ================= -->
+<section id="context" class="wrap">
+  <p class="eyebrow">本文方法 · 重头戏（二）</p>
+  <h2>上下文管理：把历史压成"认知快照"</h2>
+  <p>深度研究要多轮搜索、阅读、修正才出最终答案。随着上下文塞满原始搜索结果、访问过的网页、中间推理，智能体"抓重点"的能力会退化。现有开源智能体的应对要么<strong>限制轮数</strong>，要么<strong>靠超大窗口硬装</strong>。Quest 则用一个结构化模块，把全部历史压成紧凑摘要，让智能体能在<strong>任意长的时间跨度</strong>上推理而不溢出。</p>
+  <p>具体地，Quest 用一个叫 <strong>Context State</strong> 的结构化 JSON 存历史，把累积知识分进三个桶——这相当于编码了智能体的<strong>认知状态</strong>：哪些已知、哪些存疑、哪些还要去查。</p>
+
+  <figure>
+    <img src="assets/fig4_context.png" alt="Figure 4：Quest 的上下文管理机制">
+    <div class="figcap"><b>图 4：</b>Quest 的上下文管理。当上下文超过阈值，Context Condenser 把历史压成带 trusted / untrusted / uncertain 三类条目的结构化 Context State，让 Quest 在全新窗口里续跑。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左框 Deep Research Agent：</b>当前上下文窗口里堆着四类原始内容——搜索查询与结果、访问过的 URL 与内容、推理轨迹、上一次的 Context State。</li>
+          <li><b>中间触发条件：</b>当"上下文使用量 &gt; 阈值"（实现里为 16K）时，触发压缩。</li>
+          <li><b>右框 Context Condenser：</b>把历史归入三桶——<b>Trusted</b>（已对照来源 URL 核实的事实，可直接 Directly Read 复用）、<b>Untrusted</b>（被其它来源反驳、附原因，Deprioritize 降权）、<b>Uncertain</b>（部分支持、需 Search Further 跟进，附具体动作）。</li>
+          <li><b>底部回环：</b>压缩后清空旧窗口，用更新后的 Context State 初始化一个全新窗口继续——形成"装满→压缩→续跑"的闭环。</li>
+        </ul>
+        一句话总结：它压缩的不是"原始文本"，而是"已知/存疑/待查"的认知结构，所以跨压缩边界不会丢掉已核实的知识。
+      </div>
+    </div>
+  </figure>
+
+  <div class="demo">
+    <div class="dh">交互 · 一次上下文压缩的生命周期</div>
+    <div class="stepper-nav">
+      <button id="ctx-prev" onclick="ctxStep(-1)">‹</button>
+      <div class="dots" id="ctx-dots"></div>
+      <button id="ctx-next" onclick="ctxStep(1)">›</button>
+    </div>
+    <div class="step-stage" id="ctx-stage"></div>
+    <div class="ctx-view" id="ctx-view"></div>
+  </div>
+
+  <h3>为什么不用 discard-all 或 keep-last-N？</h3>
+  <p>最朴素的替代是窗口满了就丢：要么全清（discard-all），要么只留最近 N 轮（keep-last-N）。它们简单，但都把"历史一视同仁地当成可丢"：</p>
+  <ul>
+    <li><strong>discard-all</strong> 直接抹掉智能体的认知状态，逼它重新发现已核实的事实、重读已读过的来源。</li>
+    <li><strong>keep-last-N</strong> 保住了近况，却对窗口外的关键信息<strong>失明</strong>。</li>
+  </ul>
+  <p>更重要的是：作为<strong>训练范式</strong>它们根本不够用。可靠的训练信号要求智能体在<strong>整条轨迹</strong>上保持一致连贯的研究状态，尤其在 32K 这种受限预算下，粗暴截断会直接污染监督信号。Context Condenser 把历史压成<strong>认知快照</strong>而非原始截断：已核实事实显式带走、待办化为具体跟进指令、被反驳的论断打标而非悄悄丢弃——保证跨压缩边界不丢已验证知识。</p>
+</section>
+
+<!-- ================= TRAINING ================= -->
+<section id="training" class="wrap">
+  <p class="eyebrow">本文方法 · 重头戏（三）</p>
+  <h2>三阶段训练：MT → SFT → RL</h2>
+  <p>Quest 训练分三段，各司其职、互补：<strong>中训练（MT）</strong>让基座适应长程搜索交互、熟悉 Context State 结构；<strong>监督微调（SFT）</strong>模仿高质量工具使用轨迹；<strong>强化学习（RL）</strong>用评分树奖励 + 事实核查奖励优化策略。点下面的标签切换看每一段。</p>
+
+  <div class="tabs">
+    <button id="t-mt" class="on" onclick="showStage('mt')">① 中训练 MT</button>
+    <button id="t-sft" onclick="showStage('sft')">② 监督微调 SFT</button>
+    <button id="t-rl" onclick="showStage('rl')">③ 强化学习 RL</button>
+  </div>
+  <div class="tab-body">
+    <div class="tab-panel on" id="p-mt">
+      <h4>中训练（Mid-Training）</h4>
+      <div class="role">目标：把长上下文理解 + Context State 结构刻进基座，且无需额外标注</div>
+      <p>两个辅助任务，全部是流水线的"副产品"，不用额外采数据：</p>
+      <ul>
+        <li><strong>上下文摘要（Context Summarization）：</strong>给一段长历史，让模型产出第 3 节那种结构化 Context State JSON。监督目标直接复用合成阶段 GPT-5-mini 产生的摘要（约 30 万条）。</li>
+        <li><strong>相关信息抽取（Relevant Info Extraction）：</strong>给一页原始 HTML + 抽取目标，让模型产出与目标相关的摘要，过滤导航/广告/无关内容（约 105 万条）。这训练模型在长而嘈杂的网页里"选择性注意"——这是网页研究的前置能力，却在干净语料训练的模型里普遍缺失。</li>
+      </ul>
+    </div>
+    <div class="tab-panel" id="p-sft">
+      <h4>监督微调（SFT）· 会话级训练</h4>
+      <div class="role">目标：模仿高质量轨迹，并把"训练单元"对齐到推理时的有效工作上下文</div>
+      <p>轨迹由教师模型 <strong>Tongyi DeepResearch</strong>（\(G_{traj}\)）在合成任务上跑出来；评估分超过阈值 \(\epsilon\) 才保留（客观 \(\epsilon=1\)、开放式 \(0.475\)）。客观任务失败时用<strong>反思式重试</strong>：把细粒度评估结果作为提示注入，让它再试。所有报告统一成<strong>行内引用格式</strong>（每条事实直接标注来源 URL）。</p>
+      <p>训练时把整条轨迹切成多个<strong>会话（session）</strong>——一个 session 就是两次上下文压缩之间的连续片段。这样每个训练单元正好对应推理时的"当前工作上下文"。</p>
+    </div>
+    <div class="tab-panel" id="p-rl">
+      <h4>强化学习（RL）· GRPO + 双重奖励</h4>
+      <div class="role">目标：用可验证奖励直接优化深度研究行为，仍走会话级训练</div>
+      <p>采用 GRPO 式、基于结果的强化（去掉 KL 惩罚）。奖励由<strong>评分树奖励</strong> \(s_{rubric}\) 与<strong>事实核查奖励</strong> \(s_{fact}\) 组合：</p>
+      <div class="formula">R = <span class="hl">0.75 · s<sub>rubric</sub></span> + 0.25 · <span class="hl">min(</span> s<sub>fact</sub> , s<sub>rubric</sub> <span class="hl">)</span></div>
+      <ul>
+        <li><strong>评分树奖励：</strong>客观任务直接用评估分；开放式把成对分校准成离散档（&gt;0.5→1.0；[0.475,0.5)→0.75；[0.45,0.475)→0.5；[0.425,0.45)→0.25；&lt;0.425→0），让信号更可分、对小波动更鲁棒。</li>
+        <li><strong>事实核查奖励：</strong>抽出"事实–URL"对、去重、回取网页，用 GPT-5-mini 标注 supported/unsupported/unknown，取"被支持引用占可判定引用"的比例。</li>
+        <li><strong>min 的巧思：</strong>用 \(\min\) 把事实贡献<strong>上限锁定在评分树奖励</strong>——防止"引用很扎实但任务没完成"的回答骗到高分；内容全错时事实贡献直接归零。</li>
+      </ul>
+      <p class="muted" style="font-size:13.5px">同一 rollout 派生的多个 session 共享一个去重后的优势值；优势在组内做标准化。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EXTRA ================= -->
+<section id="extra" class="wrap">
+  <p class="eyebrow">有意思的点</p>
+  <h2>值得单独拎出来的几件事</h2>
+
+  <h3>会话级训练 → 无界上下文外推</h3>
+  <p>把长轨迹拆成短会话，峰值显存大降——作者因此能在<strong>仅 16 张 H100</strong> 上训练超过 <strong>20 万 token</strong> 的轨迹（整轨迹级训练根本放不下）。更妙的是，会话级训练让"单会话长度"与"整轨迹长度"解耦，配合上下文管理，推理时能外推到远超训练时的长度：<strong>训练最多 100 轮，推理可泛化到 200+ 轮</strong>。</p>
+
+  <h3>把"上网"做成基础设施</h3>
+  <p>数据合成、SFT 取轨迹、RL rollout 每一步都要成百上千次真实搜索与访问，直连 live API 会贵到不可行。Quest 用<strong>双缓存</strong>拦在 live API 前面：</p>
+  <ul>
+    <li><strong>搜索/学术缓存：</strong>先精确匹配；命中直接返回。未命中则进 FAISS 做语义相似检索，若已有足够相似的 query（余弦相似度超阈值）就拿它的结果当代理；都没命中才走 live API（Serper），并把结果写回缓存。</li>
+    <li><strong>访问缓存：</strong>按完整 URL 精确匹配，命中返回缓存页面，未命中才实时抓取（Jina）并缓存。</li>
+  </ul>
+  <p>训练侧基于 VERL 的全异步框架，作者进一步把<strong>评估也做成全异步</strong>：评分树评估平均要 ~4 分钟、长尾可达 30 分钟，于是轨迹一生成就丢进 Ray actor 评估池，训练持续从共享队列取已评样本，凑够一批就异步更新——大幅减少长尾 rollout 与长尾评估造成的流水线气泡。</p>
+
+  <h3>诚实的失败记录（Unsuccessful Attempts）</h3>
+  <p>论文专门用一节分享没成功的尝试，对后续工作很有参考价值：</p>
+
+  <details class="deep">
+    <summary><span class="tw">▸</span><span class="st"><h4>中训练里加"搜索结果预测"</h4><div class="sub">单独用有效，混进来反而拖累整体</div></span><span class="pin">失败 1</span></summary>
+    <div class="body">
+      <p>单独使用这个目标能在 BrowseComp 等搜索密集任务上涨点；但加进现有中训练目标混合后，整体一致变差。作者推测它与"上下文摘要"任务功能重叠（两者都要把搜索结果压成结构化状态），产生了冲突的学习信号。</p>
+    </div>
+  </details>
+  <details class="deep">
+    <summary><span class="tw">▸</span><span class="st"><h4>中训练里加"基于评分树的错误识别"</h4><div class="sub">只有边际提升</div></span><span class="pin">失败 2</span></summary>
+    <div class="body">
+      <p>让模型预测给定答案中的潜在问题。但该阶段缺乏外部证据，模型只能识别表面/常识性错误，抓不到更复杂的事实或证据依赖型问题——单靠它作训练信号不够。</p>
+    </div>
+  </details>
+  <details class="deep">
+    <summary><span class="tw">▸</span><span class="st"><h4>用 DPO 做报告成对优化</h4><div class="sub">不稳定、易过拟合</div></span><span class="pin">失败 3</span></summary>
+    <div class="body">
+      <p>用评分树分数构造偏好对、按 DPO 训练偏好更高质量报告。但长文报告往往在覆盖、组织、证据等多维度同时不同，难以得到可靠的成对偏好；小的分数差也未必对应有意义的质量差，训练高方差、收益有限。</p>
+    </div>
+  </details>
+  <details class="deep">
+    <summary><span class="tw">▸</span><span class="st"><h4>开放式评分：两种打分法都崩了</h4><div class="sub">逐点打分→分数虚高；胜/平/负→塌成全负</div></span><span class="pin">失败 4 → 催生最终设计</span></summary>
+    <div class="body">
+      <p><strong>逐点打分：</strong>每条标准给 0/0.5/1。结果约 50% 的样本分数接近 1，严重虚高、好坏难分——缺乏比较参照时判分模型偏向给高分讨好用户。</p>
+      <p><strong>胜/平/负成对：</strong>用教师模型生成参考报告再三元打分。但早期模型几乎一直输给教师，分数塌向 0，信号对 SFT 过滤和 RL 都不可用。</p>
+      <p>两种失败模式共同催生了第 2 节最终的"成对归一化"打分设计（Score = J(cand)/(J(cand)+J(ref))）。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results" class="wrap">
+  <p class="eyebrow">实验结论</p>
+  <h2>仅 8K 任务，追平闭源前沿</h2>
+  <p>默认基座是 Qwen3.5-35B-A3B，跑完整配方得到 <strong>Quest-35B</strong>。在覆盖三类能力的 8 个 benchmark 上：</p>
+
+  <figure>
+    <img src="assets/fig1_benchmarks.png" alt="Figure 1：八个基准上的综合对比">
+    <div class="figcap"><b>图 1：</b>八个基准上的综合对比，覆盖事实查找（如 BrowseComp）、引用接地（如 Mind2Web 2）、报告综合（如 DeepResearch Bench）。"-DR" 表示 OpenAI DeepResearch 等深度研究系统。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>八宫格：</b>每个面板是一个基准的条形排名，蓝色高亮条为 Quest-35B。可见它在多数面板都名列前茅或第一。</li>
+          <li><b>第一梯队对照：</b>在 Mind2Web 2（30.7）、GAIA（80.8）、DeepResearch Bench（48.2）、LiveResearchBench（68.2）等面板上，Quest-35B 都排在很靠前的位置，与 Opus / GPT-5 / Gemini 系列同台。</li>
+          <li><b>注意口径：</b>BrowseComp 与 BrowseComp-Plus 采用 discard-all 上下文策略以与闭源系统公平对比，对应正文里 64.6% / 69.5% 这组数字。</li>
+        </ul>
+        一句话总结：一个 35B 开源模型，在跨三类能力的八个基准上整体进入第一梯队。
+      </div>
+    </div>
+  </figure>
+
+  <div class="takeaways">
+    <div class="ta"><div class="h"><span class="d"></span>开源新 SOTA，逼近闭源</div><p>Quest-35B 在 ~30B 规模开源智能体里几乎全面 SOTA，并在 DeepResearch Bench（48.2 vs OpenAI-DR 47.0）、Mind2Web 2（30.7 vs 28.0）、GAIA（80.8 vs GPT-5 76.4）上追平/反超闭源。</p></div>
+    <div class="ta"><div class="h"><span class="d"></span>同规模覆盖最全</div><p>把配方套到 Qwen3-30B-A3B 得 Quest-30B，与 Tongyi-DR、OpenResearcher 同尺寸对比，在 8 个基准的 4 个上最好，尤其重引用接地与报告综合的 M2W2、DRB——印证"配方决定能力覆盖"。</p></div>
+  </div>
+
+  <h3>消融：三段都要，但 RL 有"对齐税"</h3>
+  <figure>
+    <img src="assets/fig5_ablation.png" alt="Figure 5：训练阶段消融">
+    <div class="figcap"><b>图 5：</b>Quest-35B 在 Vanilla → SFT → +MT → +RL 四个阶段的得分变化（均使用上下文压缩器）。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>SFT：</b>多数客观基准上涨，但开放式相对 Vanilla 反而下降；唯一被 SFT 拖累的客观基准是 BC-Plus（它评测时只许用单一搜索工具，重度 SFT 让模型过拟合训练期工具用法、易调用不被允许的工具）。</li>
+          <li><b>+MT：</b>在 SFT 基础上整体再提升，说明两个辅助任务的收益能跨基准泛化。</li>
+          <li><b>+RL：</b>对开放式任务（DRB、WideSearch、LRB）提升显著，但在 HLE、GAIA 上略降——这两个基准要的是专家级推理与深度分析，而 RL 目标主要优化深度研究行为（如可读性导向的报告综合），出现了类似 <em>alignment tax</em> 的轻微权衡。</li>
+        </ul>
+        一句话总结：MT+SFT+RL 整体最优，但 RL 偏向报告综合的特化会轻微牺牲纯推理能力。
+      </div>
+    </div>
+  </figure>
+
+  <h3>小模型也能是强深度研究智能体</h3>
+  <figure>
+    <img src="assets/fig6_sizes.png" alt="Figure 6：不同规模 Quest 模型的表现">
+    <div class="figcap"><b>图 6：</b>2B / 4B / 9B / 35B 四个规模（均为 SFT 版）在八个基准上的对比。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>缩小模型不致命：</b>在多数基准上缩到 2B 也没有大幅退化，整体随模型变大而稳步上升。</li>
+          <li><b>小模型擅长事实查找：</b>连 2B 都能在 HLE、GAIA 上达到有竞争力的水平，匹敌甚至超过 OpenAI-DeepResearch、o3（o3 在 HLE 24.9%、GAIA 70.5%）——说明合成数据在不同规模下都稳。</li>
+          <li><b>报告综合是短板：</b>这一优势不能完全迁移到重报告综合的 DRB、LiveResearchBench，2B 在这两项明显落后。</li>
+        </ul>
+        一句话总结：用小模型做"事实查找型"本地/隐私敏感场景很有前景，但开放式长报告仍需更大模型。
+      </div>
+    </div>
+  </figure>
+
+  <div class="quote">总体结论：Quest 的真正贡献不止是模型，而是一套<b>完全开放、可复现的配方</b>——评分树数据合成 + 结构化上下文管理 + 高效训练基础设施 + MT/SFT/RL 分阶段流程。它给后续深度研究智能体提供了一个坚实的开放起点。</div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div style="font-weight:800;font-size:15px;color:var(--ink)">Quest: Training Frontier Deep Research Agents with Fully Synthetic Tasks</div>
+      <div class="note">原文：Jian Xie, Tianhe Lin, …, Yu Su, Huan Sun（The Ohio State University · Amazon AGI SF Lab），arXiv preprint 2026.05。本页为面向中文读者的教学可视化导读，所有图片裁切自论文原图，数字与结论以原文为准。</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;text-align:right">
+      <a href="https://arxiv.org/abs/2605.24218" target="_blank" rel="noopener">arXiv:2605.24218 ↗</a>
+      <a href="https://osu-nlp-group.github.io/QUEST" target="_blank" rel="noopener">项目主页 ↗</a>
+      <a href="https://github.com/OSU-NLP-Group/QUEST" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ---------- figure detail toggles ---------- */
+function toggleFigDetail(el){
+  const d = el.nextElementSibling;
+  const open = d.classList.toggle('active');
+  el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+}
+
+/* ---------- rubric scoring demo ---------- */
+const rbLeaves = [
+  {name:'识别出爆发 1 的公司', pass:true},
+  {name:'识别出爆发 2 的公司', pass:true},
+  {name:'判断哪次更致命', pass:true}
+];
+let rbCrit = true;
+function setCrit(v){
+  rbCrit = v;
+  document.getElementById('rb-crit').classList.toggle('on', v);
+  document.getElementById('rb-noncrit').classList.toggle('on', !v);
+  renderRubric();
+}
+function toggleLeaf(i){ rbLeaves[i].pass = !rbLeaves[i].pass; renderRubric(); }
+function renderRubric(){
+  const box = document.getElementById('rb-leaves');
+  box.innerHTML = '';
+  rbLeaves.forEach((lf,i)=>{
+    const div = document.createElement('div');
+    div.className = 'leaf ' + (lf.pass?'pass':'fail');
+    div.onclick = ()=>toggleLeaf(i);
+    div.innerHTML = '<span>'+lf.name+'</span><span class="st">'+(lf.pass?'✓ 1':'✗ 0')+'</span>';
+    box.appendChild(div);
+  });
+  const passN = rbLeaves.filter(l=>l.pass).length;
+  let score, exp, hint;
+  if(rbCrit){
+    score = rbLeaves.every(l=>l.pass) ? 1 : 0;
+    exp = '关键（CRIT）节点：只要有一个叶子失败，整棵子树直接归零。这就是客观任务里"强可验证"的奖励——答案要么完全满足约束，要么不得分。';
+    hint = score===1 ? '当前三个叶子全过 → 1.00' : '有叶子失败 → 立即归零（与失败个数无关）';
+  } else {
+    score = passN / rbLeaves.length;
+    exp = '非关键（NON-CRIT）节点：得分是孩子的平均值，部分完成也能拿部分分。这给 RL 提供了更平滑、更可分的奖励梯度。';
+    hint = passN + ' / ' + rbLeaves.length + ' 个叶子通过 → 平均得分';
+  }
+  document.getElementById('rb-score').textContent = score.toFixed(2);
+  document.getElementById('rb-exp').textContent = exp;
+  document.getElementById('rb-hint').textContent = hint;
+  const root = document.getElementById('rb-root');
+  root.textContent = 'Root · 整体得分 = ' + score.toFixed(2);
+}
+
+/* ---------- context stepper ---------- */
+const ctxSteps = [
+  {stage:'STEP 1 / 5 · 累积',
+   title:'窗口逐渐塞满',
+   html:'<p>智能体多轮搜索、读网页、推理，上下文窗口里堆满了<strong>搜索查询与结果、访问过的 URL 与内容、推理轨迹、上一次的 Context State</strong>。原始内容越多，抓重点的能力越退化。</p>'},
+  {stage:'STEP 2 / 5 · 触发',
+   title:'上下文使用量 > 阈值',
+   html:'<p>当上下文用量超过阈值（实现里设为 <strong>16K</strong>），触发上下文管理。此时不做朴素截断，而是调用 <strong>Context Condenser</strong>（用 GPT-5-mini 实例化）。</p>'},
+  {stage:'STEP 3 / 5 · 压缩',
+   title:'Condenser 读入全量历史',
+   html:'<p>Condenser 把<strong>完整原始历史</strong>（搜索查询与结果、访问 URL 与抽取内容、推理轨迹、此前的摘要记忆）作为输入，产出一个更新后的结构化 <strong>Context State</strong>。</p>'},
+  {stage:'STEP 4 / 5 · 归桶',
+   title:'认知状态 → 三个桶',
+   html:'<p>历史被编码成"已知 / 存疑 / 待查"的认知结构：</p><div class="buckets"><div class="bucket t"><div class="bi"><span class="badge">✓</span>Trusted 已信任</div><p>已对照来源 URL 核实的事实，可直接复用。</p></div><div class="bucket u"><div class="bi"><span class="badge">✕</span>Untrusted 不信任</div><p>被其它来源反驳、附原因，降权、不主动复用。</p></div><div class="bucket q"><div class="bi"><span class="badge">?</span>Uncertain 不确定</div><p>部分支持、需跟进，附要访问的 URL 或要重跑的 query。</p></div></div>'},
+  {stage:'STEP 5 / 5 · 续跑',
+   title:'在全新窗口里继续',
+   html:'<p>清空旧窗口，用更新后的 Context State 初始化一个<strong>全新窗口</strong>续跑。<strong>Uncertain</strong> 引导接下来的搜索与验证，<strong>Untrusted</strong> 被降权——于是无需冗余工具调用就能复用已验证知识，实现长程、引用接地的综合。回到 STEP 1，循环往复。</p>'}
+];
+let ctxIdx = 0;
+function renderCtx(){
+  const s = ctxSteps[ctxIdx];
+  document.getElementById('ctx-stage').textContent = s.stage;
+  document.getElementById('ctx-view').innerHTML = '<h4>'+s.title+'</h4>'+s.html;
+  const dots = document.getElementById('ctx-dots');
+  dots.innerHTML = '';
+  ctxSteps.forEach((_,i)=>{
+    const b = document.createElement('i');
+    if(i===ctxIdx) b.className='on';
+    dots.appendChild(b);
+  });
+  document.getElementById('ctx-prev').disabled = ctxIdx===0;
+  document.getElementById('ctx-next').disabled = ctxIdx===ctxSteps.length-1;
+}
+function ctxStep(d){
+  ctxIdx = Math.max(0, Math.min(ctxSteps.length-1, ctxIdx+d));
+  renderCtx();
+}
+
+/* ---------- training tabs ---------- */
+function showStage(id){
+  ['mt','sft','rl'].forEach(s=>{
+    document.getElementById('t-'+s).classList.toggle('on', s===id);
+    document.getElementById('p-'+s).classList.toggle('on', s===id);
+  });
+}
+
+/* ---------- nav active highlight ---------- */
+const navLinks = Array.from(document.querySelectorAll('.topnav .links a'));
+const secs = navLinks.map(a=>document.querySelector(a.getAttribute('href')));
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id = '#'+e.target.id;
+      navLinks.forEach(a=>a.style.color = a.getAttribute('href')===id ? 'var(--accent)' : '');
+    }
+  });
+},{rootMargin:'-45% 0px -50% 0px'});
+secs.forEach(s=>{ if(s) io.observe(s); });
+
+/* ---------- init ---------- */
+renderRubric();
+renderCtx();
+</script>
+</body>
+</html>

@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi K2 · 中文导读：为「智能体」而生的开源万亿大模型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+table.data .win{color:var(--accent-deep);font-weight:700}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:760px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.figrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.figrow figcaption{font-size:12px;color:var(--ink-faint);text-align:center;margin-top:5px}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1100px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:14.5px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-2{grid-template-columns:1fr 1fr}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+
+/* loop diagram (self-critique / GRPO-like) */
+.grpo{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.grpo .row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
+.gbox{flex:1;min-width:130px;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:12px 13px}
+.gbox .gh{font-weight:700;font-size:13.5px;color:var(--accent-deep);margin-bottom:3px}
+.gbox .gd{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.garrow{align-self:center;color:var(--accent);font-weight:700;font-size:18px}
+.gloop{margin-top:12px;font-size:12.5px;color:var(--ink-soft);background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:9px;padding:9px 13px}
+.gloop b{color:var(--accent-deep)}
+
+/* two-track overview */
+.track{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:13px 0;box-shadow:var(--shadow)}
+.track.pre{border-left:3px solid var(--accent)}
+.track.post{border-left:3px solid var(--ink-faint)}
+.track .th{font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.track .tbadge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent-deep)}
+.track.post .tbadge{background:var(--surface-3);color:var(--ink-soft)}
+.track .td{font-size:14px;color:var(--ink-soft);margin-top:6px;line-height:1.6}
+.track .titems{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.track .ti{font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:3px 10px;color:var(--ink)}
+
+/* step animation */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:172px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-2,.flow-3,.sp-io,.figrow{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Kimi K2 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#overview">方法总览</a>
+      <a href="#muonclip">MuonClip</a>
+      <a href="#data">数据改写</a>
+      <a href="#arch">MoE 架构</a>
+      <a href="#agentic">智能体数据</a>
+      <a href="#rl">RL 框架</a>
+      <a href="#insights">有意思的点</a>
+      <a href="#results">实验结论</a>
+      <a href="#limits">局限</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2507.20534" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">技术报告导读 · Open Agentic Intelligence</div>
+    <h1>Kimi K2：为「智能体」而生的开源万亿参数大模型</h1>
+    <p class="subtitle">Kimi K2: Open Agentic Intelligence（Moonshot AI / 月之暗面）</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv preprint（技术报告）</span>
+      <span class="chip">发布 2025.07</span>
+      <span class="chip">arXiv:2507.20534 · v2</span>
+      <span class="chip">1.04T 总参 / 32B 激活 MoE</span>
+      <span class="chip">开源权重</span>
+    </div>
+    <p class="lead">一句话：要让大模型从「会答题」走向<strong>会自己用工具、规划、动手干活</strong>（agentic intelligence），瓶颈在两头——<strong>预训练</strong>受限于高质量数据有限，必须榨干每个 token 的价值；<strong>后训练</strong>则苦于真实的「工具使用轨迹」太稀缺。K2 用三件武器回应：稳定训练的 <strong>MuonClip 优化器</strong>、把工具调用数据<strong>大规模合成</strong>的流水线、以及让模型<strong>自己当裁判</strong>的强化学习框架。</p>
+    <p class="muted" style="font-size:14px">本页基于 arXiv 原文（2507.20534v2）正文、图表与附录构建。术语首次出现时给出英文原词，便于对照原文。文中所有架构示意图与结果图均取自原论文。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>是什么</strong>：Kimi K2 是一个 <strong>1.04 万亿参数的 MoE（混合专家）大模型，每次只激活 320 亿参数</strong>，专门为「智能体能力」（工具使用、多步推理、软件工程）设计，并<strong>开源了基座与后训练权重</strong>。</li>
+      <li><strong>预训练怎么稳</strong>：用 token 效率更高的 <strong>Muon 优化器</strong>，但 Muon 放大规模时会「注意力 logit 爆炸」。本文提出 <strong>QK-Clip</strong> 直接给 Q/K 投影权重「剪枝」，合成 <strong>MuonClip</strong>，在 <strong>15.5 万亿 token</strong> 上训练<strong>全程零 loss 尖峰</strong>。</li>
+      <li><strong>数据怎么榨</strong>：高质量 token 不够用，于是用<strong>分块自回归改写</strong>把知识/数学语料安全地扩增；又用一条<strong>大规模智能体数据合成流水线</strong>（造工具→造 agent→造任务→造轨迹）批量造出可验证正确的工具使用样本。</li>
+      <li><strong>对齐怎么做</strong>：强化学习同时用<strong>可验证奖励（RLVR）</strong>（数学/代码/指令等有标准答案的任务）和<strong>自我批判 rubric 奖励</strong>（模型给自己的输出打分），把对齐从「有标准答案」延伸到「开放主观」任务。</li>
+      <li><strong>结果</strong>：在 <strong>non-thinking（不开思维链扩展）</strong>设定下，K2 是开源 SOTA，尤其在 <strong>编码与智能体工具使用</strong> 上逼近甚至反超闭源 Claude 4；LMSYS Arena 上是<strong>开源第一、总榜第五</strong>。</li>
+    </ul>
+    <div class="metrics">
+      <div class="metric"><div class="v">65.8<span class="u">%</span></div><div class="k">SWE-bench Verified<br>开源最佳，逼近 Claude 4</div></div>
+      <div class="metric"><div class="v">66.1</div><div class="k">Tau2-bench（工具使用）<br>大幅领先所有 baseline</div></div>
+      <div class="metric"><div class="v">53.7<span class="u">%</span></div><div class="k">LiveCodeBench v6<br>所有对比模型第一</div></div>
+      <div class="metric"><div class="v">0</div><div class="k">15.5T token 训练中的<br>loss 尖峰数（MuonClip）</div></div>
+    </div>
+    <div class="quote big">「让 AI 智能体突破静态人类数据的天花板，通过自身的探索与利用获得超越性的能力。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 释义自原文对 agentic intelligence 的定位（“go beyond the limitation of static human-generated data… through its own exploration and exploitation”）</span></div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：通往「智能体」的两道坎</h2>
+    <p>论文开篇就把基调定在一个范式转变上：大模型正从<strong>静态的模仿学习</strong>（学人类写好的文本）转向 <strong>Agentic Intelligence（智能体智能）</strong>——模型能在复杂、动态的环境里<strong>自主感知、规划、推理、行动</strong>，通过与环境交互获得训练分布之外的新技能。要达到这个目标，预训练和后训练各有一道坎：</p>
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph">坎一 · 预训练：token 不够「贵」</div>
+        <ul>
+          <li>高质量人类数据<strong>越来越稀缺</strong>，模型却越做越大</li>
+          <li>于是 <strong>token 效率</strong>（每个 token 带来多少学习信号）成了扩展的关键系数</li>
+          <li>简单地把数据重复多遍 → <strong>过拟合</strong>、泛化变差</li>
+        </ul>
+      </div>
+      <div class="panel before">
+        <div class="ph">坎二 · 后训练：智能体数据太稀缺</div>
+        <ul>
+          <li>多步推理、长程规划、工具使用这些能力，<strong>在自然语料里几乎不存在</strong></li>
+          <li>真实环境能提供真信号，但<strong>构建成本高、难规模化</strong>（成本、复杂度、隐私、可达性）</li>
+          <li>需要<strong>可规模化地合成</strong>结构化、高质量、可验证的智能体轨迹</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="t">本文要回答的问题</div>
+      能不能既在预训练阶段<strong>把每个高质量 token 的价值榨到最大、还保证万亿规模训练稳定</strong>，又在后训练阶段<strong>大规模造出真实可用的工具使用数据</strong>，并用一套强化学习框架把这些能力<strong>从「有标准答案」延伸到「开放主观」</strong>的任务上？
+    </div>
+  </section>
+
+  <!-- PRIOR WORK -->
+  <section id="prior">
+    <h2><span class="num">02</span> 已有方案卡在哪</h2>
+    <p>K2 的每一项设计都是针对一个具体的「已有方案不够好」。先建立画面感——下面四张卡片就是本文方法的「反面动机」，点开看它们各自卡在哪：</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚙️</span>AdamW 优化器 <span class="xtag">主流基线</span></div>
+        <div class="xs">几乎所有大模型默认的优化器，稳定但<b>token 效率不够高</b>。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：逐参数自适应学习率的一阶优化器，工程成熟、训练稳定。</p>
+          <p><b>卡在哪</b>：在相同算力与数据下，<b>学到的东西不如 Muon 多</b>。当高质量 token 成为稀缺资源时，token 效率不足就是硬伤。</p>
+          <p><b>与本文关系</b>：K2 改用 Muon 来提升 token 效率——这又引出了下一个问题。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🚀</span>Muon 优化器 <span class="xtag">高效但不稳</span></div>
+        <div class="xs">月之暗面前作验证过：同等算力下 Muon <b>明显优于 AdamW</b>，但放大规模会训练不稳。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：对权重更新做正交化（近似），让更新矩阵的奇异值更均匀，token 效率更高。</p>
+          <p><b>卡在哪</b>：放大规模时<b>注意力 logit 会爆炸</b>（attention logits explosion），引发 loss 尖峰甚至训练发散——这个现象在 Muon 上比 AdamW 频繁得多。</p>
+          <p><b>与本文关系</b>：本文要的是 Muon 的效率 + 稳定性，于是发明 QK-Clip 来「驯服」它。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">✂️</span>既有的稳定手段 <span class="xtag">不够用</span></div>
+        <div class="xs">logit soft-cap、QK-Norm 这些常见招数，对 K2 的场景<b>都不适用</b>。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>logit soft-cap</b>：直接给注意力 logit 封顶，但 Q·K 点积<b>在封顶前就可能已经涨得过大</b>，治标不治本。</p>
+          <p><b>QK-Norm</b>：对 Q、K 做归一化，但它<b>不适用于 MLA</b>（多头潜在注意力），因为 MLA 的 Key 矩阵在推理时并不完整物化。</p>
+          <p><b>与本文关系</b>：两条路都被堵死，所以本文从「权重」下手，提出新的 QK-Clip。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🌍</span>靠真实环境收集智能体数据 <span class="xtag">难规模化</span></div>
+        <div class="xs">让 agent 在真实系统里跑、收集轨迹，信号真但<b>太贵、太难铺开</b>。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：搭建真实工具/环境，让模型在其中交互，记录工具调用轨迹做训练数据。</p>
+          <p><b>卡在哪</b>：真实环境受<b>成本、复杂度、隐私、可达性</b>限制，很难造出足够多样、足够多的高质量轨迹。</p>
+          <p><b>与本文关系</b>：本文转向「<b>大规模模拟合成 + 关键场景真实沙箱</b>」的混合路线，兼顾覆盖面与真实性。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <h2><span class="num">03</span> 方法总览：预训练求「稳与省」，后训练求「会干活」</h2>
+    <p>K2 的整套方法可以挂在<strong>一条主线</strong>上：<strong>token 效率（token efficiency）</strong>。预训练阶段想方设法让每个 token 学到更多、还要训得稳；后训练阶段则把这些「通用先验」转化成「真能动手」的智能体行为。下面两条产线各管一头：</p>
+
+    <div class="track pre">
+      <div class="th">① 预训练 Pre-training <span class="tbadge">稳定 + 高 token 效率</span></div>
+      <div class="td">在有限高质量数据下，把每个 token 的学习价值榨到最大，并保证万亿规模训练全程不崩。三件套：</div>
+      <div class="titems">
+        <span class="ti">MuonClip 优化器（稳定 + 高效）</span>
+        <span class="ti">数据改写（提升 token 价值）</span>
+        <span class="ti">超稀疏 MoE 架构（scaling law 调出来的）</span>
+      </div>
+    </div>
+
+    <div class="track post">
+      <div class="th">② 后训练 Post-training <span class="tbadge">把先验变成智能体行为</span></div>
+      <div class="td">让模型真正学会用工具、对齐人类偏好。两件套：</div>
+      <div class="titems">
+        <span class="ti">大规模智能体数据合成（SFT 教会工具使用）</span>
+        <span class="ti">统一 RL 框架（可验证奖励 + 自我批判）</span>
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:14px">下面我们按「<strong>MuonClip → 数据改写 → MoE 架构</strong>（预训练三件套）→ <strong>智能体数据合成 → RL 框架</strong>（后训练两件套）」的顺序逐一展开，方法部分是全文重头戏。</p>
+  </section>
+
+  <!-- MUONCLIP -->
+  <section id="muonclip">
+    <h2><span class="num">04</span> MuonClip：让高效的 Muon 也能稳稳训到万亿规模</h2>
+    <p>这是预训练的第一件武器。逻辑链很清晰：<strong>Muon 效率高 → 但放大会 logit 爆炸 → 用 QK-Clip 从权重侧摁住 → 合成 MuonClip</strong>。</p>
+
+    <h3>为什么 Muon 会「注意力 logit 爆炸」</h3>
+    <p>注意力分数（softmax 之前的输入）本质是 <code>q·k</code> 的点积。训练中如果 Q、K 投影权重的<strong>谱范数（最大奇异值）不断变大</strong>，这个点积就会无界增长，最终触发数值不稳定、loss 尖峰乃至发散。论文在附录给出了假设：Muon 的更新矩阵<strong>奇异值更均匀、有效秩更高</strong>（不像 Adam 那样被少数大奇异值主导），更容易让权重的奇异值<strong>叠加式增大</strong>；而注意力的双线性形式 <code>QᵀK</code> 又把谱范数<strong>平方放大</strong>，于是 Muon 更容易 logit 爆炸。</p>
+
+    <h3>QK-Clip：不动前向计算，只在事后给权重「剪一刀」</h3>
+    <p>QK-Clip 的核心想法极简：<strong>每一步训练后</strong>，监控每个注意力头的<strong>最大 logit</strong>；只要它超过阈值 <code>τ</code>，就把这个头的 <strong>Q、K 投影权重按比例缩小</strong>，把 logit 拉回阈值以下。几个关键设计：</p>
+    <ul class="tight">
+      <li><strong>不改当前步的前向/反向</strong>：最大 logit 只作为「该收多紧」的<strong>指示信号</strong>，缩放发生在更新之后，不污染本步梯度。</li>
+      <li><strong>逐头（per-head）而非逐层</strong>：实际只有<strong>极少数头</strong>会爆炸，逐头处理把干预降到最小，不连累其它正常的头。</li>
+      <li><strong>适配 MLA</strong>：对多头潜在注意力，只缩放<strong>每个头独有的 Q/K 分量</strong>（含 head-specific 的旋转位置部分），<strong>共享的旋转分量保持不动</strong>，避免跨头副作用。</li>
+    </ul>
+    <div class="formula">
+      <div class="eq">若 <b>max_logit(head)</b> &gt; τ ：&nbsp; W<sub>q</sub>, W<sub>k</sub> ← W<sub>q</sub>·√(τ/max_logit), &nbsp; W<sub>k</sub>·√(τ/max_logit)</div>
+      <div class="cap">把超阈值那一头的查询/键投影权重各乘一个 &lt;1 的因子，等比例把 logit 压回 τ 以内（K2 取 <b>τ = 100</b>）。</div>
+    </div>
+    <p><strong>MuonClip</strong> 就是把「Muon + 权重衰减 + 一致的更新 RMS 缩放 + QK-Clip」打包进一个优化器。下面两张图是它有效性的最直接证据。</p>
+
+    <div class="figure">
+      <div class="figrow">
+        <div>
+          <img src="assets/fig2a_logit_explosion.png" alt="只用原始 Muon 时最大注意力 logit 失控增长" loading="lazy">
+          <figcaption>左：Vanilla Muon — logit 冲破 1000</figcaption>
+        </div>
+        <div>
+          <img src="assets/fig2b_muonclip_stable.png" alt="Kimi K2 用 MuonClip 后最大 logit 被压在 100 并自然衰减" loading="lazy">
+          <figcaption>右：K2 + MuonClip — 封顶 100 后自然回落</figcaption>
+        </div>
+      </div>
+      <div class="fig-cap"><span class="lbl">图 2（原论文 Figure 2）</span>：左图为中等规模（9B 激活 / 53B 总参）只用原始 Muon 的训练，最大注意力 logit 急剧爆炸；右图为 K2 用 MuonClip，logit 被 QK-Clip 牢牢压在阈值 τ=100 内并随训练自然衰减。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左图 横轴/纵轴</b>：横轴是训练步数（到约 1.6 万步），纵轴是该批次内的<b>最大注意力 logit</b>。</li>
+          <li><b>左图 红线（Vanilla Muon）</b>：logit 前期缓慢爬升，约 1 万步后<b>急剧失控冲破 1200</b>——这种量级几乎必然带来 loss 尖峰甚至训练发散。这说明 logit 爆炸在 Muon 训练里很早就显现了。</li>
+          <li><b>右图 横轴/纵轴</b>：横轴是 K2 的训练步数（到约 23 万步），纵轴同为最大 logit，注意纵轴上限只到 100。</li>
+          <li><b>右图 蓝线（K2 + MuonClip）</b>：训练一开始 logit 就被 QK-Clip <b>顶在 τ=100</b>（前约 7 万步持续触顶），之后<b>无需任何手动调整</b>，logit 自然衰减到约 30 的安全区并稳定停留。</li>
+          <li><b>两图对比</b>：同一个「logit 爆炸」问题，左边任其发展会炸，右边被 QK-Clip 稳稳摁住——这正是 MuonClip 把「会发散的训练」变成「全程平稳」的可视化证据。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：左图是病，右图是药；QK-Clip 在不牺牲 Muon 效率的前提下，把注意力动态稳稳控制住。</p>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig3_loss_curve.png" alt="Kimi K2 在 15.5 万亿 token 上的逐步训练 loss 曲线，全程无尖峰" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3（原论文 Figure 3）</span>：K2 全程逐步训练 loss（未平滑、未下采样），从 0 到 15.5 万亿 token <strong>平滑下降、没有一个尖峰</strong>。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：已消耗的训练 token 数（0 到约 15.5 万亿）。<b>纵轴</b>：训练 loss（约 1.3–2.0）。</li>
+          <li><b>蓝色曲线</b>：K2 的逐步训练 loss，<b>没有做任何平滑或下采样</b>，所以看得到真实噪声。</li>
+          <li><b>蓝色「带宽」</b>：是逐步训练的自然抖动，<b>不是尖峰</b>；真正的 loss 尖峰会表现为突然向上的孤立高峰，这条曲线上一个都没有。</li>
+          <li><b>为什么难</b>：在 1 万亿参数、15.5 万亿 token 的规模上做到「零尖峰」极难——大模型训练里一个尖峰就可能要回滚 checkpoint、损失大量算力。</li>
+          <li><b>结论</b>：这条曲线就是摘要里「zero loss spike」的实证，说明 MuonClip 对超大规模训练提供了鲁棒、可扩展的稳定性。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：「零 loss 尖峰」不是口号，这条平滑曲线就是 MuonClip 让万亿训练可控的证据。</p>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>细节：QK-Clip 会不会损害模型质量？它会一直开着吗？<span class="sub">点开看小规模消融 + 自动失活现象</span></summary>
+      <div class="ex-body">
+        <p style="font-size:14px;color:var(--ink-soft)"><b>不损害质量</b>：论文训了两个 0.5B 激活 / 3B 总参的小模型对照，一个用原始 Muon、一个用带激进低阈值的 MuonClip。结果 loss 曲线几乎重合，下游任务也无统计显著退化——说明即使「剪得很狠」也不伤收敛（见原论文 Figure 12）。</p>
+        <p style="font-size:14px;color:var(--ink-soft)"><b>会自动失活（self-deactivation）</b>：在 K2 训练中，QK-Clip 只是<b>阶段性</b>起作用——前 7 万步有一部分注意力头触发过 clip；7 万步之后所有头的最大 logit 都自然降到了阈值以下，QK-Clip 就<b>不再生效</b>了（这正对应图 2 右侧蓝线先触顶、后回落的形状）。它遵循「最小干预」原则：需要时才动手，稳定后自动退场。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- DATA -->
+  <section id="data">
+    <h2><span class="num">05</span> 数据改写：把同一份好语料，安全地「学好几遍」</h2>
+    <p>这是预训练的第二件武器，目标还是 <strong>token 效率</strong>。难题是：高质量知识类文本，<strong>读一遍不够吸收，读很多遍又会过拟合</strong>。K2 的解法不是简单重复，而是用一个<strong>改写（rephrasing）流水线</strong>，把同一份内容用<strong>不同风格、不同视角</strong>重写多份，等于在不破坏事实的前提下「换着说法」多学几遍。知识领域的改写有三个关键组件：</p>
+    <ul class="tight">
+      <li><strong>风格与视角多样化提示</strong>（受 WRAP 启发）：用一组精心设计的提示，引导一个 LLM 在<strong>保持事实正确</strong>的前提下，以不同文体、不同视角忠实改写原文。</li>
+      <li><strong>分块自回归生成</strong>：长文先切块、逐块改写、再拼回，<strong>突破 LLM 的隐性输出长度上限</strong>，同时保持全篇连贯（见下图）。</li>
+      <li><strong>保真度校验</strong>：改写后与原文做<strong>语义一致性比对</strong>，作为进入训练前的初步质量闸门。</li>
+    </ul>
+
+    <div class="figure">
+      <img src="assets/fig4_rephrasing.png" alt="长文分块、逐块自回归改写、再拼接的流水线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 4（原论文 Figure 4）</span>：面向长文的「分块自回归改写」流水线——切块（保留上下文）→ 逐块改写 → 拼接成完整改写段落。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>输入（蓝，左上）</b>：一段最长约 4096 token 的高质量原文（full input excerpt）。</li>
+          <li><b>split（切块）</b>：原文被切成若干约 256 token 的小块（partial input excerpt 1、2、…），避免一次性改写长文时的信息丢失与长度限制。</li>
+          <li><b>rewrite model（紫，改写模型）</b>：逐块改写；改写下一块时，把<b>上一块的改写结果作为上文</b>（auto-regressive，图中向下的「auto-regressive」箭头），保证全篇风格、指代、逻辑连贯。</li>
+          <li><b>partial output excerpt（绿，右）</b>：每个小块对应的改写结果。</li>
+          <li><b>concat（拼接，右上）</b>：把各块改写结果拼接回完整的改写段落（full output excerpt）。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：这条流水线把「读很多遍同一份原文」换成「读这份原文的多个忠实改写版」，提高 token 价值又不至于过拟合。</p>
+      </div>
+    </div>
+
+    <p>数学领域则把高质量材料改写成<strong>「学习笔记」风格</strong>（参考 SwallowMath），并把其它语言的优质数学资料<strong>翻译成英文</strong>以增加多样性。改写到底有没有用？论文用 SimpleQA 做了一个干净的对照实验：</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>训练策略</th><th>改写次数</th><th>训练轮数（epoch）</th><th>SimpleQA 准确率</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>原始数据重复多遍</td><td>0（原始 wiki 文本）</td><td>10</td><td class="dim">23.76</td></tr>
+          <tr><td>改写 1 次再重复</td><td>1</td><td>10</td><td>27.39</td></tr>
+          <tr class="hl"><td>改写 10 次各训 1 遍</td><td>10</td><td>1</td><td>28.94</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:14px">同样的内容预算，「<strong>多样化改写 + 单遍训练</strong>」明显优于「原文重复 10 遍」（28.94 vs 23.76）。论文也提醒：合成数据规模化仍是<strong>开放问题</strong>——要控制幻觉、毒性、跨域泛化与保真，每份语料最多改写 2 次。</p>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="arch">
+    <h2><span class="num">06</span> MoE 架构：用 scaling law 调出来的「极致稀疏」</h2>
+    <p>第三件武器是模型结构本身。K2 整体沿用 DeepSeek-V3 风格——<strong>超稀疏 MoE + 多头潜在注意力（MLA）</strong>，但在两个关键超参上做了和 scaling law 实验相符的取舍：<strong>专家更多（更稀疏）、注意力头更少</strong>。</p>
+
+    <h3>更稀疏 = 更强：稀疏度 scaling law</h3>
+    <p>「稀疏度」= 总专家数 / 激活专家数。论文做了一组控制实验：在<strong>固定激活参数（即固定 FLOPs）</strong>下，<strong>增加总专家数</strong>能持续降低训练与验证 loss。最终 K2 选了<strong>稀疏度 48</strong>——384 个专家里每次只激活 8 个（外加 1 个共享专家）。</p>
+
+    <div class="figure">
+      <img src="assets/fig5_sparsity.png" alt="不同稀疏度下验证 loss 随训练 FLOPs 的下降曲线" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 5（原论文 Figure 5）</span>：稀疏度 scaling law——固定激活专家为 8，提高总专家数（提高稀疏度），在相同算力下验证 loss 更低。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：训练 FLOPs（对数坐标）。<b>纵轴</b>：验证 loss（越低越好）。</li>
+          <li><b>五种颜色</b>：稀疏度 8 / 16 / 32 / 48 / 64，激活专家数固定为 8，只改变总专家数。</li>
+          <li><b>每条彩色虚线</b>：对应稀疏度的「计算最优」前沿；图中<b>红色星标</b>是各档的最优配置点。</li>
+          <li><b>读图重点</b>：在相同 FLOPs 下，<b>越稀疏（48 绿、64 蓝）验证 loss 越低</b>，即同样算力能得到更强模型。</li>
+          <li><b>量化收益</b>：要达到相同验证 loss 1.5，稀疏度 48 相比稀疏度 8 / 16 / 32 分别<b>省下 1.69× / 1.39× / 1.15× 算力</b>。继续提稀疏度还能更好，但会推高工程复杂度，于是 K2 权衡后选 48。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：这张图是「为什么 K2 用 384 个专家」的直接依据——稀疏是免费的午餐，只是要付工程的账。</p>
+      </div>
+    </div>
+
+    <h3>更少注意力头：为长上下文与智能体场景让路</h3>
+    <p>DeepSeek-V3 把注意力头数设成约层数的两倍以提升带宽利用，但<strong>长上下文下这会大幅推高推理开销</strong>。论文实测：序列长 128k 时，把头数从 64 提到 128（专家数不变）会让<strong>推理 FLOPs 暴涨 83%</strong>，而验证 loss 只改善 0.5%–1.2%。对重度依赖长上下文的智能体应用，这笔账不划算，于是 K2 <strong>把注意力头砍到 64</strong>。</p>
+
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>架构参数</th><th>DeepSeek-V3</th><th>Kimi K2</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>总参数</td><td class="dim">671B</td><td class="win">1.04T</td><td>更大</td></tr>
+          <tr><td>激活参数</td><td class="dim">37B</td><td class="win">32.6B</td><td>反而更少</td></tr>
+          <tr><td>专家总数</td><td class="dim">256</td><td class="win">384</td><td>更稀疏</td></tr>
+          <tr><td>每 token 激活专家</td><td>8</td><td>8</td><td>相同</td></tr>
+          <tr><td>共享专家</td><td>1</td><td>1</td><td>相同</td></tr>
+          <tr><td>注意力头数</td><td class="dim">128</td><td class="win">64</td><td>砍半，省长上下文推理</td></tr>
+          <tr><td>层数</td><td>61</td><td>61</td><td>相同</td></tr>
+          <tr><td>稠密层数</td><td>3</td><td>1</td><td>更少</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:14px">注意一个反直觉点：K2 总参数比 DeepSeek-V3 大 50% 以上，<strong>激活参数反而更少</strong>（32.6B vs 37B）——这正是「更稀疏」的体现：参数池更大，但每次只动用很小一部分。</p>
+  </section>
+
+  <!-- AGENTIC DATA -->
+  <section id="agentic">
+    <h2><span class="num">07</span> 智能体数据合成：批量「造」出工具使用轨迹</h2>
+    <p>进入后训练。要教会模型用工具，就得有海量「工具使用轨迹」做监督微调（SFT）。但真实环境难规模化（见第 02 节），所以 K2 搭了一条<strong>三阶段合成流水线</strong>，受 ACEBench 启发，能批量产出<strong>多样、可验证正确</strong>的工具使用样本。点「下一步」跟着流水线走一遍：</p>
+
+    <div class="stepbox" id="agentpipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+      </div>
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STAGE 1</span>造工具：构建工具库（Tool Repository）</div>
+          <div class="sb">两条腿走路：① 从 GitHub <strong>直接抓取 3000+ 个真实 MCP 工具</strong>（Model Context Protocol，复用已有高质量工具规范）；② 通过<strong>层级化领域演化</strong>——先定大类（金融交易、软件应用、机器人控制…），再演化出具体应用领域，为每个领域合成带清晰接口/描述/语义的工具，<strong>共造出 20000+ 个合成工具</strong>。t-SNE 可视化显示真实工具与合成工具覆盖了互补的区域。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>GitHub 真实 MCP 工具 + 领域大类种子</div>
+            <div class="io"><div class="iol">输出</div>真实 + 合成工具组成的统一工具库</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STAGE 2</span>造 agent 与任务（Agent &amp; Task）</div>
+          <div class="sb">从工具库里<strong>采样不同的工具子集</strong>，配上各异的系统提示，生成<strong>数千个不同的 agent</strong>（能力、专长、行为风格各异）。再为每个 agent 配置生成从简单到复杂的任务；每个任务都<strong>附带一份显式 rubric（评分标准）</strong>，写明成功条件、预期的工具调用模式与评估检查点——让后续评估客观一致。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>工具库 + 系统提示模板</div>
+            <div class="io"><div class="iol">输出</div>数千个 agent + 带 rubric 的任务</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STAGE 3</span>造轨迹并筛选（Trajectory &amp; Filter）</div>
+          <div class="sb">模拟真实多轮交互：<strong>用户模拟器</strong>（不同沟通风格的 LLM 用户）与 agent 多轮对话；<strong>工具执行环境</strong>（相当于一个 world model）执行工具调用、维护状态、返回带<strong>受控随机性</strong>的反馈（成功 / 部分失败 / 边界情况）。完整轨迹交给 <strong>LLM 裁判</strong>按任务 rubric 评估，<strong>只保留达标的轨迹</strong>——本质是一次大规模拒绝采样。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>agent + 任务 + 用户模拟器 + 工具模拟器</div>
+            <div class="io"><div class="iol">输出</div>经 rubric 筛选的高质量工具使用轨迹</div>
+          </div>
+        </div>
+      </div>
+      <div class="sp-controls">
+        <button data-act="prev">‹ 上一步</button>
+        <button data-act="next" class="primary">下一步 ›</button>
+        <button data-act="reset">重置</button>
+        <span class="sp-counter">1 / 3</span>
+      </div>
+    </div>
+
+    <p>论文用两张图分别画出了前两步（造工具/agent/任务）和第三步（造轨迹/筛选）：</p>
+
+    <div class="figure">
+      <img src="assets/fig8a_data_synth.png" alt="从领域演化出工具，组成工具库，再生成 agent 与带 rubric 的任务" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 8a（原论文 Figure 8 上）</span>：上游——「造工具 → 造 agent → 造任务」。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>Domains → Applications</b>：从领域大类层级演化出具体应用领域，作为合成工具的「土壤」。</li>
+          <li><b>MCP tools → real-world tool specs</b>：从 GitHub 抓取的 3000+ 真实 MCP 工具，转成真实工具规范。</li>
+          <li><b>Applications → synthesized tool specs</b>：为每个演化出的应用领域合成 20000+ 个带接口/描述/语义的工具规范。</li>
+          <li><b>Tool Repository（浅蓝框）</b>：真实工具规范 + 合成工具规范汇成统一工具库。</li>
+          <li><b>→ Agents → Tasks with rubrics</b>：从工具库采样工具子集生成多样 agent；再为每个 agent 生成<b>带评分标准（rubric）</b>的任务。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：这是合成流水线的上游，先把「舞台（工具）、角色（agent）、剧本（带 rubric 的任务）」批量搭好。</p>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig8b_trajectory.png" alt="用户模拟器与 agent 多轮交互、工具模拟器返回反馈、裁判按 rubric 筛选轨迹" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 8b（原论文 Figure 8 下）</span>：下游——「造轨迹 → 按 rubric 筛选」。左侧虚线框是模拟交互闭环，右侧是质量筛选。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>Task → User Agent</b>：任务驱动一个 LLM 模拟的「用户」，带有不同的沟通风格与偏好。</li>
+          <li><b>User Agent ⇄ Agent（interaction）</b>：模拟用户与待训练 agent 进行多轮对话。</li>
+          <li><b>Agent ⇄ Tool Simulator（call / observation）</b>：agent 发起工具调用（call），工具模拟器（相当于 world model）维护状态、返回带<b>受控随机性</b>的真实反馈（observation），覆盖成功、部分失败、边界情况。</li>
+          <li><b>trajectories → Judge Agent（+Rubrics）</b>：完整交互轨迹连同任务 rubric 一起交给裁判模型评估。</li>
+          <li><b>→ Filtered Data</b>：只有满足成功标准的轨迹被保留为训练数据，等价于大规模拒绝采样。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：左框「模拟真实工具使用」负责覆盖面，右侧「按 rubric 筛选」负责质量——量与质同时拿到。</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">模拟 + 真实：混合方案补上「保真度」</div>
+      纯模拟有覆盖面但保真度有限。对<strong>编码与软件工程</strong>这类真实性至关重要的场景，K2 额外接入<strong>真实执行沙箱</strong>：跑真实代码、对接真实开发环境，用<strong>单元测试通过率</strong>等客观指标提供 ground-truth 反馈。这套沙箱基于 Kubernetes，可<strong>同时跑 10000+ 个沙箱实例</strong>。
+    </div>
+  </section>
+
+  <!-- RL -->
+  <section id="rl">
+    <h2><span class="num">08</span> RL 框架：可验证奖励 + 让模型「自己当裁判」</h2>
+    <p>后训练的第二件武器是强化学习。论文认为 RL 比 SFT 有更好的 token 效率与泛化，于是在 K1.5 基础上继续把 RL <strong>在任务多样性与训练算力两个维度同时放大</strong>。框架是一个 Gym 式可扩展系统，核心分两块：<strong>能自动判对错的任务用「可验证奖励」，主观开放的任务用「自我批判」</strong>。</p>
+
+    <h3>第一块：可验证奖励 Gym（Verifiable Rewards Gym）</h3>
+    <p>凡是能自动验证对错的任务，都被纳入一个统一的「健身房」里训练。覆盖五大类：</p>
+    <div class="flow flow-3">
+      <div class="fnode">
+        <div class="ftag">DOMAIN 1</div>
+        <div class="fname">数学 / STEM / 逻辑</div>
+        <div class="fdesc">原则是<strong>覆盖多样 + 难度适中</strong>：用标注/抽取/开源数据收集 QA，并按 SFT 模型的 pass@k 难度<strong>只挑不太易也不太难</strong>的题，保证学习信号。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">DOMAIN 2</div>
+        <div class="fname">复杂指令遵循</div>
+        <div class="fdesc">双路验证：能自动判的用<strong>代码解释器</strong>判（长度/风格等），需理解的用 <strong>LLM 裁判</strong>判；再加一层 <strong>hack-check</strong> 专抓「假装完成」的作弊。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">DOMAIN 3</div>
+        <div class="fname">忠实性 Faithfulness</div>
+        <div class="fdesc">训练一个<strong>句子级忠实性裁判</strong>（受 FACTS Grounding 启发），检测「没有上下文支撑的事实声明」，作为奖励模型提升忠实度。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">DOMAIN 4</div>
+        <div class="fname">编码 &amp; 软件工程</div>
+        <div class="fdesc">竞赛题用<strong>高质量人写单元测试</strong>判分；SWE 任务从 GitHub 的 PR/issue 构建<strong>可执行环境</strong>，跑在能并发 10000+ 沙箱的 K8s 上。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">DOMAIN 5</div>
+        <div class="fname">安全 Safety</div>
+        <div class="fdesc">从人工种子提示出发，用<strong>攻击模型 / 目标模型 / 裁判模型</strong>的自动演化流水线模拟越狱，按 rubric 给二元成功/失败标签。</div>
+      </div>
+      <div class="fnode" style="background:var(--accent-soft);border-color:var(--border-strong)">
+        <div class="ftag" style="color:var(--accent-deep)">关键思想</div>
+        <div class="fname">凡可验证，皆可 RL</div>
+        <div class="fdesc">把「对错可自动判定」的任务统统标准化进 Gym，奖励<strong>客观、可规模化、难作弊</strong>——这是整套 RL 的稳固地基。</div>
+      </div>
+    </div>
+
+    <h3>第二块：自我批判 rubric 奖励（Self-Critique Rubric Reward）</h3>
+    <p>但创意写作、开放问答这类<strong>没有标准答案</strong>的任务怎么办？K2 的答案是<strong>让模型给自己打分</strong>：同一个 K2 既当「演员（actor）」生成回答，又当「评论家（critic）」对自己的多个输出做<strong>成对比较</strong>排名，产生偏好信号去更新策略。</p>
+
+    <div class="grpo">
+      <div class="row">
+        <div class="gbox">
+          <div class="gh">① Actor 生成</div>
+          <div class="gd">K2 actor 对各类开放 prompt 生成多个候选回答。</div>
+        </div>
+        <div class="garrow">→</div>
+        <div class="gbox">
+          <div class="gh">② Critic 成对评判</div>
+          <div class="gd">K2 critic 按一组 rubric（核心价值观 + 防作弊 + 人工标注）对回答两两比较、排名。</div>
+        </div>
+        <div class="garrow">→</div>
+        <div class="gbox">
+          <div class="gh">③ 偏好信号</div>
+          <div class="gd">排名转成偏好奖励，更新 actor 策略，对齐有用性、创意、深度、事实性、安全等。</div>
+        </div>
+        <div class="garrow">→</div>
+        <div class="gbox">
+          <div class="gh">④ Critic 自我校准</div>
+          <div class="gd">用可验证任务（RLVR）的客观信号<strong>持续 refine critic</strong>，把「会判对错」的能力迁移到「判好坏」。</div>
+        </div>
+      </div>
+      <div class="gloop">🔁 <b>闭环关键（Closed-Loop Critic Refinement）</b>：critic 不是固定的——它<b>用可验证奖励的 on-policy rollout 不断重新校准自己的评判标准</b>，让「客观对错」的能力源源不断地为「主观好坏」的判断兜底。这样就把对齐从「有标准答案」稳稳延伸到「开放主观」。</div>
+    </div>
+
+    <h3>RL 算法的三处加料</h3>
+    <p>把 RL 扩到这么多任务，关键挑战是「各域都要稳步提升」。论文在 K1.5 的策略优化（用 Muon 优化）之上加了三招：</p>
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">💰</span>预算控制 Budget Control</div>
+        <div class="xs">给每个样本设<b>按任务类型而定的最大 token 预算</b>，超了就截断并罚分。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>RL 常让回答越写越长，但在非推理任务上「更长」不值它的推理成本。强制预算<b>逼模型把算力花在刀刃上</b>，显著提升 token 效率、鼓励简洁有效的解。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">📌</span>PTX 损失 PTX Loss</div>
+        <div class="xs">把一批<b>精选高质量数据</b>作为辅助损失混进 RL，防止遗忘。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>联合 RL 容易把预训练学到的宝贵数据「训没了」。PTX 辅助损失既<b>保住高质量数据</b>，又<b>缓解只对少数 RL 任务过拟合</b>，提升跨域泛化。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">🌡️</span>温度衰减 Temperature Decay</div>
+        <div class="xs">前期高温多<b>探索</b>，后期降温多<b>利用</b>。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>创意写作、复杂推理在训练早期需要高采样温度来发现多样策略、避免过早收敛；但后期/评估时高温会引入过多随机性、损害可靠性。温度按计划<b>从探索过渡到利用</b>。</p>
+        </div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚡</span>RL 基础设施：30 秒换权重</div>
+        <div class="xs">训练/推理引擎 colocate，靠 <b>checkpoint engine</b> 极速同步参数。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>1T 模型每轮 RL 都要把新参数从训练引擎搬到推理引擎。K2 用分布式 checkpoint engine 逐参数流水线广播，<b>不到 30 秒</b>就能完成一次全量参数更新，对一次 RL 迭代几乎可忽略；代码已开源（见图 10）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig10_checkpoint_engine.png" alt="train engine、checkpoint engine、inference engine 在同一 pod 内通过广播同步参数" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 10（原论文 Figure 10）</span>：用 checkpoint engine 做参数更新——训练、检查点、推理三类引擎共置（colocate），通过广播在 30 秒内完成 1T 模型的全量参数同步。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>pod（外框）</b>：训练、检查点、推理三类引擎<b>共置在同一批机器</b>上，一方工作时另一方释放/卸载 GPU 资源。</li>
+          <li><b>train engine（绿，train）</b>：RL 训练引擎；rollout 时其参数被卸载到 DRAM。</li>
+          <li><b>train → ckpt</b>：每个 checkpoint engine worker 先从训练引擎拿到一份<b>本地参数副本</b>。</li>
+          <li><b>broadcast（底部箭头）</b>：checkpoint engine 各 worker 之间把<b>完整参数集广播</b>到全集群。</li>
+          <li><b>ckpt → inference（橙，inference）</b>：推理引擎只<b>取自己需要的参数分片</b>。整体设计让训练/推理引擎<b>完全解耦</b>，便于维护、测试与容错。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：这套「广播全量、各取所需」的设计牺牲一点带宽换来极简、解耦，把 1T 模型的参数同步压到 30 秒内。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">09</span> 有意思的点</h2>
+    <p>除了主线，有几处贯穿全文的取舍与发现值得单独拎出来——它们往往比 benchmark 数字更能说明这份报告的「设计哲学」。</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🎯</span>一切围绕「token 效率」</div>
+        <div class="xs">MuonClip、数据改写、超稀疏 MoE——三件预训练武器其实是同一个目标的三个侧面。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>当高质量数据见顶，「每个 token 学到多少」成了 scaling 的真正瓶颈。<b>Muon</b> 提升单 token 学习量、<b>改写</b> 让同份内容产生更多有效学习信号、<b>稀疏 MoE</b> 在固定 FLOPs 下榨出更低 loss——本质都在抬高 token 的「单位价值」。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🪞</span>让客观能力为主观判断兜底</div>
+        <div class="xs">self-critique 的闭环里，critic 用「可验证对错」的信号持续校准「主观好坏」的评判。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>纯靠模型给自己打分很容易「奖励作弊」、自我陶醉。K2 的巧思是：<b>把 RLVR 里学到的客观判断力，源源不断地蒸馏进 critic</b>，让它在评判创意写作这类主观任务时也有「客观地基」。这是把对齐从可验证域扩到开放域的关键。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⏳</span>QK-Clip 的「最小干预 + 自动退场」</div>
+        <div class="xs">只在需要时对个别头出手，训练稳定后自动失活，几乎不留副作用。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>QK-Clip 逐头触发、不动前向计算；K2 训练里它只在前 7 万步对部分头起作用，之后全部头都自然降到阈值下、QK-Clip <b>彻底不生效</b>。小规模消融也证明它对收敛与下游无显著损害——一个「该出手时才出手」的克制设计。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧪</span>合成数据，但承认它的边界</div>
+        <div class="xs">论文大量用合成数据，却也明确说这仍是「开放问题」。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>知识改写每份语料<b>最多改 2 次</b>，并强调跨域泛化、控幻觉、控毒性、保真与可规模化都还没完全解决。智能体数据也靠「模拟 + 真实沙箱」混合来补保真度。坦诚地标出边界，比只报喜更可信。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">10</span> 实验结论：一句话能说清</h2>
+    <p>一句话：<strong>在 non-thinking（不开思维链扩展）设定下，Kimi-K2-Instruct 是开源 SOTA，尤其在编码与智能体工具使用上逼近甚至反超闭源 Claude 4</strong>；基座 Kimi-K2-Base 在多数开源基准上也领先。下面是最核心的几个数字（均为 non-thinking）：</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">65.8<span class="u">%</span></div><div class="k">SWE-bench Verified<br>多次尝试 71.6%</div></div>
+      <div class="metric"><div class="v">47.3<span class="u">%</span></div><div class="k">SWE-bench Multilingual<br>开源最佳</div></div>
+      <div class="metric"><div class="v">66.1</div><div class="k">Tau2-bench 工具使用<br>vs DeepSeek 48.8</div></div>
+      <div class="metric"><div class="v">76.5</div><div class="k">ACEBench (En)<br>逼近 GPT-4.1 (80.1)</div></div>
+      <div class="metric"><div class="v">53.7<span class="u">%</span></div><div class="k">LiveCodeBench v6<br>所有模型第一</div></div>
+      <div class="metric"><div class="v">49.5<span class="u">%</span></div><div class="k">AIME 2025<br>AIME 2024: 69.6%</div></div>
+      <div class="metric"><div class="v">75.1<span class="u">%</span></div><div class="k">GPQA-Diamond<br>领先所有 non-thinking</div></div>
+      <div class="metric"><div class="v">#5</div><div class="k">LMSYS Arena 总榜<br>开源第一</div></div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/fig1_main_results.png" alt="Kimi K2 与 DeepSeek-V3、Qwen3、GPT-4.1、Claude 4、Gemini 在八个基准上的柱状对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 1）</span>：Kimi K2 主结果——在编码、工具使用、数学/STEM 三类共八个基准上与开源/闭源前沿模型对比（均为 non-thinking）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>八个柱状图</b>分别为：SWE-bench Verified、SWE-bench Multilingual、LiveCodeBench v6、OJBench（编码）；Tau2-bench、ACEBench (En)（工具使用）；AIME 2025、GPQA-Diamond（数学/STEM）。</li>
+          <li><b>蓝色高亮 + 「K」标记</b>：Kimi-K2-Instruct；其余灰/彩色柱为 DeepSeek-V3-0324、Qwen3-235B-A22B、GPT-4.1、Claude 4 Opus/Sonnet、Gemini 2.5 Flash。</li>
+          <li><b>读图重点</b>：在编码与工具使用上 K2（蓝）<b>普遍领先开源对手</b>，并在多项上逼近甚至反超闭源 Claude 4。</li>
+          <li><b>评测设定</b>：所有模型都在 <b>non-thinking</b> 模式下评测，刻意排除测试时算力带来的额外增益，强调「原生能力」。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：这是 K2 的成绩单——一个开源、non-thinking 模型在 agentic / coding 任务上挤进了第一梯队。</p>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>更全的对比数字（节选自原论文 Table 3）<span class="sub">点开看 K2 vs DeepSeek-V3 / Qwen3 / Claude 4 / GPT-4.1</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th>基准（指标）</th><th>Kimi K2</th><th>DeepSeek-V3</th><th>Qwen3-235B</th><th>Claude Sonnet 4</th><th>GPT-4.1</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>SWE-bench Verified（单次）</td><td class="win">65.8</td><td class="dim">38.8</td><td class="dim">34.4</td><td>72.7*</td><td>54.6</td></tr>
+              <tr><td>SWE-bench Multilingual</td><td class="win">47.3</td><td class="dim">25.8</td><td class="dim">20.9</td><td>51.0</td><td>31.5</td></tr>
+              <tr><td>LiveCodeBench v6</td><td class="win">53.7</td><td>46.9</td><td class="dim">37.0</td><td>48.5</td><td>44.7</td></tr>
+              <tr><td>OJBench</td><td class="win">27.1</td><td>24.0</td><td class="dim">11.3</td><td class="dim">15.3</td><td>19.5</td></tr>
+              <tr><td>Tau2 telecom（Avg@4）</td><td class="win">65.8</td><td class="dim">32.5</td><td class="dim">22.1</td><td>45.2</td><td>38.6</td></tr>
+              <tr><td>ACEBench (En)</td><td>76.5</td><td>72.7</td><td>70.5</td><td>76.2</td><td class="win">80.1</td></tr>
+              <tr><td>AIME 2024（Avg@64）</td><td class="win">69.6</td><td>59.4</td><td class="dim">40.1</td><td class="dim">43.4</td><td>46.5</td></tr>
+              <tr><td>GPQA-Diamond</td><td class="win">75.1</td><td>68.4</td><td class="dim">62.9</td><td>70.0</td><td>66.3</td></tr>
+              <tr><td>MMLU-Redux（EM）</td><td>92.7</td><td>89.5</td><td>89.2</td><td>—</td><td>92.4</td></tr>
+              <tr class="hl"><td>Multi-Challenge（多轮冲突指令）</td><td>54.1</td><td>31.4</td><td>34.0</td><td>—</td><td>36.4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px">带 * 为 Claude 4 在 agentic 设定下的成绩。编码与工具使用上 K2 大幅领先开源、逼近闭源；数学/STEM 多项第一；ACEBench 略低于 GPT-4.1。数字以原论文表格为准。</p>
+      </div>
+    </details>
+
+    <p class="muted" style="font-size:14px">基座方面：Kimi-K2-Base 在 12 个英文基准里 10 个达到开源 SOTA（MMLU 87.79、MMLU-Pro 69.17、SimpleQA 35.25），中文全面领先（C-Eval 92.50、CMMLU 90.90、CSimpleQA 77.57）。</p>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">11</span> 局限与小结</h2>
+    <p>论文坦诚列出了 K2 当前的短板（这些往往比成绩单更能帮你判断它适不适合你的场景）：</p>
+    <ul class="tight">
+      <li><strong>难题/工具定义不清时会「话痨」</strong>：面对硬推理或定义模糊的工具时，模型可能<strong>生成过多 token</strong>，导致输出被截断或工具调用不完整。</li>
+      <li><strong>不必要地开工具反而掉点</strong>：如果在用不到工具的任务上仍启用工具使用，某些任务表现会下降。</li>
+      <li><strong>一次性建整个项目不如「智能体框架」内跑</strong>：构建完整软件项目时，one-shot 提示的成功率不如把 K2 放进一个 agentic coding 框架里逐步完成。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这份报告最值得记住的一句话</div>
+      要把大模型推向「智能体智能」，预训练要<strong>把 token 效率与稳定性同时拉满</strong>（MuonClip + 改写 + 稀疏 MoE），后训练要<strong>把稀缺的工具使用能力大规模合成出来</strong>，再用<strong>「可验证奖励 + 自我批判」</strong>把对齐从有标准答案延伸到开放主观——K2 用一个开源的万亿模型，把这条路走通并交了一份漂亮的 agentic 成绩单。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对技术报告 <strong>《Kimi K2: Open Agentic Intelligence》</strong> 的中文导读可视化，内容基于 arXiv 原文（2507.20534v2）正文、图表与附录构建。文中所有架构示意图与结果图（图 1/2/3/4/5/8/10）均直接取自原论文。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2507.20534" target="_blank" rel="noopener">Kimi K2: Open Agentic Intelligence · arXiv:2507.20534 ↗</a>（Kimi Team / Moonshot AI）</p>
+    <p>开源权重：<a href="https://huggingface.co/moonshotai/Kimi-K2-Instruct" target="_blank" rel="noopener">huggingface.co/moonshotai/Kimi-K2-Instruct ↗</a> · checkpoint engine：<a href="https://github.com/MoonshotAI/checkpoint-engine" target="_blank" rel="noopener">github.com/MoonshotAI/checkpoint-engine ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">发布时间 2025.07 · arXiv preprint（技术报告）· 1.04T 总参 / 32B 激活 MoE · 15.5T token 预训练</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明展开/收起（仅用于图片）
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// 通用步进控制器（按容器 id 工作，可复用于多个 stepbox）
+function makeStepper(boxId){
+  var box = document.getElementById(boxId);
+  if(!box) return;
+  var steps = box.querySelectorAll('.sp-step');
+  var dots = box.querySelectorAll('.sp-dot');
+  var total = steps.length;
+  var idx = 0;
+  var counter = box.querySelector('.sp-counter');
+  var prev = box.querySelector('[data-act="prev"]');
+  var next = box.querySelector('[data-act="next"]');
+  var reset = box.querySelector('[data-act="reset"]');
+  function render(){
+    for (var i=0;i<steps.length;i++){
+      steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === idx);
+    }
+    for (var j=0;j<dots.length;j++){
+      dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= idx);
+    }
+    if (counter) counter.textContent = (idx+1) + ' / ' + total;
+    if (prev) prev.disabled = (idx === 0);
+    if (next) next.disabled = (idx === total-1);
+  }
+  if (next) next.addEventListener('click', function(){ if(idx<total-1){ idx++; render(); } });
+  if (prev) prev.addEventListener('click', function(){ if(idx>0){ idx--; render(); } });
+  if (reset) reset.addEventListener('click', function(){ idx=0; render(); });
+  render();
+}
+makeStepper('agentpipe');
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>训练 Agent 模型的数据配方 · OpenThoughts-Agent 导读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf7ee;
+    --surface:#f5ecdb;
+    --surface-2:#efe3cd;
+    --surface-3:#e9dcc2;
+    --border:#e3d5bb;
+    --border-strong:#d4c19e;
+    --ink:#2c2620;
+    --ink-soft:#6f665a;
+    --ink-faint:#938a7c;
+    --accent:#b5562f;
+    --accent-soft:#c98a3f;
+    --accent-wash:#f3e2d2;
+    --ok:#5c7a4f;
+    --shadow:0 1px 2px rgba(60,45,25,.06),0 6px 18px rgba(60,45,25,.05);
+    --radius:14px;
+    --maxw:920px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    line-height:1.78;font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code,.mono{font-family:"JetBrains Mono",monospace;font-size:.9em;}
+
+  /* top nav */
+  .topnav{position:sticky;top:0;z-index:50;background:rgba(251,247,238,.9);
+    backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid var(--border);}
+  .topnav .wrap{display:flex;align-items:center;gap:18px;height:54px;}
+  .topnav .brand{font-weight:800;letter-spacing:.2px;font-size:15px;white-space:nowrap;}
+  .topnav .links{display:flex;gap:16px;margin-left:auto;overflow-x:auto;}
+  .topnav .links a{color:var(--ink-soft);font-size:13.5px;font-weight:500;white-space:nowrap;}
+  .topnav .links a:hover{color:var(--accent);text-decoration:none;}
+  .topnav .src{color:var(--accent);font-weight:600;font-size:13.5px;white-space:nowrap;}
+
+  /* header */
+  header.hero{padding:54px 0 24px;}
+  .eyebrow{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;font-weight:600;
+    color:var(--accent);background:var(--accent-wash);padding:5px 12px;border-radius:999px;
+    border:1px solid #e7c7ad;letter-spacing:.4px;}
+  h1{font-size:40px;line-height:1.18;margin:18px 0 10px;font-weight:800;letter-spacing:-.3px;}
+  h1 .sub{display:block;font-size:19px;font-weight:600;color:var(--ink-soft);margin-top:10px;letter-spacing:0;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 10px;margin:16px 0 6px;}
+  .pill{font-size:12.5px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);
+    padding:4px 11px;border-radius:999px;}
+  .pill b{color:var(--ink);font-weight:600;}
+  .authors{font-size:13.5px;color:var(--ink-faint);margin-top:10px;}
+
+  /* tl;dr */
+  .tldr{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:22px 24px;margin:26px 0;box-shadow:var(--shadow);}
+  .tldr h2{margin:0 0 8px;font-size:14px;letter-spacing:1px;color:var(--accent);text-transform:uppercase;}
+  .tldr p{margin:0;font-size:17.5px;line-height:1.85;}
+  .tldr strong{font-weight:700;}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0 8px;}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 16px;text-align:center;box-shadow:var(--shadow);}
+  .metric .num{font-size:30px;font-weight:800;color:var(--accent);line-height:1.1;font-family:"Inter",sans-serif;}
+  .metric .lbl{font-size:12.5px;color:var(--ink-soft);margin-top:7px;line-height:1.5;}
+
+  /* sections */
+  section{padding:30px 0 8px;}
+  .sec-num{font-family:"JetBrains Mono",monospace;color:var(--accent);font-weight:600;font-size:14px;}
+  h2.sec{font-size:27px;font-weight:800;margin:6px 0 6px;letter-spacing:-.2px;}
+  h3{font-size:20px;font-weight:700;margin:26px 0 8px;}
+  h4{font-size:16.5px;font-weight:700;margin:18px 0 6px;}
+  p{margin:13px 0;}
+  .lead{color:var(--ink-soft);font-size:16px;margin-top:2px;}
+  ul.clean{margin:12px 0;padding-left:22px;}
+  ul.clean li{margin:7px 0;}
+  strong{color:var(--ink);}
+
+  hr.div{border:none;border-top:1px solid var(--border);margin:34px 0;}
+
+  /* figures */
+  figure{margin:22px 0;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);}
+  figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:12px;line-height:1.65;}
+  .fig-cap .fnum{font-weight:700;color:var(--ink);}
+  .fig-toggle{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:var(--accent);
+    cursor:pointer;user-select:none;border:1px solid #e7c7ad;background:var(--accent-wash);
+    padding:3px 11px;border-radius:999px;}
+  .fig-toggle:hover{background:#eed4bf;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0;}
+  .figure-detail.active{max-height:1600px;opacity:1;margin-top:12px;}
+  .figure-detail ul{margin:6px 0;padding-left:20px;font-size:14px;color:var(--ink-soft);}
+  .figure-detail li{margin:6px 0;}
+  .figure-detail li b{color:var(--ink);}
+  .fd-sum{font-size:14px;color:var(--ink-soft);margin-top:10px;font-style:italic;}
+
+  /* callout */
+  .callout{background:var(--accent-wash);border:1px solid #e7c7ad;border-radius:var(--radius);
+    padding:16px 20px;margin:20px 0;}
+  .callout .k{font-weight:700;color:var(--accent);font-size:13px;letter-spacing:.5px;text-transform:uppercase;}
+  .callout p{margin:6px 0 0;font-size:15.5px;}
+
+  blockquote{margin:20px 0;padding:14px 20px;background:var(--surface);border-left:3px solid var(--accent-soft);
+    border-radius:8px;color:var(--ink-soft);font-size:15.5px;}
+  blockquote .src{display:block;margin-top:6px;font-size:12.5px;color:var(--ink-faint);}
+
+  /* key findings grid */
+  .findings{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:20px 0;}
+  .finding{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow);}
+  .finding .fi-h{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15.5px;margin-bottom:4px;}
+  .finding .fi-h .dot{width:22px;height:22px;border-radius:7px;background:var(--accent-wash);color:var(--accent);
+    display:grid;place-items:center;font-size:12px;font-weight:800;flex:none;border:1px solid #e7c7ad;}
+  .finding p{margin:4px 0 0;font-size:14px;color:var(--ink-soft);}
+
+  /* pipeline stepper */
+  .pipe{margin:22px 0;}
+  .pipe-rail{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;}
+  .stage-btn{flex:1 1 0;min-width:120px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .2s ease;position:relative;}
+  .stage-btn:hover{border-color:var(--border-strong);background:var(--surface-2);}
+  .stage-btn.active{background:var(--accent);border-color:var(--accent);box-shadow:0 4px 14px rgba(181,86,47,.28);}
+  .stage-btn .st-n{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-faint);}
+  .stage-btn .st-t{font-weight:700;font-size:13.5px;margin-top:3px;line-height:1.3;}
+  .stage-btn .st-ic{font-size:18px;}
+  .stage-btn.active .st-n,.stage-btn.active .st-t{color:#fff;}
+  .stage-btn.active .st-n{color:#f3d8c6;}
+  .stage-panel{margin-top:14px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);}
+  .stage-panel .sp-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .stage-panel h4{margin:0;font-size:18px;}
+  .verdict{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.3px;}
+  .verdict.keep{color:var(--ok);background:#e6eede;border:1px solid #c5d6b6;}
+  .verdict.drop{color:var(--accent);background:var(--accent-wash);border:1px solid #e7c7ad;}
+  .stage-panel .sp-body{margin-top:10px;font-size:15px;color:var(--ink-soft);}
+  .stage-panel .sp-body b{color:var(--ink);}
+  .winner{margin-top:12px;font-size:14px;background:var(--bg);border:1px dashed var(--border-strong);
+    border-radius:10px;padding:10px 14px;}
+  .winner .wl{font-weight:700;color:var(--accent);font-size:12.5px;letter-spacing:.4px;text-transform:uppercase;}
+
+  /* mini table */
+  .tbl{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .tbl th,.tbl td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .tbl th{background:var(--surface-2);font-weight:700;font-size:12.5px;color:var(--ink-soft);}
+  .tbl tr:last-child td{border-bottom:none;}
+  .tbl td.num{font-family:"JetBrains Mono",monospace;text-align:right;}
+  .tbl tr.best td{background:var(--accent-wash);font-weight:600;}
+
+  /* expandable deep card */
+  .deep{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    margin:14px 0;box-shadow:var(--shadow);overflow:hidden;}
+  .deep .dhead{padding:15px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;}
+  .deep .dhead:hover{background:var(--surface-2);}
+  .deep .dhead .chev{flex:none;width:22px;height:22px;border-radius:6px;background:var(--accent-wash);
+    color:var(--accent);display:grid;place-items:center;font-size:13px;transition:transform .25s ease;border:1px solid #e7c7ad;}
+  .deep.open .dhead .chev{transform:rotate(90deg);}
+  .deep .dh-txt{flex:1;}
+  .deep .dh-title{font-weight:700;font-size:16px;}
+  .deep .dh-tag{font-family:"JetBrains Mono",monospace;font-size:11px;color:#fff;background:var(--accent-soft);
+    padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle;}
+  .deep .dh-sum{font-size:13.5px;color:var(--ink-faint);margin-top:4px;}
+  .deep .dbody{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .deep.open .dbody{max-height:2400px;}
+  .deep .dbody-in{padding:2px 18px 18px;border-top:1px solid var(--border);}
+  .deep .dbody-in p{font-size:14.5px;}
+
+  /* two col compare */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0;}
+  .cpanel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .cpanel h4{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px;}
+  .cpanel .tagline{font-size:12.5px;color:var(--ink-faint);margin-bottom:10px;}
+  .cpanel ul{margin:8px 0 0;padding-left:18px;font-size:14px;color:var(--ink-soft);}
+  .cpanel li{margin:6px 0;}
+  .cpanel.hero-c{border-top:3px solid var(--accent);}
+  .cpanel.base-c{border-top:3px solid var(--accent-soft);}
+
+  details.ex{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:16px 0;padding:0 16px;}
+  details.ex summary{cursor:pointer;padding:13px 0;font-weight:600;font-size:14.5px;color:var(--ink);list-style:none;}
+  details.ex summary::-webkit-details-marker{display:none;}
+  details.ex summary::before{content:"▸ ";color:var(--accent);}
+  details.ex[open] summary::before{content:"▾ ";}
+  details.ex .exbody{padding:0 0 14px;font-size:14px;color:var(--ink-soft);}
+  details.ex .exbody .mono{display:block;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    padding:12px 14px;margin:8px 0;white-space:pre-wrap;line-height:1.6;font-size:12.5px;}
+
+  footer{margin-top:50px;border-top:1px solid var(--border);padding:28px 0 50px;color:var(--ink-faint);font-size:13.5px;}
+  footer a{font-weight:600;}
+  footer p{margin:6px 0;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:30px;}
+    h2.sec{font-size:23px;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .findings{grid-template-columns:1fr;}
+    .compare{grid-template-columns:1fr;}
+    .topnav .links{display:none;}
+    .stage-btn{min-width:calc(33% - 8px);}
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <span class="brand">OT-Agent 导读</span>
+    <span class="links">
+      <a href="#problem">问题</a>
+      <a href="#setup">评测</a>
+      <a href="#pipeline">SFT 流水线</a>
+      <a href="#scaling">数据扩展</a>
+      <a href="#rl">强化学习</a>
+      <a href="#emergent">RL 学到了什么</a>
+      <a href="#conclusion">结论</a>
+    </span>
+    <a class="src" href="https://arxiv.org/abs/2606.24855" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">数据配方 · 开放科学 · Agentic 后训练</span>
+    <h1>训练 Agent 模型的数据配方
+      <span class="sub">Data Recipes for Agentic Models —— OpenThoughts-Agent (OT-Agent)</span>
+    </h1>
+    <div class="meta">
+      <span class="pill"><b>发表</b> · 2026.06</span>
+      <span class="pill"><b>类型</b> · arXiv preprint</span>
+      <span class="pill"><b>机构</b> · UC Berkeley · Stanford · LAION · 等 28 家</span>
+      <span class="pill"><b>项目</b> · openthoughts.ai</span>
+    </div>
+    <p class="authors">Negin Raoof, Richard Zhuang, Marianna Nezhurina, Etash Guha 等 · 通讯：Benjamin Feuer, Ludwig Schmidt</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="tldr">
+    <h2>TL;DR</h2>
+    <p>前沿 Agent 模型很强，但<strong>「怎么给 Agent 准备训练数据」几乎没有公开资料</strong>——开源权重的论文动辄 50 页，讲数据却只有两段。这篇论文把「数据配方」做成一门可复现的科学：用 <strong>100+ 次受控消融实验</strong>逐阶段拆解一条六步 SFT 数据流水线，找出每一步真正有效的策略，组装出 10 万条轨迹的 <strong>OpenThoughts-Agent-v2</strong> 数据集。用它微调 Qwen3-32B，在 7 个 Agent 基准上平均 <strong>44.8%</strong>，比最强开源数据模型 Nemotron-Terminal-32B 高 <strong>3.9 个百分点</strong>。论文还把数据、流水线、模型全部开源。</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">100+</div><div class="lbl">受控消融实验<br>逐阶段验证每个设计</div></div>
+    <div class="metric"><div class="num">44.8%</div><div class="lbl">7 个 Agent 基准平均<br>（32B 模型，新 SotA）</div></div>
+    <div class="metric"><div class="num">+3.9pp</div><div class="lbl">超越最强开源数据<br>模型 Nemotron-Terminal</div></div>
+    <div class="metric"><div class="num">100K</div><div class="lbl">最终 SFT 数据集<br>（task, trajectory）轨迹</div></div>
+  </div>
+
+  <figure>
+    <img src="assets/figure1_option8_8b.png" alt="OT-Agent 在不同数据规模下的扩展曲线" />
+    <div class="fig-cap"><span class="fnum">图 1</span> OT-Agent（红线）在数据规模增大时，在 SWE-Bench Verified、Terminal-Bench 2.0 以及全基准平均上都展现出强劲的扩展趋势，在大规模处领先其它开源数据集。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>三个子图</b>：左 = SWE-Bench Verified-100（软件工程补丁），中 = Terminal-Bench 2.0（命令行任务），右 = 全部基准的平均。横轴是训练集规模（316 → 100K），纵轴是准确率。</li>
+          <li><b>红色实线 = OT-Agent Qwen3-32B</b>，本文主角。在「全平均」子图上随规模单调上升，在 100K 处达到约 45%，是所有曲线的最高点。</li>
+          <li><b>蓝线 = Nemotron-Terminal-Corpus（32B）</b>，最强的开源数据基线；紫线 = SERA（其数据最多 47K，曲线提前终止）。在 SWE-Bench 单项上 SERA 中段一度更高，但它只擅长 SWE，且无法继续扩展。</li>
+          <li><b>虚线 = 未微调的 Base 模型</b>，几乎贴地，说明 Agent 能力高度依赖后训练数据。</li>
+          <li>关键信息：OT-Agent 的优势不是「单项最高」，而是<b>随规模持续增长 + 跨基准均衡领先</b>。</li>
+        </ul>
+        <div class="fd-sum">一句话：好数据不仅在于规模大，更在于在每个规模、每个基准上都站得住。</div>
+      </div>
+    </div>
+  </figure>
+
+  <hr class="div" />
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <span class="sec-num">01</span>
+    <h2 class="sec">问题：Agent 训练数据是一个「黑箱」</h2>
+    <p class="lead">模型能用电脑、能调工具、能长时间推理，但外界几乎不知道这些能力背后的数据是怎么造的。</p>
+
+    <p>过去一代模型只会「回答问题」，新一代 Agent 模型可以像人一样操作电脑完成复杂任务，于是 Claude Code、Codex 这类应用迅速流行。但公开文献里<strong>关于「如何训练 SotA Agent 模型」的信息极少，尤其是训练数据</strong>。论文举了一个典型例子：</p>
+
+    <blockquote>
+      DeepSeekV4 的权重是开放的，配套论文超过 50 页，详细描述了架构与训练过程——<strong>但关于训练数据只有高度概括的两段话</strong>。
+    </blockquote>
+
+    <p>已有的开源尝试（SWE-Smith、SERA、Nemotron-Terminal、OpenSWE 等）虽然在造 Agent 数据，但有两个共同局限：</p>
+    <ul class="clean">
+      <li><strong>几乎都只盯一个基准</strong>：要么只刷 SWE-Bench（修 GitHub issue），要么只刷 Terminal-Bench（命令行），缺少跨任务的泛化视角。</li>
+      <li><strong>SFT 与 RL 各做各的</strong>：很少有人研究监督微调（SFT）和强化学习（RL）两个阶段如何衔接、如何组合。</li>
+    </ul>
+
+    <div class="callout">
+      <span class="k">本文的目标</span>
+      <p>沿着 OpenThoughts（推理数据配方）的思路，转向 <b>Agent 后训练数据</b>，目标是让模型在<b>多个 Agent 基准上同时变强</b>，并把整条数据流水线、实验数据和模型全部公开，让开放研究能在此基础上继续。</p>
+    </div>
+  </section>
+
+  <hr class="div" />
+
+  <!-- SETUP -->
+  <section id="setup">
+    <span class="sec-num">02</span>
+    <h2 class="sec">怎么判断「数据更好」？一套统一的评测标尺</h2>
+    <p class="lead">在拆解流水线之前，先要有一把公平的尺子，否则每一步的「改进」都无从比较。</p>
+
+    <p>论文的核心方法论是<strong>逐阶段独立消融</strong>：把数据流水线拆成若干步，每一步固定其它步、只换当前步的策略，看下游评测谁更高。所有实验都在 <strong>1 万条轨迹</strong>规模上做——小到便宜、大到有信号；除非特别说明，轨迹都由 <strong>GLM-4.7-AWQ 作为教师</strong>在 terminus-2 harness + Daytona 沙箱里生成，再用全参数 SFT 微调 <strong>Qwen3-8B</strong>。</p>
+
+    <h4>三个核心基准（边调边看）</h4>
+    <ul class="clean">
+      <li><strong>SWE-Bench Verified-100</strong>：在固定 commit 的 Python 仓库上生成补丁，由测试判定对错。</li>
+      <li><strong>OT-TBLite（100 题）</strong>：精心挑选、按难度均衡的 Terminal-Bench 风格任务，作为完整 TB2.0 的快速代理。</li>
+      <li><strong>Terminal-Bench 2.0（89 题）</strong>：人工撰写并验证，覆盖 SWE、生物、安全、系统管理、机器学习。</li>
+    </ul>
+
+    <div class="callout">
+      <span class="k">z-score 排名 + 留出泛化集</span>
+      <p>不同基准准确率量级差很大，直接平均会被高分基准主导。论文对每个候选策略，先在该阶段全部候选里算<b>每基准 z-score</b>（减均值、除标准差），再平均三个 z-score，让每个基准等权。此外还<b>留出一组 OOD 基准</b>（Aider Polyglot、BFCL、MedAgentBench、GAIA、FinanceAgent-Terminal），只在流水线全部定型后测一次，用来检验真正的泛化而非过拟合。</p>
+    </div>
+  </section>
+
+  <hr class="div" />
+
+  <!-- PIPELINE -->
+  <section id="pipeline">
+    <span class="sec-num">03</span>
+    <h2 class="sec">核心贡献：六阶段 SFT 数据流水线</h2>
+    <p class="lead">这是全文的重头戏——把「造一条 Agent SFT 数据」拆成六步，每一步都用消融实验回答「到底该怎么做」。</p>
+
+    <figure>
+      <img src="assets/sft-pipeline-figure.png" alt="六阶段 SFT 数据流水线示意" />
+      <div class="fig-cap"><span class="fnum">图 2</span> OpenThoughts-Agent 的六阶段 SFT 数据流水线，每个阶段在论文 3.1–3.6 节中被独立消融。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail">
+          <ul>
+            <li><b>Source Tasks（取任务）</b>：从各种来源收集 task 描述——这是流水线的原料，也是后面会证明<b>最关键</b>的一步。</li>
+            <li><b>Mix Tasks（混合）</b>：把多个来源按比例混合，避免只擅长单一基准。</li>
+            <li><b>Filter Tasks（筛任务）</b>：用过滤器（含 LLM 判断、解题所需 token 长度）剔除低质量任务。</li>
+            <li><b>Generate Rollouts（生成轨迹）</b>：让教师模型在沙箱里真正去做这些任务，录下完整的「思考 + 工具调用」轨迹。</li>
+            <li><b>Filter Rollouts（筛轨迹）</b>：剔除超时、子 agent、过短（&lt;5 轮）的轨迹。</li>
+            <li><b>Select Teacher（选教师）</b>：决定由哪个模型来生成轨迹——会发现「最强的模型不等于最好的老师」。</li>
+            <li>最右的 <b>Final Recipe</b> 是这条流水线产出的最终数据配方。</li>
+          </ul>
+          <div class="fd-sum">点击下面的阶段卡片，逐步查看每一步的消融结论和「胜出策略」。</div>
+        </div>
+      </div>
+    </figure>
+
+    <p>下面这条交互流水线，点任一阶段即可看到该步的<strong>消融结论</strong>、<strong>效应大小</strong>和最终采用的<strong>胜出策略</strong>：</p>
+
+    <div class="pipe">
+      <div class="pipe-rail" id="pipeRail"></div>
+      <div class="stage-panel" id="stagePanel"></div>
+    </div>
+
+    <h3>四条贯穿全文的关键发现</h3>
+    <div class="findings">
+      <div class="finding">
+        <div class="fi-h"><span class="dot">1</span>指令（任务）最重要</div>
+        <p>和推理数据一样，<b>选什么任务描述</b>是整条流水线里最关键的因素——好坏来源能把下游准确率拉开高达 30 个百分点。</p>
+      </div>
+      <div class="finding">
+        <div class="fi-h"><span class="dot">2</span>最强 ≠ 最好的老师</div>
+        <p>基准分数最高的模型，<b>不一定是最好的教师</b>。GPT-5.3-Codex 比更老的 GLM-4.7 还差约 5%。</p>
+      </div>
+      <div class="finding">
+        <div class="fi-h"><span class="dot">3</span>更长的轨迹更好</div>
+        <p>保留<b>轮数更多（≥5 轮）</b>的执行轨迹能稳定提升数据质量，即使在固定 token 预算下也成立。</p>
+      </div>
+      <div class="finding">
+        <div class="fi-h"><span class="dot">4</span>多来源会边际递减</div>
+        <p>在最大训练规模下，重复 Top 几个来源会<b>边际递减</b>，因此需要扩展来源 / 合成增广来增加多样性。</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="div" />
+
+  <!-- SCALING -->
+  <section id="scaling">
+    <span class="sec-num">04</span>
+    <h2 class="sec">扩展数据规模：上采样会撞墙，合成增广能突破</h2>
+    <p class="lead">流水线定型后得到 10K 数据。要做大到 100K，有四种朴素思路，但只有一种真正持续有效。</p>
+
+    <p>论文比较了四种扩展方式：</p>
+    <ul class="clean">
+      <li><strong>方法 1 · 上采样</strong>：同一批任务描述，多生成几条轨迹。最简单，但 <b>31.6K → 100K 几乎不再涨</b>（SWE +3pp / TB −2pp，都在误差内）。瓶颈是<b>任务描述的多样性</b>。</li>
+      <li><strong>方法 2 · 多取原始任务</strong>：从原来源拿更多任务。受限于来源本身——例如 Tezos 只有 997 条不重复任务。</li>
+      <li><strong>方法 3 · 合成增广</strong>：用指令改写策略，把 997 条 Tezos 基础题的表层形式从约 902 扩到 2.1 万种，<b>不引入新的底层问题</b>，但持续带来提升。</li>
+      <li><strong>方法 4 · 更多来源</strong>：从 Top-4 扩到 Top-8、Top-16。结果<b>不可靠</b>——Top-8 未必更好，Top-16 在每个基准都更差。于是保留 Top-4。</li>
+    </ul>
+
+    <figure>
+      <img src="assets/scaling_methods_plot.png" alt="上采样 vs 合成增广 的扩展对比" />
+      <div class="fig-cap"><span class="fnum">图 3</span> 合成增广（蓝）越过了上采样（粉）的平台期。两条线共享同一个 10K 起点，只在扩展之后分叉。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail">
+          <ul>
+            <li><b>粉线 = 方法 1（上采样更多轨迹）</b>：在 31.6K → 100K 区间，OT-TBLite 和 Terminal-Bench 2.0 上甚至<b>掉头向下</b>，说明仅靠重复任务、堆轨迹已经撞到天花板。</li>
+            <li><b>蓝线 = 方法 3（合成任务增广）</b>：在三个基准上都<b>持续上升</b>到 100K，SWE 到约 0.56、TB2.0 到约 0.26。</li>
+            <li>两线在 10K 处重合（同一基座），只有扩展超过 10K 后才分叉——干净地隔离出「扩展方式」这一个变量。</li>
+            <li>结论：限制扩展的不是轨迹数量，而是<b>任务描述的多样性</b>；合成增广恰好补上了这一点。</li>
+          </ul>
+          <div class="fd-sum">一句话：堆更多重复轨迹会饱和，扩展任务的多样性才能继续涨。</div>
+        </div>
+      </div>
+    </figure>
+
+    <p>最终的 100K 数据集 <strong>OpenThoughts-Agent-v2</strong>：从 31.6K 单调提升到 100K（SWE-Bench Verified-100 <strong>+7.7pp</strong>、Terminal-Bench 2.0 <strong>+5.0pp</strong>），32B 模型在 100K 处达到 26.2% TB2.0 / 41.3% OT-TBLite / 55.7% SWE-Bench Verified-100。</p>
+
+    <figure>
+      <img src="assets/sft_sankey_top4.png" alt="OpenThoughts-Agent-v2 最终数据流水线 Sankey 图" />
+      <div class="fig-cap"><span class="fnum">图 4</span> OpenThoughts-Agent-v2 的完整数据流水线（最终 10 万条轨迹）：四个来源经加权上采样、生成轨迹、筛选后汇成最终配比。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail">
+          <ul>
+            <li><b>左侧四个来源</b>：SWE-Smith（合成 GitHub issue，9,998）、Issue Tasks（4,830）、StackExchange SuperUser（人写 Linux 问题，12,817）、StackExchange Tezos（997 条独立任务 × 11 倍增广）。</li>
+            <li><b>Weighted Upsample（加权上采样）</b>：用 gpt-5-nano 的「解题所需长度」作为上采样权重——每条独立任务至少生成一条轨迹，剩余容量按分数比例分配，从而<b>在每个规模都保持完整任务覆盖</b>。</li>
+            <li><b>Generate Traces → Filter Rollouts</b>：教师生成轨迹后，统一施加 <b>≥5 轮</b>过滤（图中流带变窄即被筛掉的部分）。</li>
+            <li><b>Final Mix（最终配比）</b>：四源约 25,000 / 25,000 / 22,848 / 21,486，合计接近 10 万，配比相对均衡。</li>
+          </ul>
+          <div class="fd-sum">一句话：把少量高质量来源「加权上采样 + 合成增广 + 长轨迹过滤」，拼成均衡的 10 万条最终数据。</div>
+        </div>
+      </div>
+    </figure>
+
+    <details class="ex">
+      <summary>附：8B 模型上同样成立（图 5）</summary>
+      <div class="exbody">
+        <p>在 8B 规模重复验证，OT-Agent 数据配方在大多数匹配规模下都领先 Nemotron-Terminal-Corpus 基线：例如 10K 行时 SWE-Bench Verified-100 达到 24.3% vs 9.3%；在 100K 行达到 39.7% SWE / 10.9% TB2.0，两个核心基准都超过基线（34.3% / 9.0%）。和 32B 一样，性能在最大规模处仍在上升而非饱和。</p>
+        <img src="assets/ot_agent_8b_scaling.png" alt="8B 模型扩展曲线" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-top:8px;" />
+      </div>
+    </details>
+  </section>
+
+  <hr class="div" />
+
+  <!-- RL -->
+  <section id="rl">
+    <span class="sec-num">05</span>
+    <h2 class="sec">强化学习：数据来源同样决定成败</h2>
+    <p class="lead">除了 SFT，论文也研究 RL 的数据策划——而且发现「选哪个数据源」依然是胜负手。</p>
+
+    <p>为了控制算力，RL 实验都在 <strong>8B 规模</strong>：用 RLOO 算法、基于验证器成功与否的二值奖励，从一个 SWE-Smith 蒸馏出的冷启动检查点（OT-Agent-ColdSFT）出发训练。主力实验跑在 24×A100 上、batch 64、约 46 小时。消融时<strong>只变数据源、其它全固定</strong>，对比了 6 个来源（pymethods2test、inferredbugs、code-contests、nemotron-code-oracle、llm-verifier-freelancer、nl2bash，以及 SWE-Smith、R2EGym）。</p>
+
+    <div class="callout">
+      <span class="k">数据源很重要</span>
+      <p>不同 RL 数据源的原始平均准确率<b>相差 7.6 个点</b>，远大于 2.0 点的「重复跑」复现噪声——也就是说，这个差距是真实的信号，不是随机波动。</p>
+    </div>
+
+    <h4>最强来源：pymethods2test</h4>
+    <p>它是把 Codeforces / CodeChef / TopCoder 风格的竞赛题，<strong>重写成单函数 Python 契约</strong>：自动生成 docstring 式任务描述和单元测试，没有多文件编辑、没有仓库导航、没有跨轮的 shell 状态累积。参考解约 20 行、任务描述约 200 词。它<strong>高度可复现、高度可用、难度适中</strong>。这种简洁但有挑战的任务，诱导冷启动模型形成一致的解题模式——在 RL 中把「反复思考 + 试探性 sed/grep」替换成紧凑的「探索→打补丁→提交」策略。</p>
+
+    <p>有趣的是 <strong>ID / OOD 的解耦</strong>：强调单函数代码正确性的来源（inferredbugs、code-contests）在分布内（ID）领先；更异质的工具使用来源（llm-verifier-freelancer、nl2bash）在分布外（OOD）更有竞争力——而 <strong>只有 pymethods2test 同时位居两者前列</strong>。</p>
+
+    <h4>结果：SFT + RL 能组合</h4>
+    <ul class="clean">
+      <li>完整后训练流水线（SFT + RL）在两个核心基准和 7 基准平均上都<strong>超过基线</strong>，比 Qwen3-8B 基座<strong>平均高 18 个点</strong>。</li>
+      <li>RL 在 Core 基准上比纯 SFT 检查点额外带来约 <strong>+5 个点</strong>（如 SWE-Bench-Verified +5.4）。</li>
+      <li><strong>「欠训练」的 SFT 模型反而从 RL 中获益更多</strong>：用更少数据 SFT 出来的检查点，是更好的 RL 起点；而在 harness 里表现很差的 Qwen3-8B 基座则无法从 Agent RL 中获益。</li>
+    </ul>
+  </section>
+
+  <hr class="div" />
+
+  <!-- EMERGENT -->
+  <section id="emergent">
+    <span class="sec-num">06</span>
+    <h2 class="sec">有意思的点：RL 到底学到了什么？</h2>
+    <p class="lead">论文用一整个附录做机制分析——为什么 pymethods2test 这么强？答案是它教会模型「更努力地探索」。</p>
+
+    <p>论文对比了两次同流程、只换数据源的 RL：<strong>pymethods2test（hero，最强 ID）</strong> 与 <strong>llm-verifier-freelancer（baseline，最强 OOD）</strong>。结合三种视角——轨迹的时间分箱统计、RL 前后逐轨迹行为差、以及 GPT-5 成对裁判——得到一个清晰的镜像故事：<strong>一个学会「展开探索」，一个学会「压缩收敛」</strong>。</p>
+
+    <div class="compare">
+      <div class="cpanel hero-c">
+        <h4>🚀 Hero：pymethods2test</h4>
+        <div class="tagline">奖励中等、难以提升 → 模型学会更努力</div>
+        <ul>
+          <li>思考 token <b>翻倍</b>：30.3 → 65.4（+116%）</li>
+          <li>自我纠错 0.63 → 1.14（+81%）</li>
+          <li>工具调用 31.3 → 40.9（+31%）</li>
+          <li>对话更长：+12.9 轮、+29% token</li>
+          <li>裁判在 30 对中偏好 RL 后策略 <b>25/30</b></li>
+        </ul>
+      </div>
+      <div class="cpanel base-c">
+        <h4>🧲 Baseline：llm-verifier-freelancer</h4>
+        <div class="tagline">奖励单调上升、可被攻克 → 模型学会压缩</div>
+        <ul>
+          <li>思考 token <b>−42%</b></li>
+          <li>自我纠错 19.7 → 8.0（−59%）</li>
+          <li>工具调用 −8%、轮数 −7.8</li>
+          <li>每轮 token 基本不变（+1%）</li>
+          <li>裁判偏好 RL 后策略 22/30，标签多为「更少工具调用 / 更短轨迹」</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="k">这是真能力提升，不是奖励攻击</span>
+      <p>三条证据：① RL 后<b>报错的工具调用绝对数反而更多</b>（5.9 → 8.8，+48%），这与「钻解析器空子」相反；② 每次调用的报错率只升 4.1pp，多出的错误主要来自「调用更多」；③ <code>mark_task_complete</code> 的占比反而上升（1.9% → 3.0%），与「学会提前结束骗格式奖励」矛盾。在 100 道共享 SWE-Bench-Verified 任务上，RL <b>把 18 道从失败翻成通过</b>，仅 1 道回退。</p>
+    </div>
+
+    <h4>为什么这个数据源逼出了探索？</h4>
+    <p>关键在<strong>奖励曲线的形状</strong>。pymethods2test 给出的是<strong>中等、未饱和、难以提升</strong>的奖励（在 0.47–0.51 徘徊，远离上限）。在 RLOO 下，这恰好是「奖励更努力」的区间——增量回报来自把一道题做得更彻底（想更多、调更多工具、多试几次修复），而不是来自快速取巧。但探索压力持续累积，最终模型会<strong>过度延伸</strong>，奖励从峰值崩塌到约 0.13（agent 超时率达 ~80%）。因此论文<strong>部署的是崩塌之前的检查点</strong>。</p>
+
+    <div class="compare">
+      <figure style="margin:0;">
+        <img src="assets/rl_hero_reward_collapse.png" alt="Hero 奖励先升后崩" />
+        <div class="fig-cap"><span class="fnum">图 6</span> Hero（pymethods2test）：RL 奖励升到约 0.51 的峰值后崩塌；但部署的崩塌前检查点在留出 SWE-Bench 上把基线奖励翻倍（post-RL 0.33 vs base 0.19）。
+          <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+          <div class="figure-detail">
+            <ul>
+              <li><b>蓝线</b>：训练时每条 rollout 的平均奖励（4 小时分箱）。先缓升至 ~0.51，随后<b>急剧下坠</b>——这就是过度探索导致的崩塌。</li>
+              <li><b>右侧两个标记</b>：方块 = RL 前（base）在留出集的评测奖励 ~0.19；菱形 = 部署的 post-RL 检查点 ~0.33，约为基线两倍。</li>
+              <li>含义：崩塌是探索压力的副产物；只要在崩塌前取检查点，就能收获探索带来的增益。</li>
+            </ul>
+            <div class="fd-sum">一句话：探索能涨分，但会过头；在过头前停手即可。</div>
+          </div>
+        </div>
+      </figure>
+      <figure style="margin:0;">
+        <img src="assets/rl_baseline_reward_monotone.png" alt="Baseline 奖励单调上升" />
+        <div class="fig-cap"><span class="fnum">图 7</span> Baseline（llm-verifier-freelancer）：RL 奖励从 ~0.54 近乎单调升到 ~0.73，没有崩塌——与图 6 完全镜像。对应策略在「压缩」而非「展开」。
+          <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+          <div class="figure-detail">
+            <ul>
+              <li><b>蓝线</b>聚集在时间轴右侧（base 评测在数月前，故灰方块远在左侧），平滑上升、无下坠。</li>
+              <li>奖励可被持续攻克 → 模型倾向「少废话、直接提交」：更少轮数、更少工具调用、更少思考。</li>
+              <li>这解释了它为何在 OOD（如金融）有竞争力，但在奖励「彻底性」的 ID Core 基准上迁移较差。</li>
+            </ul>
+            <div class="fd-sum">一句话：当奖励能稳定攻克，最优策略是压缩收敛而非展开探索。</div>
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <blockquote>
+      在 financeagent-14 任务上（post-RL 高置信获胜）：「基线绕了很多轮（113 轮、55 次工具调用）……RL 后的轨迹很短（12 轮、6 次工具调用）……避开了 EDGAR API、不再自我纠错，更直接地奔向目标指标。」
+      <span class="src">—— GPT-5 裁判对 llm-verifier-freelancer 的描述（附录 F）</span>
+    </blockquote>
+
+    <p>一个反直觉的细节：Hero 检查点把许多「基线会放弃直至超时」的试验<strong>转化成了完成的尝试</strong>，而被救回的恰是更难的题——于是「已完成试验的平均奖励」反而下降（0.652 → 0.541），但<strong>计入全部试验的准确率却上升</strong>（0.19 → 0.33）。这说明评测要看「全试验准确率」，而非挑最好的一次。</p>
+
+    <details class="ex">
+      <summary>展开：时间分箱的行为动态全景（图 8）</summary>
+      <div class="exbody">
+        <p>下图把 reward、各类错误率，以及九个逐轨迹行为特征沿训练时间画在一起。「先探索、后崩塌」的特征在多个面板中同时显现：当奖励见顶回落时，平均对话轮数、每条助手消息的 token、每轨迹思考 token、每轨迹自我纠错都在最后几个分箱里飙升，而每轨迹工具调用与工具报错反而下降——模型用「冗长的内部推理」替换了「有效的工具使用」，最终超时。</p>
+        <img src="assets/rl_hero_temporal_panels.png" alt="Hero 运行的时间分箱行为动态" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-top:8px;background:#fff;" />
+      </div>
+    </details>
+  </section>
+
+  <hr class="div" />
+
+  <!-- CONCLUSION -->
+  <section id="conclusion">
+    <span class="sec-num">07</span>
+    <h2 class="sec">结论与局限</h2>
+
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr);">
+      <div class="metric"><div class="num">54.0%</div><div class="lbl">SWE-Bench Verified<br>(vs Nemotron 41.9%)</div></div>
+      <div class="metric"><div class="num">26.2%</div><div class="lbl">Terminal-Bench 2.0<br>(vs Nemotron 25.1%)</div></div>
+      <div class="metric"><div class="num">+18pp</div><div class="lbl">8B SFT+RL 比基座<br>7 基准平均提升</div></div>
+    </div>
+
+    <p>用 OpenThoughts-Agent-v2 微调出的 <strong>OpenThinker-Agent-32B</strong>，是 Qwen3 系（或更早）≤32B 的<strong>最强开源数据模型</strong>，覆盖软件工程、命令行、工具调用、医疗、金融与通用助手任务。在 8B 规模，SFT 数据叠加 pymethods2test 的 RL 数据进一步超越最强 ≤8B 基线，初步证明 <strong>Agent 后训练的 SFT 与 RL 两阶段可以被设计成相互配合</strong>。数据、流水线、模型均在 openthoughts.ai 开源。</p>
+
+    <div class="callout">
+      <span class="k">论文坦陈的局限</span>
+      <p>① RL 研究只在 8B 规模做，能否迁移到 32B 仍是开放问题；② 没有消融基座模型——所有 SFT 都从 Qwen3 出发，无法隔离预训练基座的贡献；③ 最大训练集只有 10 万条轨迹，能否外推到百万级仍未验证。</p>
+    </div>
+
+    <h3>读完可以记住的三件事</h3>
+    <ul class="clean">
+      <li><strong>数据配方可以做成科学</strong>：用统一标尺 + 逐阶段消融，把「玄学造数据」变成可复现、可解释的工程。</li>
+      <li><strong>每一步都有反直觉结论</strong>：任务增广全部失败、最强模型不是最好老师、长轨迹更优、来源多反而递减。</li>
+      <li><strong>RL 学到的是「探索/压缩」的行为模式</strong>，而这取决于奖励曲线的形状——这把「数据源选择」和「策略行为」连了起来。</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p><strong>原文</strong>：<a href="https://arxiv.org/abs/2606.24855" target="_blank" rel="noopener">Data Recipes for Agentic Models</a> · arXiv:2606.24855 · 2026.06</p>
+    <p><strong>项目主页</strong>：<a href="https://www.openthoughts.ai/" target="_blank" rel="noopener">openthoughts.ai</a>（数据集 / 流水线 / 模型 / 实验数据均已开源）</p>
+    <p style="margin-top:12px;color:var(--ink-faint);">本页为非官方中文导读，图片来自论文 arXiv HTML 版（arxiv.org/html/2606.24855v1），版权归原作者所有。</p>
+  </footer>
+
+</div>
+
+<script>
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    var open = d.classList.toggle("active");
+    el.textContent = open ? "收起 ▴" : "展开说明 ▸";
+  }
+
+  var STAGES = [
+    {n:"3.1", ic:"🗂️", t:"取任务", title:"Sourcing Tasks · 选任务来源",
+      verdict:"keep", vlabel:"最关键的一步",
+      body:"消融了 <b>95 种</b>任务生成策略（不同初始来源、是否合成、知识领域）。任务来源能把下游准确率拉开惊人的差距——SWE-Bench Verified-100 上 rank 1 与 rank 95 相差约 <b>30 个百分点</b>，Terminal-Bench 2.0 上约 10 个点（TB2.0 分数从 10.9% 一直到 0.4%）。顶部来源还很「尖」：偏代码的 swe-smith 大幅拉高 SWE-Bench，人写的基础设施问题（StackExchange SuperUser）则拉高 Terminal-Bench。",
+      winner:"Top 来源：swe-smith（z +1.92）、stackexchange-superuser（+1.51）、stackexchange-tezos（+1.45）、issue-tasks（+1.37）"},
+    {n:"3.2", ic:"🔀", t:"混合", title:"Mixing Tasks · 混合多个来源",
+      verdict:"keep", vlabel:"Top-4 胜出",
+      body:"按 3.1 的排名，依次取 Top-1、Top-2…Top-N，从每个来源各采 10,000/N 条任务。<b>Top-4 到 Top-8 的混合最均衡</b>，明显优于不混合的 Top-1 基线——因为它在所有基准上都表现好，而不是只在 SWE-Bench 上过拟合。",
+      winner:"采用 Top-4 混合（normalized z +0.49，优于 Top-1 的 −0.57）"},
+    {n:"3.3", ic:"✨", t:"增广", title:"Task Augmentation · 任务增广",
+      verdict:"drop", vlabel:"全部失败",
+      body:"一个自然的假设是：生成任务后再用 LLM 去澄清需求、加约束、提高难度、组合不同来源，应该能提升质量。论文尝试了多种这类干预——<b>结果全部未能超过「保持任务描述原样」的基线</b>。",
+      winner:"采用：生成后不做增广，保持任务描述不动（仅在后续扩展阶段为提升多样性而对 Tezos 做合成增广）"},
+    {n:"3.4", ic:"🧹", t:"筛任务", title:"Filtering Tasks · 过滤任务",
+      verdict:"keep", vlabel:"LLM 过滤有效",
+      body:"在确定最终来源混合后，再过滤掉低质量任务能提升下游性能。复用 OpenThoughts 的一套过滤器，结论一致：<b>LLM 任务过滤器收益最大（平均 +3pp）</b>。把任务过滤为「GPT-5 需要更多 token 才能解决」的那些，能在所有基准上带来约 3 个点提升。",
+      winner:"采用 LLM / 解题长度信号过滤（保留更难、更有信息量的任务）"},
+    {n:"3.5", ic:"🎓", t:"选教师", title:"Teacher Model · 选生成轨迹的教师",
+      verdict:"keep", vlabel:"最强≠最好老师",
+      body:"教师模型的选择对下游评测影响显著。论文用多个在 TB2.0 上表现好的模型当教师：GPT-5.3-Codex、Kimi K2.5、GLM-4.6-AWQ、GLM 5，以及基线 GLM-4.7-AWQ。<b>尽管 GPT-5.3-Codex 自身性能最强，它却是更差的教师</b>，在 TB2.0 上比 GLM-4.7 低约 5%；最好的教师是更老、甚至自身没那么强的 GLM 4.7。",
+      winner:"采用 GLM-4.7-AWQ 作为教师"},
+    {n:"3.6", ic:"📏", t:"筛轨迹", title:"Filtering Rollouts · 过滤 Agent 轨迹",
+      verdict:"keep", vlabel:"≥5 轮过滤最优",
+      body:"用简单启发式过滤轨迹：去掉生成时超时的、子 agent 的、以及<b>少于 5 轮</b>的轨迹。结论再次是「更长轨迹更好」——<b>≥5 轮过滤带来最大提升</b>。由于长轨迹也带更多 token，论文专门在<b>固定 token 预算</b>下复测：min-turns 过滤仍比随机对照平均高 <b>+3.5pp</b>（SWE +5.4 / TB +3.8），证明收益来自更高质量的多轮监督，而非额外算力。",
+      winner:"采用 ≥5 轮轨迹过滤（固定 token 预算下仍有效）"}
+  ];
+
+  function buildPipeline(){
+    var rail = document.getElementById("pipeRail");
+    STAGES.forEach(function(s, i){
+      var b = document.createElement("div");
+      b.className = "stage-btn" + (i===0 ? " active":"");
+      b.setAttribute("data-i", i);
+      b.innerHTML = '<div class="st-ic">'+s.ic+'</div><div class="st-n">'+s.n+'</div><div class="st-t">'+s.t+'</div>';
+      b.addEventListener("click", function(){ selectStage(i); });
+      rail.appendChild(b);
+    });
+    selectStage(0);
+  }
+
+  function selectStage(i){
+    var btns = document.querySelectorAll(".stage-btn");
+    btns.forEach(function(b){ b.classList.toggle("active", parseInt(b.getAttribute("data-i"),10)===i); });
+    var s = STAGES[i];
+    var vClass = s.verdict === "keep" ? "keep" : "drop";
+    var html = ''
+      + '<div class="sp-head"><h4>'+s.ic+' '+s.title+'</h4>'
+      + '<span class="verdict '+vClass+'">'+s.vlabel+'</span></div>'
+      + '<div class="sp-body">'+s.body+'</div>'
+      + '<div class="winner"><span class="wl">✓ 胜出策略</span><br>'+s.winner+'</div>';
+    document.getElementById("stagePanel").innerHTML = html;
+  }
+
+  buildPipeline();
+</script>
+</body>
+</html>

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StepFun-Prover Preview · 一边思考一边验证的形式化定理证明</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#faf6ec;
+    --bg2:#f4ead7;
+    --bg3:#ece0c8;
+    --bg4:#e3d4b6;
+    --border:#e0d3b6;
+    --border2:#d3c3a0;
+    --ink:#2c2820;
+    --ink2:#5f584a;
+    --ink3:#8a8068;
+    --accent:#b3782f;
+    --accent-soft:#f0e2c6;
+    --ok:#5f7d4f;
+    --ok-bg:#eef0e2;
+    --err:#a8533c;
+    --err-bg:#f3e3da;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Inter','Noto Sans SC',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;scroll-padding-top:72px;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.75;
+    font-size:16.5px;-webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  /* top nav */
+  .topnav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(250,246,236,0.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  .topnav .inner{
+    max-width:1040px;margin:0 auto;padding:10px 22px;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  }
+  .topnav .brand{font-weight:800;font-size:15px;letter-spacing:.2px;white-space:nowrap;}
+  .topnav nav{display:flex;gap:4px;flex-wrap:wrap;font-size:13.5px;}
+  .topnav nav a{color:var(--ink2);padding:4px 9px;border-radius:7px;}
+  .topnav nav a:hover{background:var(--bg3);color:var(--ink);text-decoration:none;}
+  .topnav .src{margin-left:auto;font-size:13px;font-weight:600;white-space:nowrap;}
+
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px;}
+  section{padding:46px 0;border-top:1px solid var(--border);}
+  section:first-of-type{border-top:none;}
+  h1,h2,h3,h4{line-height:1.3;}
+  .sec-eyebrow{
+    font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 8px;
+  }
+  h2.sec-title{font-size:27px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em;}
+  .sec-sub{color:var(--ink2);font-size:15.5px;margin:0 0 26px;max-width:760px;}
+  p{margin:0 0 15px;}
+  strong{font-weight:700;color:var(--ink);}
+  ul{margin:0 0 15px;padding-left:22px;}
+  li{margin:6px 0;}
+  code.inline{
+    font-family:var(--mono);font-size:.86em;background:var(--bg3);
+    padding:1.5px 6px;border-radius:5px;color:#7a5320;border:1px solid var(--border);
+  }
+
+  /* hero */
+  .hero{padding:54px 0 42px;border-top:none;}
+  .hero .tags{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:20px;}
+  .tag{
+    font-size:12.5px;font-weight:600;padding:4px 11px;border-radius:999px;
+    background:var(--bg2);border:1px solid var(--border2);color:var(--ink2);
+  }
+  .tag.accent{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .hero h1{
+    font-size:40px;font-weight:800;margin:0 0 14px;letter-spacing:-.02em;line-height:1.18;
+  }
+  .hero .sub{font-size:18px;color:var(--ink2);max-width:780px;margin:0 0 22px;}
+  .hero .links{display:flex;gap:10px;flex-wrap:wrap;}
+  .hero .links a{
+    display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;
+    padding:8px 15px;border-radius:9px;background:var(--bg2);
+    border:1px solid var(--border2);color:var(--ink);
+  }
+  .hero .links a:hover{background:var(--bg3);text-decoration:none;}
+  .hero .links a.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  /* tldr */
+  .tldr{
+    background:var(--bg2);border:1px solid var(--border2);border-radius:16px;
+    padding:26px 28px;
+  }
+  .tldr h3{margin:0 0 12px;font-size:17px;display:flex;align-items:center;gap:9px;}
+  .tldr p{font-size:16px;color:var(--ink);margin-bottom:0;}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px;}
+  .metric{
+    background:var(--bg);border:1px solid var(--border);border-radius:13px;
+    padding:18px 16px;text-align:center;
+  }
+  .metric .num{font-size:30px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-.02em;}
+  .metric .lab{font-size:12.5px;color:var(--ink2);margin-top:8px;font-weight:500;}
+
+  /* concept loop */
+  .loop{
+    background:var(--bg2);border:1px solid var(--border2);border-radius:16px;
+    padding:30px 26px;margin-top:6px;
+  }
+  .loop-flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;justify-content:center;}
+  .lnode{
+    background:var(--bg);border:1.5px solid var(--border2);border-radius:12px;
+    padding:13px 15px;min-width:120px;text-align:center;position:relative;
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  .lnode .t{font-weight:700;font-size:15px;}
+  .lnode .d{font-size:12px;color:var(--ink2);margin-top:3px;}
+  .lnode.code{font-family:var(--mono);}
+  .larrow{display:flex;align-items:center;color:var(--accent);font-size:22px;padding:0 8px;font-weight:700;}
+  .loop-back{
+    margin-top:16px;text-align:center;font-size:13.5px;color:var(--accent);
+    font-weight:600;background:var(--accent-soft);border:1px dashed var(--accent);
+    border-radius:10px;padding:9px 14px;
+  }
+
+  /* generic card grid */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .card{
+    background:var(--bg2);border:1px solid var(--border2);border-radius:14px;
+    padding:22px 22px;
+  }
+  .card h4{margin:0 0 10px;font-size:17px;}
+  .card .role{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:7px;}
+  .card p{font-size:14.5px;color:var(--ink2);margin-bottom:10px;}
+  .card p:last-child{margin-bottom:0;}
+
+  /* mini schematic */
+  .mini{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:14px 0 4px;
+    background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;
+  }
+  .mbox{
+    font-size:12px;font-weight:600;padding:6px 9px;border-radius:7px;
+    background:var(--bg3);border:1px solid var(--border2);white-space:nowrap;
+  }
+  .mbox.hl{background:var(--accent-soft);border-color:var(--accent);color:#7a5320;}
+  .marr{color:var(--accent);font-weight:700;font-size:14px;}
+
+  /* expandable stage cards */
+  .stage{
+    background:var(--bg2);border:1px solid var(--border2);border-radius:13px;
+    margin-bottom:13px;overflow:hidden;
+  }
+  .stage-head{
+    padding:17px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;
+    user-select:none;
+  }
+  .stage-head:hover{background:var(--bg3);}
+  .stage-num{
+    flex:none;width:30px;height:30px;border-radius:8px;background:var(--accent);
+    color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;
+  }
+  .stage-titles{flex:1;min-width:0;}
+  .stage-titles .st{font-weight:700;font-size:16px;}
+  .stage-titles .ss{font-size:13px;color:var(--ink2);margin-top:2px;}
+  .stage-chev{flex:none;color:var(--ink3);transition:transform .3s;font-size:14px;}
+  .stage.open .stage-chev{transform:rotate(90deg);}
+  .stage-body{
+    max-height:0;overflow:hidden;transition:max-height .45s ease;
+  }
+  .stage.open .stage-body{max-height:1600px;}
+  .stage-inner{padding:2px 20px 20px;border-top:1px solid var(--border);}
+  .stage-inner p{font-size:14.5px;color:var(--ink2);margin-top:14px;}
+  .stage-inner ul{font-size:14.5px;color:var(--ink2);}
+
+  /* figures */
+  figure{margin:24px 0;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:18px;}
+  figure img{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:8px;background:#fff;}
+  .figcap{font-size:13.5px;color:var(--ink2);text-align:center;margin-top:12px;}
+  .figcap .lbl{font-weight:700;color:var(--ink);}
+  .fig-toggle{
+    display:inline-block;margin-top:11px;font-size:13px;font-weight:600;color:var(--accent);
+    cursor:pointer;user-select:none;text-align:center;width:100%;
+  }
+  .figure-detail{
+    max-height:0;overflow:hidden;transition:max-height .5s ease;
+  }
+  .figure-detail.active{max-height:1400px;}
+  .figure-detail .fd-inner{
+    margin-top:14px;padding:16px 18px;background:var(--bg);border:1px solid var(--border);
+    border-radius:10px;font-size:14px;color:var(--ink2);
+  }
+  .figure-detail .fd-inner ul{margin:8px 0 0;}
+  .figure-detail .fd-inner li{margin:7px 0;}
+  .figure-detail .fd-inner strong{color:var(--ink);}
+
+  /* case study */
+  .cs{
+    background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:24px;
+  }
+  .cs-problem{
+    background:var(--bg);border:1px solid var(--border);border-radius:11px;
+    padding:14px 16px;margin-bottom:18px;font-family:var(--mono);font-size:13px;
+    overflow-x:auto;color:var(--ink);
+  }
+  .cs-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .cs-btns{display:flex;gap:8px;}
+  .cs-btn{
+    font-family:var(--sans);font-size:14px;font-weight:600;padding:8px 16px;border-radius:9px;
+    border:1px solid var(--border2);background:var(--bg);color:var(--ink);cursor:pointer;
+  }
+  .cs-btn:hover:not(:disabled){background:var(--bg3);}
+  .cs-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .cs-btn.primary:hover:not(:disabled){background:#9c6726;}
+  .cs-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .cs-progress{display:flex;gap:6px;margin-left:auto;}
+  .cs-dot{width:10px;height:10px;border-radius:50%;background:var(--bg4);transition:all .3s;}
+  .cs-dot.done{background:var(--accent);}
+  .cs-dot.cur{background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);}
+  .cs-counter{font-size:13.5px;color:var(--ink2);font-weight:600;}
+
+  .cs-stage-wrap{position:relative;}
+  .cs-step{
+    display:none;animation:fade .4s ease;
+  }
+  .cs-step.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .cs-step .round-head{display:flex;align-items:center;gap:11px;margin-bottom:13px;flex-wrap:wrap;}
+  .cs-step .round-head .rn{font-weight:800;font-size:17px;}
+  .badge{font-size:12px;font-weight:700;padding:3px 11px;border-radius:999px;}
+  .badge.err{background:var(--err-bg);color:var(--err);border:1px solid #dcae9a;}
+  .badge.ok{background:var(--ok-bg);color:var(--ok);border:1px solid #b9c69f;}
+  .cs-think{font-size:14.5px;color:var(--ink2);margin-bottom:14px;}
+  .cs-label{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:0 0 6px;font-family:var(--mono);}
+  pre.code{
+    font-family:var(--mono);font-size:12.5px;line-height:1.65;background:#fbf8f0;
+    border:1px solid var(--border);border-radius:10px;padding:13px 15px;overflow-x:auto;
+    margin:0 0 16px;color:#36322a;white-space:pre;
+  }
+  pre.repl{
+    font-family:var(--mono);font-size:12.5px;line-height:1.6;border-radius:10px;
+    padding:13px 15px;overflow-x:auto;margin:0 0 14px;white-space:pre-wrap;word-break:break-word;
+  }
+  pre.repl.err{background:var(--err-bg);border:1px solid #dcae9a;color:#7c3a28;}
+  pre.repl.ok{background:var(--ok-bg);border:1px solid #b9c69f;color:#3f5733;}
+  .cs-learn{
+    background:var(--accent-soft);border:1px solid #ddc79a;border-radius:10px;
+    padding:12px 15px;font-size:14px;color:#6f4d1d;
+  }
+  .cs-learn b{color:#5b3f17;}
+
+  /* result table */
+  .tablewrap{overflow-x:auto;margin:6px 0 4px;}
+  table.rt{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--bg2);border-radius:12px;overflow:hidden;}
+  table.rt th,table.rt td{padding:11px 16px;text-align:left;border-bottom:1px solid var(--border);}
+  table.rt thead th{background:var(--bg3);font-weight:700;font-size:13.5px;}
+  table.rt td.num,table.rt th.num{text-align:right;font-family:var(--mono);}
+  table.rt tr.hl td{background:var(--accent-soft);font-weight:700;}
+  table.rt tr:last-child td{border-bottom:none;}
+
+  .callout{
+    background:var(--bg2);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;
+    padding:16px 20px;margin:20px 0;font-size:15px;color:var(--ink2);
+  }
+  .callout.quote{font-style:italic;}
+  .callout b{color:var(--ink);}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+
+  footer{
+    border-top:1px solid var(--border);padding:34px 0 60px;color:var(--ink2);font-size:14px;
+  }
+  footer .ft-links{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    .hero h1{font-size:30px;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .grid2,.twocol{grid-template-columns:1fr;}
+    .loop-flow{flex-direction:column;align-items:stretch;}
+    .larrow{justify-content:center;transform:rotate(90deg);padding:4px 0;}
+    .topnav nav{display:none;}
+    .topnav .src{margin-left:auto;}
+    h2.sec-title{font-size:23px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="inner">
+    <span class="brand">StepFun-Prover Preview</span>
+    <nav>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#loop">核心机制</a>
+      <a href="#pipeline">训练流水线</a>
+      <a href="#case">实例演示</a>
+      <a href="#results">实验结论</a>
+    </nav>
+    <span class="src"><a href="https://arxiv.org/abs/2507.20199" target="_blank" rel="noopener">原文 ↗</a></span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="tags">
+      <span class="tag accent">形式化定理证明</span>
+      <span class="tag">Lean 4</span>
+      <span class="tag">工具集成推理</span>
+      <span class="tag">强化学习 · GRPO</span>
+      <span class="tag">2025.07 · arXiv preprint</span>
+      <span class="tag">StepFun 阶跃星辰</span>
+    </div>
+    <h1>一边思考，一边验证：让证明器像人一样反复试错</h1>
+    <p class="sub">
+      StepFun-Prover Preview 把 Lean 4 验证器变成模型推理过程中的「随手可用的工具」：模型写一段证明草稿 → 交给 Lean 跑 → 读错误反馈 → 修正 → 再跑，全部发生在一条思维链里，循环到证明通过为止。仅用 32B 参数、极少的采样次数，就在 miniF2F-test 上拿到 <strong>70.0% pass@1</strong>。
+    </p>
+    <div class="links">
+      <a class="primary" href="https://arxiv.org/abs/2507.20199" target="_blank" rel="noopener">📄 阅读原文 (arXiv)</a>
+      <a href="https://arxiv.org/html/2507.20199v3" target="_blank" rel="noopener">HTML 全文</a>
+      <a href="https://github.com/stepfun-ai/StepFun-Prover-Preview" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://huggingface.co/stepfun-ai/StepFun-Prover-Preview-32B" target="_blank" rel="noopener">HuggingFace 模型</a>
+    </div>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr" style="border-top:none;padding-top:8px;">
+    <div class="tldr">
+      <h3>⚡ 30 秒抓住核心</h3>
+      <p>
+        过去的定理证明器把 Lean 验证器只当成「最后判对错」的裁判，自己一口气写完整段证明；写错了就只能重新采样，一题往往要试几十上百次。本文的关键转变是：<strong>让模型在推理中途就反复调用 Lean 验证器</strong>，像熟练的人类用户那样根据真实报错诊断问题、调整策略。为此作者设计了一条端到端训练流水线——<strong>冷启动 SFT → 工具集成强化学习 → RL-SFT 迭代</strong>——并自研了能并发跑 1000+ Lean 进程的验证服务，把多轮 RL 训练加速了 10 倍以上。最终 32B 模型以更小的体量、极少的采样超过了 DeepSeek-Prover-V2-671B 和 Kimina-Prover-72B。
+      </p>
+      <div class="metrics">
+        <div class="metric"><div class="num">70.0%</div><div class="lab">miniF2F-test pass@1（32B）</div></div>
+        <div class="metric"><div class="num">+4%↑</div><div class="lab">32B 领先此前所有同类模型</div></div>
+        <div class="metric"><div class="num">10×+</div><div class="lab">多轮 RL 训练提速</div></div>
+        <div class="metric"><div class="num">∞</div><div class="lab">不限制工具交互次数</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <p class="sec-eyebrow">问题</p>
+    <h2 class="sec-title">为什么已有的证明器又慢又「笨」？</h2>
+    <p class="sec-sub">先理解痛点，才能理解本文为什么要让模型「一边思考一边验证」。</p>
+
+    <p>
+      自动定理证明近年靠长思维链大模型取得了不小进展，但有一个尴尬的事实：<strong>它们要靠海量采样才能堆出好成绩</strong>。按已发表结果，把每题的采样次数从 32 次加到 64 次，准确率往往只多 <strong>3%～4%</strong>，呈明显的边际递减——这说明同一道题在多次尝试里反复栽在<strong>同样的错误模式</strong>上。
+    </p>
+    <p>
+      为什么会这样？因为这些证明器的推理模式是<strong>人为预先设定、僵化的</strong>，无法真正消化 Lean 4 给出的反馈。而一个熟练的 Lean 用户只需要几次尝试就能完成证明：他会读懂报错、诊断问题、自适应地换策略。这种巨大的效率差距，也成了普通用户使用证明器的门槛。于是作者提出了贯穿全文的问题：
+    </p>
+    <div class="callout quote">
+      「形式化证明器能否<b>自我进化</b>出合适的模式——去思考、去与验证器交互、并高效地推导出形式化证明？」
+    </div>
+    <p>
+      本文的回答是：<strong>放手让模型自己决定何时停止用工具</strong>，不限制它与 Lean 4 交互的次数，鼓励它进行开放式、工具辅助的推理——就像人类通过「试探、验证、反思」来学习和自我纠正一样。
+    </p>
+  </section>
+
+  <!-- PRIOR -->
+  <section id="prior">
+    <p class="sec-eyebrow">已有方案</p>
+    <h2 class="sec-title">前人是怎么做的，又卡在哪</h2>
+    <p class="sec-sub">本文主要与两类范式形成对比。理解它们「把验证器放在哪里」，就能看懂本文的定位。点击卡片展开细节。</p>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="role">范式一</div>
+        <h4>单步生成 + 树搜索</h4>
+        <p>模型每次只生成<strong>一个证明步骤（tactic）</strong>，再配合最佳优先搜索（BFS）或蒙特卡洛树搜索（MCTS）在证明树上探索路径。</p>
+        <div class="mini">
+          <span class="mbox">状态</span><span class="marr">→</span>
+          <span class="mbox hl">LLM 出一步</span><span class="marr">→</span>
+          <span class="mbox">树搜索挑分支</span><span class="marr">↺</span>
+          <span class="mbox">回溯/扩展</span>
+        </div>
+        <p><strong>卡在哪：</strong>搜索靠启发式导航，探索能力是用<strong>大量算力堆出来</strong>的；推理被切成孤立的小步，缺乏全局的自我反思。</p>
+      </div>
+      <div class="card">
+        <div class="role">范式二</div>
+        <h4>整段证明生成 + 末端校验</h4>
+        <p>模型一口气<strong>直接写出完整证明</strong>（如 DeepSeek-Prover、Kimina-Prover），验证器只在<strong>最后</strong>判一次对错，不参与中间推理。</p>
+        <div class="mini">
+          <span class="mbox">题目</span><span class="marr">→</span>
+          <span class="mbox hl">LLM 写整段证明</span><span class="marr">→</span>
+          <span class="mbox">Lean 判对错</span><span class="marr">✗→↺</span>
+          <span class="mbox">重新采样</span>
+        </div>
+        <p><strong>卡在哪：</strong>反馈只用作最终的对错信号，中途没有任何修正机会；写错了只能整段重来，所以需要<strong>极大的采样量</strong>。</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      也有近期工作开始让模型与环境交互、增量改进证明，但本文指出它们往往「<b>抽象掉了学习过程、限制了模型的自主性</b>」——交互方式仍是预定义的。本文要做的，是<b>仅凭测试时的环境反馈、无需额外监督</b>，支撑模型自主用工具、迭代反思、自适应探索。
+    </div>
+  </section>
+
+  <!-- LOOP / core mechanism -->
+  <section id="loop">
+    <p class="sec-eyebrow">核心机制</p>
+    <h2 class="sec-title">工具集成推理：把验证器编织进思维链</h2>
+    <p class="sec-sub">这是全文最重要的一点——模型的一次「回答」不再是纯文本，而是文本推理、Lean 代码、真实反馈三者交错的混合轨迹。</p>
+
+    <p>
+      在 rollout（生成）时，模型产出的内容由三种成分交替组成，并用特殊标记分隔：
+    </p>
+    <ul>
+      <li><strong>文本推理 <code class="inline">g</code></strong>：用自然语言分析题目、解释报错、决定下一步怎么改。</li>
+      <li><strong>Lean 草稿 <code class="inline">&lt;sketch&gt;…&lt;/sketch&gt;</code></strong>：包裹一段待验证的 Lean 4 代码。一旦检测到 <code class="inline">&lt;/sketch&gt;</code>，生成<strong>暂停</strong>，代码被送进沙箱执行。</li>
+      <li><strong>环境反馈 <code class="inline">&lt;REPL&gt;…&lt;/REPL&gt;</code></strong>：沙箱（Lean4-REPL）的执行结果——成功信息或错误消息——被填回这对标记，喂给模型，生成继续。</li>
+    </ul>
+
+    <div class="loop">
+      <div class="loop-flow">
+        <div class="lnode"><div class="t">推理 g</div><div class="d">自然语言思考</div></div>
+        <div class="larrow">→</div>
+        <div class="lnode code"><div class="t">&lt;sketch&gt; s</div><div class="d">写 Lean 草稿</div></div>
+        <div class="larrow">→</div>
+        <div class="lnode"><div class="t">Lean 验证</div><div class="d">沙箱执行</div></div>
+        <div class="larrow">→</div>
+        <div class="lnode code"><div class="t">&lt;REPL&gt; f</div><div class="d">真实反馈</div></div>
+        <div class="larrow">→</div>
+        <div class="lnode"><div class="t">完成了吗？</div><div class="d">模型自行判断</div></div>
+        <div class="larrow">→</div>
+        <div class="lnode"><div class="t">&lt;/think&gt; → p</div><div class="d">输出完整证明</div></div>
+      </div>
+      <div class="loop-back">↺ 若判断「未完成」，带着这次的反馈 f 回到「推理 g」，重新写草稿——交互次数不设上限</div>
+    </div>
+
+    <p style="margin-top:22px;">
+      最终得到一条混合轨迹 <code class="inline">[g₁ ⊕ s₁ ⊕ f₁ ⊕ … ⊕ p]</code>。当模型认为大功告成，它会生成特殊分隔符 <code class="inline">&lt;/think&gt;</code> 并把最终的 Lean 证明放在其后——<strong>只对 <code class="inline">&lt;/think&gt;</code> 之后的代码做基于规则的验证</strong>来给整条轨迹打分。这一「想清楚了再交卷」的设计，让奖励判定既可靠又简单。
+    </p>
+  </section>
+
+  <!-- PIPELINE / method -->
+  <section id="pipeline">
+    <p class="sec-eyebrow">本文方法</p>
+    <h2 class="sec-title">端到端训练流水线</h2>
+    <p class="sec-sub">如何把一个普通推理模型，训练成会「自主用工具、看反馈改证明」的证明器？下面这张图是全文的骨架。</p>
+
+    <figure>
+      <img src="assets/pipeline.png" alt="StepFun-Prover 训练流水线" />
+      <div class="figcap"><span class="lbl">图 2 ｜</span> 训练流水线。左侧：工具集成 RL 与 RL-SFT 迭代循环（左上为数据准备）；右侧：工具集成推理的输入输出模式。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <div class="fd-inner">
+          这张图把「数据怎么来」「模型怎么练」「推理长什么样」三件事画在了一起：
+          <ul>
+            <li><strong>左上 · 数据准备：</strong>冷启动数据集 𝒟₀ 与「起点模型」一起做 SFT 得到 <strong>ℳ₀</strong>；另一条线把 Kimina-Prover 的<strong>错误案例</strong>用 ℳ₀ 做「补全与修复」，得到困难提示和精炼数据集 <strong>𝒟₁</strong>，再 SFT 得到 <strong>ℳ₁</strong>（即 StepFun-Prover 的 RL 起点）。</li>
+            <li><strong>下方虚线框 · 工具集成 RL 循环：</strong>模型生成「推理」→ 自问「<strong>完成了吗？</strong>」→ 若「否」则写 <strong>Sketch</strong> 交给 <strong>Lean Server</strong>，反馈（Feedbacks）回流到推理；若「是」（<code class="inline">&lt;/think&gt;</code>）则产出 <strong>Whole Proof</strong> 提交 Lean Server。</li>
+            <li><strong>RL 外环：</strong>Rollout Buffer 收集轨迹 → Reward Assign 打分 → Policy Update 更新 StepFun-Prover（ℳ₁）。</li>
+            <li><strong>最左侧的回环箭头</strong>（More SFT data from RL）：RL 中筛出的优质轨迹回流去再做 SFT——这就是「RL-SFT 迭代」。</li>
+            <li><strong>右侧：</strong>输入是一道形式化数学题；输出是 推理 g₁、草稿 s₁、反馈 f₁ …… 反复多轮，最后是完整证明 p。</li>
+          </ul>
+          一句话总结：左边是「怎么造数据、怎么用 RL 练」，右边是「练出来的模型推理时长什么样」，中间的判断框就是工具集成推理的灵魂。
+        </div>
+      </div>
+    </figure>
+
+    <p style="margin-top:6px;">流水线按训练阶段依次展开，点击每一阶段查看细节：</p>
+
+    <div class="stage">
+      <div class="stage-head" onclick="toggleStage(this)">
+        <div class="stage-num">1</div>
+        <div class="stage-titles"><div class="st">冷启动数据合成</div><div class="ss">先教会模型基本的「环境交互」姿势 · 含数据清洗</div></div>
+        <div class="stage-chev">▸</div>
+      </div>
+      <div class="stage-body"><div class="stage-inner">
+        <p>作者汇集多个开源形式化数学数据集（Lean Workbook、STP 数据集），并用 Kimina-Autoformalizer-7B 把 Numina Math 1.5 的部分题目自动形式化。但这些题目有<strong>反复出现的质量问题</strong>：</p>
+        <ul>
+          <li><strong>同义反复</strong>：结论从前提平凡可得，没有真正的推理。</li>
+          <li><strong>前提矛盾</strong>：题目本身不可解或逻辑不自洽。</li>
+          <li><strong>结论无关</strong>：要证的命题与前提没有实质联系。</li>
+          <li><strong>平凡或病态</strong>：缺乏数学深度、结构不良。</li>
+        </ul>
+        <p>于是用 <strong>DeepSeek-V3 过滤</strong>掉低质量题目，再用两条并行流程构造冷启动数据集 𝒟₀：</p>
+        <ul>
+          <li><strong>多轮数据：</strong>用 <strong>Claude Sonnet 4</strong> 收集约 <strong>8,000 条</strong>有效的多轮轨迹，作为初始的多轮推理数据。</li>
+          <li><strong>单轮数据：</strong>把 Kimina-Prover-72B 生成的证明<strong>去掉中间 tactic 块和其间的推理</strong>，只保留题目的自然语言推理和最终 Lean 4 答案——因为作者发现最终答案有时与中间步骤的逻辑并不吻合，说明中间推理未必必要。</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head" onclick="toggleStage(this)">
+        <div class="stage-num">2</div>
+        <div class="stage-titles"><div class="st">两阶段监督微调（SFT）</div><div class="ss">先学 Lean 语法，再学工具集成推理 → 得到 ℳ₀</div></div>
+        <div class="stage-chev">▸</div>
+      </div>
+      <div class="stage-body"><div class="stage-inner">
+        <ul>
+          <li><strong>第一阶段：</strong>用开源 STP 数据集的问答对微调起点模型，建立对 <strong>Lean 4 语法和证明结构</strong>的基本理解。</li>
+          <li><strong>第二阶段：</strong>用冷启动数据集 𝒟₀ 继续微调，建立初步的<strong>工具集成推理</strong>与证明生成能力。</li>
+        </ul>
+        <p>两阶段后得到冷启动模型 <strong>ℳ₀</strong>。基座模型为 <strong>DeepSeek-R1-Distill-Qwen-7B / 32B</strong>。</p>
+        <p><strong>一个细节：</strong>训练时对 <code class="inline">&lt;REPL&gt;…&lt;/REPL&gt;</code> 区间的反馈 token <strong>做 loss 掩码</strong>（不计入损失）。这样外部反馈 token 不会干扰损失计算，既保证训练稳定，又保护模型自身生成的连贯推理不被打断。</p>
+      </div></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head" onclick="toggleStage(this)">
+        <div class="stage-num">3</div>
+        <div class="stage-titles"><div class="st">响应模式融合（Response Patterns Fusion）</div><div class="ss">解决 ℳ₀ 风格「水土不服」的问题 → 得到 ℳ₁</div></div>
+        <div class="stage-chev">▸</div>
+      </div>
+      <div class="stage-body"><div class="stage-inner">
+        <p>ℳ₀ 虽有基本交互能力，但表现远低于预期。分析发现一个关键症结：<strong>ℳ₀ 难以把 Claude 风格和 Kimina 风格这两种不同的响应模式融合好</strong>。作者用一个巧妙的方法解决：</p>
+        <ul>
+          <li><strong>收集错误响应：</strong>先收集 Kimina-Prover-72B 生成的<strong>错误</strong>响应。</li>
+          <li><strong>纠错并建库：</strong>用 ℳ₀ 系统性地<strong>修正</strong>这些错误响应、同时保留有效的推理轨迹，得到精炼数据集 𝒟₁。</li>
+          <li><strong>增强模型：</strong>仅用 𝒟₁ 在起点模型上做 SFT，得到改进模型 <strong>ℳ₁</strong>——它把不同风格的响应「调和」到了一起，作为后续强化学习的起点。</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head" onclick="toggleStage(this)">
+        <div class="stage-num">4</div>
+        <div class="stage-titles"><div class="st">工具集成强化学习（GRPO）</div><div class="ss">二元结果奖励 · 无 KL 正则 · 在 rollout 中调用沙箱</div></div>
+        <div class="stage-chev">▸</div>
+      </div>
+      <div class="stage-body"><div class="stage-inner">
+        <p>与只生成纯文本的常规 RL 不同，这里的 rollout 让 LLM 与沙箱式环境<strong>协同工作</strong>，产出文本 + Lean 代码 + 实时反馈的混合内容（即前面「核心机制」一节描述的循环）。</p>
+        <p><strong>奖励设计：</strong>只看 <code class="inline">&lt;/think&gt;</code> 之后的最终证明——通过 REPL 验证则奖励为 <strong>1</strong>，否则为 <strong>0</strong>。这种二元结果奖励简化了监督、<strong>抑制 reward hacking</strong>，并因为只盯最终结果而鼓励更多样的解题行为。</p>
+        <p><strong>算法：</strong>在 ℳ₁ 上用 <strong>GRPO</strong> 训练；仿照「PPO 去掉 KL 正则」的做法，这里也<strong>省去 KL 项</strong>，以鼓励从一个已对齐的指令模型出发去探索。每题采样 G 个候选，按组内奖励做标准化得到优势：</p>
+        <pre class="code">Aᵢ = ( rᵢ − mean(r₁,…,r_G) ) / std(r₁,…,r_G)</pre>
+        <p>再以 PPO 式的裁剪目标（clip，无 KL）优化策略。</p>
+      </div></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head" onclick="toggleStage(this)">
+        <div class="stage-num">5</div>
+        <div class="stage-titles"><div class="st">RL-SFT 迭代循环</div><div class="ss">用 RL 筛出的优质轨迹再做 SFT，再 RL</div></div>
+        <div class="stage-chev">▸</div>
+      </div>
+      <div class="stage-body"><div class="stage-inner">
+        <p>当工具集成 RL 收敛后，作者从训练中<strong>准确率低于 0.5 的难题</strong>里收集正确轨迹，再筛出那些<strong>展现了充分 REPL 反馈分析</strong>的轨迹。这些精选轨迹用于再做一轮 SFT，随后再进行<strong>二次强化学习</strong>，进一步增强模型的工具集成推理能力。这就是图 2 中「More SFT data from RL」那条回环。</p>
+      </div></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head" onclick="toggleStage(this)">
+        <div class="stage-num">6</div>
+        <div class="stage-titles"><div class="st">训练细节与基础设施</div><div class="ss">动态数据筛选 · Lean4-REPL 远程服务 · 10× 提速</div></div>
+        <div class="stage-chev">▸</div>
+      </div>
+      <div class="stage-body"><div class="stage-inner">
+        <p><strong>RL 关键参数：</strong>rollout batch = 512，每题 8 个样本，最大生成长度 16384，REPL 超时 60 秒，温度 1.0、top-p 0.999（鼓励探索）。</p>
+        <p><strong>动态数据筛选（亮点）：</strong>训练提示来自 STP 数据集，先剔除 SFT 用过的题。作者不在训练前静态筛数据，而是<strong>把数据选择嵌进 RL 训练循环本身</strong>：用单轮 RL 跑出每题的成功率，只保留成功率<strong>严格介于 0 和 1 之间</strong>的题——既去掉永远做对的「太简单」题，也去掉当前永远做不出的「太难」题。这种在训练中动态筛选的策略，能抓住那些「起初太难、但随模型变强而变得可解」的<strong>高价值题目</strong>。</p>
+        <p><strong>Lean 4 服务工程（让多轮 RL 可行的关键）：</strong></p>
+        <ul>
+          <li>改造 Lean4-REPL 主函数，优化<strong>内存回收</strong>，减少因重复调用导致的内存爆炸和 REPL 重启（该改动已被官方开发者采纳，见 PR #83）。</li>
+          <li>归类 REPL 所有可能的返回类型并逐一处理，提升大模型–REPL 交互的稳定性；设 60 秒超时，防止模型滥用搜索式 tactic。</li>
+          <li>对 LLM 多轮输入流和证明草稿提交都做<strong>异步</strong>处理，消除样本间生成/验证耗时差异带来的延迟。</li>
+          <li>用 <strong>Redis</strong> 作为消息中枢搭建「生产者–中枢–消费者」式的 Lean4-REPL 远程服务，可<strong>并发运行 1000+ 个 Lean4-REPL 进程</strong>，并把训练与服务的不稳定隔离开。</li>
+        </ul>
+        <p>这些优化让多轮 RL 训练<strong>提速 10 倍以上</strong>，并使「不限交互次数」的多轮 RL 在工程上真正可行。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- CASE STUDY -->
+  <section id="case">
+    <p class="sec-eyebrow">实例演示</p>
+    <h2 class="sec-title">跟着模型走一遍：6 轮试错证完一道不等式</h2>
+    <p class="sec-sub">这是论文附录给出的真实轨迹。点「下一步」，看模型如何从一句报错，一步步逼近正确证明——这正是「一边思考一边验证」的精髓。</p>
+
+    <div class="cs">
+      <div class="cs-label">待证题目（正实数 x, y, z）</div>
+      <div class="cs-problem">theorem (x y z : ℝ) (hx : 0 &lt; x) (hy : 0 &lt; y) (hz : 0 &lt; z) :
+    (x^2 - z^2)/(y+z) + (y^2 - x^2)/(z+x) + (z^2 - y^2)/(x+y) ≥ 0 := by</div>
+
+      <div class="cs-bar">
+        <div class="cs-btns">
+          <button class="cs-btn" id="csPrev" onclick="csGo(-1)">← 上一步</button>
+          <button class="cs-btn primary" id="csNext" onclick="csGo(1)">下一步 →</button>
+          <button class="cs-btn" onclick="csReset()">重置</button>
+        </div>
+        <span class="cs-counter" id="csCounter"></span>
+        <div class="cs-progress" id="csProgress"></div>
+      </div>
+
+      <div class="cs-stage-wrap">
+
+        <!-- Round 1 -->
+        <div class="cs-step active" data-step="0">
+          <div class="round-head"><span class="rn">第 1 轮 · 先交个白卷试试水</span><span class="badge err">报错</span></div>
+          <div class="cs-think">模型先做了大量代数分析（通分、平方差、对称性观察……），然后只把<strong>定理头</strong>交给 Lean，连证明体都没写，纯粹想看看环境会回什么。</div>
+          <div class="cs-label">&lt;sketch&gt;</div>
+          <pre class="code">theorem test_theorem (x y z : ℝ) (hx : 0 &lt; x) (hy : 0 &lt; y) (hz : 0 &lt; z) :
+  (x^2 - z^2)/(y+z) + (y^2 - x^2)/(z+x) + (z^2 - y^2)/(x+y) ≥ 0 := by</pre>
+          <div class="cs-label">&lt;REPL&gt; 反馈</div>
+          <pre class="repl err">error: unexpected end of input; expected '{'
+error: unsolved goals
+  ⊢ (x^2 - z^2)/(y+z) + (y^2 - x^2)/(z+x) + (z^2 - y^2)/(x+y) ≥ 0</pre>
+          <div class="cs-learn">💡 <b>学到：</b>光有定理头不行，<b>缺证明体</b>（目标尚未解决）。下一步得真正动手写策略。</div>
+        </div>
+
+        <!-- Round 2 -->
+        <div class="cs-step" data-step="1">
+          <div class="round-head"><span class="rn">第 2 轮 · 通分 + 暴力凑平方</span><span class="badge err">报错</span></div>
+          <div class="cs-think">模型决定<strong>清分母</strong>：把三项通分成「分子 / 分母」，用 <code class="inline">div_nonneg</code> 拆成「分子≥0」「分母&gt;0」两个子目标，分子用 <code class="inline">nlinarith</code> + 一堆 <code class="inline">sq_nonneg</code> 平方项硬凑，分母用 <code class="inline">mul_pos</code>。</div>
+          <div class="cs-label">&lt;sketch&gt;（关键片段）</div>
+          <pre class="code">  have h1 : (y+z) &gt; 0 := add_pos hy hz   -- 同理 h2, h3
+  have h4 : … = (分子)/((y+z)*(z+x)*(x+y)) := by
+    field_simp [h1.ne.symm, h2.ne.symm, h3.ne.symm]; ring
+  rw [h4]
+  apply div_nonneg
+  · ring_nf
+    nlinarith [sq_nonneg (x-y), sq_nonneg (y-z), sq_nonneg (z-x), …]
+  · apply mul_pos; apply mul_pos; all_goals linarith</pre>
+          <div class="cs-label">&lt;REPL&gt; 反馈</div>
+          <pre class="repl err">error: linarith failed to find a contradiction
+  a✝ : 0 &gt; -(x^2*z^2) - x^2*y^2 + (x^4 - z^2*y^2) + z^4 + y^4 ⊢ False
+error: 'apply' failed, failed to unify  0 &lt; ?a * ?b
+  with  0 ≤ (y+z)*(z+x)*(x+y)</pre>
+          <div class="cs-learn">💡 <b>学到：</b>两处都崩了——(1) 乱凑的平方项证不出分子；(2) <code class="inline">mul_pos</code> 给的是 <code class="inline">0 &lt; …</code>，可目标是 <code class="inline">0 ≤ …</code>，类型对不上。但报错里<b>泄露了分子化简后的真实样子</b>。</div>
+        </div>
+
+        <!-- Round 3 -->
+        <div class="cs-step" data-step="2">
+          <div class="round-head"><span class="rn">第 3 轮 · 用 ring_nf 看清分子真容</span><span class="badge err">报错</span></div>
+          <div class="cs-think">模型抓住上一轮报错里的线索，先用 <code class="inline">ring_nf</code> 把分子展开、再用 <code class="inline">sorry</code> 占位，<strong>专门看看分子化简成了什么</strong>。</div>
+          <div class="cs-label">&lt;REPL&gt; 反馈（关键：暴露了分子的标准形）</div>
+          <pre class="repl err">sorry 处目标:
+  ⊢ 0 ≤ -(x^2*z^2) - x^2*y^2 + (x^4 - z^2*y^2) + z^4 + y^4
+（即  x⁴ + y⁴ + z⁴ - x²y² - x²z² - y²z²）
+error: 'apply mul_pos' 仍无法匹配 0 ≤ (y+z)*(z+x)*(x+y)</pre>
+          <div class="cs-learn">💡 <b>关键发现：</b>分子其实就是 <code class="inline">x⁴+y⁴+z⁴ - x²y² - x²z² - y²z²</code>——这是个<b>经典可写成平方和</b>的式子！方向有了。</div>
+        </div>
+
+        <!-- Round 4 -->
+        <div class="cs-step" data-step="3">
+          <div class="round-head"><span class="rn">第 4 轮 · 平方和！分子搞定</span><span class="badge err">报错</span></div>
+          <div class="cs-think">模型识别出 <code class="inline">x⁴+y⁴+z⁴-x²y²-x²z²-y²z² = ½·((x²-y²)²+(y²-z²)²+(z²-x²)²)</code>，是三个平方的和，必然非负。于是用 <code class="inline">num_eq</code>、<code class="inline">sqForm</code> 重写，再用 <code class="inline">mul_nonneg</code> + <code class="inline">sq_nonneg</code> 收掉分子。</div>
+          <div class="cs-label">&lt;sketch&gt;（分子部分）</div>
+          <pre class="code">    have num_eq : (分子) = x^4+y^4+z^4 - x^2*y^2 - x^2*z^2 - y^2*z^2 := by ring
+    rw [num_eq]
+    have sqForm : … = (1/2)*((x^2-y^2)^2 + (y^2-z^2)^2 + (z^2-x^2)^2) := by ring
+    rw [sqForm]
+    apply mul_nonneg
+    · norm_num
+    · apply add_nonneg; … exact sq_nonneg (x^2-y^2) …   -- 三个平方非负</pre>
+          <div class="cs-label">&lt;REPL&gt; 反馈</div>
+          <pre class="repl err">error: 'apply mul_pos' failed, failed to unify  0 &lt; ?a * ?b
+  with  0 ≤ (y+z)*(z+x)*(x+y)   （分子已过，只剩分母这个小尾巴）</pre>
+          <div class="cs-learn">💡 <b>学到：</b>分子彻底证完！只剩分母——而分母还是卡在同一个 <code class="inline">0 ≤</code> vs <code class="inline">0 &lt;</code> 的类型问题上。</div>
+        </div>
+
+        <!-- Round 5 -->
+        <div class="cs-step" data-step="4">
+          <div class="round-head"><span class="rn">第 5 轮 · 又试了一次分母，仍不对</span><span class="badge err">报错</span></div>
+          <div class="cs-think">模型加了注释「分母三个因子都正、积必正」，但分母证法没变，还是 <code class="inline">apply mul_pos; apply mul_pos; all_goals linarith</code>——本质问题没解决。</div>
+          <div class="cs-label">&lt;REPL&gt; 反馈</div>
+          <pre class="repl err">error: 'apply' failed, failed to unify  0 &lt; ?a * ?b
+  with  0 ≤ (y+z)*(z+x)*(x+y)</pre>
+          <div class="cs-learn">💡 <b>学到：</b>同样的错再现一次，说明 <code class="inline">mul_pos</code> 这条路对 <code class="inline">0 ≤</code> 的目标根本走不通——必须换个思路：先证「&gt;0」，再转成「≥0」。</div>
+        </div>
+
+        <!-- Round 6 -->
+        <div class="cs-step" data-step="5">
+          <div class="round-head"><span class="rn">第 6 轮 · 用 le_of_lt 收尾</span><span class="badge ok">通过 ✓</span></div>
+          <div class="cs-think">模型改用：先 <code class="inline">mul_pos</code> 得到分母严格大于 0（<code class="inline">pos2 : 0 &lt; …</code>），再用 <code class="inline">le_of_lt</code> 把「&gt;0」转成目标要的「≥0」。</div>
+          <div class="cs-label">&lt;sketch&gt;（分母部分）</div>
+          <pre class="code">  · have pos1 : 0 &lt; (y+z)*(z+x) := mul_pos h1 h2
+    have pos2 : 0 &lt; (y+z)*(z+x)*(x+y) := mul_pos pos1 h3
+    exact le_of_lt pos2</pre>
+          <div class="cs-label">&lt;REPL&gt; 反馈</div>
+          <pre class="repl ok">{}   ← 空消息 = 零报错 = 证明完整且正确 ✓</pre>
+          <div class="cs-learn">💡 <b>成功：</b>REPL 返回空，说明全部目标都被证完。模型随即生成 <code class="inline">&lt;/think&gt;</code>，把这份干净的完整证明作为最终答案交卷。</div>
+        </div>
+
+      </div>
+
+      <div class="callout" style="margin-bottom:0;">
+        <b>这条轨迹妙在哪：</b>模型并不是一开始就知道「分子是平方和、分母要用 le_of_lt」——这两个关键洞察<b>都是被 Lean 的真实报错逼出来的</b>。第 3 轮的 <code class="inline">ring_nf</code> 反馈暴露了分子的标准形，第 5 轮反复撞墙才意识到要换分母证法。没有中途的验证反馈，纯靠一次性生成几乎不可能命中。
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <p class="sec-eyebrow">实验结论</p>
+    <h2 class="sec-title">小模型、少采样，却更强</h2>
+    <p class="sec-sub">评测基于 Lean 4.20.0，每题采样 32 次估计 pass@1（温度 1.0、top-p 0.999、最大生成 20480 token、REPL 超时 60 秒）。</p>
+
+    <div class="twocol">
+      <div>
+        <div class="cs-label" style="font-family:var(--sans);text-transform:none;font-size:14px;color:var(--ink);font-weight:700;margin-bottom:10px;">表 1 ｜ MiniF2F-test 上的 pass@1</div>
+        <div class="tablewrap">
+          <table class="rt">
+            <thead><tr><th>模型</th><th class="num">Pass@1</th></tr></thead>
+            <tbody>
+              <tr><td>DeepSeek-Prover-V2-7B</td><td class="num">58.6%</td></tr>
+              <tr><td>DeepSeek-Prover-V2-671B</td><td class="num">61.9%</td></tr>
+              <tr><td>Kimina-Prover-8B</td><td class="num">61.1%</td></tr>
+              <tr><td>Kimina-Prover-72B</td><td class="num">63.9%</td></tr>
+              <tr><td>StepFun-Prover-Preview-7B</td><td class="num">66.0%</td></tr>
+              <tr class="hl"><td>StepFun-Prover-Preview-32B</td><td class="num">70.0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:14px;color:var(--ink2);margin-top:14px;">
+          <strong>7B</strong> 就追平了 DeepSeek-Prover-V2-<strong>671B</strong> 和 Kimina-Prover-<strong>72B</strong>；<strong>32B</strong> 以更小的体量把此前所有同类模型甩开 <strong>4% 以上</strong>。
+        </p>
+      </div>
+      <div>
+        <div class="cs-label" style="font-family:var(--sans);text-transform:none;font-size:14px;color:var(--ink);font-weight:700;margin-bottom:10px;">表 2 ｜ 测试时扩展：放长生成长度，准确率持续涨（32B）</div>
+        <div class="tablewrap">
+          <table class="rt">
+            <thead><tr><th class="num">最大生成长度</th><th class="num">Pass@1</th></tr></thead>
+            <tbody>
+              <tr><td class="num">4096</td><td class="num">58.3%</td></tr>
+              <tr><td class="num">8192</td><td class="num">66.5%</td></tr>
+              <tr><td class="num">12288</td><td class="num">68.9%</td></tr>
+              <tr><td class="num">16384</td><td class="num">69.9%</td></tr>
+              <tr class="hl"><td class="num">20480</td><td class="num">70.0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:14px;color:var(--ink2);margin-top:14px;">
+          给模型更多「思考 + 交互」的空间，准确率单调上升——<strong>更多的工具交互就是它的测试时算力</strong>。RL 阶段训练奖励也从约 0.63 稳步升到 0.78，测试 pass@1 同步抬升，说明 RL 持续生效。
+        </p>
+      </div>
+    </div>
+
+    <figure>
+      <img src="assets/fig1.png" alt="MiniF2F-test 上 pass@1 随交互次数变化" />
+      <div class="figcap"><span class="lbl">图 1 ｜</span> MiniF2F-test 上的 pass@1（纵轴，32 次试验平均）随<strong>允许的最大 Lean4-REPL 交互次数</strong>（横轴）变化。基线为单次生成（横轴 0 处）。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <div class="fd-inner">
+          这张图把「交互次数」当成一个可调的旋钮，直观展示本文方法的<strong>交互效率</strong>：
+          <ul>
+            <li><strong>横轴：</strong>允许证明器在拿到正确证明前与 Lean4-REPL 交互的<strong>最大次数</strong>（0, 1, 2, 4, 8, 16, 32）。0 表示单次生成。</li>
+            <li><strong>纵轴：</strong>pass@1（%），由 32 次试验平均得到。</li>
+            <li><strong>橙色离散点（横轴≈0）：</strong>基线模型只做单次生成——DeepSeek-Prover-V2-7B（58.6%）、-671B（≈61.9%）、Kimina-Prover-8B（61.1%）、-72B（63.9%）。</li>
+            <li><strong>蓝色曲线：</strong>StepFun-Prover（圆=7B，方=32B）随交互次数上升而攀升——从 1 次交互时的 40 出头，到 4 次左右就<strong>反超所有基线</strong>，16~32 次时 32B 收敛到 70.0%。</li>
+            <li><strong>对比的公平性：</strong>注脚指出 DeepSeek-Prover 与 Kimina-Prover 都用了至少 32K 上下文，而 StepFun-Prover 仅用 <strong>20K 上下文（含 REPL 反馈）</strong>。</li>
+          </ul>
+          一句话总结：本文方法只需<strong>少数几次工具交互</strong>就能超过靠超大模型 / 长上下文的对手，验证了「把验证器编进推理」的效率优势。
+        </div>
+      </div>
+    </figure>
+
+    <figure>
+      <img src="assets/interaction_dist.png" alt="成功证明的 REPL 交互次数分布" />
+      <div class="figcap"><span class="lbl">图 4 ｜</span> 成功证明所用的 REPL 交互次数分布（32B，每题 32 个回答）。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <div class="fd-inner">
+          这张直方图回答一个问题：<strong>模型到底需要交互几次才能证出来？</strong>
+          <ul>
+            <li><strong>横轴：</strong>REPL 交互次数（1, 2, 3, 4, ≥5）。<strong>纵轴：</strong>成功证明的数量。</li>
+            <li><strong>主峰在 1 次：</strong>约 3400+ 个证明一次就过——说明大量题目模型其实「一击即中」。</li>
+            <li><strong>长尾很关键：</strong>2 次（约 1180）、3 次（约 410）、4 次（约 190）、≥5 次（约 300）依然贡献了可观的成功量——这些正是<strong>靠多轮反复修正才拿下的难题</strong>。</li>
+          </ul>
+          一句话总结：简单题一次解决保证了效率，而<strong>「不限交互次数」的设计让难题也能在多轮精修后被证出</strong>——这正是图 1 里曲线持续上扬的微观来源。
+        </div>
+      </div>
+    </figure>
+
+    <h3 style="font-size:18px;margin:30px 0 4px;">RL 还「涌现」出了哪些行为？</h3>
+    <p style="color:var(--ink2);margin-bottom:14px;">通过工具集成 RL（带冷启动），StepFun-Prover 发展出若干会利用实时反馈的高级行为，包括但不限于：</p>
+    <div class="grid2">
+      <div class="card" style="padding:18px 20px;">
+        <h4 style="font-size:15.5px;">主动消除警告</h4>
+        <p style="margin-bottom:0;">即便 REPL 没报错、只有 warning，模型也会<strong>主动把警告处理干净</strong>，而不是见好就收。</p>
+      </div>
+      <div class="card" style="padding:18px 20px;">
+        <h4 style="font-size:15.5px;">超时即重构</h4>
+        <p style="margin-bottom:0;">当某段执行超过时间阈值（如 60 秒），模型会<strong>动态重构证明</strong>，换一条更省时的路径。</p>
+      </div>
+      <div class="card" style="padding:18px 20px;">
+        <h4 style="font-size:15.5px;">迭代式自我改进</h4>
+        <p style="margin-bottom:0;">通过分析 REPL 反馈<strong>逐轮改进解答</strong>——正是上面实例演示展现的能力。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCLUSION -->
+  <section id="conclusion">
+    <p class="sec-eyebrow">结论与展望</p>
+    <h2 class="sec-title">把「人类式反思 + 形式化验证」结合起来</h2>
+    <p>
+      本文提出了一条端到端训练工具集成推理模型的流水线，核心是<strong>冷启动数据合成</strong>与<strong>工具集成强化学习</strong>。由此得到的 StepFun-Prover-Preview，靠在推理中持续利用实时环境反馈来迭代精修证明，在 miniF2F-test 上用极少采样达到 70.0% pass@1，证明了「人类式反思 + 形式化验证」结合的有效性。
+    </p>
+    <div class="grid2" style="margin-top:18px;">
+      <div class="card">
+        <div class="role">未来方向 1</div>
+        <h4>把形式化的严谨性反哺通用推理</h4>
+        <p style="margin-bottom:0;">将形式化推理的严格性迁移出去，提升大模型一般意义上的推理能力。</p>
+      </div>
+      <div class="card">
+        <div class="role">未来方向 2</div>
+        <h4>多智能体的数学发现</h4>
+        <p style="margin-bottom:0;">面向更高阶的数学发现，构建多智能体系统。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>
+      <strong>StepFun-Prover Preview: Let's Think and Verify Step by Step</strong><br/>
+      StepFun（阶跃星辰）· 2025.07 · arXiv:2507.20199（preprint）· 通讯作者 Shijie Shang
+    </div>
+    <div class="ft-links">
+      <a href="https://arxiv.org/abs/2507.20199" target="_blank" rel="noopener">原文：arXiv abs ↗</a>
+      <a href="https://arxiv.org/html/2507.20199v3" target="_blank" rel="noopener">HTML 全文 ↗</a>
+      <a href="https://github.com/stepfun-ai/StepFun-Prover-Preview" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="https://huggingface.co/stepfun-ai/StepFun-Prover-Preview-32B" target="_blank" rel="noopener">HuggingFace ↗</a>
+    </div>
+    <div style="margin-top:18px;font-size:12.5px;color:var(--ink3);">
+      本页为面向中文读者的教学式可视化解读，内容与数据均来自原论文；图 1/2/4 取自 arXiv HTML 版原图。如有出入，以原文为准。
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    if(!d) return;
+    var open = d.classList.toggle('active');
+    el.textContent = open ? '收起说明 ▴' : '展开说明 ▸';
+  }
+  function toggleStage(head){
+    head.parentElement.classList.toggle('open');
+  }
+
+  /* case study stepper */
+  var csTotal = 6;
+  var csCur = 0;
+  function csRender(){
+    var steps = document.querySelectorAll('.cs-step');
+    steps.forEach(function(s){
+      s.classList.toggle('active', parseInt(s.getAttribute('data-step'),10) === csCur);
+    });
+    document.getElementById('csPrev').disabled = (csCur === 0);
+    document.getElementById('csNext').disabled = (csCur === csTotal - 1);
+    document.getElementById('csCounter').textContent = '第 ' + (csCur+1) + ' / ' + csTotal + ' 轮';
+    var prog = document.getElementById('csProgress');
+    var html = '';
+    for(var i=0;i<csTotal;i++){
+      var cls = 'cs-dot';
+      if(i < csCur) cls += ' done';
+      if(i === csCur) cls += ' cur';
+      html += '<span class="' + cls + '"></span>';
+    }
+    prog.innerHTML = html;
+  }
+  function csGo(delta){
+    csCur = Math.min(csTotal - 1, Math.max(0, csCur + delta));
+    csRender();
+  }
+  function csReset(){ csCur = 0; csRender(); }
+  csRender();
+</script>
+
+</body>
+</html>

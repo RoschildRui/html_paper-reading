@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qwen2.5-1M 技术报告 · 图解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6efe0;
+  --surface:#fbf6ec;
+  --surface-2:#f3e9d6;
+  --surface-3:#ede0c8;
+  --border:#e4d6bd;
+  --border-strong:#d8c6a6;
+  --ink:#2c2620;
+  --ink-soft:#544c3e;
+  --ink-mute:#8a7e69;
+  --accent:#b06a43;
+  --accent-soft:#efe1cf;
+  --accent-bg:#f1e3d0;
+  --max:980px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  line-height:1.78;
+  font-size:17px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 22px;}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(176,106,67,.35);}
+a:hover{border-bottom-color:var(--accent);}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+/* top nav */
+.topnav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(246,239,224,.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+}
+.topnav .wrap{display:flex;align-items:center;gap:18px;height:52px;overflow-x:auto;}
+.topnav .brand{font-weight:700;white-space:nowrap;}
+.topnav nav{display:flex;gap:16px;font-size:14px;}
+.topnav nav a{color:var(--ink-soft);border:none;white-space:nowrap;}
+.topnav nav a:hover{color:var(--accent);}
+
+/* header */
+header.hero{padding:54px 0 30px;}
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.tag{
+  font-size:12.5px;font-weight:500;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--ink-soft);
+  padding:3px 11px;border-radius:999px;
+}
+.tag.accent{background:var(--accent-bg);border-color:var(--border-strong);color:var(--accent);}
+h1{font-size:40px;line-height:1.18;margin:6px 0 14px;letter-spacing:-.5px;}
+h1 .sub{display:block;font-size:18px;font-weight:500;color:var(--ink-mute);margin-top:10px;letter-spacing:0;}
+.byline{color:var(--ink-mute);font-size:14.5px;margin:4px 0 0;}
+.source-link{display:inline-flex;align-items:center;gap:7px;margin-top:18px;font-weight:600;font-size:15px;
+  background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:8px;}
+.source-link:hover{background:#9a5a37;}
+
+/* sections */
+section{padding:30px 0;border-top:1px solid var(--border);}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 8px;}
+h2{font-size:27px;margin:2px 0 14px;letter-spacing:-.3px;}
+h3{font-size:20px;margin:30px 0 10px;}
+h4{font-size:16.5px;margin:20px 0 6px;color:var(--ink);}
+p{margin:13px 0;}
+ul,ol{margin:13px 0;padding-left:22px;}
+li{margin:7px 0;}
+strong{font-weight:700;color:var(--ink);}
+.lead{font-size:18.5px;color:var(--ink-soft);}
+
+/* TL;DR */
+.tldr{
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-left:4px solid var(--accent);
+  border-radius:12px;padding:22px 24px;margin:8px 0 4px;
+}
+.tldr h2{margin-top:0;font-size:21px;}
+.tldr p{margin:10px 0;}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0 6px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 16px;}
+.metric .num{font-size:31px;font-weight:700;color:var(--accent);line-height:1.1;letter-spacing:-.5px;}
+.metric .unit{font-size:15px;font-weight:600;color:var(--ink-soft);}
+.metric .lbl{font-size:13.5px;color:var(--ink-mute);margin-top:6px;}
+
+/* generic card grid */
+.grid{display:grid;gap:14px;}
+.grid.cols-2{grid-template-columns:repeat(2,1fr);}
+.grid.cols-3{grid-template-columns:repeat(3,1fr);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 18px;}
+.card h4{margin-top:0;}
+.card .mini{font-size:14px;color:var(--ink-mute);}
+
+/* collapsible (expandable) */
+.exp{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:14px 0;overflow:hidden;}
+.exp-head{
+  width:100%;text-align:left;cursor:pointer;
+  background:transparent;border:none;
+  font-family:inherit;color:var(--ink);
+  padding:16px 18px;display:flex;align-items:flex-start;gap:12px;
+}
+.exp-head:hover{background:var(--surface-2);}
+.exp-head .ttl{font-weight:700;font-size:16.5px;}
+.exp-head .smry{display:block;font-size:13.5px;color:var(--ink-mute);font-weight:400;margin-top:3px;}
+.exp-head .htext{flex:1;}
+.exp-head .chev{flex:none;color:var(--accent);font-size:13px;margin-top:5px;transition:transform .3s ease;}
+.exp-head.active .chev{transform:rotate(90deg);}
+.panel{max-height:0;opacity:0;overflow:hidden;transition:max-height .5s ease,opacity .35s ease;}
+.panel.active{max-height:3200px;opacity:1;}
+.panel-in{padding:2px 18px 18px;border-top:1px solid var(--border);}
+.panel-in p:first-child{margin-top:14px;}
+
+/* figures */
+figure.fig{margin:22px 0;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+figure.fig .imgwrap{padding:18px 18px 6px;text-align:center;background:#fffdf7;}
+figure.fig img{max-width:100%;height:auto;border-radius:6px;}
+figure.fig figcaption.cap{font-size:13.5px;color:var(--ink-mute);text-align:center;padding:8px 18px 4px;}
+.fig-toggle{
+  width:100%;text-align:left;cursor:pointer;background:var(--surface-2);
+  border:none;border-top:1px solid var(--border);
+  font-family:inherit;color:var(--ink);
+  padding:13px 18px;display:flex;align-items:flex-start;gap:12px;
+}
+.fig-toggle:hover{background:var(--surface-3);}
+.fig-toggle .lab{font-weight:600;font-size:14.5px;color:var(--accent);flex:none;}
+.fig-toggle .smry{flex:1;font-size:13.5px;color:var(--ink-soft);}
+.fig-toggle .chev{flex:none;color:var(--accent);font-size:13px;margin-top:4px;transition:transform .3s ease;}
+.fig-toggle.active .chev{transform:rotate(90deg);}
+.figure-detail{max-height:0;opacity:0;overflow:hidden;transition:max-height .5s ease,opacity .35s ease;background:var(--surface);}
+.figure-detail.active{max-height:2600px;opacity:1;}
+.figure-detail .fd-in{padding:6px 20px 18px;}
+.figure-detail ul{margin:10px 0;}
+.figure-detail .pt{font-weight:700;color:var(--ink);}
+
+/* svg figure block */
+.svgfig{margin:22px 0;background:#fffdf7;border:1px solid var(--border);border-radius:14px;padding:22px 18px 10px;text-align:center;}
+.svgfig svg{max-width:100%;height:auto;}
+.svgfig .cap{font-size:13.5px;color:var(--ink-mute);margin-top:10px;}
+
+/* overview diagram */
+.ov{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;}
+.ov-col{background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:18px;}
+.ov-col h4{margin-top:0;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.ov-step{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;margin:9px 0;font-size:14.5px;}
+.ov-step b{display:block;font-size:13px;color:var(--ink-mute);font-weight:600;margin-bottom:2px;}
+.ov-arrow{text-align:center;color:var(--accent);font-size:15px;margin:-3px 0;}
+
+/* stepper animation */
+.stepper{background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:20px 20px 22px;margin:22px 0;}
+.rail{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.node{flex:1;min-width:90px;cursor:pointer;font-family:inherit;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:9px;
+  padding:8px 6px;text-align:center;color:var(--ink-mute);transition:all .25s ease;}
+.node .n{display:block;font-weight:700;font-size:15px;}
+.node .t{display:block;font-size:12px;margin-top:2px;}
+.node.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.node.done{background:var(--accent-bg);border-color:var(--border-strong);color:var(--accent);}
+.stage-box{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;min-height:120px;}
+.step-stage{display:none;}
+.step-stage.active{display:block;animation:fade .4s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.step-stage h4{margin:0 0 6px;color:var(--accent);}
+.step-stage .meta{font-size:13px;color:var(--ink-mute);font-family:"JetBrains Mono",monospace;margin-top:8px;}
+.step-controls{display:flex;align-items:center;gap:12px;margin-top:16px;}
+.step-controls button{font-family:inherit;cursor:pointer;background:var(--surface);border:1px solid var(--border-strong);
+  color:var(--ink);padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;}
+.step-controls button:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+.step-controls #infLabel{font-size:13.5px;color:var(--ink-mute);margin-left:auto;font-family:"JetBrains Mono",monospace;}
+
+/* attention map (vertical-slash svg-grid) */
+.attn-pair{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:8px auto;max-width:680px;}
+.attn-block .attn-title{font-size:13.5px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;}
+.attn-map{display:grid;gap:2px;}
+.attn-map .c{aspect-ratio:1;border-radius:2px;background:transparent;}
+.attn-map .c.dim{background:var(--surface-3);}
+.attn-map .c.vert{background:var(--accent);}
+.attn-map .c.slash{background:#7c4a2c;}
+.legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:14px;font-size:13px;color:var(--ink-soft);}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.legend i{width:13px;height:13px;border-radius:3px;display:inline-block;}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;margin:18px 0;}
+table{border-collapse:collapse;width:100%;font-size:14.5px;}
+th,td{border:1px solid var(--border);padding:9px 12px;text-align:center;}
+th{background:var(--surface-2);font-weight:600;color:var(--ink-soft);}
+td:first-child,th:first-child{text-align:left;}
+tr:nth-child(even) td{background:var(--surface);}
+td.hi{color:var(--accent);font-weight:700;}
+
+/* quote */
+.quote{background:var(--surface);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;
+  padding:16px 20px;margin:20px 0;font-size:16px;color:var(--ink-soft);}
+.quote .en{font-style:italic;color:var(--ink);}
+
+/* details (examples / code) */
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:16px 0;padding:0 16px;}
+details summary{cursor:pointer;padding:14px 0;font-weight:600;font-size:15px;list-style:none;display:flex;gap:10px;align-items:center;}
+details summary::-webkit-details-marker{display:none;}
+details summary::before{content:"▸";color:var(--accent);font-size:13px;transition:transform .2s;}
+details[open] summary::before{transform:rotate(90deg);}
+details summary .ds{font-weight:400;color:var(--ink-mute);font-size:13.5px;}
+details .dc{padding:0 0 16px;border-top:1px solid var(--border);}
+pre{background:#2c2620;color:#f1e9d8;border-radius:9px;padding:15px 16px;overflow-x:auto;font-size:13px;line-height:1.65;margin:12px 0;}
+pre .cm{color:#b9a98a;}
+.kbd{background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-family:"JetBrains Mono",monospace;font-size:13px;}
+
+/* note */
+.note{font-size:13.5px;color:var(--ink-mute);background:var(--surface-2);border:1px dashed var(--border-strong);
+  border-radius:8px;padding:11px 14px;margin:14px 0;}
+
+/* footer */
+footer{border-top:1px solid var(--border);padding:34px 0 60px;color:var(--ink-mute);font-size:14px;}
+footer a{font-weight:600;}
+footer .fauth{margin-top:8px;font-size:13.5px;}
+
+@media (max-width:880px){
+  body{font-size:16px;}
+  h1{font-size:30px;}
+  h2{font-size:23px;}
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  .grid.cols-2,.grid.cols-3,.ov,.attn-pair{grid-template-columns:1fr;}
+  .topnav nav{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="wrap">
+    <span class="brand">Qwen2.5-1M</span>
+    <nav>
+      <a href="#tldr">速览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#overview">方法总览</a>
+      <a href="#train">长上下文训练</a>
+      <a href="#infer">高效推理</a>
+      <a href="#results">实验结论</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="tagrow">
+      <span class="tag accent">arXiv preprint</span>
+      <span class="tag">2025.01</span>
+      <span class="tag">arXiv:2501.15383</span>
+      <span class="tag">Qwen Team · 阿里巴巴</span>
+      <span class="tag">长上下文 / 推理加速</span>
+    </div>
+    <h1>Qwen2.5-1M 技术报告
+      <span class="sub">把开源大模型的上下文窗口，从 128K 一路撑到 100 万 token —— 并让它真的跑得动</span>
+    </h1>
+    <p class="byline">Qwen2.5-7B-Instruct-1M · Qwen2.5-14B-Instruct-1M（开源, Apache 2.0） · Qwen2.5-Turbo（MoE, API）</p>
+    <a class="source-link" href="https://arxiv.org/abs/2501.15383" target="_blank" rel="noopener">阅读原文 · arXiv:2501.15383 ↗</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ TL;DR ============ -->
+<section id="tldr" style="border-top:none;">
+  <div class="tldr">
+    <h2>一句话读懂</h2>
+    <p>Qwen2.5-1M 在不损伤短文本能力的前提下，把 Qwen2.5 的上下文从 128K 扩展到 <strong>100 万 token</strong>。它靠两条主线做到这一点：<strong>① 高效的长上下文训练</strong>（合成长依赖数据 + 渐进式扩长 + 多阶段微调），<strong>② 高效的推理与部署</strong>（<strong>免训练的长度外推 DCA</strong> + <strong>稀疏注意力 MInference</strong> + 引擎级优化）。最终在 100 万 token 场景下把 prefill（首 token 前的预填充）<strong>提速 3.2–6.7 倍</strong>，并开源了模型与基于 vLLM 的推理框架。</p>
+    <p class="mini" style="color:var(--ink-mute);font-size:14px;">关键直觉：训练只到 256K，剩下到 1M 的部分<strong>不再训练</strong>，而是在推理时用 DCA 把「没见过的超远相对位置」重新映射回训练见过的范围 —— 省钱、且对短文本零副作用。</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">1M</div><div class="unit">tokens 上下文</div><div class="lbl">较上一代 128K 提升约 8×</div></div>
+    <div class="metric"><div class="num">3.2–6.7<span class="unit">×</span></div><div class="lbl">1M 场景 prefill 提速</div></div>
+    <div class="metric"><div class="num">92.2</div><div class="unit">RULER@128K（14B-1M）</div><div class="lbl">Qwen2.5 系列首次破 90 分</div></div>
+    <div class="metric"><div class="num">96.7<span class="unit">%</span></div><div class="lbl">分块预填充削减的激活显存</div></div>
+  </div>
+</section>
+
+<!-- ============ 问题 ============ -->
+<section id="problem">
+  <p class="eyebrow">问题定义</p>
+  <h2>为什么需要 100 万 token 的上下文？</h2>
+  <p class="lead">大模型最受限的资源之一，就是「一次能读多少字」。上下文太短，模型就只能处理简单的单点任务，做不了真正复杂的现实场景。</p>
+  <p>论文开篇给了两个最有代表性的痛点：要做<strong>仓库级别的代码生成与调试</strong>，模型得同时看到整个代码库的上下文；要基于<strong>海量文档做深度研究</strong>，模型得一次吞下大量资料。4K / 8K 甚至 128K 的窗口都不够用。于是把上下文窗口越做越大，成了整个领域的明确趋势。</p>
+  <p>但是「把窗口做大」远不止改个配置那么简单，论文点明了三道现实关卡：</p>
+  <ul>
+    <li><strong>训练成本</strong>：长序列训练对显存和时间是指数级的压力，直接在 1M 长度上训练几乎不可行。</li>
+    <li><strong>长度外推</strong>：基于 RoPE 的模型一旦遇到训练时没见过的超远相对位置，注意力权重会崩，性能急剧下降。</li>
+    <li><strong>推理开销</strong>：注意力计算量随序列长度<strong>平方级</strong>增长。当输入达到 1M token 时，注意力能占到整个前向计算时间的 <strong>90% 以上</strong>；同时激活值显存也会爆炸。</li>
+  </ul>
+  <p>Qwen2.5-1M 的全部技术，本质上就是分别拆解这三道关卡。</p>
+</section>
+
+<!-- ============ 已有方案 ============ -->
+<section id="prior">
+  <p class="eyebrow">已有方案速览</p>
+  <h2>别人是怎么做 1M 上下文的？</h2>
+  <p>把上下文推到 1M 并非首创。论文把下面几条路线作为对比基线 —— 它们要么闭源、要么在更长序列上掉点明显，这正是 Qwen2.5-1M 想要超越的地方。</p>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">Gemini 1.5（Google）</span><span class="smry">闭源多模态长上下文标杆，宣称可达数百万 token，但不开放权重与方法细节。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <p>Gemini 1.5 是把上下文推到百万级 token 的代表性闭源模型，主打跨百万 token 的多模态理解。它证明了「超长上下文」在工程上是可行且有价值的，但作为闭源 API，开发者无法自行部署、也看不到训练与推理的具体做法。Qwen2.5-1M 的差异在于：<strong>开源权重 + 开源推理框架</strong>，让长上下文能力可以被社区复现和私有化部署。</p>
+    </div></div>
+  </div>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">GLM-9B-Chat-1M / Llama-3-8B-Gradient-1048k</span><span class="smry">已有的开源 1M 模型，但在 64K 以上的真实长任务上掉点明显。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <p>开源社区已有把上下文标到 1M 的尝试：<strong>GLM-9B-Chat-1M</strong>（Zeng et al., 2024）与 <strong>Llama-3-8B-Instruct-Gradient-1048k</strong>（Gradient AI）。论文在 RULER、LV-Eval 等基准上把它们作为基线对比，结果显示：随着序列变长（尤其超过 64K），这些模型的准确率下滑较快。例如在 LV-Eval 的 256K 档，Llama-3-Gradient 仅约 21.1，而 Qwen2.5-7B-Instruct-1M 达到 42.7。</p>
+      <p>换句话说，「在配置里标上 1M」和「在 1M 上真的好用」是两回事 —— 这正是本文反复强调的<strong>有效上下文长度</strong>问题。</p>
+    </div></div>
+  </div>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">GPT-4o-mini / GPT-4o（OpenAI）</span><span class="smry">强力闭源基线，但官方上下文仅 128K；本文用它作为质量对标对象。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <p>GPT-4o-mini 与 GPT-4o 是论文用来衡量「质量天花板」的闭源对照。它们能力很强，但官方上下文长度为 <strong>128K</strong>。论文的核心卖点之一就是：<strong>Qwen2.5-14B-Instruct-1M 在多个长上下文数据集上稳定超过 GPT-4o-mini</strong>，同时支持的上下文长度是其 8 倍，并在短文本任务上保持相近水平 —— 给社区提供了一个开源的强力替代品。</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 方法总览 ============ -->
+<section id="overview">
+  <p class="eyebrow">方法总览</p>
+  <h2>两根支柱：先把模型「教」到 256K，再把它「推」到 1M</h2>
+  <p>理解全文最关键的一点是：<strong>训练和推理被刻意拆开</strong>。训练阶段只把模型扎实地做到 256K（再长就太贵）；最后从 256K 到 1M 这一段，完全交给<strong>推理时的免训练技术</strong>。这样既控制了成本，又保证了短文本能力不被破坏。</p>
+
+  <div class="ov">
+    <div class="ov-col">
+      <h4>① 高效长上下文训练 → 256K</h4>
+      <div class="ov-step"><b>数据</b>自然长文本 + 合成长依赖数据（FIM / 检索 / 段落重排）</div>
+      <div class="ov-arrow">↓</div>
+      <div class="ov-step"><b>渐进式预训练</b>4K → 32K → 64K → 128K → 256K，逐步抬高 RoPE base 频率</div>
+      <div class="ov-arrow">↓</div>
+      <div class="ov-step"><b>两阶段 SFT</b>先纯短指令(≤32K)，再混合短+长(到 256K)</div>
+      <div class="ov-arrow">↓</div>
+      <div class="ov-step"><b>强化学习</b>只用 ≤8K 短样本，却能泛化到长上下文</div>
+    </div>
+    <div class="ov-col">
+      <h4>② 高效推理与部署 → 1M</h4>
+      <div class="ov-step"><b>长度外推（免训练）</b>DCA 重映射相对位置 + YaRN 注意力缩放</div>
+      <div class="ov-arrow">↓</div>
+      <div class="ov-step"><b>稀疏注意力</b>MInference 只算「关键 token」，算力/访存 ~10×↓</div>
+      <div class="ov-arrow">↓</div>
+      <div class="ov-step"><b>分块预填充</b>切成 32K 的 chunk 顺序处理，激活显存 ↓96.7%</div>
+      <div class="ov-arrow">↓</div>
+      <div class="ov-step"><b>引擎优化 BladeLLM</b>kernel 优化 + 动态分块流水线 + 全异步调度</div>
+    </div>
+  </div>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">模型骨架与规格（点开看 Table 1）</span><span class="smry">沿用 Qwen2.5 的 Transformer：GQA + SwiGLU + RoPE + QKV bias + RMSNorm，推理完全兼容。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <p>Qwen2.5-1M 没有改动模型结构，完全沿用 Qwen2.5 的 Transformer 设计，因此<strong>推理路径与原模型兼容</strong>。核心组件包括：</p>
+      <ul>
+        <li><strong>GQA</strong>（分组查询注意力）—— 共享 KV 头，压缩 KV cache，长上下文下尤为关键；</li>
+        <li><strong>SwiGLU</strong> 激活、<strong>RoPE</strong> 旋转位置编码、<strong>QKV bias</strong>、带 pre-norm 的 <strong>RMSNorm</strong>。</li>
+      </ul>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>模型</th><th>层数</th><th>Q / KV 头</th><th>Tie Embedding</th><th>上下文 / 生成</th><th>License</th></tr></thead>
+        <tbody>
+          <tr><td>Qwen2.5-7B-1M</td><td>28</td><td>28 / 4</td><td>No</td><td>1M / 8K</td><td>Apache 2.0</td></tr>
+          <tr><td>Qwen2.5-14B-1M</td><td>48</td><td>40 / 8</td><td>No</td><td>1M / 8K</td><td>Apache 2.0</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="mini" style="font-size:13.5px;color:var(--ink-mute);">此外还有一个基于 MoE 的 API 模型 Qwen2.5-Turbo，性能对标 GPT-4o-mini，但上下文更长、价格更具竞争力。</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 训练 ============ -->
+<section id="train">
+  <p class="eyebrow">支柱一 · 高效长上下文训练</p>
+  <h2>怎样在不烧爆预算的前提下，把模型训到 256K</h2>
+  <p>长上下文训练之所以贵，是因为显存和计算随长度暴涨。论文的策略是「<strong>用更聪明的数据 + 更省的训练节奏</strong>」来提高每一份算力的效用。</p>
+
+  <h3>1 · 数据：天然长文本不够，要合成「长依赖」</h3>
+  <p>预训练语料来自 Common Crawl、arXiv、书籍、代码仓库等多样领域。问题在于：天然文本通常只有<strong>局部连贯性</strong>，模型不依赖远距离信息也能预测下一个词 —— 也就学不到真正的长程依赖。为此，论文额外合成了三类强调长依赖的任务数据：</p>
+  <div class="grid cols-3">
+    <div class="card"><h4>Fill in the Middle</h4><p class="mini">在文本不同位置、不同长度处挖空，逼模型整合缺口前后的远距离上下文来补全。</p></div>
+    <div class="card"><h4>关键词 / 位置检索</h4><p class="mini">按关键词或「某位置前/后」检索相关段落，强化跨段定位与位置关系理解。</p></div>
+    <div class="card"><h4>段落重排</h4><p class="mini">打乱段落让模型还原原序，训练它把握全局逻辑流与结构连贯性。</p></div>
+  </div>
+  <p class="mini" style="color:var(--ink-mute);">这些合成任务不仅提升长程建模，还提高了数据效率、减少了达到目标性能所需的迭代量。</p>
+
+  <h3>2 · 渐进式扩长：长度逐级翻倍，RoPE base 同步抬高</h3>
+  <p>论文没有一步到位训 256K，而是分<strong>五个阶段</strong>逐步加长。每加长一档，就用 <strong>ABF（自适应基频）</strong>把 RoPE 的 base 频率调高一档，让位置编码适配更长的序列；同时数据按 <strong>75% 当前最长 + 25% 较短</strong> 的比例混合，避免模型「学了长、忘了短」。</p>
+
+  <figure class="fig">
+    <div class="imgwrap">
+      <img src="assets/training_stages.png" alt="Qwen2.5-1M 训练流程图：五阶段渐进式预训练 + 两阶段 SFT + RLHF">
+    </div>
+    <figcaption class="cap">图：Qwen2.5-1M 完整训练流程（来源：Qwen 官方博客）</figcaption>
+    <button class="fig-toggle" onclick="toggleDetail(this)">
+      <span class="lab">图解 ▸</span>
+      <span class="smry">从初始 Base 模型出发，预训练逐级扩长到 256K，再经两阶段 SFT 与 RLHF 得到 256K 指令模型。</span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="figure-detail"><div class="fd-in">
+      <ul>
+        <li><span class="pt">上排虚线框 = 预训练（Pre-Training）</span>：从 <strong>Initial Base Model</strong> 出发，依次经过 4K → 32K → 64K → 128K → 256K 五个长度阶段。每个方框标注了该阶段的训练长度与 RoPE base 频率（图中为博客简写）。</li>
+        <li><span class="pt">RoPE base 随长度抬高</span>：按论文正文，base 频率随阶段从 10,000（4K）经 ABF 提升到 1,000,000（32K/64K）、5,000,000（128K）、10,000,000（256K）—— 这是让位置编码「跟得上」更长序列的关键旋钮。</li>
+        <li><span class="pt">下排虚线框 = 后训练（Post-Training）</span>：256K 预训练完成后进入 <strong>SFT Stage（32K）→ SFT Stage（32K+256K）→ RLHF Stage（只用短任务）</strong>，最终得到 <strong>Instruct Model 256K</strong>。</li>
+        <li><span class="pt">箭头 = 模型权重的流转方向</span>：每一步都在前一步的检查点上继续训练，前两个长度阶段直接复用了 Qwen2.5 Base 的中间版本，进一步省算力。</li>
+        <li><span class="pt">为什么这么设计</span>：逐级扩长让显存压力可控；混入短数据防遗忘；而训练止步于 256K —— 再往上到 1M 留给推理阶段的免训练外推（见支柱二）。</li>
+      </ul>
+      <p class="mini" style="color:var(--ink-mute);">注：论文 Table 2 显示，即使最后一阶段用 262,144 长度训练，也<strong>反过来提升了 128K 样本</strong>的表现（128K 档从 37.6 → 87.6）—— 在更长序列上训练，能帮模型更充分释放在较短任务上的潜力。</p>
+    </div></div>
+  </figure>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">渐进训练的实证（Table 2：14B-1M 在 RULER 上的逐阶段表现）</span><span class="smry">训练长度越长，对应长度档位的理解力越强，且长训练还能反哺更短的任务。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>训练长度</th><th>Avg.</th><th>4K</th><th>8K</th><th>16K</th><th>32K</th><th>64K</th><th>128K</th></tr></thead>
+        <tbody>
+          <tr><td>32,768</td><td>82.3</td><td>96.8</td><td>94.7</td><td>95.9</td><td>92.2</td><td>76.4</td><td>37.6</td></tr>
+          <tr><td>65,536</td><td>86.8</td><td>96.5</td><td>95.5</td><td>93.6</td><td>92.5</td><td>86.7</td><td>56.0</td></tr>
+          <tr><td>131,072</td><td>92.5</td><td>96.5</td><td>95.9</td><td>93.0</td><td>92.6</td><td>93.0</td><td>83.8</td></tr>
+          <tr><td>262,144</td><td>92.7</td><td>95.6</td><td>93.8</td><td>93.1</td><td>94.1</td><td>91.9</td><td class="hi">87.6</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="mini" style="color:var(--ink-mute);">看 128K 这一列：随训练长度增加，从 37.6 一路涨到 87.6 —— 直观印证了「在更长序列上训练，能显著改善相对较短任务」的结论。</p>
+    </div></div>
+  </div>
+
+  <h3>3 · 后训练：用「智能体」造长指令，用「短样本」做对齐</h3>
+  <p>长上下文任务的人工标注既贵又不可靠。论文的解法是<strong>自动合成</strong>：从预训练语料里挑长文档，让 Qwen2.5 基于文档里随机抽取的片段生成问题（涵盖摘要、检索、多跳问答、推理、编码等），再用 <strong>Qwen-Agent 框架</strong>（检索增强 + 逐块阅读 + 逐步推理）基于完整文档生成高质量答案。三者拼起来就是合成训练数据。</p>
+  <ul>
+    <li><strong>两阶段 SFT</strong>：第一阶段只用 ≤32,768 的短指令（步数与 Qwen2.5 一致），守住短任务能力；第二阶段混入 32K–256K 的长序列，小心平衡长短比例防遗忘。最终指令模型可处理到 256K。</li>
+    <li><strong>强化学习</strong>：采用类 DPO 的离线 RL，<strong>只用 ≤8,192 的短样本</strong>。论文发现这足以显著改善人类偏好对齐，并能<strong>泛化到长上下文</strong>。</li>
+  </ul>
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">短样本 RL 真的能泛化到长上下文吗？（Table 3）</span><span class="smry">在 Longbench-Chat 上，只用短样本的 RL 让三个模型全部明显提分。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>模型</th><th>RL 之前</th><th>RL 之后</th></tr></thead>
+        <tbody>
+          <tr><td>Qwen2.5-7B-Instruct-1M</td><td>7.32</td><td class="hi">8.08 (+0.75)</td></tr>
+          <tr><td>Qwen2.5-14B-Instruct-1M</td><td>8.56</td><td class="hi">8.76 (+0.20)</td></tr>
+          <tr><td>Qwen2.5-Turbo</td><td>7.60</td><td class="hi">8.34 (+0.74)</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="mini" style="color:var(--ink-mute);">Longbench-Chat 是评估长上下文人类偏好对齐的基准（最长 100K）。短样本 RL 在长基准上全面提分，说明对齐能力可从短迁移到长。</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 推理 ============ -->
+<section id="infer">
+  <p class="eyebrow">支柱二 · 高效推理与部署（重头戏）</p>
+  <h2>训练止步 256K，那 256K → 1M 这一段靠什么？</h2>
+  <p>这一节是全文最有信息量的部分。它要同时解决三件事：<strong>让模型扛得住超出训练长度的输入（外推）、让注意力别那么慢（稀疏化）、让显存别爆 + 引擎别空转（工程优化）。</strong>下面这条交互流水线把它们串起来 —— 点「下一步」跟着 1M token 走一遍推理：</p>
+
+  <!-- stepper -->
+  <div class="stepper">
+    <div class="rail" id="infRail">
+      <button class="node active" onclick="infGo(0)"><span class="n">1</span><span class="t">超长输入</span></button>
+      <button class="node" onclick="infGo(1)"><span class="n">2</span><span class="t">长度外推</span></button>
+      <button class="node" onclick="infGo(2)"><span class="n">3</span><span class="t">稀疏注意力</span></button>
+      <button class="node" onclick="infGo(3)"><span class="n">4</span><span class="t">分块预填充</span></button>
+      <button class="node" onclick="infGo(4)"><span class="n">5</span><span class="t">引擎优化</span></button>
+      <button class="node" onclick="infGo(5)"><span class="n">6</span><span class="t">出首 token</span></button>
+    </div>
+    <div class="stage-box" id="infStepper">
+      <div class="step-stage active">
+        <h4>① 1M token 涌入：朴素做法直接崩</h4>
+        <p>全注意力的计算量随长度<strong>平方级</strong>增长。当输入到 1M token，注意力可占前向时间的 <strong>90%+</strong>；而且激活值显存暴涨 —— 仅 Qwen2.5-7B 单个 MLP 层的激活就高达 <strong>71GB</strong>，远超模型权重和 KV cache。</p>
+        <p class="meta">瓶颈：算力 O(L²) + 激活显存 O(L)</p>
+      </div>
+      <div class="step-stage">
+        <h4>② 长度外推：DCA + YaRN（免训练）</h4>
+        <p>模型只训练到 256K，输入却有 1M。<strong>DCA（双块注意力）</strong>把序列切块，将「没见过的超远相对位置」重新映射成训练见过的小数值；<strong>YaRN 注意力缩放</strong>再给注意力 logits 加一个温度项，避免超长序列下注意力被稀释。两者都<strong>不改变短序列行为</strong>，所以短任务零副作用。</p>
+        <p class="meta">效果：32K 训练的模型，也能在 1M 上 passkey 检索 &gt;80%</p>
+      </div>
+      <div class="step-stage">
+        <h4>③ 稀疏注意力：MInference 只算关键 token</h4>
+        <p>长上下文的注意力天然稀疏 —— 真正重要的 key 集中在「<strong>竖线 + 斜线</strong>」（Vertical-Slash）模式上。MInference 先离线搜出每个注意力头该保留多少竖线/斜线，推理时据此只在这些<strong>关键 token</strong> 上算注意力，算力与访存约降 <strong>10×</strong>，精度几乎无损。</p>
+        <p class="meta">关键：用「最后若干个 query」探测，再按模式选关键 token</p>
+      </div>
+      <div class="step-stage">
+        <h4>④ 分块预填充：把激活显存压下来</h4>
+        <p>整段一次编码会让激活显存随长度线性爆炸。改成<strong>分块预填充</strong>：序列切成长度 <strong>32,768</strong> 的 chunk 顺序处理，激活显存直降 <strong>96.7%</strong>。为配合 MInference，每个 chunk 用<strong>最后 64 个 token</strong> 来挑选本块的关键 token，从而为每个 chunk 生成各自的竖线/斜线。</p>
+        <p class="meta">收益：在有限显存内支持更长序列；并与 DCA 协同（恢复连续相对位置选关键 token）</p>
+      </div>
+      <div class="step-stage">
+        <h4>⑤ 引擎优化：BladeLLM 把硬件吃满</h4>
+        <p>算法之外还要拼工程。<strong>稀疏注意力 kernel</strong> 深度优化后峰值 FLOPs 利用率达 90%（A100/1M 下相对 FlashAttention 提速 27.8×）；<strong>动态分块流水线并行（DCPP）</strong> 动态调 chunk 大小、抹平流水线气泡；<strong>全异步调度（TAG）</strong> 把 Scheduler / Model Runner / Decoder 拆成三个互不等待的进程。</p>
+        <p class="meta">A100·1M：MInference 13.7× / BladeLLM 27.8×（vs FlashAttention）</p>
+      </div>
+      <div class="step-stage">
+        <h4>⑥ 首 token 产出：整体提速 3.2–6.7×</h4>
+        <p>四层优化叠加后，1M 上下文的 prefill 提速 <strong>3.2–6.7 倍</strong>。例如 H20 上 Qwen2.5-14B-Instruct-1M 的推理时间从 <strong>12.2 分钟 → 109 秒</strong>；Qwen2.5-Turbo 从 <strong>4.9 分钟 → 68 秒</strong>。等待时间被大幅压缩，1M 上下文才真正可用。</p>
+        <p class="meta">结果：长上下文从「理论可行」走向「实际可部署」</p>
+      </div>
+    </div>
+    <div class="step-controls">
+      <button onclick="infStep(-1)">← 上一步</button>
+      <button onclick="infStep(1)">下一步 →</button>
+      <button onclick="infReset()">重置</button>
+      <span id="infLabel">第 1 / 6 步</span>
+    </div>
+  </div>
+
+  <h3>外推核心：Dual Chunk Attention（DCA）</h3>
+  <p>RoPE 模型在超出训练长度时退化的<strong>根因</strong>，是 query 与 key 之间出现了训练时从未见过的<strong>超大相对位置</strong>。DCA 的做法很直接：把整段序列切成若干 chunk，<strong>把相对位置重映射成更小的数</strong>，确保任意两 token 的距离都不超过预训练长度。下图就是它的核心 —— 相对位置矩阵的「改造前 vs 改造后」。</p>
+
+  <figure class="fig">
+    <div class="imgwrap">
+      <img src="assets/dca.png" alt="DCA 相对位置矩阵对比：未调整 vs DCA 重映射后">
+    </div>
+    <figcaption class="cap">图 2：Dual Chunk Attention 示意 —— 把相对位置重映射到更小的数（来源：Qwen2.5-1M 论文 / 官方博客）</figcaption>
+    <button class="fig-toggle" onclick="toggleDetail(this)">
+      <span class="lab">图解 ▸</span>
+      <span class="smry">左图相对位置一路涨到 14（灰区=训练没见过）；右图按 chunk 把相对位置压回小数值，并用三种颜色对应三种注意力模式。</span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="figure-detail"><div class="fd-in">
+      <p>矩阵的行是 Key/Value、列是 Query，格子里的数字是该 query–key 对的<strong>相对位置</strong>。注意力只发生在下三角（每个 query 只看自己及之前的 token）。</p>
+      <ul>
+        <li><span class="pt">(a) 未调整的相对位置矩阵</span>：相对位置从 0 一直线性增长到 14。<strong>灰色区域</strong>就是数值过大、<strong>训练时从未出现过</strong>的相对距离 —— 正是它们让超长输入下的注意力崩坏。</li>
+        <li><span class="pt">(b) DCA 重映射后</span>：整段被切成 Chunk1 / Chunk2 / Chunk3。所有相对位置都被<strong>压回一个小范围</strong>（不超过预训练长度），因此再也不会触碰「灰区」。</li>
+        <li><span class="pt">蓝色块 = Intra-Chunk（块内注意力）</span>：同一 chunk 内距离本就近，<strong>保留原始相对位置</strong>（沿对角线的 0,1,2,3…）。</li>
+        <li><span class="pt">黄/橙色块 = Inter-Chunk（跨块注意力）</span>：不同 chunk 之间，用<strong>重复的相对位置序列</strong>把距离压住，确保最大距离不超训练长度。</li>
+        <li><span class="pt">红色块 = Successive-Chunk（相邻块注意力）</span>：专门处理相邻两块的边界 —— 若 query 与 key 落在局部窗口内就保留原始位置，否则回退到跨块的处理方式，从而保持短程相对位置的连续性。</li>
+      </ul>
+      <p class="mini" style="color:var(--ink-mute);">为什么有效：三种模式分工协作，既守住了近距离的精确位置感，又把远距离「折叠」进安全范围。DCA 还能与 FlashAttention 无缝结合，落地到生产环境。配合它一起用的 <strong>YaRN 注意力缩放</strong> 公式为 <span class="mono">1/t = 0.1·ln(s) + 1</span>（s = 推理长度 / 训练长度）。</p>
+    </div></div>
+  </figure>
+
+  <h3>稀疏核心：MInference 的「竖线 + 斜线」与分块整合</h3>
+  <p>有了外推，注意力还是太慢。论文基于 <strong>MInference</strong> 做稀疏化：长上下文里注意力图呈现规律的 <strong>Vertical-Slash（竖线 + 斜线）</strong> 模式 —— 少数 key 列被几乎所有 query 关注（竖线），加上沿对角线的局部邻域（斜线）。只在这些关键 token 上算注意力，就能逼近全注意力的效果。下面用一张示意图对比「整段稀疏」与「分块后每块各自稀疏」：</p>
+
+  <div class="svgfig">
+    <div class="attn-pair">
+      <div class="attn-block">
+        <div class="attn-title">(a) 整段的 Vertical-Slash 模式</div>
+        <div class="attn-map" id="vsFull"></div>
+      </div>
+      <div class="attn-block">
+        <div class="attn-title">(b) 分块预填充：每个 chunk 各自选关键 token</div>
+        <div class="attn-map" id="vsChunk"></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>竖线：被普遍关注的关键 key 列</span>
+      <span><i style="background:#7c4a2c"></i>斜线：对角线局部邻域</span>
+      <span><i style="background:var(--surface-3)"></i>其余：跳过、不计算</span>
+    </div>
+    <div class="cap">示意图（依论文 Figure 4 描述自制）：行=Query、列=Key，仅下三角参与计算。分块后，每个 chunk 用自己最后 64 个 token 探测，生成属于本块的竖线与斜线。</div>
+  </div>
+
+  <p>围绕 MInference，论文还做了三处关键改进，逐一点开看：</p>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">改进一 · 整合分块预填充：激活显存 ↓96.7%</span><span class="smry">chunk 长度 32K，配合「每块最后 64 token 选关键 token」，在有限显存里支持更长序列。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <p>原始 MInference 整段一次编码，激活显存随长度线性增长（1M 时 7B 单 MLP 层就要 71GB）。论文把它和<strong>分块预填充</strong>整合：序列切成长度 <strong>32,768</strong> 的 chunk 顺序处理，激活显存降低 <strong>96.7%</strong>。难点在于分块后「整段的最后 query」尚不可见，于是改用<strong>每个 chunk 的最后 64 个 token</strong> 来识别关键 token —— 这会为每个 chunk 引入各自独立的竖线与斜线，且试验证明精度损失很小。额外好处：多请求时还能防止解码被冗长的 prefill 阻塞。</p>
+    </div></div>
+  </div>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">改进二 · 整合 DCA：选关键 token 时恢复连续相对位置</span><span class="smry">DCA 的非连续位置会打乱斜线模式，论文只在「选 token」阶段恢复连续位置来修复。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <p>MInference 可以无缝接入 DCA，但论文观察到某些外推场景会掉点。原因推测是：<strong>DCA 的相对位置不连续</strong>，破坏了用于挑选关键 token 的「斜线」模式，导致选错 token。修复办法是：在<strong>挑选关键 token 的阶段</strong>，对相邻块与跨块注意力<strong>恢复连续的相对位置</strong>，让对角线方向尽量一致；而最终计算注意力权重时，仍使用 DCA 原本的非连续位置编码。也就是说，连续位置只在「选 token」这一步临时引入，不影响最终输出。</p>
+    </div></div>
+  </div>
+
+  <div class="exp">
+    <button class="exp-head" onclick="toggleDetail(this)">
+      <span class="htext"><span class="ttl">改进三 · 1M 序列上的稀疏度精修（Attention Recall）</span><span class="smry">离线搜配置只能在短序列上做，泛化到 1M 会掉点；用注意力召回率在 1M 校准集上重新精修。</span></span>
+      <span class="chev">▸</span>
+    </button>
+    <div class="panel"><div class="panel-in">
+      <p>MInference 部署前要离线搜每个头的稀疏配置，但全注意力矩阵随长度平方增长，受显存所限这步通常只能在 &lt;32K 的短序列上做 —— 对 1M 这类超长序列并不最优。论文用 FlashAttention 高效得到 <span class="mono">softmax lse</span>（未归一化注意力权重之和），定义<strong>注意力召回率</strong>：</p>
+      <p class="mono" style="font-size:13px;background:var(--surface-2);padding:10px 12px;border-radius:8px;">Attention Recall = exp(softmax_lse_sparse − softmax_lse_full) ∈ (0, 1]</p>
+      <p>它衡量稀疏注意力对关键 token 的「捕获程度」。论文据此在<strong>由 1M token 序列组成的校准集</strong>上重新精修稀疏配置（Algorithm 1），显著降低稀疏化在超长序列上的精度损失。最终在 7B 模型的 Needle-in-a-Haystack 测试上，恢复了大部分性能，同时在 prefill 阶段保持约 <strong>4×</strong> 加速。</p>
+    </div></div>
+  </div>
+
+  <h3>引擎层：BladeLLM 的三板斧</h3>
+  <p>Qwen2.5-1M 的 API 由阿里 PAI 团队的高性能推理引擎 <strong>BladeLLM</strong> 驱动，其中多项优化已开源并将并入 vLLM：</p>
+  <div class="grid cols-3">
+    <div class="card">
+      <h4>Kernel 优化</h4>
+      <p class="mini">稀疏注意力 kernel 做多级流水线 + 指令级优化，峰值 FLOPs 利用率达 <strong>90%</strong>。A100·1M 下相对 FlashAttention：MInference 13.7×，<strong>BladeLLM 27.8×</strong>。MoE kernel 在 H20 上达 3.4 TB/s 访存（较 vLLM FusedMoE +55%）。</p>
+    </div>
+    <div class="card">
+      <h4>动态分块流水线 DCPP</h4>
+      <p class="mini">分块流水线并行中，各 chunk 的历史 KV 长度不同，导致注意力耗时不均、产生大量<strong>流水线气泡</strong>。DCPP 按注意力计算复杂度<strong>动态调整 chunk 大小</strong>，让每块耗时尽量相等，抹平气泡。</p>
+    </div>
+    <div class="card">
+      <h4>全异步调度 TAG</h4>
+      <p class="mini">传统引擎里 Scheduler / Model Runner / Decoder <strong>串行</strong>执行，非 GPU 环节拖低利用率。TAG 把三者拆成<strong>互不等待</strong>的三个进程，再用共享内存降低通信开销，大幅提升解码效率。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 有意思的点 ============ -->
+<section id="insight">
+  <p class="eyebrow">几个反直觉的点</p>
+  <h2>读到这里，最值得记住的三件事</h2>
+  <div class="grid cols-3">
+    <div class="card">
+      <h4>训练止步，推理接力</h4>
+      <p class="mini">最贵的 256K→1M 这一段<strong>完全免训练</strong>。DCA 把超远相对位置「折叠」回训练范围 —— 连只在 32K 上训练的模型，都能在 1M passkey 检索上做到 &gt;80%。</p>
+    </div>
+    <div class="card">
+      <h4>短样本反哺长能力</h4>
+      <p class="mini">RL 只用 ≤8K 的短样本，却能稳定泛化到长上下文对齐（Longbench-Chat 全面提分）。对齐能力的迁移，比想象中更「便宜」。</p>
+    </div>
+    <div class="card">
+      <h4>长训练反哺短任务</h4>
+      <p class="mini">用 262K 长度训练，反而把 128K 档的 RULER 从 37.6 拉到 87.6 —— 在更长序列上训练，能帮模型更充分释放在较短任务上的潜力。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 实验 ============ -->
+<section id="results">
+  <p class="eyebrow">实验结论（轻量）</p>
+  <h2>到底有多强、有多快？</h2>
+  <p>论文做了大量评测，这里只拎最核心的三句话：<strong>长任务大幅领先、短任务不掉、推理大幅提速。</strong></p>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">满分</div><div class="unit">1M passkey 检索</div><div class="lbl">14B-1M 与 Turbo 全对；7B-1M 仅极少错误</div></div>
+    <div class="metric"><div class="num">95.7</div><div class="unit">RULER 平均（14B-1M）</div><div class="lbl">超过 GPT-4o-mini，甚至超过 GPT-4</div></div>
+    <div class="metric"><div class="num">8×</div><div class="unit">更长上下文</div><div class="lbl">短任务与 GPT-4o-mini 相近，窗口却大 8 倍</div></div>
+    <div class="metric"><div class="num">109<span class="unit">s</span></div><div class="lbl">14B-1M 处理 1M（H20）：原需 12.2 分钟</div></div>
+  </div>
+
+  <h3>长上下文：显著超越 128K 版本与同级闭源模型</h3>
+  <ul>
+    <li><strong>RULER（最长 128K）</strong>：Qwen2.5-1M 系列在大多数长任务上明显超过各自的 128K 版本，尤其 64K 以上。14B-Instruct-1M 在 128K 上拿到 <strong>92.2</strong>，是 Qwen2.5 系列<strong>首次破 90 分</strong>；其平均分甚至超过 GPT-4。</li>
+    <li><strong>LV-Eval（最长 256K）/ Longbench-Chat</strong>：14B-Instruct-1M 在多个数据集稳定超过 GPT-4o-mini。值得一提的是，仅在 32K 上训练的 Qwen2.5-72B-Instruct，配上本文的 DCA+YaRN 外推，在 LV-Eval 上各长度档<strong>全面超过</strong> 14B-Instruct-1M —— 既说明外推技术价值大，也说明大模型在复杂长任务上仍有底子优势。</li>
+    <li><strong>Qwen2.5-Turbo</strong>：长任务介于 7B-1M 与 14B-1M 之间，但推理更快、成本更低，性价比突出。</li>
+  </ul>
+
+  <h3>短上下文：能力没有被「长」拖累</h3>
+  <p>在 MMLU-Pro、GPQA、MATH、HumanEval、IFEval 等十余个常用学术基准上，7B/14B-Instruct-1M 与各自 128K 版本表现<strong>基本持平</strong>；14B-1M 与 Turbo 在短任务上与 GPT-4o-mini 相当，却支持 8 倍长的上下文。</p>
+
+  <details>
+    <summary>展开看短任务对照表（Table 6 节选）<span class="ds">— 1M 版本 vs 128K 版本 vs GPT-4o-mini</span></summary>
+    <div class="dc">
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>数据集</th><th>GPT-4o-mini</th><th>7B</th><th>7B-1M</th><th>14B</th><th>14B-1M</th><th>Turbo</th></tr></thead>
+      <tbody>
+        <tr><td>MMLU-Pro</td><td>63.1</td><td>56.3</td><td>54.3</td><td>63.7</td><td>63.3</td><td>64.5</td></tr>
+        <tr><td>MMLU-redux</td><td>81.5</td><td>75.4</td><td>74.8</td><td>80.0</td><td>80.7</td><td>81.7</td></tr>
+        <tr><td>GSM8K</td><td>93.2</td><td>91.6</td><td>91.7</td><td>94.8</td><td>94.8</td><td>93.8</td></tr>
+        <tr><td>MATH</td><td>70.2</td><td>75.5</td><td>72.9</td><td>80.0</td><td>79.5</td><td>81.1</td></tr>
+        <tr><td>HumanEval</td><td>88.4</td><td>84.8</td><td>86.0</td><td>83.5</td><td>88.4</td><td>86.6</td></tr>
+        <tr><td>IFEval</td><td>80.4</td><td>71.2</td><td>73.0</td><td>81.0</td><td>84.3</td><td>76.3</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="mini" style="color:var(--ink-mute);">同一行内，1M 版本与对应 128K 版本数值贴得很近 —— 说明加上长上下文能力后，基础能力几乎没有妥协。</p>
+    </div>
+  </details>
+
+  <h3>速度：1M prefill 提速 3.2–6.7×</h3>
+  <p>以 batch size = 1、测量首 token 时延（TTFT）为口径，在 H20 与 A100 上，叠加稀疏注意力与引擎优化后：</p>
+  <div class="quote">
+    <p class="en">On the H20 GPUs, the Qwen2.5-14B-Instruct-1M model reduces inference time from 12.2 minutes (with full attention) to just 109 seconds. The Qwen2.5-Turbo model decreases its processing time from 4.9 minutes to only 68 seconds.</p>
+    <p style="margin:8px 0 0;font-size:14.5px;">在 H20 上，14B-Instruct-1M 处理 1M 上下文的时间从全注意力的 <strong>12.2 分钟降到 109 秒</strong>；Qwen2.5-Turbo 从 <strong>4.9 分钟降到 68 秒</strong>。等待时间被大幅压缩，长序列任务才真正可用。</p>
+  </div>
+
+  <div class="note">部署门槛参考：处理 1M token 序列，Qwen2.5-7B-Instruct-1M 至少需约 <span class="kbd">120GB</span> 显存（跨卡合计），14B-Instruct-1M 至少约 <span class="kbd">320GB</span>。显存不够时仍可用于较短任务。</div>
+
+  <details>
+    <summary>本地部署示例（vLLM 定制分支 + DCA）<span class="ds">— 启动 OpenAI 兼容服务的命令</span></summary>
+    <div class="dc">
+<pre><span class="cm"># 1. 安装带 Dual Chunk Attention 的定制 vLLM 分支</span>
+git clone -b dev/dual-chunk-attn git@github.com:QwenLM/vllm.git
+cd vllm && pip install -e . -v
+
+<span class="cm"># 2. 启动服务（按硬件调整并行度与最大长度）</span>
+vllm serve Qwen/Qwen2.5-7B-Instruct-1M \
+  --tensor-parallel-size 4 \
+  --max-model-len 1010000 \
+  --enable-chunked-prefill --max-num-batched-tokens 131072 \
+  --enforce-eager \
+  --max-num-seqs 1</pre>
+    <p class="mini" style="color:var(--ink-mute);"><span class="mono">--max-num-batched-tokens</span> 即分块预填充的 chunk 大小，越小越省激活显存、但推理略慢，官方推荐 131072。完整说明见官方博客与仓库。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 结语 ============ -->
+<section id="conclusion">
+  <p class="eyebrow">结语</p>
+  <h2>它的意义</h2>
+  <p>Qwen2.5-1M 不只是「把数字标到 1M」，而是把<strong>长上下文从理论可行推向了实际可部署</strong>：训练上用数据合成与渐进扩长压低成本，推理上用免训练外推 + 稀疏注意力 + 引擎优化让 1M 真的跑得动，并把模型与框架一并开源。论文也坦言长上下文模型仍有很大改进空间，未来会继续探索更高效的训练、架构与推理方法，让其在资源受限环境下也能表现出色。</p>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>本页为 <strong>Qwen2.5-1M Technical Report</strong> 的中文图解，仅作学习用途；核心数字、流程与结论均依据原文整理，图片来自论文 / Qwen 官方资源。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2501.15383" target="_blank" rel="noopener">arXiv:2501.15383 ↗</a> &nbsp;·&nbsp; 官方博客：<a href="https://qwenlm.github.io/blog/qwen2.5-1m/" target="_blank" rel="noopener">qwenlm.github.io/blog/qwen2.5-1m ↗</a></p>
+    <p class="fauth">作者：Qwen Team, 阿里巴巴集团（An Yang 等）· 2025.01 · arXiv preprint</p>
+  </div>
+</footer>
+
+<script>
+function toggleDetail(btn){
+  var body = btn.nextElementSibling;
+  if(!body) return;
+  var open = body.classList.toggle('active');
+  btn.classList.toggle('active', open);
+}
+
+var infIdx = 0;
+var infTotal = 6;
+function infRender(){
+  var stages = document.querySelectorAll('#infStepper .step-stage');
+  for(var i=0;i<stages.length;i++){
+    stages[i].classList.toggle('active', i===infIdx);
+  }
+  var nodes = document.querySelectorAll('#infRail .node');
+  for(var j=0;j<nodes.length;j++){
+    nodes[j].classList.remove('active','done');
+    if(j===infIdx){ nodes[j].classList.add('active'); }
+    else if(j<infIdx){ nodes[j].classList.add('done'); }
+  }
+  var lbl = document.getElementById('infLabel');
+  if(lbl){ lbl.textContent = '第 ' + (infIdx+1) + ' / ' + infTotal + ' 步'; }
+}
+function infStep(d){
+  infIdx = Math.max(0, Math.min(infTotal-1, infIdx + d));
+  infRender();
+}
+function infGo(i){
+  infIdx = Math.max(0, Math.min(infTotal-1, i));
+  infRender();
+}
+function infReset(){
+  infIdx = 0;
+  infRender();
+}
+
+function buildAttn(containerId, N, chunk){
+  var el = document.getElementById(containerId);
+  if(!el) return;
+  el.style.gridTemplateColumns = 'repeat(' + N + ', 1fr)';
+  var html = '';
+  for(var r=0;r<N;r++){
+    for(var c=0;c<N;c++){
+      if(c>r){ html += '<div class="c"></div>'; continue; }
+      var cls = 'c dim';
+      var isVert, isSlash;
+      if(chunk>0){
+        var base = Math.floor(c/chunk)*chunk;
+        isVert = (c===base || c===base+1);
+        isSlash = ((r-c)>=0 && (r-c)<=1);
+      } else {
+        isVert = (c===0 || c===1);
+        isSlash = ((r-c)>=0 && (r-c)<=1);
+      }
+      if(isSlash){ cls = 'c slash'; }
+      else if(isVert){ cls = 'c vert'; }
+      html += '<div class="' + cls + '"></div>';
+    }
+  }
+  el.innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  infRender();
+  buildAttn('vsFull', 14, 0);
+  buildAttn('vsChunk', 14, 5);
+});
+</script>
+
+</body>
+</html>

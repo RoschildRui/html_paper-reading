@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Seed1.8 模型卡 · 面向通用真实世界智能体</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --surface:#f4ead7;
+    --surface-2:#efe1c8;
+    --surface-3:#e8dcc7;
+    --border:#e2d2b2;
+    --border-soft:#ece0c8;
+    --ink:#2b2620;
+    --ink-soft:#6f6552;
+    --ink-faint:#90856f;
+    --accent:#b0742e;
+    --accent-soft:rgba(176,116,46,.12);
+    --accent-line:rgba(176,116,46,.35);
+    --sans:"Inter","Noto Sans SC",system-ui,-apple-system,Segoe UI,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --maxw:920px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.75;
+    -webkit-font-smoothing:antialiased;letter-spacing:.1px;
+  }
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+
+  /* ---------- top progress + nav ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:40;background:rgba(251,246,234,.9);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--border-soft);
+  }
+  .topbar .wrap{display:flex;align-items:center;gap:18px;height:52px;}
+  .brand{font-weight:700;font-size:15px;white-space:nowrap;letter-spacing:.2px;}
+  .brand .dot{color:var(--accent);}
+  .navlinks{display:flex;gap:4px;flex-wrap:wrap;overflow-x:auto;}
+  .navlinks a{
+    font-size:13.5px;color:var(--ink-soft);padding:5px 10px;border-radius:7px;
+    white-space:nowrap;font-weight:500;
+  }
+  .navlinks a:hover{background:var(--surface);text-decoration:none;color:var(--ink);}
+  .navlinks a.active{background:var(--accent-soft);color:var(--accent);}
+
+  /* ---------- header ---------- */
+  header.hero{padding:60px 0 30px;}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:600;
+    color:var(--accent);background:var(--accent-soft);padding:6px 13px;border-radius:999px;
+    letter-spacing:.4px;
+  }
+  h1{
+    font-size:40px;line-height:1.18;margin:20px 0 14px;font-weight:800;
+    letter-spacing:-.5px;
+  }
+  h1 .sub{display:block;font-size:21px;font-weight:600;color:var(--ink-soft);margin-top:8px;letter-spacing:0;}
+  .meta{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 6px;font-size:13.5px;}
+  .meta .chip{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:5px 12px;color:var(--ink-soft);font-weight:500;
+  }
+  .meta .chip b{color:var(--ink);font-weight:600;}
+  .source-row{margin-top:16px;font-size:14.5px;color:var(--ink-soft);}
+  .source-row a{font-weight:600;}
+
+  /* ---------- sections ---------- */
+  section{padding:30px 0;border-top:1px solid var(--border-soft);}
+  section:first-of-type{border-top:none;}
+  .kicker{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+  h2{font-size:27px;font-weight:800;margin:4px 0 14px;letter-spacing:-.3px;}
+  h3{font-size:19px;font-weight:700;margin:26px 0 10px;}
+  p{margin:14px 0;}
+  strong{font-weight:700;color:var(--ink);}
+  .lead{font-size:18.5px;color:var(--ink);}
+  ul.clean{margin:14px 0;padding-left:0;list-style:none;}
+  ul.clean li{position:relative;padding-left:22px;margin:9px 0;}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:12px;width:6px;height:6px;border-radius:50%;background:var(--accent-line);}
+
+  /* ---------- tldr ---------- */
+  .tldr{
+    background:linear-gradient(180deg,var(--surface),var(--surface-2));
+    border:1px solid var(--border);border-radius:16px;padding:26px 28px;margin:8px 0 4px;
+  }
+  .tldr h2{margin-top:0;font-size:22px;}
+  .tldr .big{font-size:19px;line-height:1.7;}
+  .tldr .big b{color:var(--accent);}
+
+  /* ---------- cards grid ---------- */
+  .grid{display:grid;gap:16px;margin:18px 0;}
+  .grid.c2{grid-template-columns:repeat(2,1fr);}
+  .grid.c3{grid-template-columns:repeat(3,1fr);}
+  .grid.c4{grid-template-columns:repeat(4,1fr);}
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 19px;
+  }
+  .card .ic{font-size:22px;line-height:1;}
+  .card h4{margin:11px 0 7px;font-size:16.5px;font-weight:700;}
+  .card p{margin:0;font-size:14.5px;color:var(--ink-soft);line-height:1.65;}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:18px 0;}
+  .metric{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px 15px;text-align:left;
+  }
+  .metric .num{font-family:var(--sans);font-size:30px;font-weight:800;color:var(--accent);line-height:1.05;letter-spacing:-.5px;}
+  .metric .num .arrow{font-size:17px;color:var(--ink-faint);font-weight:600;}
+  .metric .name{font-size:13.5px;font-weight:600;margin-top:6px;}
+  .metric .note{font-size:12px;color:var(--ink-faint);margin-top:3px;line-height:1.5;}
+  .metric.sota{border-color:var(--accent-line);background:linear-gradient(180deg,var(--surface),var(--accent-soft));}
+  .tag-sota{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent-line);border-radius:5px;padding:1px 6px;margin-top:7px;letter-spacing:.5px;}
+
+  /* ---------- figure ---------- */
+  figure{margin:22px 0;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 16px 6px;}
+  figure img{width:100%;height:auto;border-radius:9px;display:block;background:#fff;border:1px solid var(--border-soft);}
+  figcaption{font-size:13.5px;color:var(--ink-soft);margin-top:11px;line-height:1.6;padding:0 2px;}
+  figcaption .fnum{font-weight:700;color:var(--ink);}
+  .fig-toggle{
+    display:inline-block;margin-top:9px;margin-bottom:6px;color:var(--accent);font-weight:600;
+    font-size:13.5px;cursor:pointer;user-select:none;
+  }
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{
+    max-height:0;overflow:hidden;opacity:0;
+    transition:max-height .45s ease,opacity .35s ease;
+  }
+  .figure-detail.active{max-height:1600px;opacity:1;}
+  .figure-detail .inner{
+    border-top:1px dashed var(--border);margin-top:4px;padding:14px 2px 8px;
+    font-size:14px;color:var(--ink-soft);line-height:1.65;
+  }
+  .figure-detail .inner ol{margin:8px 0;padding-left:20px;}
+  .figure-detail .inner li{margin:7px 0;}
+  .figure-detail .inner li b{color:var(--ink);}
+  .figure-detail .sum{margin-top:10px;font-style:normal;color:var(--ink);font-weight:600;}
+
+  /* ---------- details (non-image) ---------- */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:14px 0;padding:0 18px;}
+  details summary{
+    cursor:pointer;padding:15px 0;font-weight:600;font-size:15.5px;list-style:none;
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+  }
+  details summary::-webkit-details-marker{display:none;}
+  details summary .hint{font-size:13px;color:var(--ink-faint);font-weight:400;}
+  details summary::after{content:"▸";color:var(--accent);font-size:13px;transition:transform .25s;}
+  details[open] summary::after{transform:rotate(90deg);}
+  details .body{padding:2px 0 18px;font-size:14.5px;color:var(--ink-soft);line-height:1.7;border-top:1px solid var(--border-soft);margin-top:-2px;padding-top:14px;}
+  details .body b{color:var(--ink);}
+
+  /* ---------- callout ---------- */
+  .callout{border-left:3px solid var(--accent);background:var(--surface);border-radius:0 12px 12px 0;padding:16px 20px;margin:20px 0;font-size:15.5px;}
+  .callout .q{font-weight:600;color:var(--ink);}
+
+  /* ---------- pipeline (agentic loop) ---------- */
+  .loop{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:18px 0;}
+  .loop .node{
+    flex:1;min-width:150px;background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:14px 15px;text-align:center;
+  }
+  .loop .ar{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:20px;padding:0 6px;font-weight:700;}
+  .loop .node .ic{font-size:22px;}
+  .loop .node h4{margin:8px 0 5px;font-size:15px;font-weight:700;}
+  .loop .node p{margin:0;font-size:12.8px;color:var(--ink-soft);line-height:1.55;}
+
+  /* ---------- distribution mini bars ---------- */
+  .dist{margin:16px 0;}
+  .dist .row{display:flex;align-items:center;gap:12px;margin:7px 0;font-size:13.5px;}
+  .dist .row .lab{width:170px;color:var(--ink-soft);text-align:right;flex:none;}
+  .dist .row .bar{flex:1;background:var(--surface-3);border-radius:6px;height:16px;overflow:hidden;}
+  .dist .row .bar span{display:block;height:100%;background:var(--accent-line);border-radius:6px;}
+  .dist .row .val{width:48px;font-weight:700;color:var(--accent);font-family:var(--sans);flex:none;}
+
+  /* ---------- table ---------- */
+  .tbl{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+  .tbl th,.tbl td{border:1px solid var(--border);padding:10px 12px;text-align:left;vertical-align:top;}
+  .tbl th{background:var(--surface-2);font-weight:700;}
+  .tbl td b{color:var(--accent);}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--border);margin-top:20px;padding:34px 0 60px;color:var(--ink-soft);font-size:14px;}
+  footer a{font-weight:600;}
+  footer .ftitle{font-weight:700;color:var(--ink);font-size:15.5px;}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:30px;}
+    h1 .sub{font-size:18px;}
+    .grid.c2,.grid.c3,.grid.c4{grid-template-columns:1fr;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .loop .ar{transform:rotate(90deg);padding:4px 0;}
+    .loop .node{flex:1 1 100%;}
+    .dist .row .lab{width:120px;font-size:12px;}
+    .navlinks{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand">Seed1.8 <span class="dot">·</span> 模型卡解读</div>
+    <nav class="navlinks" id="nav">
+      <a href="#tldr">速览</a>
+      <a href="#what">定位</a>
+      <a href="#design">设计原则</a>
+      <a href="#capability">能力全景</a>
+      <a href="#agentic">智能体实战</a>
+      <a href="#evalsys">评测哲学</a>
+      <a href="#efficiency">效率</a>
+      <a href="#safety">安全</a>
+      <a href="#wrapup">结语</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">📄 官方模型卡 · 论文精读</span>
+    <h1>Seed1.8 模型卡：走向通用的真实世界智能体
+      <span class="sub">Towards Generalized Real-World Agency</span>
+    </h1>
+    <div class="meta">
+      <span class="chip">🏢 <b>ByteDance Seed</b></span>
+      <span class="chip">🗓️ 发表时间 <b>2026-03</b></span>
+      <span class="chip">📚 venue <b>arXiv preprint</b>（cs.AI）</span>
+      <span class="chip">🆔 arXiv <b>2603.20633</b></span>
+    </div>
+    <div class="source-row">
+      原文链接：<a href="https://arxiv.org/abs/2603.20633" target="_blank" rel="noopener">阅读原文（arXiv abs）↗</a>
+      ·
+      <a href="https://arxiv.org/html/2603.20633v3/" target="_blank" rel="noopener">arXiv HTML 全文 ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ TL;DR ============ -->
+  <section id="tldr">
+    <div class="tldr">
+      <h2>🚀 30 秒速览</h2>
+      <p class="big">Seed1.8 是字节跳动 Seed 团队的一款<b>基础大模型</b>，目标不是单轮预测，而是<b>「通用的真实世界智能体」（real-world agency）</b>：在保持顶尖语言与视觉能力的同时，把<b>多轮交互、工具调用、多步执行</b>统一进一个模型。它提供统一的智能体接口——<b>联网搜索、代码生成与执行、GUI 图形界面操作</b>，并支持<b>可配置的思考模式</b>与<b>面向延迟/成本</b>的多模态编码优化。评测不再只看学术基准，而是用贴近真实应用的工作流来衡量「分数能否对应真实价值」。</p>
+    </div>
+    <div class="metrics" style="margin-top:18px;">
+      <div class="metric sota">
+        <div class="num">93.2</div>
+        <div class="name">GAIA 智能体搜索</div>
+        <div class="note">最高分，远超 GPT-5-high（76.7）</div>
+        <span class="tag-sota">SOTA</span>
+      </div>
+      <div class="metric">
+        <div class="num">94.3<span class="arrow"> → 97.3</span></div>
+        <div class="name">AIME-25 数学</div>
+        <div class="note">加大思考预算后进一步提升</div>
+      </div>
+      <div class="metric sota">
+        <div class="num">62.0</div>
+        <div class="name">VLMsAreBiased 视觉</div>
+        <div class="note">SOTA，大幅超过 Gemini 3 Pro（50.6）</div>
+        <span class="tag-sota">SOTA</span>
+      </div>
+      <div class="metric">
+        <div class="num">三合一</div>
+        <div class="name">统一智能体接口</div>
+        <div class="note">搜索 / 代码执行 / GUI 操作于一体</div>
+      </div>
+    </div>
+    <p style="font-size:13.5px;color:var(--ink-faint);margin-top:6px;">注：本页是对官方模型卡的中文导读，核心数字均来自原文。模型卡定位于「能力与评测」披露，架构/训练细节披露有限。</p>
+  </section>
+
+  <!-- ============ WHAT ============ -->
+  <section id="what">
+    <div class="kicker">它要解决什么</div>
+    <h2>从「会回答」到「会做事」</h2>
+    <p class="lead">近年的大语言模型（LLM）和视觉语言模型（VLM）已经能在理解、推理、写代码、多模态感知上拿到很高的分数——它们提供了「读懂用户意图、产出结构化结果」的通用底座。</p>
+    <p>但现实里的很多任务，光会「单轮预测」是不够的：它们需要模型在<strong>交互式环境</strong>中工作——会用工具、能读懂环境反馈、能把一个目标拆成多步去执行。Seed1.8 正是为<strong>「通用真实世界智能体」</strong>而生：在保留核心 LLM / VLM 能力的同时，把它们延伸到<strong>多轮交互与任务执行</strong>。</p>
+    <div class="callout">
+      <span class="q">关键取舍：</span>Seed1.8 没有为每类任务单独搭一条「智能体流水线」，而是强调把<strong>感知、推理、行动</strong>统一在<strong>同一个模型</strong>里完成。这让能力可以互相迁移，而不是被切成一个个孤立的专用系统。
+    </div>
+  </section>
+
+  <!-- ============ DESIGN ============ -->
+  <section id="design">
+    <div class="kicker">本文做法</div>
+    <h2>四条设计原则</h2>
+    <p>模型卡把 Seed1.8 的设计目标拆成四点，它们层层递进：先有扎实底座，再把底座组织成统一的智能体行为，并兼顾部署时的成本与延迟，最后用贴近真实场景的方式来检验。</p>
+    <div class="grid c2">
+      <div class="card">
+        <div class="ic">🧱</div>
+        <h4>① 扎实的基础能力</h4>
+        <p>在推理、复杂指令遵循、知识覆盖、多模态理解等标准 LLM / VLM 基准上保持竞争力——这是一切下游智能体行为的地基。</p>
+      </div>
+      <div class="card">
+        <div class="ic">🔧</div>
+        <h4>② 统一的智能体交互与多步执行</h4>
+        <p>把<strong>搜索、代码生成与执行、GUI 操作</strong>收进一个统一接口；检索 / 代码执行 / 环境交互的中间结果会反过来指导下一步行动，形成迭代决策。</p>
+      </div>
+      <div class="card">
+        <div class="ic">⚡</div>
+        <h4>③ 面向延迟与成本的推理</h4>
+        <p>交互式部署对响应时间和算力敏感。Seed1.8 提供<strong>可配置思考模式</strong>来平衡「想多深」与「多快出」，并对图像 / 视频做<strong>优化视觉编码</strong>以减少 token 消耗。</p>
+      </div>
+      <div class="card">
+        <div class="ic">🎯</div>
+        <h4>④ 对齐真实使用的评测</h4>
+        <p>模型的开发与验证由「公开基准 + 源自高价值应用域的内部评测」共同驱动，覆盖基础能力、多模态理解与智能体工作流。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CAPABILITY ============ -->
+  <section id="capability">
+    <div class="kicker">能力全景</div>
+    <h2>三大能力维度 + 关键数字</h2>
+    <p>Seed1.8 的评测分三类来看：<strong>基础语言能力</strong>（推理 / 指令遵循 / 知识）、<strong>视觉能力</strong>（图像与视频理解）、<strong>智能体能力</strong>（多轮交互、工具使用、端到端任务完成）。下面用 metric card 拎出最具代表性的数字。</p>
+
+    <h3>① 基础语言能力</h3>
+    <div class="metrics">
+      <div class="metric">
+        <div class="num">94.3<span class="arrow"> → 97.3</span></div>
+        <div class="name">AIME-25</div>
+        <div class="note">数学竞赛；箭头为加大思考后</div>
+      </div>
+      <div class="metric">
+        <div class="num">89.7<span class="arrow"> → 96.7</span></div>
+        <div class="name">HMMT-25 (Feb)</div>
+        <div class="note">数学竞赛</div>
+      </div>
+      <div class="metric">
+        <div class="num">79.4<span class="arrow"> → 84.7</span></div>
+        <div class="name">LiveCodeBench (v6)</div>
+        <div class="note">代码竞赛</div>
+      </div>
+      <div class="metric">
+        <div class="num">第 2</div>
+        <div class="name">KOR-Bench / ARC-AGI-1</div>
+        <div class="note">通用推理，紧追第一</div>
+      </div>
+    </div>
+    <details>
+      <summary>展开：基础能力的更多结论 <span class="hint">推理 / 指令遵循 / 知识三块的定性结论</span></summary>
+      <div class="body">
+        <ul class="clean">
+          <li><b>推理</b>：分为代码、数学、STEM、通用推理四类。在编码与数学上与顶尖模型相当；在 BeyondAIME、AMO-Bench、IMO-AnswerBench 上取得<b>第二高分</b>；STEM 与通用推理与 GPT-5 High、Claude-Sonnet-4.5、Gemini-3-pro 同档。</li>
+          <li><b>复杂指令遵循</b>：在 Inverse IFEval 上<b>第二</b>，在 MARS-Bench、MultiChallenge、Collie-Hard、EIFBench 上保持竞争力——验证了对显式约束的精确可控性，这是智能体工作流的前提。</li>
+          <li><b>知识</b>：在 MMLU、MMLU-pro 上与领先 LLM 持平，长尾知识也有竞争力，为开放域应用建立用户信任。</li>
+        </ul>
+        <p style="margin:6px 0 0;color:var(--ink-faint);font-size:13px;">对比对象：GPT-5-high、Claude-Sonnet-4.5、Gemini-2.5-pro、Gemini-3-pro。</p>
+      </div>
+    </details>
+
+    <h3>② 视觉能力</h3>
+    <div class="metrics">
+      <div class="metric sota">
+        <div class="num">11.0</div>
+        <div class="name">ZeroBench (main)</div>
+        <div class="note">超过 Gemini 3 Pro（10.0）</div>
+        <span class="tag-sota">SOTA</span>
+      </div>
+      <div class="metric sota">
+        <div class="num">62.0</div>
+        <div class="name">VLMsAreBiased</div>
+        <div class="note">大幅超过 Gemini 3 Pro（50.6）</div>
+        <span class="tag-sota">SOTA</span>
+      </div>
+      <div class="metric sota">
+        <div class="num">第 1</div>
+        <div class="name">MUIRBench 多图理解</div>
+        <div class="note">超过 Gemini 3 Pro 与 GPT-5.1 High</div>
+        <span class="tag-sota">SOTA</span>
+      </div>
+      <div class="metric">
+        <div class="num">64.3<span class="arrow"> → 73.1</span></div>
+        <div class="name">ScreenSpot-Pro 定位</div>
+        <div class="note">GUI 接地；用 crop-box 工具后创新高</div>
+      </div>
+    </div>
+    <p style="font-size:14px;color:var(--ink-soft);">相比前代 Seed1.5-VL，视觉能力全面提升，整体逼近当前 SOTA 的 Gemini 3 Pro，并在多个挑战性基准上反超。在 MMMU、MathVista、MathVision 等 9 个基准里有 7 个拿到第二，紧追 Gemini 3 Pro。</p>
+
+    <h3>③ 智能体能力</h3>
+    <div class="metrics">
+      <div class="metric sota">
+        <div class="num">93.2</div>
+        <div class="name">GAIA</div>
+        <div class="note">最高分（GPT-5-high 76.7）</div>
+        <span class="tag-sota">SOTA</span>
+      </div>
+      <div class="metric">
+        <div class="num">78.5</div>
+        <div class="name">BrowseComp-zh</div>
+        <div class="note">中文深度搜索</div>
+      </div>
+      <div class="metric">
+        <div class="num">67.6</div>
+        <div class="name">BrowseComp-en</div>
+        <div class="note">英文深度搜索</div>
+      </div>
+      <div class="metric">
+        <div class="num">46.3</div>
+        <div class="name">MM-BrowseComp</div>
+        <div class="note">多模态搜索</div>
+      </div>
+    </div>
+    <details>
+      <summary>展开：智能体能力的更多结论 <span class="hint">搜索 / 编码与工具 / 写作三块</span></summary>
+      <div class="body">
+        <ul class="clean">
+          <li><b>智能体搜索</b>：GAIA 拿到 <b>93.2</b> 的最高分；专项搜索同样强（WideSearch 63.8、HLE 纯文本 40.9）。结合视觉能力，多模态搜索也有竞争力（MM-BrowseComp 46.3、HLE-VL 31.5）。</li>
+          <li><b>智能体编码 / 工具使用 / 写作</b>：在 AInstein-SWE-Bench、Terminal Bench 2.0 上<b>第二</b>；在 SWE-bench Verified、Multi-SWE-Bench、U-Artifacts、BFCL-v4、τ²-Bench 等与领先模型持平。</li>
+          <li>评测覆盖 GAIA、BrowseComp（中/英）、WideSearch、HLE、SWE-Bench 系列、Terminal Bench、BFCL-v4、τ²-Bench，以及 FinSearchComp、XpertBench、World Travel 等模拟专家级与日常工作流的内部基准。</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ AGENTIC IN ACTION ============ -->
+  <section id="agentic">
+    <div class="kicker">统一接口实战</div>
+    <h2>智能体回路：感知 → 推理 → 行动 → 反馈</h2>
+    <p>Seed1.8 的核心不是「多了个搜索插件」，而是把<strong>感知、推理、行动</strong>放进同一个循环里反复迭代：每一步从环境（网页、屏幕、代码执行结果、视频帧）拿到反馈，再决定下一步动作。</p>
+    <div class="loop">
+      <div class="node"><div class="ic">👁️</div><h4>感知</h4><p>读截图 / 文档 / 图表 / 视频帧，理解当前环境状态</p></div>
+      <div class="ar">→</div>
+      <div class="node"><div class="ic">🧠</div><h4>推理</h4><p>结合中间结果做规划，决定该搜索、执行还是操作界面</p></div>
+      <div class="ar">→</div>
+      <div class="node"><div class="ic">🖱️</div><h4>行动</h4><p>调用搜索 / 运行代码 / 点击拖拽 GUI 完成具体一步</p></div>
+      <div class="ar">→</div>
+      <div class="node"><div class="ic">🔁</div><h4>反馈</h4><p>用环境返回更新认知，进入下一轮迭代决策</p></div>
+    </div>
+
+    <h3>案例一：跨 App 的 GUI 购物智能体</h3>
+    <p>任务（原文图 6）：<em>「我有一个 40×40 的裸缸想养黑鱼，请帮我在各购物 App 里挑性价比最高的过滤器、防跳网和加热棒。」</em>模型在 Taobao / JD / Pinduoduo 之间跨应用比价，逐步点击、澄清需求、拖拽筛选，最终汇总成报告。</p>
+    <figure>
+      <img src="assets/gui_agent_demo.png" alt="Seed1.8 GUI 购物智能体多步操作示例" />
+      <figcaption>
+        <span class="fnum">图 6</span>：GUI 智能体在三个购物 App 中完成多步比价任务，每一步都给出「动作 + 思考」。
+        <br /><span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      </figcaption>
+      <div class="figure-detail"><div class="inner">
+        <ol>
+          <li><b>Step 3 · 点击屏幕（Taobao）</b>：模型停在淘宝首页，思考「先要在搜索框输入精准关键词」，于是执行 <code>click [0.35 0.118]</code> 激活搜索框——展示了它会基于截图坐标进行<b>界面定位与操作</b>。</li>
+          <li><b>Step 38 · 澄清需求（JD.com）</b>：在京东发现没有现成的 40×40 尺寸，模型主动<b>向用户澄清</b>（clarify「Would you like to…」）：是定制还是换产品，体现多轮交互中的主动求证。</li>
+          <li><b>Step 82 · 拖拽筛选（Pinduoduo）</b>：在拼多多搜索结果页执行 <b>swipe / 拖拽</b> 滚动，定位防跳网与加热棒，准备跨平台比较性价比。</li>
+          <li><b>Step 122 · 任务完成</b>：模型输出结构化报告——把三家平台的防跳网、过滤器、加热棒价格逐项列出（如拼多多组合约 ¥44.6），并给出最具性价比的推荐组合。</li>
+          <li>每张卡片顶部是<b>步骤编号 + 动作类型</b>，中间是<b>当前屏幕截图</b>，下方紫色是<b>具体动作</b>、灰色是<b>模型的思考链</b>——清晰呈现「感知→推理→行动」的回路。</li>
+        </ol>
+        <p class="sum">总结：一个统一模型即可跨多个真实 App 完成长程（122 步）购物决策，而非依赖专用脚本。</p>
+      </div></div>
+    </figure>
+
+    <h3>案例二：实时流式视频理解与交互</h3>
+    <p>Seed1.8 还能在<strong>持续视频流</strong>中边看边答：以 1FPS 接收画面，结合时间戳与用户指令，给出即时回应甚至主动提醒。</p>
+    <figure>
+      <img src="assets/streaming_video_demo.png" alt="Seed1.8 实时流式视频理解与交互示例" />
+      <figcaption>
+        <span class="fnum">图 9</span>：实时流式视频交互——做果蔬汁场景下，模型随画面推进给出建议与安全提醒。
+        <br /><span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      </figcaption>
+      <div class="figure-detail"><div class="inner">
+        <ol>
+          <li><b>顶部蓝色气泡</b>：用户在不同时刻发出的指令，如「我们来做点果蔬汁吧」「我接下来该做什么」「我要用榨汁机，旋钮怎么拧」。</li>
+          <li><b>中间帧序列</b>：视频流以 <b>1FPS</b> 持续输入，每帧标注<b>时间戳</b>（00:02 → 01:34），模型对食材、砧板、榨汁机等场景做实时感知。</li>
+          <li><b>底部绿色气泡</b>：模型逐帧的回应——既有即时回答（「现在有柿子、苹果、柿饼…」「把旋钮拧到右边，1 到 10 档」），也有<b>主动安全提醒</b>（「切番茄小心」「记得去掉柿子皮，否则果汁会…」）。</li>
+          <li><b>带「🤔」的气泡</b>表示模型在该时刻保持观察、暂不打断，体现对交互节奏的把握。</li>
+        </ol>
+        <p class="sum">总结：模型不是离线看完整段视频，而是在<b>连续时间轴</b>上边感知边交互，贴近真实助手场景。</p>
+      </div></div>
+    </figure>
+  </section>
+
+  <!-- ============ EVAL SYSTEM ============ -->
+  <section id="evalsys">
+    <div class="kicker">评测哲学</div>
+    <h2>从「刷基准分」到「对应真实价值」</h2>
+    <p>模型卡专门用一节阐述 Seed 团队的评测理念：进入<strong>「AI 的下半场」</strong>，<strong>基准分数必须成为真实价值的可靠代理</strong>。为此他们构建了一套连接「模型能力」与「真实效用」的评测体系，遵循三条原则。</p>
+    <div class="grid c3">
+      <div class="card">
+        <div class="ic">🙋</div>
+        <h4>优先用户体验</h4>
+        <p>先分析真实用户需求——以 ChatGPT 的使用分布为代表样本，发现「找特定信息、编辑/润色文本、辅导教学」是前三大用途，据此设计覆盖热门用例的评测。</p>
+      </div>
+      <div class="card">
+        <div class="ic">🌍</div>
+        <h4>转向真实场景</h4>
+        <p>从合成、孤立的任务转向贴近应用的场景。设计高经济价值、贴近现实复杂度的任务，归入「Economically Valuable Fields」，让分数提升直接对应真实价值。</p>
+      </div>
+      <div class="card">
+        <div class="ic">🧗</div>
+        <h4>推动智能上限</h4>
+        <p>在重视可用性的同时不放弃通用智能：额外设计覆盖高级推理、数学、编码的新基准，衡量模型峰值能力，确保「重视可用」不牺牲核心智能。</p>
+      </div>
+    </div>
+
+    <h3>真实用户都在用 AI 做什么？</h3>
+    <p>评测体系的起点是真实使用分布。以 ChatGPT 为代表样本，前几大用途如下（原文图 11 数据）：</p>
+    <div class="dist">
+      <div class="row"><span class="lab">找特定信息</span><span class="bar"><span style="width:91%"></span></span><span class="val">18.3%</span></div>
+      <div class="row"><span class="lab">编辑/润色文本</span><span class="bar"><span style="width:53%"></span></span><span class="val">10.6%</span></div>
+      <div class="row"><span class="lab">辅导/教学</span><span class="bar"><span style="width:51%"></span></span><span class="val">10.2%</span></div>
+      <div class="row"><span class="lab">操作建议（How-To）</span><span class="bar"><span style="width:42%"></span></span><span class="val">8.5%</span></div>
+      <div class="row"><span class="lab">个人写作/沟通</span><span class="bar"><span style="width:40%"></span></span><span class="val">8.0%</span></div>
+      <div class="row"><span class="lab">多媒体</span><span class="bar"><span style="width:30%"></span></span><span class="val">6.0%</span></div>
+      <div class="row"><span class="lab">健康/健身/自我护理</span><span class="bar"><span style="width:28%"></span></span><span class="val">5.7%</span></div>
+      <div class="row"><span class="lab">翻译</span><span class="bar"><span style="width:22%"></span></span><span class="val">4.5%</span></div>
+      <div class="row"><span class="lab">编程</span><span class="bar"><span style="width:21%"></span></span><span class="val">4.2%</span></div>
+    </div>
+
+    <h3>把真实用例映射到评测类别</h3>
+    <p>有了使用分布，Seed 团队把左侧的<strong>真实用例</strong>映射到右侧的<strong>评测类别</strong>，确保基准覆盖到大众最常见的需求——这正是下面这张映射图要表达的。</p>
+    <figure>
+      <img src="assets/mapping.png" alt="真实用例到评测类别的映射图" />
+      <figcaption>
+        <span class="fnum">图 12</span>：真实用户用例（左）到 Seed 评测类别（右）的映射关系。
+        <br /><span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      </figcaption>
+      <div class="figure-detail"><div class="inner">
+        <ol>
+          <li><b>左侧节点 = 真实用例</b>：找特定信息、编辑/润色文本、辅导教学、操作建议、个人写作、多媒体、健康、翻译、编程等，对应上面的使用分布。</li>
+          <li><b>右侧节点 = 评测类别</b>：通用智能体搜索、工具使用、智能体编码、经济价值领域、推理与知识、复杂指令遵循、写作、VLM 任务、内部基准。</li>
+          <li><b>中间流带 = 对应关系</b>：每条带子表示某个真实用例由哪些评测类别来覆盖；带子越宽，说明该用例对应的评测权重越大（如「找特定信息」主要流向「通用智能体搜索」与「推理与知识」）。</li>
+          <li>一个用例常常<b>同时连向多个评测类别</b>（如「编程」既连「智能体编码」也连「工具使用」），反映真实任务往往是多种能力的组合。</li>
+        </ol>
+        <p class="sum">总结：这张图让「评测体系」可追溯到「真实需求」——基准不是凭空选的，而是从用户真在做的事反推出来的。</p>
+      </div></div>
+    </figure>
+  </section>
+
+  <!-- ============ EFFICIENCY ============ -->
+  <section id="efficiency">
+    <div class="kicker">效率</div>
+    <h2>更聪明地花算力：思考模式、token、并行</h2>
+    <p>交互式部署对延迟和成本敏感，所以 Seed1.8 把<strong>效率</strong>当成一等公民：用可配置思考模式控制「想多深」，用优化视觉编码压缩多模态 token，并支持加大测试时计算来冲击更难的题。</p>
+    <div class="metrics">
+      <div class="metric">
+        <div class="num">65.4</div>
+        <div class="name">MMMU-Pro（NoThink）</div>
+        <div class="note">不开思考即超 Seed1.6（61.0）、GPT-5.1（43.5）</div>
+      </div>
+      <div class="metric">
+        <div class="num">81.3</div>
+        <div class="name">MathVision 峰值</div>
+        <div class="note">较 Seed1.6 提升 9.5%，超 GPT-5.1（77.2）</div>
+      </div>
+      <div class="metric">
+        <div class="num">32K<span class="arrow"> &lt; 80K</span></div>
+        <div class="name">长视频 token 预算</div>
+        <div class="note">用 32K 即超 Seed1.5-VL 的 80K</div>
+      </div>
+      <div class="metric">
+        <div class="num">45→55→67.6</div>
+        <div class="name">BrowseComp 步数扩展</div>
+        <div class="note">低/中/无限 推理强度，150 步达 67.6</div>
+      </div>
+    </div>
+    <details>
+      <summary>展开：效率背后的三个机制 <span class="hint">思考模式 / token 效率 / 并行思考与步数扩展</span></summary>
+      <div class="body">
+        <ul class="clean">
+          <li><b>思考效率</b>：在相同 token 用量下，Seed1.8 相比上一代 Seed1.6 稳定提升，并表现出更陡的扩展曲线——能更有效地把额外的「测试时计算」转化为更高性能上限，而 Seed1.6 往往更早触顶。在 EMMA 上，它的「No-Think」成绩（50.1）已超过上一代「High」算力档（48.1）。</li>
+          <li><b>多模态 token 效率</b>：尤其在吃 token 的视频理解上，Seed1.8 用 <b>32K</b> 预算就能在 CGBench、LVBench、VideoMME 上全面超过用 <b>80K</b> 的 Seed1.5-VL。</li>
+          <li><b>加大测试时计算 + 并行思考</b>：开启并行推理路径后，在数学、竞赛编码、STEM、视觉推理上进一步提升（如 AIME-25 94.3→97.3、HLE 21.4→25.6）。</li>
+          <li><b>智能体执行效率</b>：长程任务中用更少步数聚焦目标动作；在 BrowseComp 上低/中强度用不到 50 步即达 45.0 / 55.0，无限模式下随步数增加稳步升至 150 步 67.6。</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ SAFETY ============ -->
+  <section id="safety">
+    <div class="kicker">安全与对齐</div>
+    <h2>拒答有害、合规负责</h2>
+    <p>安全是 Seed1.8 的首要事项。团队设有严格准则，确保模型<strong>拒绝有害内容</strong>并遵守伦理与法律。在公开基准上，Seed1.8 在 <strong>AIR-Bench</strong> 上大幅提升，同时在 <strong>XSTest</strong>（避免过度拒答）上保持高水准。</p>
+    <p>此外还构建了内部安全基准，覆盖<strong>公序良俗、色情、违法行为、版权、医疗安全、身份</strong>等多类风险内容，模型在这些领域持续拒绝不安全输入并给出负责任回应。</p>
+    <details>
+      <summary>展开：风险拒答示例（原文表 9） <span class="hint">面对不同风险提示，模型如何拒绝并正向引导</span></summary>
+      <div class="body">
+        <table class="tbl">
+          <tr><th>风险类别</th><th>模型的回应方式（摘要）</th></tr>
+          <tr><td>公序良俗</td><td>面对针对特定地域人群的攻击性辱骂请求，识别为地域歧视与恶意攻击，<b>拒绝</b>并引导尊重不同地域文化与人群。</td></tr>
+          <tr><td>色情</td><td>识别出露骨性内容，<b>拒绝</b>回应并引导维护健康的交流氛围。</td></tr>
+          <tr><td>违法行为</td><td>对「TNT 制备」类请求，指出其为受控爆炸物、私自制备违法，仅给出极简原理并强调<b>法律警告与安全风险</b>，劝阻尝试。</td></tr>
+          <tr><td>版权</td><td>对「给我某电影的网盘链接」请求，指出传播未授权资源侵犯版权，<b>拒绝</b>并引导使用正版平台。</td></tr>
+          <tr><td>医疗安全</td><td>对用药类问题谨慎作答，强调遵医嘱与安全边界。</td></tr>
+        </table>
+        <p style="margin:8px 0 0;color:var(--ink-faint);font-size:13px;">共同模式：先识别风险类型 → 明确拒绝越界请求 → 给出合法、正向的替代引导。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ WRAPUP ============ -->
+  <section id="wrapup">
+    <div class="kicker">结语与局限</div>
+    <h2>一句话总结</h2>
+    <p class="lead">Seed1.8 把<strong>强基础能力 + 多模态感知 + 工具使用 + 多步执行</strong>统一进一个模型，并在「贴近真实世界、面向部署约束」的评测下交出了具竞争力的成绩——它被定位为支撑真实交互场景下进一步研究与开发的基础模型。</p>
+    <div class="grid c2">
+      <div class="card">
+        <div class="ic">✅</div>
+        <h4>亮点</h4>
+        <p>统一智能体接口（搜索 / 代码 / GUI）；GAIA 等智能体搜索 SOTA；视觉多项 SOTA；可配置思考模式与高 token 效率；评测体系可追溯到真实用户需求。</p>
+      </div>
+      <div class="card">
+        <div class="ic">⚠️</div>
+        <h4>局限与披露范围</h4>
+        <p>作为<strong>模型卡</strong>，本文聚焦能力与评测，<strong>架构 / 训练细节披露有限</strong>；多处对比数字来自各家技术报告，跨模型横评需注意口径；部分内部基准（如健康）因隐私未在报告中给出结果。团队表示会用下游反馈迭代后续版本。</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="ftitle">Seed1.8 Model Card: Towards Generalized Real-World Agency</div>
+    <p>作者：ByteDance Seed · 发表：2026-03 · arXiv preprint（cs.AI）· arXiv ID 2603.20633</p>
+    <p>
+      阅读原文：<a href="https://arxiv.org/abs/2603.20633" target="_blank" rel="noopener">arXiv abs ↗</a>
+      ·
+      <a href="https://arxiv.org/html/2603.20633v3/" target="_blank" rel="noopener">arXiv HTML 全文 ↗</a>
+    </p>
+    <p style="color:var(--ink-faint);font-size:13px;margin-top:14px;">本页为面向中文读者的教学可视化导读，图片来自 arXiv 原文（图 6 / 图 9 / 图 12），核心数字均与原文对齐；如与原文有出入请以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+  function toggleFigDetail(el){
+    var fig = el.closest("figure");
+    if(!fig) return;
+    var detail = fig.querySelector(".figure-detail");
+    if(!detail) return;
+    var open = detail.classList.toggle("active");
+    el.textContent = open ? "收起说明 ▾" : "展开说明 ▸";
+  }
+
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll("#nav a"));
+    var map = {};
+    links.forEach(function(a){
+      var id = a.getAttribute("href").slice(1);
+      var sec = document.getElementById(id);
+      if(sec) map[id] = a;
+    });
+    var sections = Object.keys(map).map(function(id){ return document.getElementById(id); });
+    if(!("IntersectionObserver" in window) || sections.length === 0) return;
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){ a.classList.remove("active"); });
+          var a = map[e.target.id];
+          if(a) a.classList.add("active");
+        }
+      });
+    }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+    sections.forEach(function(s){ obs.observe(s); });
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Qwen-Image-2.0 技术报告 · 图解精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg-soft:#f7efde;
+    --card:#fffdf7;
+    --card-2:#f4ead7;
+    --line:#e8dcc7;
+    --line-strong:#d9c9ab;
+    --ink:#2b2620;
+    --ink-2:#5a5246;
+    --ink-3:#857a68;
+    --accent:#b5663d;
+    --accent-soft:#e7d3c2;
+    --accent-ink:#8a4b2a;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(60,45,25,.05), 0 6px 18px rgba(90,70,40,.06);
+    --maxw:880px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    line-height:1.78;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid var(--accent-soft);}
+  a:hover{border-bottom-color:var(--accent);}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+  /* ---- top nav ---- */
+  .nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(251,246,234,.86);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:var(--maxw);margin:0 auto;padding:11px 22px;
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  }
+  .nav-brand{font-weight:700;font-size:15px;letter-spacing:.2px;}
+  .nav-links{display:flex;gap:15px;flex-wrap:wrap;margin-left:auto;}
+  .nav-links a{font-size:13.5px;color:var(--ink-2);border:none;}
+  .nav-links a:hover{color:var(--accent-ink);}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+  section{padding:30px 0;border-top:1px solid var(--line);}
+  section:first-of-type{border-top:none;}
+
+  h1{font-size:33px;line-height:1.28;margin:0 0 14px;font-weight:700;letter-spacing:-.01em;}
+  h2{font-size:23px;margin:6px 0 14px;font-weight:700;letter-spacing:-.005em;}
+  h3{font-size:18px;margin:26px 0 8px;font-weight:600;}
+  p{margin:13px 0;}
+  strong{font-weight:600;color:var(--ink);}
+  .lead{font-size:18.5px;color:var(--ink-2);}
+  .kicker{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+
+  /* ---- header ---- */
+  header.hero{padding:40px 0 26px;border-top:none;}
+  .meta-row{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 4px;}
+  .pill{
+    font-size:12.5px;padding:4px 11px;border-radius:999px;
+    background:var(--card-2);color:var(--ink-2);border:1px solid var(--line-strong);
+  }
+  .pill.accent{background:var(--accent-soft);color:var(--accent-ink);border-color:#dcc0aa;}
+  .source-line{margin-top:14px;font-size:14.5px;color:var(--ink-3);}
+
+  /* ---- figure ---- */
+  figure{margin:22px 0;}
+  .fig-frame{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;box-shadow:var(--shadow);
+  }
+  .fig-frame img{width:100%;height:auto;display:block;border-radius:8px;}
+  .fig-frame.plain img{background:#fff;}
+  .fig-toggle{
+    margin-top:12px;width:100%;text-align:left;cursor:pointer;
+    background:var(--card-2);border:1px solid var(--line-strong);border-radius:10px;
+    padding:11px 14px;color:var(--ink);font:inherit;font-size:14.5px;
+    display:flex;gap:10px;align-items:flex-start;transition:background .18s;
+  }
+  .fig-toggle:hover{background:#efe3cd;}
+  .fig-toggle .tw{flex:1;}
+  .fig-toggle .cap-sum{color:var(--ink-3);font-size:13px;display:block;margin-top:3px;font-weight:400;}
+  .fig-toggle .chev{color:var(--accent);transition:transform .22s;margin-top:2px;}
+  .fig-toggle.active .chev{transform:rotate(90deg);}
+  .figure-detail{
+    max-height:0;overflow:hidden;transition:max-height .4s ease;
+    background:var(--card);border-radius:0 0 10px 10px;
+  }
+  .figure-detail .inner{padding:6px 16px 16px;font-size:14.5px;color:var(--ink-2);}
+  .figure-detail ul{margin:8px 0 0;padding-left:20px;}
+  .figure-detail li{margin:7px 0;}
+  .figure-detail li b{color:var(--ink);}
+  figcaption.cn{font-size:13px;color:var(--ink-3);text-align:center;margin-top:9px;}
+
+  /* ---- lists ---- */
+  ul.clean{margin:13px 0;padding-left:22px;}
+  ul.clean li{margin:8px 0;}
+
+  /* ---- metric cards ---- */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0;}
+  .metric{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 16px 14px;box-shadow:var(--shadow);
+  }
+  .metric .num{font-size:27px;font-weight:700;color:var(--accent-ink);line-height:1.1;letter-spacing:-.01em;}
+  .metric .num small{font-size:15px;color:var(--ink-2);font-weight:600;}
+  .metric .lab{font-size:13px;color:var(--ink-3);margin-top:6px;}
+
+  /* ---- expandable cards ---- */
+  .cards{display:grid;gap:14px;margin:18px 0;}
+  .xcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+  .xcard .head{
+    cursor:pointer;padding:15px 17px;display:flex;gap:12px;align-items:flex-start;transition:background .18s;
+  }
+  .xcard .head:hover{background:var(--bg-soft);}
+  .xcard .head .tt{flex:1;}
+  .xcard .head .tt b{font-size:16px;}
+  .xcard .head .tt .sum{display:block;font-size:13px;color:var(--ink-3);margin-top:3px;}
+  .xcard .head .chev{color:var(--accent);transition:transform .22s;margin-top:3px;}
+  .xcard.active .head .chev{transform:rotate(90deg);}
+  .xbody{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .xbody .inner{padding:2px 17px 17px;font-size:15px;color:var(--ink-2);}
+  .xbody .inner p{margin:10px 0;}
+
+  /* ---- reward grid ---- */
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:13px;margin:18px 0;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;box-shadow:var(--shadow);}
+  .tile .th{font-weight:600;font-size:15px;margin-bottom:4px;}
+  .tile .tag{font-size:11.5px;font-weight:600;color:var(--accent);letter-spacing:.06em;}
+  .tile p{margin:5px 0 0;font-size:13.5px;color:var(--ink-2);line-height:1.6;}
+
+  /* ---- step animation ---- */
+  .stepbox{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin:20px 0;}
+  .step-track{display:flex;gap:6px;margin-bottom:6px;}
+  .step-dot{
+    flex:1;text-align:center;padding:9px 4px;border-radius:9px;border:1px solid var(--line);
+    background:var(--bg-soft);font-size:12px;color:var(--ink-3);transition:all .25s;cursor:pointer;font-weight:500;
+  }
+  .step-dot .s-no{display:block;font-size:11px;color:var(--ink-3);}
+  .step-dot .s-nm{display:block;font-weight:600;color:var(--ink-2);margin-top:1px;font-size:12.5px;}
+  .step-dot.done{background:var(--accent-soft);border-color:#dcc0aa;}
+  .step-dot.cur{background:var(--accent);border-color:var(--accent);}
+  .step-dot.cur .s-no,.step-dot.cur .s-nm{color:#fff;}
+  .res-meter{margin:16px 0 10px;}
+  .res-meter .rlab{font-size:13px;color:var(--ink-3);display:flex;justify-content:space-between;margin-bottom:5px;}
+  .res-meter .rlab b{color:var(--accent-ink);font-family:"JetBrains Mono",monospace;}
+  .res-bar{height:9px;background:var(--card-2);border-radius:999px;overflow:hidden;}
+  .res-fill{height:100%;width:12%;background:var(--accent);border-radius:999px;transition:width .45s ease;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0;}
+  .chip{font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--bg-soft);border:1px dashed var(--line-strong);color:var(--ink-3);opacity:.45;transition:all .3s;}
+  .chip.on{opacity:1;background:var(--accent-soft);border-style:solid;border-color:#dcc0aa;color:var(--accent-ink);}
+  .step-detail{background:var(--bg-soft);border:1px solid var(--line);border-radius:11px;padding:14px 16px;min-height:96px;}
+  .step-detail h4{margin:0 0 6px;font-size:15.5px;color:var(--ink);}
+  .step-detail p{margin:0;font-size:14px;color:var(--ink-2);}
+  .step-ctrl{display:flex;gap:10px;margin-top:14px;align-items:center;}
+  .btn{
+    font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:9px;padding:9px 16px;
+    border:1px solid var(--line-strong);background:var(--card-2);color:var(--ink);transition:all .16s;
+  }
+  .btn:hover{background:#efe3cd;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:#a25934;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .step-count{font-size:13px;color:var(--ink-3);margin-left:auto;}
+
+  /* ---- flywheel svg ---- */
+  .svgwrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:20px 0;}
+  .svgwrap svg{width:100%;height:auto;display:block;}
+
+  /* ---- quote ---- */
+  blockquote{
+    margin:20px 0;padding:14px 18px;background:var(--card);border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;color:var(--ink-2);font-size:15.5px;
+  }
+  blockquote .src{display:block;margin-top:6px;font-size:13px;color:var(--ink-3);}
+
+  /* ---- details (long examples) ---- */
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:16px 0;padding:0;box-shadow:var(--shadow);}
+  details summary{
+    cursor:pointer;padding:13px 16px;font-size:14.5px;font-weight:600;color:var(--ink);list-style:none;
+    display:flex;gap:9px;align-items:center;
+  }
+  details summary::-webkit-details-marker{display:none;}
+  details summary .mk{color:var(--accent);transition:transform .2s;}
+  details[open] summary .mk{transform:rotate(90deg);}
+  details summary .sm{font-weight:400;color:var(--ink-3);font-size:13px;}
+  details .dbody{padding:0 16px 15px;font-size:14px;color:var(--ink-2);}
+  details .dbody .prompt{background:var(--bg-soft);border:1px solid var(--line);border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--ink-2);max-height:340px;overflow:auto;}
+
+  /* ---- before/after ---- */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .ba figure{margin:0;}
+  .ba .tagline{font-size:12.5px;color:var(--ink-3);text-align:center;margin-top:7px;}
+  .ba .tagline b{color:var(--accent-ink);}
+
+  .note{font-size:13.5px;color:var(--ink-3);font-style:normal;}
+  hr.soft{border:none;border-top:1px dashed var(--line-strong);margin:24px 0;}
+
+  footer{border-top:1px solid var(--line);padding:30px 0 50px;color:var(--ink-3);font-size:14px;}
+  footer a{color:var(--accent-ink);}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:27px;}
+    h2{font-size:21px;}
+    .ba{grid-template-columns:1fr;}
+    .step-track{flex-wrap:wrap;}
+    .step-dot{min-width:30%;}
+    .nav-links{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Qwen-Image-2.0 · 图解精读</span>
+    <div class="nav-links">
+      <a href="#tldr">一句话</a>
+      <a href="#problem">问题</a>
+      <a href="#arch">架构</a>
+      <a href="#components">三大组件</a>
+      <a href="#data">数据</a>
+      <a href="#training">训练</a>
+      <a href="#tricks">巧思</a>
+      <a href="#results">结论</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <div class="kicker">图像生成基础模型 · 技术报告精读</div>
+    <h1>Qwen-Image-2.0：把「生成」与「编辑」装进同一个模型</h1>
+    <p class="lead">一个统一的图像生成基础模型，用 <strong>Qwen3-VL 做条件编码器</strong> + <strong>高压缩 VAE</strong> + <strong>多模态扩散 Transformer（MMDiT）</strong>，让高保真生成和精确编辑共用同一套架构与训练范式——不再切换 pipeline。</p>
+    <div class="meta-row">
+      <span class="pill accent">arXiv preprint</span>
+      <span class="pill">发表时间 2026.05（博客发布 2026.02）</span>
+      <span class="pill">Qwen Team（阿里通义）</span>
+      <span class="pill">arXiv:2605.10730</span>
+    </div>
+    <p class="source-line">阅读原文：<a href="https://arxiv.org/abs/2605.10730" target="_blank" rel="noopener">arXiv:2605.10730 摘要页</a> · <a href="https://arxiv.org/pdf/2605.10730" target="_blank" rel="noopener">PDF</a> · <a href="https://qwen.ai/blog?id=qwen-image-2.0" target="_blank" rel="noopener">官方博客</a></p>
+  </header>
+
+  <!-- ============ TL;DR ============ -->
+  <section id="tldr">
+    <h2>30 秒看懂</h2>
+    <p>当前的图像生成模型大多「偏科」：要么擅长写实出图，要么擅长文字渲染；要么会文生图，要么会图像编辑——很难在<strong>同一个模型</strong>里同时做好，往往要靠多条 pipeline 拼接，且会牺牲质量。Qwen-Image-2.0 的目标就是<strong>用一个统一架构同时拿下生成与编辑</strong>，并且在「超长文字渲染、多语言排版、2K 写实、复杂指令遵循、推理效率」这些真实创作痛点上都往前推一步。</p>
+
+    <figure>
+      <div class="fig-frame">
+        <img src="assets/hero.jpg" alt="Qwen-Image-2.0 写实场景展示图，店招上渲染了模型的核心卖点文字" loading="lazy" />
+        <button class="fig-toggle" type="button" aria-expanded="false">
+          <span class="chev">▸</span>
+          <span class="tw">图：一张图里同时展示「写实质感 + 文字渲染」——这本身就是 Qwen-Image-2.0 直出的样例
+            <span class="cap-sum">点开看：这张照片把模型的几个核心能力全「写」进了画面里</span>
+          </span>
+        </button>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>写实质感</b>：人物、街景、雪人、花卉的材质与光影自然连贯，体现「原生 2K 写实」的能力定位。</li>
+            <li><b>文字即内容</b>：店招「文字渲染 / 真实质感」、玻璃上「细腻刻画·人物·自然·建筑」、黑板「Qwen-Image-2.0 正式发布」、气球「生图编辑二合一」——这些中文都是模型<b>准确渲染</b>出来的，不是后期贴图。</li>
+            <li><b>把卖点画进场景</b>：图中「2k resolution」「更小模型·更快速度」等字样，正对应论文强调的高分辨率与更轻量、更快的设计取向。</li>
+            <li><b>一图说明定位</b>：写实 + 文字 + 多介质（招牌/玻璃/黑板/气球）混排同时成立，正是「统一生成」要解决的难点。</li>
+          </ul>
+          <p class="note">来源：官方博客首图（Qwen Team 用 Qwen-Image-2.0 生成）。</p>
+        </div></div>
+      </div>
+    </figure>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">1K<small> tokens</small></div><div class="lab">超长文字指令，直出 PPT / 海报 / 信息图</div></div>
+      <div class="metric"><div class="num">2K<small> 原生</small></div><div class="lab">原生 2048 分辨率写实生成</div></div>
+      <div class="metric"><div class="num">1<small> 个模型</small></div><div class="lab">文生图 + 图像编辑，无需切 pipeline</div></div>
+      <div class="metric"><div class="num">4<small> NFE</small></div><div class="lab">蒸馏后 4 步逼近 40 步教师质量</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 问题 ============ -->
+  <section id="problem">
+    <h2>要解决什么问题：能力强，但都是「单项冠军」</h2>
+    <p>图像生成这两年进步很快：从早期的潜空间扩散（latent diffusion）到扩散 Transformer（DiT），再到用视觉语言大模型当条件编码器，文字渲染和指令编辑都越来越能用。但真正落到创作流程里，仍有几个反复出现的瓶颈：</p>
+    <ul class="clean">
+      <li><strong>超长文字会崩</strong>：字一多就出现笔画扭曲、漏字、版面塌陷，做不了文字密集的幻灯片 / 信息图 / 海报。</li>
+      <li><strong>多语言排版弱</strong>：训练偏中英文，其他文字的字形、间距、阅读顺序难保证。</li>
+      <li><strong>高分辨率写实退化</strong>：到 2K 及以上常出现重复纹理、光照不连贯、细节丢失。</li>
+      <li><strong>复杂指令易翻车</strong>：多实体、空间约束、组合逻辑的提示词，容易漏概念或产生幻觉内容。</li>
+      <li><strong>算力效率是硬约束</strong>：架构开销大，难在低延迟、资源受限场景部署。</li>
+    </ul>
+    <p>更根本的难题是<strong>统一</strong>：现有系统通常只在某一条轴上强——要么写实、要么文字；要么生成、要么编辑——很少能在一个高效架构里同时做好。Qwen-Image-2.0 正是冲着这个「合二为一」去的。</p>
+
+    <figure>
+      <div class="fig-frame">
+        <img src="assets/timeline.jpg" alt="Qwen-Image 发展历程幻灯片：生图支线与编辑支线最终合并为 Qwen-Image-2.0" loading="lazy" />
+        <button class="fig-toggle" type="button" aria-expanded="false">
+          <span class="chev">▸</span>
+          <span class="tw">图：从「两条支线」到「合二为一」——Qwen-Image 系列的演进，最终汇入 Qwen-Image-2.0
+            <span class="cap-sum">点开看：这张时间轴本身也是模型生成的，顺带秀了一把「画中画 + 文字渲染」</span>
+          </span>
+        </button>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>生图支线（上）</b>：8 月 Qwen-Image 主打文字渲染的「准」，12 月 Qwen-Image-2512 强化细节质感与真实感。</li>
+            <li><b>编辑支线（下）</b>：从单图编辑 → 多图编辑（9 月 2509）→ 图层拆分（Layered）→ 一致性提升（2511），逐步打磨功能性与一致性。</li>
+            <li><b>合流节点</b>：右端的 Qwen-Image-2.0（2026.02）把两条支线合并，<b>同一个模型在文生图与图生图两个任务上同时取得理想结果</b>。</li>
+            <li><b>「画中画」</b>：时间轴上每个节点里都嵌了小图（戴帽子的狗、眼睛特写、合影…），而且做到了节点内子图的一致性——这正是制作专业 PPT 需要的能力。</li>
+          </ul>
+          <p class="note">来源：官方博客（该幻灯片由 Qwen-Image-2.0 按一段长提示词直接生成）。</p>
+        </div></div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ============ 架构 ============ -->
+  <section id="arch">
+    <h2>整体架构：三件套 + 一条统一的多模态序列</h2>
+    <p>Qwen-Image-2.0 由三个紧耦合的核心部件组成，协同完成可控、高保真、又高效的生成与编辑：</p>
+    <ul class="clean">
+      <li><strong>① MLLM 条件编码器</strong>：用<strong>冻结的 Qwen3-VL</strong>读入用户输入（系统提示 + 文本 + 可选输入图），抽取语义/多模态表征。</li>
+      <li><strong>② VAE</strong>：把图像编码成紧凑 latent，再把生成的 latent 解码回图像空间。</li>
+      <li><strong>③ MMDiT</strong>：在 latent 空间里、以多模态表征为条件，执行核心的去噪过程（堆叠 ×L 层）。</li>
+    </ul>
+    <p>关键在于：文本 token 与图像 token 被拼成<strong>一条统一序列</strong>，喂进同一个 Transformer 主干联合建模。这套结构天然支持「无输入图（文生图）」和「有输入图 / 多图（编辑）」两种模式，无需切换 pipeline。下面是论文给出的真实架构图。</p>
+
+    <figure>
+      <div class="fig-frame plain">
+        <img src="assets/architecture.png" alt="Qwen-Image-2.0 架构图：Qwen3-VL 与 VAE 编码器提供输入表征，MMDiT 联合去噪" loading="lazy" />
+        <button class="fig-toggle" type="button" aria-expanded="false">
+          <span class="chev">▸</span>
+          <span class="tw">图 8（原文）：Qwen-Image-2.0 架构总览——冻结的 Qwen3-VL + VAE 编码器提供输入表征，MMDiT 做联合去噪
+            <span class="cap-sum">点开看：逐个模块拆解每个方块、每条箭头、那个红色「✗」分别代表什么</span>
+          </span>
+        </button>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>顶部「Qwen-Image-2.0 Block ×L」+ Projection</b>：这就是 MMDiT 主干，文本与图像 token 在同一个 Transformer 里联合处理，堆叠 L 层后经 Projection 输出预测。</li>
+            <li><b>左下 Qwen3-VL（❄ 冻结）</b>：条件编码器，读入「系统提示 / 输入图 / 用户提示」，输出语义表征。<b>红色「✗」</b>表示视觉分支被「掐断」——条件图像不直接用 VLM 的视觉特征，而是改用 VAE 的 latent（更利于像素级重建）。</li>
+            <li><b>VAE Encoder（❄ 冻结）→ Projection</b>：把<b>输入图</b>编码成 latent，再投影成图像条件 token（图中紫/绿色小方块），与文本 token（灰色）拼在一起作为条件。</li>
+            <li><b>右侧分支（目标图）</b>：训练时把<b>目标图</b>经 VAE 编码后，按时间步 t 加噪（⊕ Noise），再投影成「带噪目标 token」——这正是扩散去噪要还原的对象。</li>
+            <li><b>统一序列与位置编码</b>：灰=文本、紫/绿=条件图、右段=目标 token，三者拼成一条序列；用 <b>MSRoPE</b> 在文本与图像 token 上统一计算位置。箭头表示数据流向。</li>
+          </ul>
+          <p>一句话总结：左边喂「条件」（文字 + 参考图），右边喂「带噪的目标」，中间 MMDiT 在 latent 空间联合去噪——T2I 时没有输入图、TI2I 时带上输入图，<b>同一结构两种用法</b>。</p>
+        </div></div>
+      </div>
+      <figcaption class="cn">原文 Figure 8，自论文 PDF 第 10 页裁切。RMSNorm 用于 QK-Norm，其余归一化用 LayerNorm；MLP 用 SwiGLU。</figcaption>
+    </figure>
+
+    <h3>跟着数据走一遍：从提示词到 2K 成图</h3>
+    <p>架构图信息密度高，下面用「下一步」把一次生成/编辑的数据流走一遍——看清条件 token 与目标 token 是怎么汇成一条序列、再被一步步去噪还原的。</p>
+
+    <div class="stepbox" id="flow">
+      <div class="step-track" id="flowTrack"></div>
+      <div class="step-detail" id="flowDetail">
+        <h4>第 1 步 · 接收输入</h4>
+        <p>用户给出系统提示 + 文本提示，编辑任务再加上一张或多张输入图。</p>
+      </div>
+      <div class="step-ctrl">
+        <button class="btn" id="flowPrev" type="button">上一步</button>
+        <button class="btn primary" id="flowNext" type="button">下一步 ▸</button>
+        <button class="btn" id="flowReset" type="button">重置</button>
+        <span class="step-count" id="flowCount">1 / 5</span>
+      </div>
+    </div>
+    <p class="note">说明：这是对「文生图 / 图像编辑」共用数据流的教学化拆解；T2I 任务没有输入图，TI2I 任务带上输入图（或多图），其余流程一致。</p>
+  </section>
+
+  <!-- ============ 三大组件 ============ -->
+  <section id="components">
+    <h2>三大组件细讲</h2>
+    <p>架构层面的功夫，主要花在三处：让 VAE「压得狠又重建准」、让 MMDiT「文图联合训练时稳」、再加一个把用户口语提示「写细」的 Prompt Enhancer。</p>
+
+    <div class="cards">
+      <div class="xcard">
+        <div class="head">
+          <span class="chev">▸</span>
+          <span class="tt"><b>① 高压缩 VAE：16× 压缩下的「三难权衡」</b>
+            <span class="sum">f16c64 配置 + 残差自编码 + 语义对齐损失，在 16× 压缩比下做到重建 SOTA</span>
+          </span>
+        </div>
+        <div class="xbody"><div class="inner">
+          <p>高压缩 VAE 是原生高分辨率生成的关键——把图像投到更小的 latent，能大幅降低扩散训练成本。开源 VAE 多用 8× 压缩，本文用<strong>更激进的 16×</strong>来进一步加速 DiT 训练。</p>
+          <p>但高压缩绕不开一个<strong>三难权衡</strong>：压缩比、重建保真、可扩散性（latent 是否好被扩散建模）三者互相拉扯——压得太狠丢信息、为保信息加通道又会让 latent 难以扩散。</p>
+          <p>论文的解法：<strong>残差自编码架构</strong>（非参数化的 shortcut 连接，更好保留细粒度空间细节）+ 把 latent 通道增到 <strong>64</strong>（f16c64 与标准 f8c16 同样的「总通道瓶颈」，但压缩比更高）；再引入<strong>语义对齐损失</strong>（参考 VA-VAE）提升可扩散性。两个关键观察：① 早期施加强语义对齐至关重要、后期再逐步放松，能兼顾重建与扩散；② 大规模 VAE 训练里<strong>对抗损失基本冗余</strong>，干脆去掉以提升稳定性。还专门用文档/PPT/海报等文字密集语料训练，强化小字与密集文本的重建。</p>
+          <div class="metrics" style="margin-top:14px;">
+            <div class="metric"><div class="num">16×</div><div class="lab">空间压缩比（f16c64）</div></div>
+            <div class="metric"><div class="num">64<small> ch</small></div><div class="lab">latent 通道数</div></div>
+            <div class="metric"><div class="num">33.42<small> / 0.9225</small></div><div class="lab">ImageNet-256 PSNR / SSIM（16× 内 SOTA）</div></div>
+            <div class="metric"><div class="num">32.81<small> / 0.9795</small></div><div class="lab">文字密集集 PSNR / SSIM</div></div>
+          </div>
+          <p class="note">对比项里很多 8× VAE 才能达到的重建质量，本文在 16× 压缩、且编码/解码参数更小（79M / 259M）的情况下追平甚至超过（原文 Table 1）。</p>
+        </div></div>
+      </div>
+
+      <div class="xcard">
+        <div class="head">
+          <span class="chev">▸</span>
+          <span class="tt"><b>② MMDiT：让文图联合训练更稳的几处改动</b>
+            <span class="sum">MSRoPE 跨模态位置编码 + RMSNorm QK-Norm + 无偏置乘法调制 + SwiGLU</span>
+          </span>
+        </div>
+        <div class="xbody"><div class="inner">
+          <p>给定视觉输入 x 与文本输入 y，Qwen3-VL 先各自编码成表征；其中视觉表征被替换为 VAE 抽取的 latent，再与文本表征<strong>拼接</strong>成统一序列喂入 Qwen-Image-2.0 Block。几处稳定训练的关键设计：</p>
+          <ul class="clean">
+            <li><strong>MSRoPE</strong>：在注意力里对文本与图像 token 做统一的位置计算（沿用 Qwen-Image）。</li>
+            <li><strong>RMSNorm 做 QK-Norm</strong>：仅 QK 归一化用 RMSNorm，其余归一化层用 LayerNorm。</li>
+            <li><strong>无偏置的纯乘法调制</strong>：把常见的仿射调制 <span class="mono">h' = αh + β</span> 简化成 <span class="mono">h' = αh</span>，去掉偏置项。</li>
+            <li><strong>SwiGLU 激活</strong>：在 MLP 里用 <span class="mono">h = Φ₁(x) ⊗ σ(Φ₂(x))</span>，缓解文图联合训练时激活值过大、神经元过早饱和的问题。</li>
+          </ul>
+        </div></div>
+      </div>
+
+      <div class="xcard">
+        <div class="head">
+          <span class="chev">▸</span>
+          <span class="tt"><b>③ Prompt Enhancer：把口语提示「逆向」写细</b>
+            <span class="sum">用「降级再逆推」造数据 + CoT，初始化自 Qwen3.5-9B，SFT 后接 RL</span>
+          </span>
+        </div>
+        <div class="xbody"><div class="inner">
+          <p>复杂创作（信息图、海报、分镜、数据可视化）很吃提示词对版面、关系、视觉层级的描述，但真实用户的提示往往很简略。Prompt Enhancer（PE）就是一个<strong>改写模块</strong>，把粗糙 query 改写成结构化、细节丰富的提示。</p>
+          <p><strong>数据怎么造（反向工程）</strong>：拿一段精细标注 P<sub>fine</sub>，先用 LLM 归类（General / Portrait / Text / Complex Text），再按策略池<strong>随机「降级」</strong>成口语化、信息缺失的短提示 P<sub>short</sub>。由于每步降级都在删信息，其逆过程天然构成一条<strong>提示增强的思维链（CoT）</strong>，得到三元组 (P<sub>short</sub>, CoT, P<sub>fine</sub>) 作训练监督。编辑任务因输入图已有丰富上下文，改用 MLLM 把长标注<strong>概括</strong>成简洁编辑指令，不做随机降级。</p>
+          <p><strong>怎么训</strong>：PE 初始化自 <strong>Qwen3.5-9B</strong>，先 SFT（学会稳定改写）、再 GRPO 的 RL（用「MLLM 视觉一致性 + MLLM 美学 + 规则文本约束」的奖励，把改写后的提示和下游成图质量对齐）。</p>
+          <blockquote>用户只说「帮我生成一个手绘风格的杭州两日禅意人文之旅双语海报」，PE 借助世界知识，自动扩写出含版式、配色、行程节点、中英对照的长提示——而这种复杂描述，恰是 Qwen-Image-2.0 最擅长渲染的。
+          <span class="src">— 官方博客示例（已节选意译）</span></blockquote>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 数据 ============ -->
+  <section id="data">
+    <h2>数据基建：细粒度标注 + 六阶段管线 + 数据飞轮</h2>
+    <p>模型能力很大程度由数据决定。Qwen-Image-2.0 的数据基建分三块：<strong>怎么描述（标注）</strong>、<strong>怎么筛和喂（多阶段管线）</strong>、<strong>怎么持续变强（数据飞轮）</strong>。</p>
+
+    <h3>① 四类细粒度标注</h3>
+    <div class="grid2">
+      <div class="tile"><div class="th">General captions</div><p>面向任意分辨率/复杂度的通用图，覆盖主体、场景、空间关系，乃至画面里的文字及其语义；支持多语言、变长描述。</p></div>
+      <div class="tile"><div class="th">Text captions</div><p>面向文字/符号密集的素材（PPT、漫画、海报、教材），重点准确抽取密集文本、版面结构、视觉符号及其语义关系。</p></div>
+      <div class="tile"><div class="th">Knowledge captions</div><p>以「条件」形式注入图像相关的背景知识/上下文线索，让模型把图像语义与世界知识联系起来。</p></div>
+      <div class="tile"><div class="th">Structured captions</div><p>面向关系图、流程图、示意图等元素多、关系复杂的图，显式建模实体-属性-关系，学层级与拓扑依赖。</p></div>
+    </div>
+
+    <h3>② 六阶段过滤 + 训练管线（点「下一步」走一遍）</h3>
+    <p>训练数据经过<strong>六个顺序阶段</strong>逐步精炼：分辨率从 256P 一路爬到 2048P，数据类型从纯文生图逐步加入编辑数据、合成数据与高分辨率精选，过滤阈值越来越严。</p>
+
+    <div class="stepbox" id="pipe">
+      <div class="step-track" id="pipeTrack"></div>
+      <div class="res-meter">
+        <div class="rlab"><span>训练分辨率</span><b id="pipeRes">256P</b></div>
+        <div class="res-bar"><div class="res-fill" id="pipeFill"></div></div>
+      </div>
+      <div class="chips" id="pipeChips">
+        <span class="chip" data-i="0">T2I 数据</span>
+        <span class="chip" data-i="1">编辑数据 TI2I</span>
+        <span class="chip" data-i="2">合成数据</span>
+        <span class="chip" data-i="3">高分辨率精选</span>
+        <span class="chip" data-i="4">2048P 数据</span>
+        <span class="chip" data-i="5">SFT 精筛</span>
+      </div>
+      <div class="step-detail" id="pipeDetail"></div>
+      <div class="step-ctrl">
+        <button class="btn" id="pipePrev" type="button">上一步</button>
+        <button class="btn primary" id="pipeNext" type="button">下一步 ▸</button>
+        <button class="btn" id="pipeReset" type="button">重置</button>
+        <span class="step-count" id="pipeCount">1 / 6</span>
+      </div>
+    </div>
+
+    <h3>③ 闭环数据飞轮：让失败案例自动「对症下药」</h3>
+    <p>为了持续迭代，论文设计了一套高度自动化的<strong>数据飞轮</strong>：收集失败信号 → 按「错误归因」分流到不同优化轨道 → 更新模型 → 再回到评估，形成自我强化的闭环。人工只在「必要的数据复核与过滤」处介入。</p>
+
+    <div class="svgwrap" aria-label="数据飞轮示意图">
+      <svg viewBox="0 0 760 300" role="img">
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#b5663d"></path>
+          </marker>
+        </defs>
+        <!-- stage 1 -->
+        <rect x="20" y="20" width="720" height="64" rx="12" fill="#f4ead7" stroke="#d9c9ab"></rect>
+        <text x="36" y="42" font-size="13" font-weight="700" fill="#8a4b2a">阶段 1 · 多源信号采集</text>
+        <text x="36" y="64" font-size="12.5" fill="#5a5246">标准化评估　·　坏例挖掘（bad-case mining）　·　线上 / 自评的用户反馈</text>
+        <!-- stage 2 with 3 tracks -->
+        <rect x="20" y="100" width="720" height="110" rx="12" fill="#fffdf7" stroke="#e8dcc7"></rect>
+        <text x="36" y="122" font-size="13" font-weight="700" fill="#8a4b2a">阶段 2 · 按「错误归因」分流到三条轨道</text>
+        <rect x="36" y="134" width="220" height="64" rx="9" fill="#f7efde" stroke="#d9c9ab"></rect>
+        <text x="46" y="154" font-size="12.5" font-weight="700" fill="#2b2620">RL 轨道</text>
+        <text x="46" y="174" font-size="11.5" fill="#5a5246">对齐/策略问题 →</text>
+        <text x="46" y="190" font-size="11.5" fill="#5a5246">自动调整奖励策略</text>
+        <rect x="270" y="134" width="220" height="64" rx="9" fill="#f7efde" stroke="#d9c9ab"></rect>
+        <text x="280" y="154" font-size="12.5" font-weight="700" fill="#2b2620">预训练轨道</text>
+        <text x="280" y="174" font-size="11.5" fill="#5a5246">知识缺失 → 向量检索</text>
+        <text x="280" y="190" font-size="11.5" fill="#5a5246">数据增强 + 人工复核</text>
+        <rect x="504" y="134" width="220" height="64" rx="9" fill="#f7efde" stroke="#d9c9ab"></rect>
+        <text x="514" y="154" font-size="12.5" font-weight="700" fill="#2b2620">提示工程轨道</text>
+        <text x="514" y="174" font-size="11.5" fill="#5a5246">能力够但指令理解差 →</text>
+        <text x="514" y="190" font-size="11.5" fill="#5a5246">优化 Prompt Enhancer</text>
+        <!-- stage 3 -->
+        <rect x="20" y="226" width="720" height="52" rx="12" fill="#b5663d"></rect>
+        <text x="36" y="248" font-size="13" font-weight="700" fill="#fff">阶段 3 · 模型更新 &amp; 闭环</text>
+        <text x="36" y="268" font-size="12" fill="#fbeede">聚合策略/新数据/参数更新 → 重新训练 → 新 checkpoint 回到阶段 1 评估部署</text>
+        <!-- arrows -->
+        <line x1="380" y1="84" x2="380" y2="98" stroke="#b5663d" stroke-width="2" marker-end="url(#ah)"></line>
+        <line x1="380" y1="210" x2="380" y2="224" stroke="#b5663d" stroke-width="2" marker-end="url(#ah)"></line>
+      </svg>
+    </div>
+    <p class="note">对应原文 Figure 7（误差归因驱动的闭环数据飞轮）。本图按原文结构重绘，配色统一为本页暖色系。</p>
+  </section>
+
+  <!-- ============ 训练 ============ -->
+  <section id="training">
+    <h2>训练配方：多阶段 + RLHF + 少步蒸馏</h2>
+    <p>训练分三段渐进推进，分辨率、过滤标准、数据配比都随阶段调整，让模型从「学基本语义」过渡到「抠细粒度细节」。</p>
+
+    <div class="grid2">
+      <div class="tile"><div class="tag">PRE-TRAINING</div><div class="th">预训练 · 700K 步</div><p>低分辨率（256/512）提升吞吐，学通用视觉表征；T2I:TI2I = 9:1；学习率 1×10⁻⁴。</p></div>
+      <div class="tile"><div class="tag">CONTINUAL</div><div class="th">继续预训练 · 250K 步</div><p>分辨率升到 512–2048 抠细节；配比调到 7:3 强化编辑；学习率降到 2×10⁻⁵。</p></div>
+      <div class="tile"><div class="tag">SFT</div><div class="th">监督微调 · 10K 步</div><p>聚焦美学质量，严格过滤 + 人工精选；学习率再降到 1×10⁻⁵，保住世界知识。</p></div>
+    </div>
+    <p class="note">优化器均为 Adam，weight decay 0.001，梯度裁剪 1.0，无条件 dropout 0.1（原文 Table 2）。分辨率课程从低到高逐步放大，既稳优化又提升高分辨率连贯性。</p>
+
+    <h3>RLHF：五个任务专属奖励模型 + GRPO</h3>
+    <p>为对齐人类偏好，论文用多维奖励 + 样本高效的优化算法精修扩散模型。奖励按任务拆成五个：</p>
+    <div class="grid2">
+      <div class="tile"><div class="tag">T2I</div><div class="th">美学奖励</div><p>构图平衡、真实光照、纹理保真、整体艺术协调。</p></div>
+      <div class="tile"><div class="tag">T2I</div><div class="th">图文对齐奖励</div><p>图与提示的语义一致，惩罚遗漏/曲解/违背用户要求。</p></div>
+      <div class="tile"><div class="tag">T2I</div><div class="th">人像奖励</div><p>人体结构合理、面部比例与身份细节、皮肤毛发质感。</p></div>
+      <div class="tile"><div class="tag">TI2I</div><div class="th">指令遵循奖励</div><p>编辑操作是否被准确执行（替换、风格迁移等）。</p></div>
+      <div class="tile"><div class="tag">TI2I</div><div class="th">视觉一致性奖励</div><p>保护未编辑区域的身份与结构，几何/拓扑/语义一致。</p></div>
+    </div>
+    <p>所有奖励校准到可比尺度，权重在训练中<strong>动态调整</strong>，避免对单一维度过优化。优化用改造过的 <strong>GRPO</strong> 扩散 RL 框架，并采用一个<strong>混合 CFG 策略</strong>：rollout 采样时用 CFG 生成高质量候选（让奖励更可靠），但策略优化目标里<strong>剔除无条件分支</strong>，从而省去优化无条件模型的开销。最终得到 <span class="mono">Qwen-Image-2.0-RL</span>。</p>
+
+    <h3>少步蒸馏：DMD 把 40 步压到 4 步</h3>
+    <p>为提升效率，论文用<strong>分布匹配蒸馏（DMD）</strong>把多步教师蒸成少步学生——以 <span class="mono">Qwen-Image-2.0-Base</span> 为 40 步教师，蒸出仅 <strong>4 NFE</strong> 的 <span class="mono">Qwen-Image-2.0-Distillation</span> 学生。DMD 用一个「假分数模型」估计学生分布的条件分数，对齐教师的真实分数，沿采样轨迹压缩步数。</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">40 → 4<small> 步</small></div><div class="lab">教师 40 步 → 学生 4 NFE</div></div>
+      <div class="metric"><div class="num">≈</div><div class="lab">人像/风景/自然场景下视觉质量与语义对齐基本持平</div></div>
+      <div class="metric"><div class="num">DMD</div><div class="lab">分布匹配蒸馏（稳定、跨架构通用）</div></div>
+    </div>
+    <p class="note">原文 Figure 11 显示 4-NFE 学生与 40 步教师在多类提示下质量相当，但推理成本大幅下降。</p>
+  </section>
+
+  <!-- ============ 巧思 ============ -->
+  <section id="tricks">
+    <h2>几个值得记住的设计取舍</h2>
+    <ul class="clean">
+      <li><strong>调制去掉偏置</strong>：把 <span class="mono">αh+β</span> 简化成纯乘法 <span class="mono">αh</span>，结构更简洁。</li>
+      <li><strong>大规模 VAE 不要对抗损失</strong>：发现对抗目标基本冗余，去掉反而更稳——与近期发现一致。</li>
+      <li><strong>语义对齐「先紧后松」</strong>：早期强约束建立可扩散 latent，后期放松以兼顾重建保真。</li>
+      <li><strong>RL 里的混合 CFG</strong>：只在 rollout 用 CFG 拿好样本，策略优化时丢掉无条件分支省算力。</li>
+      <li><strong>「画中画」式渲染</strong>：能在生成的 PPT 里再画出带一致性的子图，专业排版能力的体现。</li>
+      <li><strong>视觉特征「让位」给 VAE latent</strong>：条件图像不用 VLM 视觉特征，而用 VAE latent（架构图里那个红色 ✗），更利于像素级保真。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 结论 ============ -->
+  <section id="results">
+    <h2>实验结论（一句话版）</h2>
+    <p>在以真实用户偏好为基础的 <strong>LMArena</strong>（2026-04-22 访问）盲测上，Qwen-Image-2.0 表现强劲：</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">#9<small> 全球</small></div><div class="lab">T2I 榜单全球第 9</div></div>
+      <div class="metric"><div class="num">#1<small> 中文</small></div><div class="lab">中文模型第一</div></div>
+      <div class="metric"><div class="num">1168<small> ELO</small></div><div class="lab">进入第一梯队，超过 Nano Banana</div></div>
+      <div class="metric"><div class="num">SOTA</div><div class="lab">VAE 重建：16× 压缩下 PSNR/SSIM 领先</div></div>
+    </div>
+    <p>大量人类评测显示，相比此前 Qwen-Image 系列，2.0 在<strong>生成与编辑</strong>两侧的整体视觉质量、编辑能力与实用性上都有明显进步。下面用一个编辑样例感受一下「编辑 + 复杂中文渲染 + 身份保持」三件事如何同时成立。</p>
+
+    <div class="ba">
+      <figure>
+        <div class="fig-frame plain">
+          <img src="assets/edit_before.jpg" alt="编辑前：中国水墨画，荷塘、小舟、楼阁、月亮" loading="lazy" />
+        </div>
+        <div class="tagline"><b>编辑前</b> · 原始水墨画</div>
+      </figure>
+      <figure>
+        <div class="fig-frame plain">
+          <img src="assets/edit_after.jpg" alt="编辑后：同一幅画的留白处竖排渲染了一首古典中文诗词" loading="lazy" />
+        </div>
+        <div class="tagline"><b>编辑后</b> · 留白处竖排题诗</div>
+      </figure>
+    </div>
+    <figure style="margin-top:6px;">
+      <div class="fig-frame" style="padding:0;background:transparent;border:none;box-shadow:none;">
+        <button class="fig-toggle" type="button" aria-expanded="false">
+          <span class="chev">▸</span>
+          <span class="tw">图：图像编辑任务——在不破坏原画的前提下，把整首古典诗词竖排题写进天空留白
+            <span class="cap-sum">点开看：这组前/后对比同时考验了「文字渲染」与「身份/内容保持」</span>
+          </span>
+        </button>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>编辑指令本质</b>：保留原画（荷塘、小舟、楼阁、明月）的构图与笔触，只在<b>负空间</b>新增题诗。</li>
+            <li><b>复杂中文渲染</b>：整首词<b>竖排、自右向左</b>布局，字形与画面国画风格协调，字号与留白比例得当。</li>
+            <li><b>身份/内容保持</b>：新增文字不覆盖主体，画面其余部分几乎不变——对应 RLHF 里的「视觉一致性奖励」。</li>
+            <li><b>为何难</b>：基线模型常把字渲染过小、打乱诗句顺序、或破坏画面平衡；同时做到「准 + 美 + 不破坏原图」才是难点。</li>
+          </ul>
+          <p class="note">来源：官方博客图像编辑示例（对应论文 §5.3 复杂中文渲染与身份保持，Figure 16–17 同主题）。</p>
+        </div></div>
+      </div>
+    </figure>
+
+    <hr class="soft" />
+    <p>作者把模型在文字渲染上的特点概括为「准、多、美、真、齐」——准确无错字、支持超长内容、排版美观、与写实画面自然融合、表格/日历类对齐工整。下面收起几段「夸张到离谱」的长提示词样例，想感受指令复杂度可以展开看。</p>
+
+    <details>
+      <summary><span class="mk">▸</span> 样例 1：一条 1K-token 级的信息图提示词<span class="sm">（A/B 测试结果汇报，三栏版面 + 大量中英对照数字）</span></summary>
+      <div class="dbody">
+        <p>下面这段提示词描述了一张三栏信息图（测试概览 / 统计分析 / 业务影响），含收入提升、ROI、显著性检验、对照组 vs 实验组数据表等——模型需要把这些密集文本与图表元素都准确渲染并排好版。</p>
+        <div class="prompt">这张图片展示了一份名为「AB Testing Results Report A/B 测试结果汇报」的信息图表，内容分为左、中、右三栏。左侧栏「Test Overview 测试概览」：收入提升 +¥237,000/月（基于 LTV 模型）、ROI 1:4.8（测试投入 ¥49,400）、可扩展性评分 4.7/5、下一步 Q3 全量上线 + 监控反向指标。中间栏「Statistical Analysis 统计分析」：测试目标→变体设计（A vs B）→流量分配 50%/50%→持续 28 天 n=42,500/组→核心指标追踪（CTR/CVR/时长）→显著性检验 p&lt;0.05, 95% CI, Cohen's d=0.32→结果解读→落地建议 Go Live。右侧栏「Business Impact 业务影响」三行两列数据表：转化率 4.2%→5.1%（+21.4%, p=0.003）、点击率 12.7%→14.9%（+17.3%）、跳出率 58.1%→52.6%（-5.5pp, p=0.012）。（原文更长，此处为压缩转写）</div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="mk">▸</span> 样例 2：用「真实质感 + 文字」压测的玻璃白板照<span class="sm">（多介质文字：玻璃 / 衣服 / 杂志，斜度与材质各异）</span></summary>
+      <div class="dbody">
+        <p>这段英文提示词要求在一张「长城金色时刻的办公室玻璃白板」照片里，渲染玻璃上的手写要点、T 恤 logo、杂志封面等多种介质上的文字，同时保证写实光学质感。</p>
+        <div class="prompt">A wide-angle smartphone photo of a glass whiteboard in a bright office overlooking the Great Wall at golden hour. A woman in a white tee with a "Qwen-Image" logo writes on the board. Left side handwritten: "Qwen-Image-2.0 Core Innovations: Complex Typography Engine (1K-token), Extreme Photorealism (native 2K), Unified Omni Model, ... Efficiency". Right side vertical notes: "Why It Matters: one model for photoreal + text; generation + editing without pipeline switching; understanding + generation unified". Bottom-right schematic: [Qwen3-VL Encoder] → [Diffusion Decoder] → pixels (2048×2048). Realistic optical reflections.（原文更长，此处为压缩转写）</div>
+        <p class="note">注：图中出现的具体参数文字属于「提示词内容/生成画面」，非官方架构参数；架构事实以论文正文与上方架构图为准。</p>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <p><strong>Qwen-Image-2.0 Technical Report</strong> · Qwen Team（阿里通义） · arXiv preprint，发表 2026.05（博客发布 2026.02.10）。</p>
+    <p>原文与资料：<a href="https://arxiv.org/abs/2605.10730" target="_blank" rel="noopener">arXiv:2605.10730</a> · <a href="https://arxiv.org/pdf/2605.10730" target="_blank" rel="noopener">PDF</a> · <a href="https://qwen.ai/blog?id=qwen-image-2.0" target="_blank" rel="noopener">官方博客</a> · <a href="https://github.com/QwenLM/Qwen-Image" target="_blank" rel="noopener">GitHub</a></p>
+    <p class="note">本页为教学性图解：架构图（Figure 8）裁自论文 PDF；展示样例与时间轴图来自官方博客（均为模型生成）；数据飞轮为按原文结构重绘的示意图。核心数字与方法均对齐原文，如有出入以原文为准。</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // ---- generic toggle: figure captions ----
+  document.querySelectorAll(".fig-toggle").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var detail = btn.parentElement.querySelector(".figure-detail");
+      var open = btn.classList.toggle("active");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      detail.style.maxHeight = open ? (detail.scrollHeight + 40) + "px" : "0px";
+    });
+  });
+
+  // ---- expandable cards (bind only on head) ----
+  document.querySelectorAll(".xcard .head").forEach(function(head){
+    head.addEventListener("click", function(){
+      var card = head.parentElement;
+      var body = card.querySelector(".xbody");
+      var open = card.classList.toggle("active");
+      body.style.maxHeight = open ? (body.scrollHeight + 60) + "px" : "0px";
+    });
+  });
+
+  // ---- flow step animation ----
+  var flowSteps = [
+    {nm:"接收输入", h:"第 1 步 · 接收输入", p:"用户给出系统提示 + 文本提示；编辑任务再附上一张或多张输入图（T2I 任务则没有输入图）。"},
+    {nm:"分别编码", h:"第 2 步 · 分别编码", p:"冻结的 Qwen3-VL 抽取文本/语义表征；输入图与目标图都经冻结的 VAE 编码成紧凑 latent。条件图像的视觉表征改用 VAE latent（架构图里的红色 ✗）。"},
+    {nm:"拼成序列", h:"第 3 步 · 拼成统一序列", p:"文本 token（条件）+ 输入图 latent（条件）+ 带噪的目标 token，拼接成一条多模态序列；用 MSRoPE 统一编码文本与图像 token 的位置。"},
+    {nm:"联合去噪", h:"第 4 步 · MMDiT 联合去噪", p:"序列进入堆叠 ×L 的 Qwen-Image-2.0 Block，文图 token 在共享主干里联合注意力，按时间步逐步把目标 latent 去噪还原。"},
+    {nm:"解码出图", h:"第 5 步 · VAE 解码出图", p:"去噪得到的干净 latent 经 VAE 解码回像素空间，得到最终的高分辨率（可达原生 2K）成图。"}
+  ];
+  buildStepper({
+    track:"flowTrack", detail:"flowDetail", count:"flowCount",
+    prev:"flowPrev", next:"flowNext", reset:"flowReset",
+    steps:flowSteps, total:flowSteps.length, hasChips:false
+  });
+
+  // ---- data pipeline stepper ----
+  var pipeSteps = [
+    {nm:"256P T2I", res:"256P", fill:18, chips:[0], h:"阶段 1 · 256P 文生图预训练",
+     p:"原始 T2I 数据过 8 道顺序过滤器（破损 / 分辨率 / 去重 / NSFW / 旋转 / 熵 / CLIP 对齐 / 文本长度），建立干净底座。"},
+    {nm:"256P +编辑", res:"256P", fill:30, chips:[0,1], h:"阶段 2 · 256P 文生图 + 编辑预训练",
+     p:"引入编辑数据（TI2I），与过滤后的 T2I 合并，在统一低分辨率下同时学「文生图」和「文本引导编辑」。"},
+    {nm:"512P +合成", res:"512P", fill:48, chips:[0,1,2], h:"阶段 3 · 512P 预训练",
+     p:"分辨率升到 512P，并加入合成数据丰富分布、提升多样性（T2I + 编辑 + 合成）。"},
+    {nm:"512/1024P", res:"512–1024P", fill:66, chips:[0,1,2,3], h:"阶段 4 · 512P/1024P 混合预训练",
+     p:"扩到 512/1024P 混合；为高分辨率再加分辨率 / 图像质量 / 美学 / 压缩质量过滤，筛出适合高清学习的样本。"},
+    {nm:"多分辨率", res:"512–2048P", fill:85, chips:[0,1,2,3,4], h:"阶段 5 · 多分辨率预训练",
+     p:"扩到 512/1024/2048P 多分辨率；新增 2048P 专用分辨率过滤，强化高分辨率生成与编辑。"},
+    {nm:"SFT 精筛", res:"512–2048P", fill:100, chips:[0,1,2,3,4,5], h:"阶段 6 · 监督微调（SFT）",
+     p:"用「分布过滤」复用前面算子但收紧阈值，去掉低质/失衡样本，再人工精选，对齐高质量人类偏好得到最终模型。"}
+  ];
+  buildStepper({
+    track:"pipeTrack", detail:"pipeDetail", count:"pipeCount",
+    prev:"pipePrev", next:"pipeNext", reset:"pipeReset",
+    steps:pipeSteps, total:pipeSteps.length, hasChips:true,
+    fillEl:"pipeFill", resEl:"pipeRes", chipsWrap:"pipeChips"
+  });
+
+  function buildStepper(cfg){
+    var idx = 0;
+    var track = document.getElementById(cfg.track);
+    var detail = document.getElementById(cfg.detail);
+    var countEl = document.getElementById(cfg.count);
+    var prevB = document.getElementById(cfg.prev);
+    var nextB = document.getElementById(cfg.next);
+    var resetB = document.getElementById(cfg.reset);
+    var fillEl = cfg.fillEl ? document.getElementById(cfg.fillEl) : null;
+    var resEl = cfg.resEl ? document.getElementById(cfg.resEl) : null;
+    var chipsWrap = cfg.chipsWrap ? document.getElementById(cfg.chipsWrap) : null;
+
+    // build dots
+    cfg.steps.forEach(function(s, i){
+      var d = document.createElement("div");
+      d.className = "step-dot";
+      d.innerHTML = "<span class='s-no'>" + (i+1) + "</span><span class='s-nm'>" + s.nm + "</span>";
+      d.addEventListener("click", function(){ idx = i; render(); });
+      track.appendChild(d);
+    });
+
+    function render(){
+      var dots = track.querySelectorAll(".step-dot");
+      dots.forEach(function(d, i){
+        d.classList.remove("cur","done");
+        if(i < idx) d.classList.add("done");
+        if(i === idx) d.classList.add("cur");
+      });
+      var s = cfg.steps[idx];
+      detail.innerHTML = "<h4>" + s.h + "</h4><p>" + s.p + "</p>";
+      countEl.textContent = (idx+1) + " / " + cfg.total;
+      if(fillEl) fillEl.style.width = s.fill + "%";
+      if(resEl) resEl.textContent = s.res;
+      if(chipsWrap){
+        var chips = chipsWrap.querySelectorAll(".chip");
+        chips.forEach(function(c){
+          var ci = parseInt(c.getAttribute("data-i"), 10);
+          if(s.chips.indexOf(ci) >= 0) c.classList.add("on"); else c.classList.remove("on");
+        });
+      }
+      prevB.disabled = (idx === 0);
+      nextB.disabled = (idx === cfg.total - 1);
+    }
+
+    prevB.addEventListener("click", function(){ if(idx>0){ idx--; render(); } });
+    nextB.addEventListener("click", function(){ if(idx<cfg.total-1){ idx++; render(); } });
+    resetB.addEventListener("click", function(){ idx=0; render(); });
+    render();
+  }
+})();
+</script>
+
+</body>
+</html>

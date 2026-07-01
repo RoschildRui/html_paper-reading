@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi k1.5 · 中文导读：用长上下文把强化学习扩展到 LLM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"\2715";color:#a98a5a}
+.panel.after li::before{content:"\2713";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:760px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1200px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+.code-label{font-size:12.5px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* formula */
+.formula{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:center;box-shadow:var(--shadow)}
+.formula .eq{font-family:"JetBrains Mono",monospace;font-size:14.5px;color:var(--ink);line-height:1.7}
+.formula .eq b{color:var(--accent-deep)}
+.formula .cap{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-2{grid-template-columns:1fr 1fr}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+
+/* ingredient overview track */
+.track{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:13px 0;box-shadow:var(--shadow);border-left:3px solid var(--accent)}
+.track.dim{border-left-color:var(--ink-faint)}
+.track .th{font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.track .tbadge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent-deep)}
+.track.dim .tbadge{background:var(--surface-3);color:var(--ink-soft)}
+.track .td{font-size:14px;color:var(--ink-soft);margin-top:6px;line-height:1.6}
+
+/* step animation */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:158px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-2,.flow-3,.sp-io{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Kimi k1.5 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">旧路线</a>
+      <a href="#overview">方法总览</a>
+      <a href="#insight">核心洞见</a>
+      <a href="#policy">策略优化</a>
+      <a href="#infra">基础设施</a>
+      <a href="#long2short">long2short</a>
+      <a href="#insights">亮点</a>
+      <a href="#results">实验</a>
+      <a href="#conclusion">结论</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2501.12599" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">技术报告导读 · Scaling RL with LLMs</div>
+    <h1>Kimi k1.5：用「长上下文」把强化学习扩展到大模型</h1>
+    <p class="subtitle">Kimi k1.5: Scaling Reinforcement Learning with LLMs</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv 预印本 · 技术报告</span>
+      <span class="chip">发表时间 2025.01</span>
+      <span class="chip">Kimi Team · Moonshot AI</span>
+      <span class="chip">多模态 · 文本+视觉</span>
+      <span class="chip">arXiv:2501.12599</span>
+    </div>
+    <p class="lead">一句话：预训练「靠喂数据」的 scaling 总会撞到高质量数据的天花板。Kimi k1.5 提出走另一条扩展轴——<strong>用强化学习让模型自己「探索 + 拿奖励」</strong>。它的秘诀不是更复杂的算法，而是<strong>把上下文窗口扩到 128k</strong>，让模型在一条长长的思维链里自己完成「规划、反思、纠错」，从而<strong>不用 MCTS、不用价值函数、不用过程奖励模型</strong>，就追平了 OpenAI o1。</p>
+    <p class="muted" style="font-size:14px">本页基于 arXiv HTML 版正文（2501.12599v4）与原论文图表构建。术语首次出现时给出英文原词，便于对照原文。文中所有 pipeline 图、结果图均直接取自原论文。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>核心主张</strong>：强化学习（RL）是 LLM 继续变强的<strong>新 scaling 轴</strong>——模型通过「探索 + 奖励」学习，不再被静态数据集卡死。而<strong>上下文长度（context length）才是这条轴上最关键的维度</strong>。</li>
+      <li><strong>关键洞见</strong>：把上下文扩到 <strong>128k</strong> 后，模型在一条 long-CoT 里就能完成「规划 / 反思 / 纠错」，相当于把<strong>显式搜索树「拍平」成自回归生成的隐式搜索</strong>。于是 MCTS、价值函数、过程奖励模型这些复杂组件全都不需要了。</li>
+      <li><strong>怎么训得动</strong>：靠 <strong>partial rollouts（部分回滚）</strong>把超长轨迹切段复用，加上改进的策略优化（online mirror descent 变体、去掉 value network、保留 negative gradient）、长度惩罚和课程采样。</li>
+      <li><strong>结果</strong>：long-CoT 版在 AIME <strong>77.5</strong>、MATH 500 <strong>96.2</strong>、Codeforces <strong>94 百分位</strong>、MathVista <strong>74.9</strong>，<strong>追平 o1</strong>；再用 <strong>long2short</strong> 把长思维能力压进短模型，short-CoT 版 AIME <strong>60.8</strong>，比 GPT-4o / Claude 3.5 高出最多 <strong>+550%</strong>。</li>
+    </ul>
+    <div class="quote big">「Scaling 强化学习，为人工智能的持续进步解锁了一条新轴——大模型可以通过学会带着奖励去探索，来扩展自己的训练数据。」<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 释义自原文摘要 “Scaling RL unlocks a new axis for the continued improvement of AI… LLMs can scale their training data by learning to explore with rewards.”</span></div>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">128<span class="u">k</span></div><div class="k">RL 上下文窗口<br>本文的核心扩展维度</div></div>
+      <div class="metric"><div class="v">77.5<span class="u">%</span></div><div class="k">AIME 2024 (long-CoT)<br>追平 OpenAI o1</div></div>
+      <div class="metric"><div class="v">+550<span class="u">%</span></div><div class="k">short-CoT 相对提升<br>vs GPT-4o / Claude 3.5</div></div>
+      <div class="metric"><div class="v">0</div><div class="k">用到的 MCTS / 价值函数 / PRM<br>刻意做减法</div></div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：预训练撞墙，下一条扩展轴在哪</h2>
+    <p>「next-token 预测 + scaling law」这几年让大模型一路变强：模型参数和数据量按比例放大，智能就持续提升。但这条路有个绕不过去的天花板——</p>
+    <ul class="tight">
+      <li><strong>受限于高质量数据总量</strong>：预训练能吃的，是<strong>已经存在的静态数据集</strong>。当高质量语料被用尽，单纯堆数据/参数的收益就会递减。</li>
+      <li><strong>测试时扩展是个开放难题</strong>：OpenAI 的 o1 靠「推理时拉长思维链」（inference-time scaling）取得突破，但<strong>方法不公开</strong>；此前公开发表的工作<strong>都没能复现出有竞争力的结果</strong>。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">本文要回答的问题</div>
+      能不能用 <strong>RL + LLM</strong> 开出一条全新的扩展轴：让模型<strong>带着奖励去探索</strong>、自己生成训练数据，从而突破静态数据集的限制？如果能，又该用<strong>多简单</strong>的框架把它跑通、跑到 o1 的水平？
+    </div>
+  </section>
+
+  <!-- PRIOR WORK -->
+  <section id="prior">
+    <h2><span class="num">02</span> 旧路线卡在哪：那些被本文「刻意避开」的复杂技术</h2>
+    <p>要让模型学会复杂推理，一个自然的想法是借鉴 AlphaGo：构建一棵<strong>思维的搜索树</strong>，用价值模型指导，在解空间里系统搜索。学界沿这个方向发展出几套复杂技术。Kimi k1.5 的态度很鲜明：<strong>这些它都不用</strong>——下面三张卡片解释它们各自的思路与瓶颈，理解了它们，才懂本文「做减法」的价值。</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🌳</span>蒙特卡洛树搜索 MCTS <span class="xtag">本文避开</span></div>
+        <div class="xs">把解答拆成思维节点，用价值估计指导，在树上反复展开 / 回溯，搜索最优解题路径。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：构造思维搜索树 <code>T</code>，每个节点是「问题 + 一段思维前缀」；用 critic 模型 <code>v</code> 给节点打分，挑最有希望的节点继续展开，直到推出完整解。</p>
+          <p><b>卡在哪</b>：推理时需要<b>复杂的并行化（parallelization）</b>来维护和搜索这棵树；token 级的搜索空间巨大，部署代价高。</p>
+          <p><b>与本文关系</b>：本文把「搜索树里的全部信息」<b>拍平进一条长上下文</b>，让模型用自回归生成隐式地完成搜索——于是 MCTS 不再需要。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📈</span>价值函数 / 价值网络 <span class="xtag">本文避开</span></div>
+        <div class="xs">训练一个和策略同规模的 value network，为每一步推理做「信用分配」（credit assignment）。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：像经典 RL（如 PPO）那样，用价值网络估计「当前局面有多好」，据此判断每一步是该加强还是削弱。</p>
+          <p><b>卡在哪</b>：① 价值网络<b>额外吃一倍算力</b>；② 更关键——经典信用分配会<b>惩罚「暂时走错但最终纠正」的步骤</b>，而这恰恰是 long-CoT「试错—回溯」最该鼓励的探索行为。</p>
+          <p><b>与本文关系</b>：本文<b>直接去掉 value network</b>，只用最终答案对错当奖励信号，鼓励模型大胆探索多样的推理路径。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧮</span>过程奖励模型 PRM <span class="xtag">本文避开</span></div>
+        <div class="xs">给推理的<b>每一中间步</b>单独打分，提供更细粒度的训练信号。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：训练 Process Reward Model 逐步评估推理质量，引导模型走「每步都对」的路径。</p>
+          <p><b>卡在哪</b>：通用推理里<b>很难定义、也很难判定「一步」的对错</b>；引入模型化的细粒度奖励，又容易招来<b>奖励作弊（reward hacking）</b>。</p>
+          <p><b>与本文关系</b>：本文只用<b>结果级奖励</b>（答案对错 / 编译测试），把简单框架做到极致，反而更稳、更省。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧩</span>本文的总思路 <span class="xtag" style="background:var(--accent-soft);color:var(--accent-deep)">做减法</span></div>
+        <div class="xs">不堆复杂组件，而是把「长上下文 + 改进的策略优化」两件事做扎实，让能力自然涌现。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>核心赌注</b>：上下文越长 ≈ 可用的「搜索步数」越多。只要能高效地把 RL 训练扩到 128k 上下文，规划 / 反思 / 纠错这些能力就会在 long-CoT 中<b>自发涌现</b>。</p>
+          <p><b>两根支柱</b>：① <b>长上下文扩展</b>（靠 partial rollouts 训得动）；② <b>改进的策略优化</b>（mirror descent + 采样策略 + 长度惩罚）。</p>
+          <p><b>结论</b>：简单框架也能拿到 SOTA，这本身就是论文最想证明的事。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <h2><span class="num">03</span> 方法总览：从预训练到强化学习的几道工序</h2>
+    <p>Kimi k1.5 的完整训练分成几个阶段，<strong>本报告聚焦在最后的 RL 部分</strong>。可以把整条产线理解为「先把底子和模板打好，再用 RL 让推理能力真正长起来」。点「下一步」跟着 checkpoint 一阶段一阶段走：</p>
+
+    <div class="stepbox" id="pipeStep">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+        <div class="sp-dot" data-dot="4"></div>
+      </div>
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STAGE 1</span>多模态预训练（Pretraining）</div>
+          <div class="sb">在文本（英 / 中 / 代码 / 数学 / 知识）+ 多模态语料上预训练，分三步：<strong>视觉-语言联合预训练 → 冷却（cooldown，强化推理/知识）→ 长上下文激活</strong>，把序列长度一路撑到 <strong>131,072 token</strong>。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>大规模多模态高质量语料</div>
+            <div class="io"><div class="iol">输出</div>具备 128k 长上下文能力的基座</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">STAGE 2</span>常规监督微调（Vanilla SFT）</div>
+          <div class="sb">用 <strong>约 100 万条文本 + 100 万条图文</strong>样本做通用 SFT：非推理任务靠人工标注 + 排序精修，推理任务（数学 / 代码）靠<strong>拒绝采样</strong>自动扩样。先在 32k 长度训 1 个 epoch，再到 128k 训 1 个 epoch。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>预训练基座 + 通用 SFT 语料</div>
+            <div class="io"><div class="iol">输出</div>通用对话/任务能力齐备的模型</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">STAGE 3</span>Long-CoT 预热 SFT（Warmup）</div>
+          <div class="sb">用 prompt engineering 构造一个<strong>小而精的长思维链预热集</strong>（文本 + 图像都有，且经过准确验证），轻量 SFT。目的：先把 <strong>规划 / 评估 / 反思 / 探索</strong> 这四种「类人推理」习惯<strong>植入模型</strong>，给后续 RL 一个好的起点。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>精选 long-CoT 推理路径</div>
+            <div class="io"><div class="iol">输出</div>会写长思维链的 RL 初始策略</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">STAGE 4</span>强化学习（本文重头戏）</div>
+          <div class="sb">在 long-CoT 模型上做<strong>大规模 RL</strong>：把上下文扩到 128k，用 online mirror descent 变体优化策略，配合<strong>长度惩罚、课程/优先采样、文本-视觉联合训练</strong>。规划、反思、纠错能力在这里随上下文变长而涌现。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>精选 RL prompt 集 + 奖励信号</div>
+            <div class="io"><div class="iol">输出</div>Kimi k1.5 <strong>long-CoT</strong> 模型（追平 o1）</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="4">
+          <div class="sh"><span class="stg">STAGE 5</span>long2short：压成短模型</div>
+          <div class="sb">long-CoT 虽强但<strong>费 token</strong>。再用 <strong>模型合并 / 最短拒绝采样 / DPO / long2short RL</strong> 把「长思维的先验」迁移到短模型，在<strong>有限 token 预算</strong>下也能保持高准确率。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>long-CoT 模型 + 短模型</div>
+            <div class="io"><div class="iol">输出</div>Kimi k1.5 <strong>short-CoT</strong> 模型（高 token 效率）</div>
+          </div>
+        </div>
+      </div>
+      <div class="sp-controls">
+        <button class="sp-prev">‹ 上一步</button>
+        <button class="sp-next primary">下一步 ›</button>
+        <button class="sp-reset">重置</button>
+        <span class="sp-counter"></span>
+      </div>
+    </div>
+
+    <p>这套方法刻意保持简单，但有四个关键配料（key ingredients）撑起整篇论文，后面会逐一展开：</p>
+    <div class="track">
+      <div class="th">① 长上下文扩展 <span class="tbadge">核心维度</span></div>
+      <div class="td">把 RL 的上下文扩到 <strong>128k</strong>，并发现性能随上下文变长持续提升。关键工程：<strong>partial rollouts</strong>——复用上一轮的大段轨迹，避免每次从头重生成。</div>
+    </div>
+    <div class="track">
+      <div class="th">② 改进的策略优化 <span class="tbadge">算法</span></div>
+      <div class="td">为 long-CoT RL 推导出一套公式，采用 <strong>online mirror descent</strong> 的变体做稳健优化，再配合采样策略、长度惩罚、数据配方。</div>
+    </div>
+    <div class="track">
+      <div class="th">③ 简洁框架 <span class="tbadge">做减法</span></div>
+      <div class="td">长上下文 + 改进优化合在一起，<strong>不需要 MCTS / 价值函数 / 过程奖励模型</strong>。上下文变长 ≈ 搜索步数变多，规划与反思自然涌现。</div>
+    </div>
+    <div class="track dim">
+      <div class="th">④ 多模态 <span class="tbadge">文本 + 视觉</span></div>
+      <div class="td">文本与视觉数据<strong>联合训练</strong>，模型能跨两种模态联合推理（如看图做数学题）。</div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/x12.png" alt="Kimi k1.5 高层示意：文本与图文序列经 Transformer，再叠加大规模强化学习" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图（原论文 Figure 11）</span>：最高层的一张「定位图」——文本序列与图文交错序列共同进入 Transformer，再叠加大规模强化学习来增强推理。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>左侧两类输入</b>：上方是纯<b>文本序列（Text Sequences）</b>，下方是<b>图文交错序列（Interleave Image-text Sequences）</b>——这正是「多模态」的体现，图和文可以混在同一段输入里。</li>
+          <li><b>中间 Transformer</b>：两类输入被统一编码进同一个 Transformer 主干，模型在<b>同一表示空间</b>里同时理解文字与图像。</li>
+          <li><b>右侧循环箭头 + 大脑图标</b>：表示<b>大规模强化学习（Large Scale RL）</b>反复作用在这个模型上，持续增强其推理能力。</li>
+          <li><b>一句话总结</b>：这张图回答「k1.5 长什么样」——一个吃多模态输入、被 RL 不断打磨的统一 Transformer。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CORE INSIGHT -->
+  <section id="insight">
+    <h2><span class="num">04</span> 核心洞见：把「搜索树」拍平成一条思维链</h2>
+    <p>这是理解全文的钥匙。经典做法把推理看成在一棵<strong>思维搜索树</strong>上反复展开与回溯，需要价值模型指导、需要复杂的并行搜索。本文换了个视角：既然搜索树里的所有信息——走过的节点、每步的反馈——<strong>本质都是语言 token</strong>，那为什么不把它们<strong>全部「拍平」进一条长长的上下文</strong>，让模型用自回归生成<strong>隐式地</strong>跑完这场搜索？</p>
+
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph">显式搜索（旧）：构树 + 规划算法</div>
+        <ul>
+          <li>显式维护一棵思维树 <code>T</code>，节点 = 问题 + 思维前缀</li>
+          <li>用 critic 模型 <code>v</code> 给每个节点打分</li>
+          <li>规划算法挑「最有希望」的节点展开 / 遇到死路就回溯</li>
+          <li>部署时需要<strong>复杂并行化</strong>来跑这棵树</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">隐式搜索（本文）：长 CoT 自回归</div>
+        <ul>
+          <li>把整棵树的信息<strong>拍平进一条上下文</strong>喂给模型</li>
+          <li>思维 <code>z₁,z₂,…</code> 与「反馈」都当成普通 token 顺序生成</li>
+          <li>模型在生成中自带<strong>规划 / 反思 / 纠错</strong>，相当于把搜索内化</li>
+          <li>推理时只是普通自回归——<strong>无需任何并行搜索</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">为什么「上下文长度」就是这条轴的核心维度</div>
+      在这个视角下，<strong>思维 token 的数量 ≈ 传统规划算法分配的计算预算（搜索步数）</strong>。上下文窗口越长，模型能容纳的「搜索步数」就越多，越能探索、回溯、refine。<strong>所以扩展上下文 = 扩展模型的「思考深度」</strong>——这就是 Kimi k1.5 把 RL 上下文一路推到 128k 的根本动机。
+    </div>
+
+    <p>这也解释了 long-CoT 预热（Stage 3）的意义：它先把<strong>规划、评估、反思、探索</strong>四种认知习惯写进模型，RL 再让这些习惯随着上下文变长而自由生长。最终模型不只是「会按步骤推理」，而是真正学会了<strong>发现错误、回溯、改进解法</strong>——把已探索过的全部思路都当成上下文来利用。</p>
+  </section>
+
+  <!-- POLICY OPTIMIZATION -->
+  <section id="policy">
+    <h2><span class="num">05</span> 引擎：策略怎么更新（没有 critic 的稳健优化）</h2>
+    <p>有了「长 CoT = 隐式搜索」的视角，接下来的问题是：<strong>怎么把 RL 信号高效地灌进模型</strong>。本文用 <strong>online mirror descent（在线镜像下降）</strong>的一个变体，迭代地优化一个<strong>带相对熵正则的</strong>目标——每一轮都把当前模型当作参考策略 <code>π_θᵢ</code>：</p>
+
+    <div class="formula">
+      <div class="eq">max<sub>θ</sub> &nbsp; E<sub>(x,y*)~D</sub> [ &nbsp;E<sub>(y,z)~π<sub>θ</sub></sub>[ <b>r</b>(x,y,y*) ] &nbsp;−&nbsp; <b>τ·KL</b>( π<sub>θ</sub>(x) ‖ π<sub>θᵢ</sub>(x) ) &nbsp;]</div>
+      <div class="cap">在「拿高奖励」和「别离参考策略太远」之间权衡，<b>τ</b> 控制正则强度。它有闭式解，进而导出可用<b>离线（off-policy）样本</b>优化的代理损失。</div>
+    </div>
+
+    <p>对损失求梯度后，最终的更新形式对熟悉策略梯度的人很亲切——它<strong>用「同一题 k 个采样的平均奖励」当 baseline</strong>，再加一个 l₂ 正则项：</p>
+    <div class="formula">
+      <div class="eq">(1/k) Σ<sub>j</sub> [ &nbsp;∇<sub>θ</sub> log π<sub>θ</sub>(y<sub>j</sub>,z<sub>j</sub>|x) · ( r(x,y<sub>j</sub>,y*) − <b>r̄</b> ) &nbsp;−&nbsp; (τ/2) ∇<sub>θ</sub>( log [π<sub>θ</sub>/π<sub>θᵢ</sub>] )² &nbsp;]</div>
+      <div class="cap"><b>r̄</b> = 这一题 k 个采样奖励的均值，充当基线（baseline）。这等价于「不要 critic」——<b>用一组答案互比来估计基线，省掉与策略同规模的价值网络</b>。</div>
+    </div>
+
+    <h3>为什么坚持「不要价值网络」</h3>
+    <p>去掉 value network 不只是省算力。论文给了一个更深的理由，用一个小例子说清：</p>
+    <div class="callout">
+      <div class="t">一个关于「探索」的例子</div>
+      模型已经写了一段思维 <code>(z₁,…,z_t)</code>，下一步有两个候选：<code>z_{t+1}</code> 直达正解，<code>z'_{t+1}</code> 含有错误。按经典价值函数的信用分配，<code>z'_{t+1}</code> 优势为负、应当被惩罚。<strong>但对训练 long-CoT 而言，探索 <code>z'_{t+1}</code> 其实极有价值</strong>——只要模型最终能从错误里<strong>恢复并到达正解</strong>，它就学到了「试错—回溯」的模式。所以本文<strong>只用最终答案对错当奖励</strong>，鼓励模型大胆探索多样路径，而不是步步求稳。
+    </div>
+
+    <h3>长度惩罚：治「想太多」（overthinking）</h3>
+    <p>RL 训着训着会出现一个现象：<strong>回复越来越长</strong>。长一点确实更准，但过度冗长既费算力、人类也不爱看。于是本文加了个<strong>长度奖励（length reward）</strong>：对同一题采样的 k 个回复，按长度给「相对分数」——</p>
+    <div class="formula">
+      <div class="eq">λ = 0.5 − ( len(i) − min_len ) / ( max_len − min_len )<br><br>len_reward(i) = <b>λ</b> &nbsp;（若答对 r=1） &nbsp;&nbsp;|&nbsp;&nbsp; <b>min(0, λ)</b> &nbsp;（若答错 r=0）</div>
+      <div class="cap">同组里<b>越短的正确答案得分越高</b>（鼓励简洁）；错误答案若又长则额外受罚。为避免训练初期被拖慢，长度惩罚<b>先关掉、warmup 之后再常量开启</b>。</div>
+    </div>
+
+    <h3>采样策略：把算力花在刀刃上</h3>
+    <div class="twocol">
+      <div class="panel after">
+        <div class="ph">课程采样 Curriculum Sampling</div>
+        <ul>
+          <li>从<strong>简单题</strong>起步，逐步过渡到难题</li>
+          <li>初期模型弱，硬刚难题<strong>几乎采不到正确样本</strong>，效率低</li>
+          <li>数据自带年级 / 难度标签，天然支持按难度排课</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph">优先采样 Prioritized Sampling</div>
+        <ul>
+          <li>跟踪每道题的成功率 <code>sᵢ</code></li>
+          <li>按 <code>1 − sᵢ</code> 的比例采样：<strong>越不会做的题被抽得越多</strong></li>
+          <li>把训练火力集中到模型最弱的地方，学得更快</li>
+        </ul>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>训练配方里的几个工程细节<span class="sub">点开看 prompt 筛选 / 代码测试用例 / 数学奖励模型</span></summary>
+      <div class="ex-body">
+        <ul class="tight">
+          <li><strong>RL prompt 集三原则</strong>：覆盖广（STEM/代码/通用推理）、难度均衡、<strong>可被准确验证</strong>。用 SFT 模型对每题采样 10 次、用通过率当难度代理；并剔除选择题/判断题/证明题等<strong>易蒙对</strong>的题型。</li>
+          <li><strong>防奖励作弊</strong>：让模型<strong>不写 CoT 直接猜答案</strong>，若 N=8 次内猜中就判为「太容易被钻空子」并移除。</li>
+          <li><strong>代码题自动造测试用例</strong>：用 CYaRon 库 + 基座模型生成；从 1000 道在线赛题中筛出 614 道无需特判，造出 463 个生成器，最终 323 道入选训练集（用「10 份提交里至少 9 份通过」来验证用例质量）。</li>
+          <li><strong>数学奖励模型</strong>：同一答案可有不同写法（如 <code>a²−4</code> 与 <code>(a+2)(a−2)</code>）。对比两种 RM——经典 value-head RM 抽检准确率 <strong>84.4%</strong>，而带 CoT 推理再判对错的 <strong>Chain-of-Thought RM 高达 98.5%</strong>，故 RL 中采用后者。</li>
+          <li><strong>视觉 RL 数据</strong>：真实世界数据 + 合成视觉推理数据 + 文本渲染数据（把文字/代码渲染成图，保证跨模态一致）。</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- INFRASTRUCTURE -->
+  <section id="infra">
+    <h2><span class="num">06</span> 基础设施：让 128k 长上下文 RL「训得动」</h2>
+    <p>算法再漂亮，训不动也白搭。长 CoT RL 最棘手的是：<strong>轨迹超长且长短不一</strong>，一条几万 token 的回复会把系统资源全占住。Kimi k1.5 用一套<strong>同步迭代</strong>的训练系统 + <strong>partial rollouts</strong> 来解决。先看整体架构：</p>
+
+    <div class="figure">
+      <img src="assets/x3.png" alt="Kimi k1.5 大规模强化学习训练系统总览" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3(a)（原论文 Figure 3a）</span>：RL 训练系统总览。每一轮迭代由「rollout 阶段（生成轨迹）」和「training 阶段（更新权重）」组成，由中央 Master 协调。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>Rollout Workers（左上）</b>：负责<b>生成轨迹</b>——拿当前模型对各种输入采样出一串串回复（rollout trajectories）。</li>
+          <li><b>Trainer Workers（右上）</b>：内含 <b>Policy Model（策略模型）</b> 与 <b>Reference Model（参考模型，即上一轮的 π_θᵢ）</b>；右侧的「gradient update」自环表示它在这里做梯度更新、刷新权重。</li>
+          <li><b>weight 箭头（实线，Trainer → Rollout）</b>：训练好的最新权重<b>下发</b>给 rollout workers，让下一轮用新策略采样。</li>
+          <li><b>Master（中央）</b>：总指挥，调度 rollout workers、trainer workers、奖励模型与 replay buffer 之间的数据与通信，做负载均衡。</li>
+          <li><b>Replay Buffer（右下）</b>：存放轨迹经验，<b>打乱时间相关性</b>，为训练提供多样、无偏的数据；也是 partial rollout 续跑的中转站。</li>
+          <li><b>Reward Models（左下：Code / Math / K-12 / Vision）</b>：Master 发出「eval request」，由各领域奖励模型评估回复质量；其中代码题还接了<b>代码执行服务（sandbox）</b>做真实判题。</li>
+          <li><b>一句话总结</b>：rollout 产数据 → Master 调度 + 奖励打分 → trainer 更新权重 → 新权重回流 rollout，如此同步循环，模型持续自我提升。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Partial Rollouts：把超长轨迹「切段复用」</h3>
+    <p>这是让长上下文 RL 训得动的<strong>关键技巧</strong>。核心想法：给每条轨迹设一个<strong>固定 token 预算</strong>；一条回复如果在本轮没生成完，就把<strong>未完成的部分存进 Replay Buffer，下一轮接着续写</strong>，而不是从头重来。点「下一步」看一条长轨迹是如何跨迭代被拆开、复用的：</p>
+
+    <div class="stepbox" id="prStep">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+      </div>
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">迭代 n−m</span>设定 token 预算，开始生成</div>
+          <div class="sb">rollout worker 从 prompt 集取题开始生成长回复。系统给每条轨迹设了<strong>固定输出 token 上限</strong>，<strong>不允许</strong>单条超长轨迹独占资源。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">状态</div>一条长回复刚生成了第一段</div>
+            <div class="io"><div class="iol">动作</div>段 1 写入 Replay Buffer</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">迭代 n−1</span>从 buffer 续写</div>
+          <div class="sb">下一轮，从 Replay Buffer 取出上次未完成的段，<strong>接着往下写</strong>。之前的段<strong>直接复用，不必重新 rollout</strong>，省下大量重复计算。期间 worker 还会做 <strong>repeat detection</strong>：检测到重复内容就提前终止（图中 ✕），并可加惩罚。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">状态</div>段 1 复用 + 续写段 2</div>
+            <div class="io"><div class="iol">动作</div>段 2 再次存入 buffer</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">迭代 n</span>只有当前段是 on-policy</div>
+          <div class="sb">最新的一段（iter n）需要<strong>当前策略 on-policy 计算</strong>；之前的段（iter n−m … n−1）都是从 buffer 高效复用。训练时<strong>某些段还可被排除出损失计算</strong>，进一步优化学习。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">状态</div>长回复终于在本轮写完（normal stop ●）</div>
+            <div class="io"><div class="iol">动作</div>完整轨迹送去 training</div>
+          </div>
+        </div>
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">并行收益</span>长短轨迹各跑各的</div>
+          <div class="sb">rollout workers <strong>异步</strong>工作：有的在啃长轨迹时，另一些可以独立处理新的短任务。所有 worker 都满负荷，系统整体<strong>吞吐最大化</strong>——于是「生成极长回复」与「快速迭代」可以兼得。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">效果</div>支持极长回复 + 迭代不变慢</div>
+            <div class="io"><div class="iol">本质</div>把「时间维度的长」换成「迭代维度的拼接」</div>
+          </div>
+        </div>
+      </div>
+      <div class="sp-controls">
+        <button class="sp-prev">‹ 上一步</button>
+        <button class="sp-next primary">下一步 ›</button>
+        <button class="sp-reset">重置</button>
+        <span class="sp-counter"></span>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/x4.png" alt="Partial Rollout 机制示意图" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 3(b)（原论文 Figure 3b）</span>：partial rollout 把长回复按迭代切段，存入 Replay Buffer 续跑。三种终止方式：normal stop（正常结束）、cut by length（超长被切）、repeat early stop（检测到重复提前停）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>顶部方框「iteration N · rollout worker」</b>：表示当前这一轮里，一个 rollout worker 正在处理的多条轨迹（每条横线是一条回复）。</li>
+          <li><b>左侧「from prompt set」</b>：这些轨迹来自 RL prompt 集的题目。</li>
+          <li><b>● normal stop</b>：轨迹自然生成完毕（到达答案）。</li>
+          <li><b>◇ cut by length</b>：轨迹触到 token 预算上限被切断；未完成部分顺着虚线<b>「save for partial rollout」存进下方的 Replay Buffer</b>，等下一轮继续。</li>
+          <li><b>✕ repeat, early stop</b>：检测到重复内容，<b>提前终止</b>以省算力，并可施加额外惩罚。</li>
+          <li><b>底部 Replay Buffer（粉色）</b>：作为中央存储，保存这些「半成品」段落；下一轮从这里取出续写，只有当前段需要 on-policy 计算。</li>
+          <li><b>一句话总结</b>：这张图把「长轨迹如何被切段、缓存、续跑」三种情形画在一起——它是 128k 长上下文 RL 能高效运转的工程基石。</li>
+        </ul>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>训练 / 推理「混合部署」与代码沙箱<span class="sub">点开看 Megatron + vLLM 如何共享 GPU、秒级切换</span></summary>
+      <div class="ex-body">
+        <ul class="tight">
+          <li><strong>Hybrid Deployment（混合部署）</strong>：训练用 <strong>Megatron</strong>、推理用 <strong>vLLM</strong>，通过一个叫 <strong>checkpoint-engine</strong> 的 shim 进程协调，用 Kubernetes Sidecar 容器<strong>共享同一批 GPU</strong>，避免训练/推理分开部署时彼此空等。</li>
+          <li><strong>秒级切换</strong>：训练完 Megatron 卸载显存、通过 Mooncake（RDMA）把最新权重传给 vLLM 做 rollout；实测<strong>训练→推理 &lt; 1 分钟，反向约 10 秒</strong>。</li>
+          <li><strong>代码沙箱（Code Sandbox）</strong>：为代码题提供安全、可复现的执行环境（支持 MultiPL-E、DMOJ、Lean、Jupyter 等）；用 <strong>crun 替代 Docker</strong>、<strong>预建 cgroup</strong>、<strong>tmpfs overlay</strong> 等手段大幅缩短容器启动时间，提高 RL 判题吞吐。</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- LONG2SHORT -->
+  <section id="long2short">
+    <h2><span class="num">07</span> long2short：把「长思维」压进短模型</h2>
+    <p>long-CoT 模型很强，但<strong>每次都要烧掉很多测试时 token</strong>。一个自然的问题是：能不能把它「想得久」积累的<strong>思维先验</strong>迁移给短模型，让短模型在有限 token 预算下也能打？本文给了四种 long2short 方法，由简到繁：</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔀</span>模型合并 Model Merging</div>
+        <div class="xs">把长 CoT 模型和短 CoT 模型的<b>权重直接平均</b>，无需训练就得到新模型。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：最简单的一招——直接对两个模型的权重做<b>平均</b>，融合出一个新模型。</p>
+          <p><b>效果</b>：在保持泛化能力的同时<b>提升 token 效率</b>，零训练成本。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">✂️</span>最短拒绝采样 Shortest RS</div>
+        <div class="xs">同一题采样 n 次（n=8），只挑<b>最短的正确答案</b>拿去做 SFT。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>动机</b>：同一题模型给出的回复长度<b>波动很大</b>，那就挑里头最简洁的正确解。</p>
+          <p><b>做法</b>：采样 8 个回复，选出<b>最短且正确</b>的那个作为监督微调样本，引导模型学会简洁作答。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚖️</span>DPO 偏好优化</div>
+        <div class="xs">把「最短的正确解」当正样本，过长的（含正确但超长）当负样本，构造偏好对训练。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：用长 CoT 模型采多个样本，<b>最短正确解</b> = 正样本；负样本包括「错误的长回复」和「正确但超过正样本 1.5 倍长」的回复。</p>
+          <p><b>用途</b>：这些正负偏好对喂给 <b>DPO</b> 训练，直接教模型「同样对，要选短的」。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🏆</span>long2short RL <span class="xtag" style="background:var(--accent-soft);color:var(--accent-deep)">最优</span></div>
+        <div class="xs">单独再开一轮 RL，专门收紧长度惩罚和最大回滚长度。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：先选一个性能/效率平衡最好的模型当基座，再做一个<b>独立的 long2short RL 阶段</b>：施加（2.3.3 的）长度惩罚，并<b>大幅调小最大 rollout 长度</b>，进一步惩罚那些「虽然可能对但太长」的回复。</p>
+          <p><b>效果</b>：实验里它的 <b>token 效率最高</b>——k1.5-short w/ rl 在 AIME 拿到 60.8，平均只用约 <b>3,272 token</b>。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">08</span> 有意思的点</h2>
+    <p>除了主线，有几处设计取舍与发现值得单独拎出来——它们往往比 benchmark 数字更能帮你判断这套方法适不适合自己的场景。</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">📏</span>上下文长度 ＞ 单纯堆参数</div>
+        <div class="xs">小模型靠更长的 CoT，能追平大模型的性能（消融实验 Figure 8）。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>同样数据训大小两个模型：大模型起步更高，但<b>小模型靠 RL 优化出的更长 CoT 能追上来</b>。不过大模型<b>token 效率更优</b>。</p>
+          <p><b>启发</b>：若追求极限性能，扩大模型 + 扩上下文上限更高、更省 token；若测试算力有预算，<b>训小模型 + 给长上下文</b>是可行解。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">➖</span>负梯度很关键（vs ReST）</div>
+        <div class="xs">只「拟合最优答案」不够，必须保留「惩罚错误答案」的负梯度。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>ReST 这类方法只<b>反复拟合当前模型采到的最佳答案</b>，不施加负梯度去惩罚错误。消融（Figure 10）显示本文方法<b>样本效率明显更高</b>。</p>
+          <p><b>言下之意</b>：在「生成长 CoT」这件事上，<b>负梯度的作用比在其他领域更突出</b>，选对优化算法至关重要。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧠</span>CoT 奖励模型完胜经典 RM</div>
+        <div class="xs">让奖励模型「先推理再判分」，准确率从 84.4% 跳到 98.5%。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>数学答案常有等价的不同写法，判对错并不简单。<b>经典 value-head RM</b> 抽检准确率约 <b>84.4%</b>；让 RM <b>先生成一段 CoT 推理、再以 JSON 给出判定</b>，准确率升到 <b>98.5%</b>。</p>
+          <p><b>启发</b>：奖励模型自己也能从「想一想再下结论」中获益——更可靠的奖励 = 更稳的 RL。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🪶</span>简洁框架本身就是结论</div>
+        <div class="xs">不用 MCTS / 价值函数 / PRM，照样拿 SOTA——这就是论文最想证明的事。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>长上下文扩展 + 改进的策略优化，两件事做扎实，就能让规划/反思/纠错<b>自发涌现</b>。复杂技术不是必需品。</p>
+          <p><b>价值</b>：给社区一条<b>可复现、可扩展</b>的简洁路线，把注意力从「设计复杂搜索」转回「把 RL 与长上下文做对」。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">09</span> 实验结论：一句话能说清</h2>
+    <p>一句话：<strong>long-CoT 版在数学、代码、视觉等推理任务上追平 OpenAI o1</strong>；<strong>short-CoT 版在同等 token 预算下大幅超越 GPT-4o 与 Claude 3.5（最高 +550%）</strong>。下面是最核心的几个数字：</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">77.5<span class="u">%</span></div><div class="k">AIME 2024 · long-CoT<br>追平 o1（o1≈74.4）</div></div>
+      <div class="metric"><div class="v">96.2<span class="u">%</span></div><div class="k">MATH 500 · long-CoT<br>与 o1 同档</div></div>
+      <div class="metric"><div class="v">94<span class="u">pct</span></div><div class="k">Codeforces 百分位<br>long-CoT</div></div>
+      <div class="metric"><div class="v">60.8<span class="u">%</span></div><div class="k">AIME 2024 · short-CoT<br>仅用 ~3272 token</div></div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/x1.png" alt="Kimi k1.5 long-CoT 在数学/代码/视觉基准上的结果" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 1）</span>：long-CoT 版与 OpenAI o1 / o1-mini / QVQ-72B / QwQ-32B 在 Math、Code、Vision 三类基准上的对比。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>三大分组</b>：Math（AIME 2024、MATH 500）、Code（Codeforces 百分位、LiveCodeBench v5）、Vision（MathVista、MMMU）。</li>
+          <li><b>颜色</b>：深蓝是 <b>Kimi k1.5 long-CoT</b>，其余浅色 / 灰色是 OpenAI o1、o1-mini、QVQ-72B-Preview、QwQ-32B Preview。</li>
+          <li><b>Math</b>：AIME <b>77.5</b>（o1 ≈ 74.4）、MATH 500 <b>96.2</b>（o1 ≈ 94.8）——<b>与 o1 并肩甚至略胜</b>。</li>
+          <li><b>Code</b>：Codeforces <b>94 百分位</b>（与 o1 持平），LiveCodeBench <b>62.5</b>（o1≈67.2，接近）。</li>
+          <li><b>Vision</b>：MathVista <b>74.9</b>、MMMU <b>70</b>，明显领先同台的开源视觉推理模型。</li>
+          <li><b>结论性信息</b>：这是 long-CoT 版的「成绩单」——一个用<b>简洁 RL 框架</b>训出的多模态模型，能在高难推理上对标当时最强的 o1。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/x2.png" alt="Kimi k1.5 short-CoT 在多类基准上的结果" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 2（原论文 Figure 2）</span>：short-CoT 版与 GPT-4o、Claude 3.5 Sonnet、Qwen2-VL、LLaMA-3.1 405B、DeepSeek V3、Qwen2.5 72B 的对比，分 Math / Code / Vision / General。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>四大分组</b>：Math、Code、Vision、General（MMLU / IF-Eval / CLUEWSC / C-Eval）。</li>
+          <li><b>最抢眼的对比</b>：AIME 2024 上 short-CoT <b>60.8</b>，而 GPT-4o 仅 <b>9.3</b>——这便是摘要里「最高 +550%」的来源；MATH 500 <b>94.6</b> 也大幅领先。</li>
+          <li><b>Code</b>：LiveCodeBench <b>47.3</b>，强于多数对手。</li>
+          <li><b>General</b>：MMLU、IF-Eval、CLUEWSC、C-Eval 上与顶尖开源/闭源模型<b>同档或更优</b>，说明 long2short 没有牺牲通用能力。</li>
+          <li><b>结论性信息</b>：把长思维先验「压」进短模型后，short-CoT 版在<b>不烧大量 token</b>的前提下，把同级别短模型甩开一大截。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>长上下文 scaling：性能与思维长度「一起涨」</h3>
+    <div class="figure">
+      <img src="assets/x6.png" alt="训练中准确率与回复长度随迭代共同增长" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 5（原论文 Figure 5）</span>：在多个数学/科学基准上，随着 RL 迭代推进，<strong>准确率（蓝）与回复长度（橙）同步上升</strong>。注：此图来自一个规模远小于 k1.5 的内部 long-CoT 模型；阴影为回复长度的 95 百分位。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>每个子图</b>是一个基准（MATH500、OMNI-MATH500、AIME、GAOKAO、GPQA、物理 / 化学 / 生物等）。</li>
+          <li><b>蓝线（Performance）</b>：准确率随训练迭代<b>稳步上升</b>。</li>
+          <li><b>橙线（Token Length）</b>：平均回复长度同样<b>随训练增长</b>——模型自发学会「想得更久」。</li>
+          <li><b>越难的基准</b>，回复长度增长越陡，说明模型会<b>为更难的题分配更多思考</b>。</li>
+          <li><b>一句话总结</b>：准确率与思维长度<b>同涨</b>，直观印证「上下文/思考长度 = 推理能力的扩展维度」。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="figure">
+      <img src="assets/x7.png" alt="性能随回复长度增长" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 6（原论文 Figure 6）</span>：横轴是平均回复长度、纵轴是准确率，每张子图都呈<strong>正相关趋势（绿色虚线）</strong>——回复越长，准确率越高。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>横轴</b>：平均 token 长度（mean token length）；<b>纵轴</b>：准确率。</li>
+          <li><b>绿色虚线</b>：拟合趋势，斜率为正——证明<b>输出上下文长度与解题能力强相关</b>。</li>
+          <li><b>误差棒</b>：同一长度档位下不同样本的波动范围。</li>
+          <li><b>与 Figure 5 的关系</b>：Fig 5 看「随训练一起涨」，这张看「长度本身与准确率的相关性」，两者互为佐证。</li>
+          <li><b>最终落地</b>：k1.5 正式版把上下文 scaling 到 <b>128k</b>，在难推理基准上持续受益。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>long2short：同样准确率，token 用得更省</h3>
+    <div class="figure">
+      <img src="assets/x8.png" alt="long2short token 效率对比" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 7（原论文 Figure 7）</span>：横轴 token 长度、纵轴准确率。<strong>橙色为 k1.5 系列，蓝色为其它模型</strong>；k1.5 系列整体位于「左上方」——用更少的 token 拿到更高的准确率。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>两张子图</b>：MATH500 与 AIME2024，都是「准确率 vs token 长度」散点。</li>
+          <li><b>橙色点（k1.5 系列）</b>：包括 k1.5-long、k1.5-short w/ rl、w/ dpo、w/ merge、w/ merge+rs、k1.5-shortest。</li>
+          <li><b>蓝色点（对手）</b>：Claude 3.5、gpt-4-0513、qwen25-72B-inst、deepseek-v3。</li>
+          <li><b>读图重点</b>：越靠<b>左上</b>越好（高准确率、低 token）。橙色点整体压在蓝色点的左上方，<b>token 效率全面领先</b>；其中 <b>long2short RL</b> 效率最高。</li>
+          <li><b>代表数字</b>：k1.5-short w/ rl 在 AIME 拿 60.8，平均仅 <b>~3,272 token</b>；k1.5-shortest 在 MATH500 拿 88.2，token 数与其它短模型相当。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCLUSION -->
+  <section id="conclusion">
+    <h2><span class="num">10</span> 结论与未来方向</h2>
+    <p>论文把自己的核心收获总结得很克制：</p>
+    <ul class="tight">
+      <li><strong>上下文长度的扩展，是 LLM 持续变强的关键</strong>。配合 partial rollouts 等基础设施优化，长上下文 RL 才训得动、训得起。</li>
+      <li><strong>改进的策略优化是另一根支柱</strong>：把 long-CoT RL 公式化，导出 online mirror descent 变体，再叠加采样策略、长度惩罚、数据配方。</li>
+      <li><strong>简洁能赢</strong>：不靠 MCTS / 价值函数 / 过程奖励模型，照样拿到强性能。</li>
+      <li><strong>long2short 潜力很大</strong>：能显著提升短 CoT 模型；未来可把 long2short 与 long-CoT RL <strong>迭代结合</strong>，在给定 token 预算下榨出最佳性能。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这篇报告最值得记住的一句话</div>
+      与其设计越来越复杂的搜索算法，不如<strong>把上下文做长、把策略优化做对</strong>，让规划与反思在长思维链里<strong>自然涌现</strong>——再用 long2short 把这份能力压缩到能负担的 token 预算里。未来仍待解决的是：如何进一步提升长上下文 RL 的效率，以及在<strong>不损伤探索能力</strong>的前提下改进信用分配、减少 overthinking。
+    </div>
+  </section>
+
+</div>
+
+
+
+
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对技术报告 <strong>《Kimi k1.5: Scaling Reinforcement Learning with LLMs》</strong> 的中文导读可视化，内容与图表基于已抓取的 arXiv HTML 原文（2501.12599v4）。文中所有 pipeline 图（系统总览、partial rollout）与结果图（Figure 1/2/5/6/7/11）均直接取自原论文；步进动画为依据原文文字描述自制，忠于原文流程。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2501.12599" target="_blank" rel="noopener">Kimi k1.5: Scaling Reinforcement Learning with LLMs · arXiv:2501.12599 ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">作者：Kimi Team（Moonshot AI）· 发布 2025.01 · 技术报告（arXiv preprint）</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明展开/收起（仅用于图片）
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// 通用步进动画（支持页面内多个 .stepbox 独立运作）
+(function(){
+  var boxes = document.querySelectorAll('.stepbox');
+  boxes.forEach(function(box){
+    var steps = box.querySelectorAll('.sp-step');
+    var dots = box.querySelectorAll('.sp-dot');
+    var total = steps.length;
+    var idx = 0;
+    var counter = box.querySelector('.sp-counter');
+    var prev = box.querySelector('.sp-prev');
+    var next = box.querySelector('.sp-next');
+    var reset = box.querySelector('.sp-reset');
+    function render(){
+      steps.forEach(function(s){ s.classList.toggle('active', Number(s.getAttribute('data-step')) === idx); });
+      dots.forEach(function(d){ d.classList.toggle('on', Number(d.getAttribute('data-dot')) <= idx); });
+      if (counter) counter.textContent = (idx+1) + ' / ' + total;
+      if (prev) prev.disabled = (idx === 0);
+      if (next) next.disabled = (idx === total-1);
+    }
+    if (next) next.addEventListener('click', function(){ if (idx < total-1){ idx++; render(); } });
+    if (prev) prev.addEventListener('click', function(){ if (idx > 0){ idx--; render(); } });
+    if (reset) reset.addEventListener('click', function(){ idx = 0; render(); });
+    render();
+  });
+})();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

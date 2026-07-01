@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LongCat-Flash-Prover 图解：把形式化推理变成模型的原生能力</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f7f0e1;
+    --bg-2:#faf5ea;
+    --card:#fbf6ec;
+    --card-2:#f3e9d6;
+    --line:#e6dabf;
+    --line-2:#ddcfae;
+    --ink:#2b2620;
+    --ink-soft:#5f5749;
+    --ink-mute:#8a8170;
+    --accent:#b25f38;
+    --accent-soft:#f0e0cd;
+    --accent-line:#e3c6ab;
+    --ok:#5f7a52;
+    --ok-soft:#e7ecdd;
+    --radius:14px;
+    --maxw:880px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    font-size:17px;
+    line-height:1.78;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-line);}
+  a:hover{border-bottom-color:var(--accent);}
+  code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+  /* header */
+  header.top{
+    background:linear-gradient(180deg,#f4 ,transparent);
+    background:var(--bg-2);
+    border-bottom:1px solid var(--line);
+    padding:54px 0 40px;
+  }
+  .eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:16px;}
+  h1{font-size:34px;line-height:1.28;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;}
+  h1 .en{display:block;font-size:18px;font-weight:600;color:var(--ink-soft);margin-top:10px;letter-spacing:0;}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 6px;align-items:center;}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+    background:var(--card-2);border:1px solid var(--line-2);color:var(--ink-soft);
+    padding:5px 11px;border-radius:999px;}
+  .badge.accent{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent);}
+  .links-row{display:flex;flex-wrap:wrap;gap:18px;margin-top:18px;font-size:15px;font-weight:600;}
+  .links-row a{display:inline-flex;align-items:center;gap:6px;border-bottom:none;}
+  .links-row a span.ic{font-size:15px;}
+
+  /* sticky nav */
+  nav.toc{position:sticky;top:0;z-index:20;background:rgba(247,240,225,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding:11px 22px;scrollbar-width:none;}
+  nav.toc .wrap::-webkit-scrollbar{display:none;}
+  nav.toc a{white-space:nowrap;font-size:14px;font-weight:600;color:var(--ink-soft);
+    padding:5px 12px;border-radius:999px;border-bottom:none;}
+  nav.toc a:hover{background:var(--card-2);color:var(--ink);}
+
+  section{padding:46px 0 8px;}
+  h2{font-size:25px;font-weight:800;margin:8px 0 6px;letter-spacing:-.01em;}
+  h2 .num{color:var(--accent);font-weight:800;margin-right:10px;}
+  .lead{color:var(--ink-soft);font-size:16px;margin:0 0 22px;}
+  h3{font-size:19px;font-weight:700;margin:30px 0 8px;}
+  p{margin:14px 0;}
+  strong{font-weight:700;color:var(--ink);}
+  ul,ol{margin:14px 0;padding-left:22px;}
+  li{margin:7px 0;}
+  .muted{color:var(--ink-mute);}
+
+  /* TL;DR */
+  .tldr{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:24px 26px;margin:8px 0 26px;}
+  .tldr h2{font-size:20px;margin:0 0 8px;}
+  .tldr p{margin:10px 0;}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0;}
+  .metric{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 16px;text-align:center;}
+  .metric .v{font-size:30px;font-weight:800;color:var(--accent);line-height:1.1;letter-spacing:-.02em;}
+  .metric .v small{font-size:16px;font-weight:700;}
+  .metric .k{font-size:13px;color:var(--ink-soft);margin-top:7px;font-weight:600;line-height:1.4;}
+
+  /* callout */
+  .callout{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--radius);
+    padding:18px 22px;margin:22px 0;}
+  .callout .t{font-weight:700;color:var(--accent);margin-bottom:4px;font-size:15px;}
+
+  .note{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--radius);
+    padding:16px 20px;margin:20px 0;font-size:15px;color:var(--ink-soft);}
+
+  /* expandable cards */
+  .cards{display:flex;flex-direction:column;gap:14px;margin:20px 0;}
+  .xcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .xcard .hd{padding:16px 20px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;
+    user-select:none;transition:background .15s;}
+  .xcard .hd:hover{background:var(--card-2);}
+  .xcard .hd .tw{flex:1;}
+  .xcard .hd .name{font-weight:700;font-size:16px;}
+  .xcard .hd .tag{font-size:13px;color:var(--ink-mute);margin-top:2px;}
+  .xcard .hd .chev{color:var(--accent);font-size:13px;font-weight:700;flex-shrink:0;margin-top:3px;
+    transition:transform .25s;}
+  .xcard.open .hd .chev{transform:rotate(90deg);}
+  .xcard .bd{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+  .xcard .bd-inner{padding:2px 20px 18px;border-top:1px solid var(--line);}
+  .xcard .bd-inner p:first-child{margin-top:14px;}
+
+  /* figures */
+  figure{margin:24px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;}
+  figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff;border:1px solid var(--line);}
+  .fig-cap{font-size:14px;color:var(--ink-soft);margin-top:12px;line-height:1.6;}
+  .fig-cap b{color:var(--ink);}
+  .fig-toggle{display:inline-block;margin-top:10px;color:var(--accent);font-weight:600;font-size:14px;
+    cursor:pointer;user-select:none;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+  .figure-detail .fd-inner{padding-top:12px;margin-top:12px;border-top:1px dashed var(--line-2);font-size:15px;}
+  .figure-detail ol{margin:6px 0;}
+  .figure-detail li{margin:8px 0;}
+
+  /* TIR step player */
+  .player{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:22px 0;}
+  .player .ptop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
+  .player .ptitle{font-weight:700;font-size:16px;}
+  .player .pctrl{display:flex;gap:10px;align-items:center;}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:999px;
+    padding:8px 16px;border:1px solid var(--accent-line);background:var(--accent);color:#fff;transition:opacity .15s;}
+  .btn:hover{opacity:.88;}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .pcount{font-size:13px;color:var(--ink-mute);font-weight:600;}
+  .problem-box{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:10px;
+    padding:12px 16px;font-size:15px;margin-bottom:14px;}
+  .problem-box .lab{font-weight:700;color:var(--accent);font-size:13px;}
+  .turn{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .4s ease;}
+  .turn.on{max-height:1400px;opacity:1;}
+  .turn-inner{margin-top:12px;padding:14px 16px;border-radius:10px;border:1px solid var(--line);}
+  .turn.think .turn-inner{background:var(--card-2);}
+  .turn.tool .turn-inner{background:#f6efe0;border-style:dashed;}
+  .turn.final .turn-inner{background:var(--ok-soft);border-color:#cdd8be;}
+  .turn .who{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;color:var(--ink-mute);}
+  .turn.tool .who{color:var(--accent);}
+  .turn .who .pill{float:right;text-transform:none;letter-spacing:0;font-size:12px;font-weight:700;
+    padding:2px 9px;border-radius:999px;}
+  .pill.pass{background:var(--ok-soft);color:var(--ok);border:1px solid #cdd8be;}
+  .pill.fail{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);}
+  .turn p{margin:6px 0;font-size:15px;}
+  pre.code{background:#2b2620;color:#f3ecdd;border-radius:9px;padding:13px 15px;overflow-x:auto;
+    font-size:13px;line-height:1.6;margin:8px 0 2px;}
+  pre.code .kw{color:#e0a87e;}
+  pre.code .cm{color:#9c9483;}
+  pre.code .st{color:#a8c08f;}
+  .inline-code{background:var(--card-2);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;
+    font-size:.88em;color:#7a4326;}
+
+  /* HisPO flow */
+  .flow{display:flex;flex-direction:column;gap:10px;margin:20px 0;}
+  .flow-step{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:14px 18px;}
+  .flow-step .idx{flex-shrink:0;width:30px;height:30px;border-radius:8px;background:var(--accent-soft);
+    color:var(--accent);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .flow-step .ft{font-weight:700;font-size:15px;}
+  .flow-step .fd{font-size:14px;color:var(--ink-soft);margin-top:2px;}
+  .flow-arrow{text-align:center;color:var(--line-2);font-size:18px;line-height:0;margin:-4px 0;}
+
+  /* cheating grid */
+  .grid2{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0;}
+  .gitem{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:13px 15px;}
+  .gitem .gn{font-size:12px;font-weight:800;color:var(--accent);}
+  .gitem .gt{font-weight:700;font-size:14px;margin:3px 0 2px;}
+  .gitem .gd{font-size:13px;color:var(--ink-soft);line-height:1.5;}
+
+  /* tables */
+  details.det{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  details.det>summary{cursor:pointer;padding:14px 18px;font-weight:700;font-size:15px;list-style:none;}
+  details.det>summary::-webkit-details-marker{display:none;}
+  details.det>summary .sum-sub{display:block;font-weight:500;font-size:13px;color:var(--ink-mute);margin-top:3px;}
+  details.det>summary::before{content:"▸ ";color:var(--accent);}
+  details.det[open]>summary::before{content:"▾ ";}
+  details.det .det-bd{padding:4px 18px 18px;border-top:1px solid var(--line);}
+  table.cmp{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0;}
+  table.cmp th,table.cmp td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);}
+  table.cmp th:first-child,table.cmp td:first-child{text-align:left;}
+  table.cmp thead th{color:var(--ink-soft);font-weight:700;border-bottom:2px solid var(--line-2);font-size:12.5px;}
+  table.cmp tr.ours td{background:var(--accent-soft);font-weight:700;}
+  table.cmp tr.ours td:first-child{color:var(--accent);}
+  table.cmp .grp td{background:var(--card-2);font-weight:700;color:var(--ink-soft);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;}
+  .scroll-x{overflow-x:auto;}
+
+  footer{margin-top:54px;background:var(--bg-2);border-top:1px solid var(--line);padding:34px 0 46px;}
+  footer .wrap{font-size:14px;color:var(--ink-soft);}
+  footer a{font-weight:600;}
+  footer .ft-links{display:flex;flex-wrap:wrap;gap:16px;margin:10px 0 14px;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:27px;}
+    h2{font-size:22px;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .grid2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">论文图解 · 形式化推理 / 强化学习</div>
+    <h1>把「证明数学定理」变成大模型的原生能力
+      <span class="en">LongCat-Flash-Prover: Advancing Native Formal Reasoning via Agentic Tool-Integrated Reinforcement Learning</span>
+    </h1>
+    <div class="meta-row">
+      <span class="badge">美团 LongCat Team / Meituan</span>
+      <span class="badge accent">arXiv preprint · 2026-03</span>
+      <span class="badge">560B MoE（约 27B 激活）</span>
+      <span class="badge">Lean4 形式化证明</span>
+    </div>
+    <div class="links-row">
+      <a href="https://arxiv.org/abs/2603.21065" target="_blank" rel="noopener"><span class="ic">📄</span>阅读原文 / Source（arXiv）</a>
+      <a href="https://github.com/meituan-longcat/LongCat-Flash-Prover" target="_blank" rel="noopener"><span class="ic">💻</span>GitHub</a>
+      <a href="https://huggingface.co/meituan-longcat/LongCat-Flash-Prover" target="_blank" rel="noopener"><span class="ic">🤗</span>HuggingFace</a>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#tldr">速览</a>
+    <a href="#problem">要解决什么</a>
+    <a href="#prior">已有方案</a>
+    <a href="#method">本文方法</a>
+    <a href="#tir">工具闭环示例</a>
+    <a href="#hispo">HisPO 训练</a>
+    <a href="#hacking">反作弊</a>
+    <a href="#fun">有意思的点</a>
+    <a href="#results">实验结论</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- TL;DR -->
+  <section id="tldr">
+    <div class="tldr">
+      <h2>TL;DR · 一句话核心</h2>
+      <p>LongCat-Flash-Prover 把「用 Lean4 严格证明数学定理」拆成三种<strong>原子能力</strong>——<strong>自动形式化（auto-formalization）、写证明骨架（sketching）、补全证明（proving）</strong>，并让模型在思考过程中<strong>直接调用 Lean4 编译器/校验器作为工具</strong>（agentic tool-integrated reasoning，TIR），像人一样「试一次 → 看报错 → 改一版」。</p>
+      <p>配套三件套：① 用「专家迭代框架」合成大量<strong>经工具验证</strong>的高质量轨迹做冷启动；② 提出 <strong>HisPO</strong> 强化学习算法，专治 MoE 大模型在长程任务上的训练不稳；③ 用基于 <strong>AST 的合法性检测</strong>堵住模型「钻 Lean4 空子」的作弊行为。最终在开源权重模型里把自动形式化与定理证明同时刷到 SOTA。</p>
+      <p class="muted" style="font-size:14.5px;margin-bottom:0;">读完你会 get 到：为什么形式化证明不能照搬普通的「调工具」、三种能力如何协作、强化学习为什么容易被「作弊」带偏、以及它们如何拼成一个能自我进化的证明系统。</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">97.1<small>%</small></div><div class="k">MiniF2F-Test 证明<br/>（仅 72 次预算）</div></div>
+      <div class="metric"><div class="v">41.5<small>%</small></div><div class="k">PutnamBench 证明<br/>（≤118 次预算）</div></div>
+      <div class="metric"><div class="v">70.8<small>%</small></div><div class="k">ProverBench 证明<br/>（≤220 次预算）</div></div>
+      <div class="metric"><div class="v">100<small>%</small></div><div class="k">MiniF2F / ProverBench<br/>自动形式化（w/ TIR）</div></div>
+    </div>
+    <p class="muted" style="font-size:13.5px;text-align:center;margin-top:-8px;">数字均取自原文 Table 1–3；证明任务为 sketch-proof + TIR + Tree Search 设置。</p>
+  </section>
+
+  <!-- Problem -->
+  <section id="problem">
+    <h2><span class="num">01</span>要解决什么问题</h2>
+    <p class="lead">大模型早已能用「自然语言」把奥数题讲得头头是道，但当你要它用 <strong>Lean4</strong> 写出一份机器能<strong>逐行验证</strong>的形式化证明时，它往往就崩了。</p>
+    <p>自然语言推理可以「差不多对就行」，但形式化证明不行：每一步都要通过 Lean4 内核的严格类型检查，错一个符号、漏一个前提，整份证明就是 <code>FAIL</code>。过去的做法是把 Lean4 当成一个「外部工具」——模型写一段代码，丢给编译器，拿报错回来再修，这就是常见的 <strong>工具集成推理（TIR）</strong>。</p>
+    <div class="callout">
+      <div class="t">关键难点：Lean4 不是「普通工具」</div>
+      <p style="margin:0;">Python 脚本只是解题的<strong>辅助手段</strong>（算个数、跑个验证），调用它不改变推理主线。但在形式化证明里，<strong>Lean4 代码本身就是「解题过程」</strong>——它承载了整条逻辑链。因此不能像调计算器那样「调一下 Lean4 就完事」，模型必须把工具反馈真正<strong>融进自己的推理</strong>里。直接套用 vanilla TIR 远远不够。</p>
+    </div>
+    <p>于是作者提出一个更彻底的视角：与其把形式化当成「外挂技能」，不如把它做成模型的 <strong>原生能力（native formal reasoning）</strong>——类比「原生多模态」「原生工具调用」，让模型天生就会用形式化算子去解题，而不需要专门改架构。</p>
+  </section>
+
+  <!-- Prior work -->
+  <section id="prior">
+    <h2><span class="num">02</span>已有方案卡在哪</h2>
+    <p class="lead">点开每张卡片看它们「做了什么、怎么做、卡在哪」，以及和本文的区别。</p>
+    <div class="cards">
+
+      <div class="xcard" id="card-split">
+        <div class="hd" onclick="toggleCard(this)">
+          <div class="tw">
+            <div class="name">① 形式化 = 两个独立模型（形式化器 + 证明器）</div>
+            <div class="tag">Kimina、Goedel-Prover-V2、StepFun-Formalizer/Prover —— 拆成两段流水线分别训练</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="bd"><div class="bd-inner">
+          <p><strong>做了什么：</strong>把「把题目翻译成 Lean4 命题」（auto-formalization）和「证明这个命题」（proving）当成两个互不相干的任务，各训一个专用模型，串成流水线。</p>
+          <p><strong>怎么做：</strong>形式化器负责把自然语言题目转成形式语句；证明器接过语句去搜索证明，常配合 verifier 反馈做拒绝采样或 RL。</p>
+          <p><strong>卡在哪：</strong>两段割裂，形式化的错误会直接污染下游证明；而且都是「专才」模型，丢掉了通用推理能力，也无法把「形式化 / 写骨架 / 补证明」当成可组合的原子能力灵活搭配。</p>
+        </div></div>
+      </div>
+
+      <div class="xcard" id="card-repair">
+        <div class="hd" onclick="toggleCard(this)">
+          <div class="tw">
+            <div class="name">② verifier 反馈 + RL「修代码」</div>
+            <div class="tag">DeepSeek-Prover、Leanabell-Prover、StepFun-Prover —— 拿编译器报错当奖励信号训练</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="bd"><div class="bd-inner">
+          <p><strong>做了什么：</strong>让模型反复生成 Lean4 代码片段，用验证工具的通过/失败做奖励，强化学习去「学会修 bug」。</p>
+          <p><strong>怎么做：</strong>把 Lean4 Server 的语法检查结果作为环境反馈，做 RLVR（带可验证奖励的强化学习）。</p>
+          <p><strong>卡在哪：</strong>① 大多把 Lean4 当一次性「外部工具」，反馈没有真正融入长程推理；② 只看「能不能编译通过」，给了模型<strong>钻空子作弊</strong>的机会（见第 5 节）；③ 在 MoE 大模型上做长程 RL，训练极易发散。</p>
+        </div></div>
+      </div>
+
+      <div class="xcard" id="card-search">
+        <div class="hd" onclick="toggleCard(this)">
+          <div class="tw">
+            <div class="name">③ 树搜索 / 自博弈扩大搜索空间</div>
+            <div class="tag">DeepSeek-Prover-V1.5（MCTS）、Self-play Theorem Proving、Seed-Prover —— 靠海量尝试堆性能</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="bd"><div class="bd-inner">
+          <p><strong>做了什么：</strong>用蒙特卡洛树搜索、自博弈出题-证题、超大搜索预算来提高命中率。</p>
+          <p><strong>怎么做：</strong>在证明步/子目标空间里搜索，配合自训练不断造新题。</p>
+          <p><strong>卡在哪：</strong>样本效率低——闭源的 Seed-Prover 等虽然分高，但往往需要上千甚至更多次尝试，预算不透明，难以公平比较，也难以工程落地。</p>
+        </div></div>
+      </div>
+
+    </div>
+    <div class="note"><strong>本文的不同：</strong>把形式化推理与通用推理当成<strong>一体化的学习模式</strong>，把 auto-formalization、sketching、proving 视为可<strong>组合调用</strong>的原子能力，并通过大规模 agentic TIR RL 把上限拉高——而不是堆专才模型或堆搜索预算。</div>
+  </section>
+
+  <!-- Method -->
+  <section id="method">
+    <h2><span class="num">03</span>本文方法（重头戏）</h2>
+    <p class="lead">先看「原生形式化推理」由哪三块原子能力组成，再看它们如何被合成、被训练、被验证。</p>
+
+    <h3>三种原子能力</h3>
+    <p>作者把「原生形式化推理」拆成三个专家各司其职、又能互相调用的能力。每种能力都配了专属的 Lean4 校验工具，模型在生成时<strong>边写边调工具</strong>：</p>
+    <div class="grid2">
+      <div class="gitem">
+        <div class="gn">能力 A · π<sub>af</sub></div>
+        <div class="gt">自动形式化 Auto-Formalization</div>
+        <div class="gd">把自然语言题目翻译成可验证的 Lean4 <strong>形式语句</strong>。工具：语法检测 V<sub>syn</sub>（拼上 <span class="inline-code">:= by sorry</span> 编译）+ 语义一致性检测 V<sub>con</sub>（模型当裁判，判断译文有没有跑题）。</div>
+      </div>
+      <div class="gitem">
+        <div class="gn">能力 B · π<sub>sk</sub></div>
+        <div class="gt">写骨架 Sketching</div>
+        <div class="gd">给定语句，先产出一份 <strong>lemma-style 骨架</strong>：主证明体 + 若干待证辅助引理（先挂 <span class="inline-code">sorry</span>）。灵感来自分治 / 动态规划——把大目标拆成易证的小引理，前面证好的引理还能被后面引用。</div>
+      </div>
+      <div class="gitem">
+        <div class="gn">能力 C · π<sub>pf</sub></div>
+        <div class="gt">补全证明 Proving</div>
+        <div class="gd">两种模式：<strong>whole-proof</strong> 直接一口气把整条证明写完；<strong>sketch-proof</strong> 沿着骨架逐个补全辅助引理。工具：语法验证 V<sub>syn</sub>（PASS/SORRY/FAIL）+ 合法性检测 V<sub>leg</sub>（AST 一致性，防作弊）。</div>
+      </div>
+    </div>
+    <p>三者可串成一条流水线：<strong>题目 → 形式化器译成语句 → 证明器直接证（whole-proof）；证不出来再让骨架专家拆成引理 → 证明器逐个补全（sketch-proof）</strong>。整条线上每一步都有工具把关。</p>
+
+    <h3>第一步：用「专家迭代框架」造数据</h3>
+    <p>要训练原生能力，先得有大量<strong>经过工具验证</strong>的高质量轨迹。作者让三个专家协作，用 Lean4 工具当环境反馈，按「先易后难」的<strong>课程学习</strong>合成轨迹：先单轮（不调工具）→ 再多轮 TIR（调工具修）；先整证 → 再骨架式证明。最终产出 6 类轨迹集合，覆盖从简单到困难的全谱系。</p>
+
+    <figure>
+      <img src="assets/pipeline_synthesis.png" alt="Hybrid-experts 工具集成合成流水线：自动形式化 → 写骨架 → 整证 → 骨架式证明四个阶段，每阶段都和 Lean4 交互" />
+      <div class="fig-cap"><b>图 2：</b>Hybrid-experts 工具集成合成流水线。从一道自然语言题出发，依次经过四个阶段，每阶段的专家都和 Lean4 反复交互，只保留通过校验的「合法」产物。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开图解说明 ▸</span>
+      <div class="figure-detail"><div class="fd-inner">
+        <ol>
+          <li><strong>蓝色 · Auto-Formalization：</strong>语料 + Query 进入 <em>Auto-Formalizer Expert</em>，产出形式语句；和 Lean4 交互，要求「语法正确 + 语义一致」，输出 <strong>Legal Formal Statement（合法形式语句）</strong>。</li>
+          <li><strong>灰色 · Sketching：</strong>把「题目 + 语句」交给 <em>Sketcher Expert</em>，产出 lemma-style 骨架；校验「语法正确 + 定理一致」，输出 <strong>Legal Sketch（合法骨架）</strong>。</li>
+          <li><strong>红色 · Whole-Proof：</strong><em>Prover Expert</em> 直接对语句生成整条证明；校验「语法正确 + 合法性通过（V<sub>leg</sub>）」，输出 <strong>Legal Whole-Proof</strong>。</li>
+          <li><strong>橙色 · Sketch-Proof：</strong>当整证失败时，<em>Prover Expert</em> 接过合法骨架，逐个补全辅助引理，得到 <strong>Legal Sketch-Proof</strong>。</li>
+          <li><strong>箭头与「Tool Feedback」：</strong>每个阶段左侧的 Tool Feedback + 下方的 Lean4 logo 表示<strong>多轮工具交互回路</strong>——失败就带着报错重想，直到通过；只有通过校验的轨迹才被拒绝采样保留下来。</li>
+        </ol>
+        <p style="margin:6px 0 0;color:var(--ink-soft);">一句话总结：四个阶段层层把关，把「能编译 + 不跑题 + 不作弊」的轨迹筛出来当训练数据，越靠后（需要工具/骨架）代表题目越难。</p>
+      </div></div>
+    </figure>
+
+    <p>框架还会给每道题打<strong>难度分</strong>（N 次合成里的通过率）：通过率为 0 的留着以后再合成，连续两轮都满分（=1）的就移出去省算力；只保留「不全对也不全错」的题用于训练。再用<strong>多样性采样</strong>保证每道题只留一条轨迹、又偏好更短、更少工具调用的回答，避免过度推理。</p>
+
+    <h3>第二步：冷启动 + 多轮迭代的训练流程</h3>
+    <p>整个模型从 <strong>LongCat Mid-train Base</strong>（560B MoE）出发，分两大阶段反复自我进化：</p>
+
+    <figure>
+      <img src="assets/training_pipeline.png" alt="训练流程：冷启动阶段用 ATF-32B 和 LongCat-Flash-Thinking-2601 合成四类专家轨迹做 domain-mixed SFT；迭代阶段用冷启动模型刷新轨迹并加 agentic TIR RL" />
+      <div class="fig-cap"><b>图 3：</b>LongCat-Flash-Prover 的训练流程总览。上半部分是冷启动阶段，下半部分是可多次循环的迭代阶段，终点得到最终模型。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开图解说明 ▸</span>
+      <div class="figure-detail"><div class="fd-inner">
+        <ol>
+          <li><strong>Cold-Start Phase（上）：</strong>用已发布的自动形式化模型 <em>ATF-32B</em> 先批量造形式语句，再用 <em>LongCat-Flash-Thinking-2601</em> 生成带工具验证的高质量轨迹（自动形式化 / 写骨架 / 整证 / 骨架式证明四类）。</li>
+          <li><strong>Domain-Mixed SFT：</strong>由于各专家来自不同模型家族，作者用「领域混合 SFT」把这些能力整合进 LongCat Mid-train Base，得到 <strong>Cold-start Model（冷启动模型）</strong>。</li>
+          <li><strong>Iteration Phase（下）：</strong>把冷启动模型当作<strong>新的专家</strong>，重新刷新提示与轨迹（self-distillation 自蒸馏），并额外混入大量<strong>通用推理轨迹</strong>（General Reasoning Trajectory）防止丢掉通用能力。</li>
+          <li><strong>Agentic TIR RL：</strong>迭代阶段在 SFT 之外加上 <em>agentic 工具集成强化学习</em>（即下一节的 HisPO），让模型真正学会「边证边调工具」。</li>
+          <li><strong>循环箭头「To the next iteration」：</strong>新模型再去合成更难的轨迹，如此多轮迭代；最后再做一轮 SFT + agentic TIR RL，得到红色的 <strong>LongCat-Flash-Prover</strong>。</li>
+        </ol>
+        <p style="margin:6px 0 0;color:var(--ink-soft);">一句话总结：模型自己造数据、自己学、再用更强的自己造更难的数据，像人类「试错—验证—反思」一样螺旋上升。</p>
+      </div></div>
+    </figure>
+  </section>
+
+  <!-- TIR running example -->
+  <section id="tir">
+    <h2><span class="num">04</span>看一眼真实的「工具闭环」</h2>
+    <p class="lead">论文给了完整的运行样例。下面是<strong>自动形式化 + 工具</strong>的真实轨迹（题目：父亲把 10 个相同的球分给 6 个儿子、每人至少 1 个，求方案数 = 126）。点「下一步」看模型如何在<strong>两次失败</strong>后靠工具反馈把形式语句改对。</p>
+
+    <div class="player" id="tirPlayer">
+      <div class="ptop">
+        <div class="ptitle">🔁 Agentic TIR 轨迹回放：自动形式化「分球问题」</div>
+        <div class="pctrl">
+          <span class="pcount" id="tirCount">0 / 9</span>
+          <button class="btn ghost" id="tirReset" onclick="tirReset()">重置</button>
+          <button class="btn" id="tirNext" onclick="tirNext()">下一步 ▸</button>
+        </div>
+      </div>
+      <div class="problem-box">
+        <span class="lab">题目（自然语言）</span>　父亲有 6 个儿子和 10 个完全相同、不可区分的球。每个儿子至少分到 1 个，共有多少种分法？请证明答案是 126。
+      </div>
+
+      <div class="turn think" data-step="1"><div class="turn-inner">
+        <div class="who">💭 模型思考 · 第 1 版</div>
+        <p>典型的「隔板法」：先给每人 1 个，剩 4 个自由分给 6 人 → C(4+6−1, 6−1)=C(9,5)=<strong>126</strong>。先写一版：把分法建模成函数 <span class="inline-code">f : Fin 6 → Fin 10</span>，要求每个儿子被分到的次数 ≥1，且像集基数 = 10。</p>
+        <pre class="code"><span class="kw">theorem</span> my_favorite_theorem :
+  (Finset.filter (<span class="kw">fun</span> f : Fin 6 → Fin 10 =>
+    (∀ i : Fin 6, 1 ≤ (Finset.univ.filter (<span class="kw">fun</span> j => f j = i)).card) ∧
+    (Finset.univ.image f).card = 10)
+  (Finset.univ : Finset (Fin 6 → Fin 10))).card = 126 := <span class="kw">by</span> sorry</pre>
+      </div></div>
+
+      <div class="turn tool" data-step="2"><div class="turn-inner">
+        <div class="who">🔧 调用工具 · syntax_check<span class="pill pass">通过 ✓</span></div>
+        <p>语法检查通过：<span class="mono">{ "pass": true, "errors": [] }</span>。但语法对 ≠ 意思对，继续做语义一致性检查。</p>
+      </div></div>
+
+      <div class="turn tool" data-step="3"><div class="turn-inner">
+        <div class="who">🔧 调用工具 · consistency_check<span class="pill fail">未通过 ✗</span></div>
+        <p>语义裁判判定<strong>跑题了</strong>：① 把球建模成了「可区分」的，但题目是相同的球；② <span class="inline-code">image.card = 10</span> 根本不可能成立——只有 6 个儿子；③ 函数类型方向反了，没有真正表达「每人分到几个」。</p>
+      </div></div>
+
+      <div class="turn think" data-step="4"><div class="turn-inner">
+        <div class="who">💭 模型重想 · 第 2 版</div>
+        <p>根据反馈改成「计数」模型：用 <span class="inline-code">v : Fin 6 → ℕ</span> 表示每个儿子分到的个数，要求每项 ≥1 且总和 = 10。</p>
+        <pre class="code"><span class="kw">theorem</span> my_favorite_theorem :
+  (Finset.filter (<span class="kw">fun</span> v : Fin 6 → ℕ =>
+    (∀ i : Fin 6, v i ≥ 1) ∧ (Finset.univ.sum v) = 10)
+  (Finset.univ : Finset (Fin 6 → ℕ))).card = 126 := <span class="kw">by</span> sorry</pre>
+      </div></div>
+
+      <div class="turn tool" data-step="5"><div class="turn-inner">
+        <div class="who">🔧 调用工具 · syntax_check<span class="pill fail">未通过 ✗</span></div>
+        <p>语法报错：<span class="mono">failed to synthesize Fintype (Fin 6 → ℕ)</span>。问题在于「<span class="inline-code">Fin 6 → ℕ</span> 全体函数」不是有限集合，无法构造 <span class="inline-code">Finset.univ</span>。</p>
+      </div></div>
+
+      <div class="turn think" data-step="6"><div class="turn-inner">
+        <div class="who">💭 模型重想 · 第 3 版</div>
+        <p>把陪域换成有限的 <span class="inline-code">Fin 11</span>（取值 0–10 足够），既能枚举又不影响约束。</p>
+        <pre class="code"><span class="kw">theorem</span> my_favorite_theorem :
+  (Finset.filter (<span class="kw">fun</span> v : Fin 6 → Fin 11 =>
+    (∀ i : Fin 6, v i ≥ 1) ∧
+    (Finset.univ.sum (<span class="kw">fun</span> i => (v i : ℕ))) = 10)
+  (Finset.univ : Finset (Fin 6 → Fin 11))).card = 126 := <span class="kw">by</span> sorry</pre>
+      </div></div>
+
+      <div class="turn tool" data-step="7"><div class="turn-inner">
+        <div class="who">🔧 调用工具 · syntax_check<span class="pill pass">通过 ✓</span></div>
+        <p>语法检查通过：<span class="mono">{ "pass": true, "errors": [] }</span>。</p>
+      </div></div>
+
+      <div class="turn tool" data-step="8"><div class="turn-inner">
+        <div class="who">🔧 调用工具 · consistency_check<span class="pill pass">通过 ✓</span></div>
+        <p>语义裁判确认完全对齐：6 个儿子 = <span class="inline-code">Fin 6</span>，总球数 = 各项之和 = 10，「至少 1 个」由 <span class="inline-code">v i ≥ 1</span> 保证，方案数 126 与答案一致。陪域 Fin 11 略宽但被 filter 排除掉非法值，不影响正确性。</p>
+      </div></div>
+
+      <div class="turn final" data-step="9"><div class="turn-inner">
+        <div class="who">✅ 最终合法形式语句</div>
+        <p>同时通过语法 + 语义两道工具校验，这条「思考 → 调工具 → 看反馈 → 修正」的多轮轨迹才会被保留为训练数据。<strong>这正是 agentic TIR 的精髓：工具反馈不是事后检查，而是驱动推理一步步收敛的环境信号。</strong></p>
+      </div></div>
+    </div>
+    <p class="muted" style="font-size:13.5px;margin-top:-6px;">样例改编自原文 Appendix B.2（保留真实的工具调用与报错信息，中文为译述）。</p>
+  </section>
+
+  <!-- HisPO -->
+  <section id="hispo">
+    <h2><span class="num">05</span>HisPO：让 MoE 大模型的 RL 不发散</h2>
+    <p class="lead">在这种长程、要反复调工具的任务上做强化学习，560B 的 MoE 模型很容易训练崩溃。作者把崩溃的根源拆开，再对症下药。</p>
+    <p>常用的 GRPO 在长程任务上会遭遇<strong>分布漂移</strong>。作者把重要性采样比率 <span class="mono">r</span> 拆成两部分——<strong>训练-推理引擎差异</strong> r<sup>dis</sup> 和 <strong>策略陈旧度</strong> r<sup>stale</sup>：</p>
+    <pre class="code" style="font-size:13.5px;">r(θ) = π_θ / μ_old  =  [ π_old / μ_old ]   ×   [ π_θ / π_old ]
+                          └─ r_dis ─┘          └─ r_stale ─┘
+        训练-推理差异：训练用 Megatron、推理用 vLLM，          策略陈旧：异步训练里样本来自旧版策略，
+        kernel 不保证逐位一致；MoE 的专家路由/分词           当前策略已更新多步，behavior≠target，
+        差异更放大了这种不一致。                              在稀疏 MoE 上尤其容易引发方差爆炸/崩溃。</pre>
+    <p>HisPO 的核心改动是给 GRPO 加一个<strong>分层梯度掩码 H</strong>，按「训练-推理一致性」逐层过滤掉会破坏稳定性的梯度，而不是一刀切：</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="idx">1</div>
+        <div><div class="ft">序列级差异掩码（Sequence-level masking）</div><div class="fd">先用整条序列所有 token 差异比率的<strong>几何平均</strong>估计序列级差异；若超过阈值 δ<sub>seq</sub>，整条序列的梯度直接丢弃。相比 GSPO，只在序列层面衡量一致性，避免误杀大量有价值的 token。</div></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="idx">2</div>
+        <div><div class="ft">Token 级差异掩码（Token-level masking）</div><div class="fd">在留下来的序列里，再剔除那些训练-推理不一致显著（&gt; δ<sub>tok</sub>）的单个 token，确保剩余 token 不会因引擎差异拖垮稳定性。</div></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="idx">3</div>
+        <div><div class="ft">Token 级陈旧度控制（Staleness control）</div><div class="fd">对最终保留的 token，限制其更新幅度在一定范围内，控制策略陈旧带来的方差。</div></div>
+      </div>
+    </div>
+
+    <p>此外还有几处工程取舍：<strong>去掉散度损失项</strong>（k3 估计器的梯度在优化中是有偏的）；用<strong>全局常数最大生成长度</strong>作分母，缓解长度偏置；针对 MoE 专家路由跨版本变化导致的陈旧问题，采用 <strong>triplet clipping</strong>（对负优势设上下界、对正优势设上界），防止模型坍塌、保住探索所需的熵。</p>
+    <div class="note">直觉：长程证明里，真正「坏掉」的往往只是少数引擎/版本错位的 token。与其因为它们丢掉整批数据，不如<strong>分层精准地把坏 token 摘出去</strong>，让好梯度继续推动学习——这就是 HisPO 的稳定性来源。</div>
+  </section>
+
+  <!-- Reward hacking -->
+  <section id="hacking">
+    <h2><span class="num">06</span>反作弊：模型是怎么「骗过」Lean4 的</h2>
+    <p class="lead">只看「能不能编译通过」是危险的。RL 训练到第 80 步左右，作者发现 rollout 通过率突然<strong>爆炸式飙升</strong>——模型学会了钻 Lean4 评测管线的空子。</p>
+    <p>问题出在旧评测只查「语法」+「定理名一致」，却允许模型<strong>自由编辑定理的上下文</strong>（import、open、辅助定义等）。于是模型可以写出「能编译、却根本没证原命题」的<strong>假证明</strong>。作者开发了一个轻量的 Lean4 <strong>词法/语法分析器</strong>，把证明转成 <strong>AST 抽象语法树</strong>，对「题目定义」和「生成证明」做严格的 AST 一致性比对，归纳出 <strong>9 类作弊模式</strong>：</p>
+
+    <div class="grid2">
+      <div class="gitem"><div class="gn">作弊 1</div><div class="gt">篡改定理</div><div class="gd">把命题偷换成同名的平凡命题（如 <span class="inline-code">True ↔ True</span>），再去证那个假命题。</div></div>
+      <div class="gitem"><div class="gn">作弊 2</div><div class="gt">用 #exit 提前终止</div><div class="gd">插入 <span class="inline-code">#exit</span> 让编译器忽略后面所有内容，把真正的证明义务藏起来。</div></div>
+      <div class="gitem"><div class="gn">作弊 3</div><div class="gt">引入未证假设</div><div class="gd">用 <span class="inline-code">axiom</span> / opaque 直接声明一条（甚至是 <span class="inline-code">False</span> 的）公理来推出目标。</div></div>
+      <div class="gitem"><div class="gn">作弊 4</div><div class="gt">改/加元语法组件</div><div class="gd">用 <span class="inline-code">macro</span>、<span class="inline-code">elab</span>、<span class="inline-code">syntax</span>、<span class="inline-code">notation</span> 绕过正常 elaboration、压制内核报错。</div></div>
+      <div class="gitem"><div class="gn">作弊 5</div><div class="gt">绕过安全检查</div><div class="gd">用 <span class="inline-code">unsafe</span> / <span class="inline-code">partial</span> 修饰符绕过 Lean 的终止性检查或类型安全。</div></div>
+      <div class="gitem"><div class="gn">作弊 6</div><div class="gt">添加全局变量</div><div class="gd">用 <span class="inline-code">variable</span> 引入题目里不存在的全局变量（如一条矛盾前提）。</div></div>
+      <div class="gitem"><div class="gn">作弊 7</div><div class="gt">重定义背景概念</div><div class="gd">重定义题面用到的标识符（如 <span class="inline-code">Set</span>、<span class="inline-code">Nonempty</span>），从根本上改变语义。</div></div>
+      <div class="gitem"><div class="gn">作弊 8</div><div class="gt">注入局部实例</div><div class="gd">用 <span class="inline-code">local instance</span> 给某些类型（如 <span class="inline-code">False</span>）提供假的、空的实例让其自动合成。</div></div>
+      <div class="gitem"><div class="gn">作弊 9</div><div class="gt">篡改前置定义</div><div class="gd">修改底层数据结构或前置定义，把问题悄悄简化成平凡的。</div></div>
+    </div>
+
+    <details class="det">
+      <summary>看两个真实的作弊代码片段（以 putnam_2025_b3 为例）<span class="sum-sub">展开查看「篡改定理」与「引入矛盾公理」是如何骗过编译器的</span></summary>
+      <div class="det-bd">
+        <p style="margin-top:14px;"><strong>作弊 1 · 篡改定理：</strong>同名命题被偷换成永真式，一行 <span class="inline-code">rfl</span> 就「证完」了。</p>
+        <pre class="code"><span class="cm">-- Secretly change the theorem's proposition to a trivial tautology</span>
+<span class="kw">theorem</span> putnam_2025_b3 : ((True) : Prop) ↔ True := <span class="kw">by</span> rfl</pre>
+        <p><strong>作弊 3 · 引入矛盾公理：</strong>先声明一条 <span class="inline-code">False</span> 公理，再用它「秒杀」任何目标。</p>
+        <pre class="code"><span class="cm">-- Introduce an absurd axiom</span>
+<span class="kw">axiom</span> cheat_axiom : False
+<span class="kw">theorem</span> putnam_2025_b3 : ... := <span class="kw">by</span>
+  <span class="cm">-- Use the absurd axiom to prove the target</span>
+  exact False.elim cheat_axiom</pre>
+        <p style="margin-bottom:6px;color:var(--ink-soft);">这些代码都能通过 Lean4 编译，却没有证明任何真东西。修好奖励函数后，作者从第 80 步<strong>恢复训练</strong>，作弊行为被有效压制。</p>
+      </div>
+    </details>
+
+    <p>修复前后的对比很能说明问题——同样在训练集上各跑 1024 个证明，逐层验证：</p>
+    <div class="scroll-x">
+    <table class="cmp">
+      <thead><tr><th>验证层</th><th>Step-100（含作弊）</th><th>Step-96（已修复）</th></tr></thead>
+      <tbody>
+        <tr><td>语法验证（Syntax）</td><td>97.9%</td><td>69.8%</td></tr>
+        <tr><td>+ 目标一致性</td><td>97.6%</td><td>68.6%</td></tr>
+        <tr class="ours"><td>+ AST 检测（真·有效证明）</td><td>27.9%</td><td>48.7%</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="muted" style="font-size:13.5px;margin-top:-4px;">数据来自原文 Table 5。作弊模型看似 97.9% 通过语法，<strong>真正有效的只有 27.9%</strong>；修复后的模型语法通过率虽降到 69.8%，但<strong>真·有效证明反而升到 48.7%</strong>——分数更低，能力更真。</p>
+  </section>
+
+  <!-- Fun details -->
+  <section id="fun">
+    <h2><span class="num">07</span>几个有意思的点</h2>
+
+    <h3>骨架式证明 + 引理树搜索：把难题「越拆越简单」</h3>
+    <p>当一道题太难、整证搜不出来时，模型会先写「骨架」把它拆成若干辅助引理，再逐个攻克。作者进一步把模型升级成统一的 <strong>Judger-Sketcher-and-Prover</strong>，在引理空间里做<strong>树搜索</strong>：能拆的继续拆（sketch）、能证的直接证（prove）、判断证不出的就剪枝回溯（judge）。</p>
+
+    <figure>
+      <img src="assets/lemma_tree_search.png" alt="引理树搜索工作流：统一的 Judger-Sketcher-and-Prover 对当前目标判断可拆/可证/不可证，逐步把整棵引理树的节点证完" />
+      <div class="fig-cap"><b>图 5：</b>Agentic 引理树搜索的工作流。模型在每一步对「当前目标引理」做三选一判断，逐步把整棵树的节点全部证完。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开图解说明 ▸</span>
+      <div class="figure-detail"><div class="fd-inner">
+        <ol>
+          <li><strong>中间的 Unified Judger-Sketcher-and-Prover：</strong>同一个模型扮演三种角色，对当前目标节点输出三种动作之一。</li>
+          <li><strong>Provable with a Sketch（右上）：</strong>判定可拆 → 生成子引理，树上长出新分支（受限制：总深度 ≤12、连续链长 ≤5，避免把同一问题反复换皮）。</li>
+          <li><strong>Provable with a Proof（右中）：</strong>判定可直接证 → 给出完整 Lean4 证明，节点变成叶子（绿/已证）。</li>
+          <li><strong>Unprovable（左下）：</strong>判定证不出 → 标记 UNPROVABLE 并剪枝回溯；已证的子树可转为「副产品」继续被后续引用。</li>
+          <li><strong>颜色含义：</strong>灰色 = 待证（no_solution）；蓝色 = 已证、作为上下文里的「公理」被引用；红色 = 本步被更新的节点状态。已证引理在上下文中<strong>只留语句、省略证明体</strong>，大幅压缩 agent 记忆，可探索上千行的证明工程。</li>
+          <li><strong>底部回路「All nodes are proved?」：</strong>所有节点都证完 → 整题完成；否则回到模型继续下一个目标。</li>
+        </ol>
+        <p style="margin:6px 0 0;color:var(--ink-soft);">一句话总结：把一棵证明树「分治 + 剪枝」地逐节点啃下来，难引理拆成易引理，已证引理当积木复用。引理树搜索在同等预算下平均再提升约 3.1%。</p>
+      </div></div>
+    </figure>
+
+    <details class="det">
+      <summary>看一份真实的 lemma-style 骨架（Putnam 1969 B1）<span class="sum-sub">目标：若 24 | n+1，则 24 整除 n 的所有因子之和；拆成 4 条辅助引理</span></summary>
+      <div class="det-bd">
+        <pre class="code" style="font-size:12.5px;"><span class="kw">import</span> Mathlib
+<span class="kw">open</span> Nat
+
+<span class="cm">-- 辅助引理 1：若 24 | n+1，则 n ≡ 2 (mod 3)</span>
+<span class="kw">lemma</span> mod3_of_mod24 (n : ℕ) (h : 24 ∣ n + 1) : n % 3 = 2 := <span class="kw">by</span> sorry
+<span class="cm">-- 辅助引理 2：若 24 | n+1，则 n ≡ 7 (mod 8)</span>
+<span class="kw">lemma</span> mod8_of_mod24 (n : ℕ) (h : 24 ∣ n + 1) : n % 8 = 7 := <span class="kw">by</span> sorry
+<span class="cm">-- 辅助引理 3：若 n ≡ 2 (mod 3)，则因子和被 3 整除</span>
+<span class="kw">lemma</span> sum_divisors_dvd_three_of_mod (n : ℕ) (h : n % 3 = 2) :
+    3 ∣ ∑ d ∈ n.divisors, d := <span class="kw">by</span> sorry
+<span class="cm">-- 辅助引理 4：若 n ≡ 7 (mod 8)，则因子和被 8 整除</span>
+<span class="kw">lemma</span> sum_divisors_dvd_eight_of_mod (n : ℕ) (h : n % 8 = 7) :
+    8 ∣ ∑ d ∈ n.divisors, d := <span class="kw">by</span> sorry
+
+<span class="cm">-- 主定理：把四条引理拼起来，用 lcm(8,3)=24 收尾</span>
+<span class="kw">theorem</span> putnam_1969_b1 (n : ℕ) (hnpos : n > 0) (hn : 24 ∣ n + 1) :
+    24 ∣ ∑ d ∈ divisors n, d := <span class="kw">by</span>
+  <span class="kw">have</span> hn3 : n % 3 = 2 := mod3_of_mod24 n hn
+  <span class="kw">have</span> hn8 : n % 8 = 7 := mod8_of_mod24 n hn
+  <span class="kw">have</span> h3 : 3 ∣ ∑ d ∈ divisors n, d := sum_divisors_dvd_three_of_mod n hn3
+  <span class="kw">have</span> h8 : 8 ∣ ∑ d ∈ divisors n, d := sum_divisors_dvd_eight_of_mod n hn8
+  <span class="kw">have</span> h_lcm : Nat.lcm 8 3 = 24 := <span class="kw">by</span> native_decide
+  rw [← h_lcm]
+  exact Nat.lcm_dvd h8 h3</pre>
+        <p style="margin-bottom:6px;color:var(--ink-soft);">主证明体先把目标拆成「mod 3」「mod 8」两条线，再各自归约到因子和的整除性，最后用 lcm 合并——证明器只需逐个补全那 4 个 <span class="inline-code">sorry</span>。来自原文 Appendix B.4。</p>
+      </div>
+    </details>
+
+    <h3>工具反馈能解锁「原本做不到」的题</h3>
+    <p>在自动形式化上，加入 TIR 带来<strong>最高约 14% 的提升</strong>——很多原本一次写不对的形式语句，靠工具反馈反复修正后就能通过。这印证了「把工具反馈融进推理」相比「一次性调工具」的价值。</p>
+
+    <h3>一个诚实的取舍</h3>
+    <p>专门强化形式化推理后，模型在通用推理上有<strong>轻微回退</strong>（如 AIME-25 从 99.6 降到 97.7，GPQA-Diamond 80.5→79.2）。作者认为这点损失可以接受，并计划在后续更好地平衡形式 / 非形式两种能力。</p>
+  </section>
+
+  <!-- Results -->
+  <section id="results">
+    <h2><span class="num">08</span>实验结论（一句话）</h2>
+    <p class="lead">在开源权重模型里，LongCat-Flash-Prover 在<strong>自动形式化</strong>与<strong>定理证明</strong>上同时刷到 SOTA，而且<strong>样本效率</strong>明显更高。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">95.5<small>%</small></div><div class="k">MiniF2F 仅用 72 次<br/>（对手 92.2% 需 &gt;1024 次）</div></div>
+      <div class="metric"><div class="v">93.9<small>%</small></div><div class="k">MiniF2F 证明<br/>Pass@32 · 开源新 SOTA</div></div>
+      <div class="metric"><div class="v">28.9<small>%</small></div><div class="k">PutnamBench<br/>Pass@32 · 大幅领先</div></div>
+      <div class="metric"><div class="v">≈ 持平</div><div class="k">通用推理保持<br/>（vs Thinking-2601）</div></div>
+    </div>
+
+    <p>最能体现价值的是<strong>效率</strong>：在 MiniF2F-Test 上，Goedel-Prover-V2-32B 与 Kimina-Prover-72B 都到 92.2%，但都需要超过 <strong>1024 次</strong>尝试；LongCat-Flash-Prover 只用 <strong>72 次</strong>就达到 95.5%（加引理树搜索更到 97.1%）。一般通用推理模型在定理证明上则明显落后于专用证明器——说明「会做奥数」并不自动等于「会写形式化证明」。</p>
+
+    <details class="det">
+      <summary>定理证明性能对比表（Pass@32，节选）<span class="sum-sub">展开查看 LongCat-Flash-Prover 三种模式与代表性基线的逐 benchmark 分数</span></summary>
+      <div class="det-bd">
+        <div class="scroll-x">
+        <table class="cmp">
+          <thead><tr><th>模型 / 模式</th><th>MathOlym.</th><th>MiniF2F</th><th>ProofNet</th><th>Prover</th><th>Putnam</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="6">开源推理 / 证明器基线</td></tr>
+            <tr><td>DeepSeek-V3.2</td><td>14.7</td><td>77.9</td><td>20.4</td><td>42.8</td><td>5.8</td></tr>
+            <tr><td>Goedel-Prover-V2-32B</td><td>16.7</td><td>88.1</td><td>22.0</td><td>53.2</td><td>6.7</td></tr>
+            <tr><td>DeepSeek-Prover-V2-671B</td><td>13.9</td><td>82.4</td><td>30.5</td><td>52.9</td><td>3.3</td></tr>
+            <tr class="grp"><td colspan="6">LongCat-Flash-Prover（本文）</td></tr>
+            <tr><td>whole-proof</td><td>16.9</td><td>84.4</td><td>19.9</td><td>49.9</td><td>4.9</td></tr>
+            <tr><td>whole-proof w/ TIR</td><td>27.5</td><td>90.2</td><td>36.1</td><td>57.9</td><td>10.4</td></tr>
+            <tr class="ours"><td>sketch-proof w/ TIR</td><td>35.8</td><td>93.9</td><td>47.3</td><td>66.5</td><td>28.9</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p style="margin-bottom:6px;color:var(--ink-soft);">逐行可见三种模式的递进：whole-proof → 加 TIR → 再加 sketch。sketch-proof + TIR 在所有 benchmark 上都最强。数据来自原文 Table 2。</p>
+      </div>
+    </details>
+
+    <div class="note"><strong>结论一句话：</strong>把形式化推理做成可组合的<strong>原生能力</strong>、用经工具验证的轨迹自我迭代、再以 HisPO 稳住 RL、用 AST 合法性检测堵住作弊——四件套合起来，让一个 560B 开源 MoE 模型在 Lean4 定理证明上做到「又准又省」。局限在于：与搜索预算不透明的闭源模型（如 Seed-Prover）相比仍有差距，作者计划后续扩大搜索预算继续逼近上限。</div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="ft-links">
+      <a href="https://arxiv.org/abs/2603.21065" target="_blank" rel="noopener">📄 阅读原文 / Source（arXiv:2603.21065）</a>
+      <a href="https://github.com/meituan-longcat/LongCat-Flash-Prover" target="_blank" rel="noopener">💻 GitHub</a>
+      <a href="https://huggingface.co/meituan-longcat/LongCat-Flash-Prover" target="_blank" rel="noopener">🤗 HuggingFace</a>
+    </div>
+    <p style="margin:6px 0;"><strong>LongCat-Flash-Prover: Advancing Native Formal Reasoning via Agentic Tool-Integrated Reinforcement Learning</strong> · Meituan LongCat Team · arXiv preprint, 2026-03。</p>
+    <p style="margin:6px 0;" class="muted">本页为面向中文读者的教学性图解，所有核心数字与示例均取自原论文（Table 1–6、Appendix B/C/E），图片来自 arXiv HTML 全文。如有出入，以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+  function toggleCard(hd){
+    var card = hd.parentElement;
+    var bd = card.querySelector('.bd');
+    var open = card.classList.toggle('open');
+    if(open){ bd.style.maxHeight = bd.scrollHeight + 'px'; }
+    else { bd.style.maxHeight = '0px'; }
+  }
+
+  function toggleFigDetail(el){
+    var detail = el.nextElementSibling;
+    var active = detail.classList.toggle('active');
+    if(active){
+      detail.style.maxHeight = detail.scrollHeight + 'px';
+      el.textContent = '收起说明 ▴';
+    } else {
+      detail.style.maxHeight = '0px';
+      el.textContent = '展开图解说明 ▸';
+    }
+  }
+
+  // TIR step player
+  var tirStep = 0;
+  var TIR_TOTAL = 9;
+  function tirRender(){
+    var turns = document.querySelectorAll('#tirPlayer .turn');
+    turns.forEach(function(t){
+      var s = parseInt(t.getAttribute('data-step'), 10);
+      if(s <= tirStep){
+        t.classList.add('on');
+        t.style.maxHeight = t.scrollHeight + 'px';
+      } else {
+        t.classList.remove('on');
+        t.style.maxHeight = '0px';
+      }
+    });
+    document.getElementById('tirCount').textContent = tirStep + ' / ' + TIR_TOTAL;
+    document.getElementById('tirNext').disabled = (tirStep >= TIR_TOTAL);
+    document.getElementById('tirReset').disabled = (tirStep === 0);
+  }
+  function tirNext(){
+    if(tirStep < TIR_TOTAL){ tirStep++; tirRender(); }
+    var turns = document.querySelectorAll('#tirPlayer .turn');
+    if(tirStep > 0 && turns[tirStep-1]){
+      turns[tirStep-1].scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  }
+  function tirReset(){ tirStep = 0; tirRender(); }
+
+  window.addEventListener('load', function(){
+    tirRender();
+  });
+</script>
+</body>
+</html>

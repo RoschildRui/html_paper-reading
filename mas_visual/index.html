@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAS-Orchestra：多智能体系统该不该用、又该怎么造</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --bg2:#f7f0df;
+  --card:#f4ead7;
+  --card2:#efe3cc;
+  --line:#e3d6bd;
+  --line2:#d8c8a9;
+  --ink:#2a2520;
+  --ink2:#5a5044;
+  --ink3:#8a7d68;
+  --accent:#bd6a37;
+  --accent-soft:#f0d9c4;
+  --accent-deep:#9c5326;
+  --good:#5d7a52;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Inter','Noto Sans SC',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);line-height:1.78;font-size:17px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 24px}
+
+/* top nav */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topbar .inner{max-width:880px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:14px;justify-content:space-between}
+.brand{font-weight:700;font-size:15px;letter-spacing:.2px;color:var(--ink)}
+.brand b{color:var(--accent)}
+.srclink{font-size:13.5px;color:var(--accent-deep);text-decoration:none;border:1px solid var(--line2);padding:5px 11px;border-radius:8px;white-space:nowrap;transition:.18s;background:var(--bg2)}
+.srclink:hover{background:var(--accent-soft);border-color:var(--accent)}
+
+/* hero */
+.hero{padding:62px 0 30px}
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.tag{font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--card);border:1px solid var(--line);padding:4px 11px;border-radius:999px}
+.tag.hot{color:var(--accent-deep);background:var(--accent-soft);border-color:#e7c3a4}
+h1.title{font-size:38px;line-height:1.25;margin:0 0 14px;font-weight:800;letter-spacing:-.5px}
+.subtitle{font-size:18px;color:var(--ink2);margin:0 0 22px;font-weight:500}
+.authors{font-size:14px;color:var(--ink3);margin-bottom:6px}
+.venue{font-size:13.5px;color:var(--ink3)}
+.venue b{color:var(--accent-deep)}
+
+/* tldr */
+.tldr{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin:30px 0 10px}
+.tldr h2{margin:0 0 6px;font-size:15px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-deep)}
+.tldr p{margin:10px 0;font-size:16.5px}
+.tldr .big{font-size:18px;font-weight:600;color:var(--ink)}
+
+/* section */
+section{padding:40px 0 8px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+h2.sec{font-size:27px;font-weight:800;margin:4px 0 18px;letter-spacing:-.3px}
+h3.sub{font-size:20px;font-weight:700;margin:30px 0 10px}
+p{margin:14px 0}
+strong{font-weight:700;color:var(--ink)}
+em{font-style:normal;color:var(--accent-deep);font-weight:600}
+.lead{font-size:18px;color:var(--ink2)}
+ul.pts{margin:14px 0;padding-left:0;list-style:none}
+ul.pts li{position:relative;padding-left:26px;margin:9px 0}
+ul.pts li::before{content:"";position:absolute;left:6px;top:11px;width:7px;height:7px;border-radius:2px;background:var(--accent);transform:rotate(45deg)}
+
+a.inl{color:var(--accent-deep);text-decoration:none;border-bottom:1px solid var(--line2)}
+a.inl:hover{border-color:var(--accent)}
+
+/* figure */
+figure{margin:26px 0;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:18px;overflow:hidden}
+figure img{width:100%;display:block;border-radius:8px;background:#fff}
+.figcap{font-size:14.5px;color:var(--ink2);margin-top:12px;line-height:1.65}
+.figcap .lbl{font-weight:700;color:var(--accent-deep)}
+.fig-toggle{display:inline-block;margin-top:10px;font-size:13.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.fig-toggle:hover{color:var(--accent)}
+.figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease;opacity:.4}
+.figure-detail.active{max-height:1600px;opacity:1}
+.figure-detail .inner{padding-top:12px;font-size:14.5px;color:var(--ink2)}
+.figure-detail ul{margin:8px 0;padding-left:0;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin:7px 0}
+.figure-detail li::before{content:"›";position:absolute;left:4px;top:0;color:var(--accent);font-weight:700}
+
+/* callout */
+.note{border-left:3px solid var(--accent);background:var(--card);border-radius:0 12px 12px 0;padding:14px 20px;margin:22px 0;font-size:15.5px}
+.note .h{font-weight:700;color:var(--accent-deep);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.takeaway{background:linear-gradient(180deg,var(--accent-soft),var(--card));border:1px solid #e7c3a4;border-radius:14px;padding:18px 22px;margin:22px 0}
+.takeaway .h{font-weight:800;color:var(--accent-deep);font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.takeaway .n{font-family:var(--mono);font-size:13px;background:var(--accent);color:#fff;padding:1px 8px;border-radius:6px}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:24px 0}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 16px;text-align:center}
+.metric .v{font-size:30px;font-weight:800;color:var(--accent-deep);font-family:var(--sans);line-height:1.1}
+.metric .v small{font-size:16px;font-weight:600;color:var(--ink3)}
+.metric .k{font-size:13px;color:var(--ink2);margin-top:6px;font-weight:600}
+.metric .d{font-size:12px;color:var(--ink3);margin-top:3px}
+
+/* cards grid */
+.cards{display:grid;grid-template-columns:1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.2s}
+.xcard .head{padding:16px 20px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;user-select:none}
+.xcard .head:hover{background:var(--card2)}
+.xcard .ic{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent-deep);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;font-family:var(--mono)}
+.xcard .ht{flex:1}
+.xcard .ht .t{font-weight:700;font-size:16.5px}
+.xcard .ht .s{font-size:13.5px;color:var(--ink3);margin-top:2px}
+.xcard .arr{color:var(--ink3);transition:.25s;font-size:18px;margin-top:4px}
+.xcard.open .arr{transform:rotate(90deg);color:var(--accent)}
+.xcard .body{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.xcard.open .body{max-height:900px}
+.xcard .body .in{padding:2px 20px 18px;font-size:15px;color:var(--ink2);border-top:1px solid var(--line)}
+.xcard .body .in p:first-child{margin-top:14px}
+
+/* compare panel */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.cmp .col{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--card)}
+.cmp .col.win{border-color:#d9b48f;background:linear-gradient(180deg,var(--accent-soft),var(--card))}
+.cmp .col h4{margin:0 0 6px;font-size:16px}
+.cmp .col .lab{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.cmp .col.win .lab{color:var(--accent-deep)}
+.cmp .col ul{margin:8px 0 0;padding-left:0;list-style:none;font-size:14.5px}
+.cmp .col li{position:relative;padding-left:20px;margin:7px 0;color:var(--ink2)}
+.cmp .col li::before{content:"–";position:absolute;left:4px;color:var(--ink3)}
+.cmp .col.win li::before{content:"✓";color:var(--good);font-weight:700}
+
+/* interactive orchestration */
+.demo{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:22px;margin:26px 0}
+.demo .ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.modebtn{font-family:var(--sans);font-size:14px;font-weight:600;border:1px solid var(--line2);background:var(--card);color:var(--ink2);padding:8px 16px;border-radius:9px;cursor:pointer;transition:.18s}
+.modebtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn{font-family:var(--sans);font-size:14px;font-weight:600;border:1px solid var(--line2);background:var(--card);color:var(--accent-deep);padding:8px 16px;border-radius:9px;cursor:pointer;transition:.18s}
+.btn:hover{background:var(--accent-soft)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.demo .stage{margin-top:16px;min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;padding:18px 10px;background:#fff;border-radius:12px;border:1px solid var(--line)}
+.flowrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.node{padding:9px 14px;border-radius:10px;font-size:13.5px;font-weight:600;border:1.5px solid var(--line2);background:var(--bg2);color:var(--ink2);opacity:0;transform:translateY(8px);transition:.4s}
+.node.show{opacity:1;transform:none}
+.node.orch{background:var(--accent);color:#fff;border-color:var(--accent)}
+.node.agent{background:var(--accent-soft);border-color:#e0b896;color:var(--accent-deep)}
+.node.fin{background:var(--card2);border-color:var(--line2)}
+.arrow{color:var(--ink3);font-size:18px;opacity:0;transition:.4s}
+.arrow.show{opacity:1}
+.steplog{margin-top:14px;font-size:14px;color:var(--ink2);min-height:48px;background:var(--card);border-radius:10px;padding:12px 16px;border:1px solid var(--line)}
+.steplog .tag2{font-family:var(--mono);font-size:12px;color:var(--accent-deep);font-weight:600}
+
+/* axes explorer */
+.axisbar{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 14px}
+.axisbtn{font-family:var(--sans);font-size:14.5px;font-weight:600;border:1px solid var(--line2);background:var(--card);color:var(--ink2);padding:9px 16px;border-radius:10px;cursor:pointer;transition:.18s}
+.axisbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.axisview{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;min-height:200px}
+.axisview .top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.axisview .nm{font-size:22px;font-weight:800;color:var(--accent-deep)}
+.axisview .cd{font-size:12.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-deep)}
+.axisview .def{font-size:16px;color:var(--ink);margin:6px 0 14px}
+.axisgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.axisgrid .box{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.axisgrid .box .lab{font-size:11.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.axisgrid .box .val{font-size:14.5px;color:var(--ink2)}
+.svgwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:14px;text-align:center}
+
+/* code */
+details.code{margin:20px 0;border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden}
+details.code>summary{padding:14px 18px;cursor:pointer;font-weight:600;font-size:15px;color:var(--ink);list-style:none;display:flex;align-items:center;gap:10px}
+details.code>summary::-webkit-details-marker{display:none}
+details.code>summary::before{content:"▸";color:var(--accent);transition:.2s;font-size:13px}
+details.code[open]>summary::before{transform:rotate(90deg)}
+details.code>summary .sm{font-weight:400;color:var(--ink3);font-size:13.5px}
+details.code .cont{padding:0 18px 16px}
+pre{background:#2a2520;color:#ede4d3;border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.7;margin:8px 0}
+pre .k{color:#e3a86b}
+pre .c{color:#9b9079}
+pre .s{color:#b6c99a}
+code.ic{font-family:var(--mono);font-size:.9em;background:var(--card2);padding:1px 6px;border-radius:5px;color:var(--accent-deep);border:1px solid var(--line)}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--line);padding:30px 0 60px;font-size:14px;color:var(--ink3)}
+footer a{color:var(--accent-deep);text-decoration:none}
+footer a:hover{text-decoration:underline}
+footer .row{margin:6px 0}
+
+@media(max-width:880px){
+  body{font-size:16px}
+  h1.title{font-size:29px}
+  .cmp,.axisgrid{grid-template-columns:1fr}
+  .topbar .brand{font-size:13px}
+  .hero{padding:40px 0 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="inner">
+    <div class="brand"><b>MAS-Orchestra</b> · 多智能体系统的整体编排</div>
+    <a class="srclink" href="https://arxiv.org/pdf/2601.14652" target="_blank" rel="noopener">阅读原文 ↗</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="tagrow">
+      <span class="tag hot">ICML 2026</span>
+      <span class="tag">2026.05 · arXiv v5</span>
+      <span class="tag">Salesforce Research · MIT</span>
+      <span class="tag">多智能体系统 / 强化学习</span>
+    </div>
+    <h1 class="title">多智能体系统到底该不该用？<br>又该怎么自动「造」出来？</h1>
+    <p class="subtitle">MAS-Orchestra：用「整体编排 + 函数调用 RL」一次生成整个多智能体系统，并用 MASBench 把「MAS 何时真有用」量化清楚。</p>
+    <p class="authors">Zixuan Ke, Yifei Ming, Austin Xu, Ryan Chin, Xuan-Phi Nguyen, Prathyusha Jwalapuram, Jiayu Wang, Semih Yavuz, Caiming Xiong, Shafiq Joty</p>
+    <p class="venue"><b>ICML 2026</b>（PMLR 306）· arXiv:2601.14652v5 · 通讯作者 Zixuan Ke, Shafiq Joty</p>
+  </div>
+
+  <!-- TLDR -->
+  <div class="tldr">
+    <h2>TL;DR · 30 秒抓住核心</h2>
+    <p class="big">多智能体系统（MAS）一直被当成「更聪明」的默认选项，但它真的比单智能体（SAS）强吗？这篇论文同时回答了「怎么造」和「该不该用」两个问题。</p>
+    <ul class="pts">
+      <li><strong>怎么造（MAS-Orchestra）：</strong>把 MAS 设计变成一个<em>函数调用强化学习</em>问题。编排器把复杂子智能体当成可调用的黑盒函数（<code class="ic">create_agent</code> / <code class="ic">create_flow</code>），并<strong>一步到位生成整张多智能体图</strong>（holistic orchestration），而不是像以往那样一个一个加。</li>
+      <li><strong>该不该用（MASBench）：</strong>第一个专门衡量「MAS 收益」的受控基准，沿 <em>Depth / Horizon / Breadth / Parallel / Robustness</em> 五个轴刻画任务结构。</li>
+      <li><strong>结论：</strong>MAS 的收益<strong>不是普适的</strong>——它取决于任务结构、验证协议，以及编排器和子智能体各自的能力。MAS 最闪光的地方是<em>对抗鲁棒性</em>和<em>子智能体「能力边缘」</em>的任务。</li>
+    </ul>
+  </div>
+
+  <figure>
+    <img src="assets/fig1_pareto.png" alt="Cost-performance Pareto frontier">
+    <div class="figcap"><span class="lbl">图 1 · 成本-性能权衡。</span>横轴是单次推理成本（美分），纵轴是准确率。MAS-Orchestra（★）落在<strong>帕累托最优</strong>的左上角：在更低或相当的成本下拿到更高准确率，比 AFlow、ToolOrchestra、MaAS 等强基线都更划算（论文称 10× 效率）。
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+      <ul>
+        <li><strong>橙色阴影区 = 帕累托前沿</strong>：该边界左上方代表「同等成本下更准、或同等准确下更便宜」，是任何方法都想到达的理想区域。</li>
+        <li><strong>方块（Standalone Agents）</strong>：单智能体基线，如 CoT、Self-Consistency、Reflexion、Debate，成本低但准确率有限。</li>
+        <li><strong>三角（Inference-time 编排）</strong>：AFlow、MaAS 等推理时搜索方法——AFlow 准确率不错但成本偏高，MaAS 性价比差。</li>
+        <li><strong>圆圈（Training-time 编排）</strong>：MAS-GPT、ToolOrchestra 等训练时方法；ToolOrchestra 成本高（~700 美分）却准确率垫底。</li>
+        <li><strong>★ MAS-Orchestra</strong>：唯一压在前沿顶点的方法，兼顾低成本与高准确率。</li>
+      </ul>
+      <p>一句话：这张图就是全文的「广告位」——既准又省。</p>
+      </div></div>
+    </div>
+  </figure>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <div class="kicker">问题</div>
+    <h2 class="sec">自动设计 MAS，为什么一直没做好？</h2>
+    <p class="lead">我们见证了从「LLM → 单智能体（SAS）→ 多智能体（SAS 之上加协调）」的演进。早期 MAS 靠人手搭固定的交互模式（如 debate），扩展性差；于是研究转向<strong>自动 MAS 设计</strong>——让系统结构、角色、交互都动态生成。但现有自动方法卡在三个地方：</p>
+
+    <div class="cards" id="problemCards"></div>
+
+    <div class="note">
+      <div class="h">被忽视的根本问题</div>
+      除了「怎么造」，还有一个更尴尬的问题：<strong>MAS 真的比 SAS 好吗？</strong>已有证据自相矛盾（Anthropic 说多智能体有用，Cognition 说「别造多智能体」）。大量工作把 MAS 套用在并不需要协调的任务上，而<strong>此前没有任何受控基准</strong>能严格回答「何时该用 MAS」。
+    </div>
+
+    <p>作者由此提出，一个好的自动 MAS 框架应满足三条诉求：(1) 要有显式的 <em>「MAS 程度」(Degree of MAS, DoM)</em>——因为并非所有任务都需要多智能体（连 AIME 这种难数学题，多智能体也帮不上多少）；(2) 编排机制要<em>灵活可扩展</em>，编排器只做高层推理与系统设计，不该去复刻子智能体的内部行为；(3) 子智能体应<em>由自己的目标定义</em>，拥有自己的上下文、工具与工作流，而不只是换个 prompt 角色。</p>
+  </section>
+
+  <!-- RELATED WORK -->
+  <section id="related">
+    <div class="kicker">已有方案</div>
+    <h2 class="sec">现有自动 MAS 的两条路线，各自卡在哪</h2>
+    <p>自动 MAS 设计大致分两类。下面两张卡片各自说清它们「怎么做、卡在哪」，理解了它们，才知道 MAS-Orchestra 的动机。</p>
+
+    <div class="cards" id="relatedCards"></div>
+
+    <figure>
+      <img src="assets/tab1_methods.png" alt="Comparison of automatic MAS approaches">
+      <div class="figcap"><span class="lbl">表 1 · 主流自动 MAS 方法对比。</span>四列分别是：是否<strong>面向目标的子智能体</strong>、是否<strong>整体编排</strong>、是否有<strong>显式 DoM</strong>、是否做了 <strong>MAS vs. SAS 分析</strong>。最后一行 MAS-Orchestra 是唯一四项全勾的方法。
+        <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>Training 列</strong>：✗ 表示推理时方法（MAS-Zero/AFlow/DyLAN），SFT/RL 表示训练时方法。</li>
+          <li><strong>Goal-oriented Sub-agent</strong>：只有 ToolOrchestra 和 MAS-Orchestra 把子智能体当作有独立目标/工具/工作流的实体；其余要么是「换模型的路由器」，要么是「换 prompt 的角色」。</li>
+          <li><strong>Holistic Orchestration</strong>：一次生成完整系统。MAS-Zero、MAS-GPT 在推理/SFT 下做到了，但 MAS-Orchestra 是<strong>首个在训练时（RL）做整体编排</strong>的。</li>
+          <li><strong>Deg. of MAS</strong> 与 <strong>MAS vs. SAS 分析</strong>：只有 MAS-Orchestra 同时具备可配置的 DoM 与系统性的受控分析。</li>
+        </ul>
+        </div></div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- METHOD -->
+  <section id="method">
+    <div class="kicker">本文方法 · 重头戏</div>
+    <h2 class="sec">MAS-Orchestra：把整个系统「一次性」生成出来</h2>
+    <p class="lead">核心只有三件事：<strong>① 子智能体 = 可调用函数</strong>；<strong>② 整体编排（一步生成全图）</strong>；<strong>③ 用 DoM 控制「要多 MAS」</strong>。下面逐个拆开。</p>
+
+    <figure>
+      <img src="assets/fig2_paradigm.png" alt="Paradigm comparison and MAS-Orchestra">
+      <div class="figcap"><span class="lbl">图 2 · 范式对比与 MAS-Orchestra 总览。</span>左侧是系统谱系（SAS → 人工 MAS → 推理时自动 MAS）；中间对比 Router / 顺序编排 / 整体编排；右侧是 MAS-Orchestra 的工作流：编排器在一次 <code class="ic">thinking</code> 中调用 <code class="ic">create_agent</code>/<code class="ic">create_flow</code> 生成整张图，再交给确定性 parser 执行。
+        <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>左栏图例</strong>：◆ = 编排器（橙=可训练 🔥），✦ = 子智能体，❄ = 冻结不训练。SAS / 人工 MAS / 推理时自动 MAS 的编排器都不训练。</li>
+          <li><strong>中栏</strong>：Router 只是在不同模型间切换；Sequential Orchestration 把系统一节一节串起来；Holistic Orchestration（红框，本文）一次给出完整结构。</li>
+          <li><strong>右栏主流程</strong>：Query 进入编排器 → 在 <code class="ic">thinking</code> 通道里规划 → 输出若干 <code class="ic">create_agent</code> 和一个 <code class="ic">create_flow</code>（定义连边）→ parser 实例化并执行 → 汇聚出 Answer。</li>
+          <li><strong>DoM=Low（虚线路径）</strong>：最多实例化一个子智能体；<strong>DoM=High</strong>：子智能体数量不限，可形成 Sub-agent 1/2/3 的并行或级联，每个子智能体内部「(Sub-)query → process → Return」对编排器是黑盒。</li>
+        </ul>
+        <p>一句话总结：编排器只关心「派谁、怎么连」，不关心子智能体「怎么干」。</p>
+        </div></div>
+      </div>
+    </figure>
+
+    <h3 class="sub">① 子智能体即函数：只暴露「签名」，藏起「内部」</h3>
+    <p>每个子智能体被建模成一个<strong>面向目标的黑盒函数</strong>。编排器只能看到它的<em>签名</em>（名字 + 可配置参数），看不到内部推理与执行细节。这样做的好处是：哪怕子智能体本身极其复杂（比如要多轮联网搜索的 search agent），编排器也不必去「读懂甚至复现」它的代码——只需决定何时调用、调用谁、怎么连。这正是以往「代码即编排」方案扩展不动的根源。</p>
+    <p>形式化地：给定输入 \(x\) 与 DoM 等级 \(m\)，编排器策略 \(\pi_\theta\) 生成一段编排 \(a\)；一个预定义、基于规则的<strong>确定性 parser</strong> \(f\) 解释这段编排、实例化子智能体并执行，得到最终预测 \(\hat{y}=f(x,a)\)。</p>
+
+    <h3 class="sub">② 整体编排 vs. 顺序编排：一步到位还是步步为营？</h3>
+    <p>这是全文最关键的设计。以往训练时方法把编排当成<strong>顺序决策</strong>——一次加一个组件，用多步 RL 优化。看似自然，却带来三个麻烦：训练开销大、鼓励<em>局部</em>逐步优化、长程信用分配与误差传播。MAS-Orchestra 反其道而行：<strong>编排器在单步内生成完整编排</strong>，从全局视角联合推理整个系统配置。它不观察任何中间状态，只用最终输出来评估这次编排的质量。下面这个小演示直观对比两种范式：</p>
+
+    <div class="demo">
+      <div class="ctrls">
+        <span style="font-size:13px;font-weight:700;color:var(--ink3);letter-spacing:.5px">选择编排范式：</span>
+        <button class="modebtn active" id="mSeq" onclick="setMode('seq')">顺序编排（以往）</button>
+        <button class="modebtn" id="mHol" onclick="setMode('hol')">整体编排（本文）</button>
+        <button class="btn" id="stepBtn" onclick="stepDemo()" style="margin-left:auto">下一步 ▸</button>
+        <button class="btn" onclick="resetDemo()">重置</button>
+      </div>
+      <div class="stage" id="stage">
+        <div class="flowrow" id="flowrow"></div>
+      </div>
+      <div class="steplog" id="steplog">点击「下一步」开始演示。</div>
+    </div>
+
+    <div class="cmp">
+      <div class="col">
+        <div class="lab">顺序编排</div>
+        <h4>步步为营，容易跑偏</h4>
+        <ul>
+          <li>每一步只做一个<strong>局部</strong>决策（加一个 agent / 连一条边）</li>
+          <li>多步 RL：长程信用分配难，误差会沿步骤<strong>累积传播</strong></li>
+          <li>训练开销大，随系统复杂度上升而恶化</li>
+        </ul>
+      </div>
+      <div class="col win">
+        <div class="lab">整体编排（MAS-Orchestra）</div>
+        <h4>一次成图，全局协调</h4>
+        <ul>
+          <li>单步生成完整系统，编排器在<strong>计划层</strong>而非执行轨迹上推理</li>
+          <li>避免中间状态误差累积，训练更稳定、更易扩展</li>
+          <li>学到的是<strong>全局协调模式</strong>，而非执行顺序的副作用</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub">③ DoM：用一个旋钮决定「要多 MAS」</h3>
+    <p>作者把<em>MAS 程度（DoM）</em>显式写进公式：用户选 <code class="ic">LOW</code> 或 <code class="ic">HIGH</code>。<strong>Low DoM</strong> 下编排器最多实例化一个子智能体、无显式拓扑——但它<strong>不等于 SAS</strong>：编排器仍要决定是整体委派、拆子任务委派还是自己做，以及选哪个子智能体、怎么配置。<strong>High DoM</strong> 下子智能体数量不限，还要进一步决定智能体间的拓扑结构。这把「这个任务到底需不需要多智能体」的判断，变成一个可以显式编码、按任务和模型能力来选的开关。</p>
+
+    <h3 class="sub">④ 训练：用 GRPO 优化「最终答对」</h3>
+    <p>奖励极简——<strong>最终答案对就是 1，错就是 0</strong>（鲁棒性等协议下也会纳入子任务正确性）。优化用 <em>GRPO</em>（Group Relative Policy Optimization）：对同一输入采样 K 个编排方案，用组内相对优势来更新策略。因为是单步生成，整个训练绕开了多步 RL 的长程信用分配难题。</p>
+
+    <p>下面是一个 <strong>High DoM</strong> 的真实编排示例（来自论文附录的「房屋空置率」问题）：编排器先并行派出三个搜索智能体，再用 CoT 抽取、SC 投票纠错、Reflexion 校验，最后汇总成答案——典型的「先广撒网取证、再聚合」的全局结构。</p>
+
+    <details class="code">
+      <summary>查看示例：编排器生成的多智能体图（函数调用 / XML 协议） <span class="sm">— 并行搜索 → 抽取 → 投票 → 校验 → 汇总</span></summary>
+      <div class="cont">
+<pre><span class="c">&lt;!-- 任务：给出 NYC / LA / Chicago 最新房屋空置率（带引用） --&gt;</span>
+<span class="c">&lt;!-- 编排器在 thinking 里规划后，一次性输出整张图 --&gt;</span>
+
+<span class="k">&lt;agent&gt;</span> id=WS_NYC  name=<span class="s">WebSearchAgent</span>   <span class="c"># 并行：搜 NYC 空置率</span>
+<span class="k">&lt;agent&gt;</span> id=WS_LA   name=<span class="s">WebSearchAgent</span>   <span class="c"># 并行：搜 LA</span>
+<span class="k">&lt;agent&gt;</span> id=WS_CHI  name=<span class="s">WebSearchAgent</span>   <span class="c"># 并行：搜 Chicago</span>
+
+<span class="k">&lt;agent&gt;</span> id=EXT    name=<span class="s">CoTAgent</span>         <span class="c"># 抽取三地数字+日期+引用，输出3行表</span>
+       input = "NYC: ${WS_NYC}  LA: ${WS_LA}  Chicago: ${WS_CHI}"
+
+<span class="k">&lt;agent&gt;</span> id=VOTE   name=<span class="s">SCAgent</span>          <span class="c"># 多次抽取并投票，减少解析错误</span>
+       input = "Table: ${EXT}"
+
+<span class="k">&lt;agent&gt;</span> id=CHK    name=<span class="s">ReflexionAgent</span>   <span class="c"># 校验单位/时效/引用</span>
+<span class="k">&lt;agent&gt;</span> id=FINAL  name=<span class="s">CoTAgent</span>         <span class="c"># 汇总成最终简报（唯一 sink）</span>
+
+<span class="k">&lt;edge&gt;</span>  WS_NYC,WS_LA,WS_CHI → EXT → VOTE → CHK → FINAL
+<span class="c"># parser 校验：必须无环、单一汇聚点(sink)，否则拒绝</span>
+</pre>
+      </div>
+    </details>
+  </section>
+
+  <!-- MASBENCH -->
+  <section id="masbench">
+    <div class="kicker">受控基准 · MASBench</div>
+    <h2 class="sec">五个轴：把「任务结构」量化，才能回答「何时该用 MAS」</h2>
+    <p>要严格比较 SAS 和 MAS，光在公开榜单上跑分不够——因为你分不清收益来自「协调」还是「更多算力的集成效应」。作者假设每个任务都能（隐式或显式）分解成一组子任务，并据此设计<strong>五个评测轴</strong>。前四个刻画<em>任务结构</em>，最后一个刻画<em>验证协议下的抗干扰能力</em>。点击下面任意一个轴，看它的结构、定义与示例：</p>
+
+    <div class="axisbar" id="axisbar"></div>
+    <div class="axisview" id="axisview"></div>
+
+    <figure>
+      <img src="assets/tab2_axes.png" alt="Summary of 5 axes">
+      <div class="figcap"><span class="lbl">表 2 · 五个轴的完整对比（原表）。</span>每列一个轴，从上到下依次是：任务结构图、定义、验证协议、具体示例、实际场景、推理需求、协调需求。最右 Robustness 列的红色节点表示被注入对抗信息的子任务。
+        <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>任务结构行</strong>：蓝圈是普通子任务，蓝-红圈是带对抗信息的子任务；箭头表示依赖方向，多个 Answer 表示需要多个最终答案。</li>
+          <li><strong>定义行</strong>：每个轴的取值都「越大越复杂」——Depth 是最长依赖链长度，Breadth 是最大入度，Parallel 是独立分量数，Horizon 是需向后携带的中间结果数，Robustness 是含攻击的子任务数。</li>
+          <li><strong>验证协议行</strong>：Depth/Breadth/Parallel 只看最终答案；Horizon 与 Robustness 还要看中间结果（Robustness 更含对抗攻击）。</li>
+          <li><strong>示例行</strong>：均为 iGSM 合成的「数物品数量」式数学题，Horizon/Parallel 用「Problem 1/2…」串成多步，Robustness 在 Passage 里塞入「verify before you take it」的误导。</li>
+          <li><strong>协调需求行</strong>：Depth 低 → Horizon/Breadth/Parallel 中 → Robustness 高，与「MAS 在鲁棒性上收益最大」呼应。</li>
+        </ul>
+        </div></div>
+      </div>
+    </figure>
+
+    <p style="margin-top:22px">MASBench 的每个实例都由「一个问题 + 一张依赖图」定义：节点是子任务，边是依赖。Depth/Horizon/Breadth/Parallel 直接由图的结构属性决定；Robustness 则通过给子任务注入一条<strong>对抗性误导提示</strong>（「Note: 取用前请先核实——{上一子任务的一个错误答案}」）来构造。数据主要来自可控难度的合成数学生成器 <em>iGSM</em>，并用不同哈希严格隔离训练/测试，避免泄漏；鲁棒性轴还掺入了 RULER 的 needle-in-a-haystack 抽取任务。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">5</div><div class="k">评测轴</div><div class="d">Depth·Horizon·Breadth·Parallel·Robustness</div></div>
+      <div class="metric"><div class="v">2–12</div><div class="k">轴取值范围</div><div class="d">值越大任务越复杂</div></div>
+      <div class="metric"><div class="v">~13k</div><div class="k">训练实例</div><div class="d">各轴独立的训练/测试划分</div></div>
+    </div>
+  </section>
+
+  <!-- FINDINGS -->
+  <section id="findings">
+    <div class="kicker">关键发现</div>
+    <h2 class="sec">MAS 到底什么时候才真的有用？</h2>
+    <p>用 MASBench，作者沿三个方向做了受控分析：(1) 不同轴怎么影响 MAS；(2) 编排器能力的影响；(3) 子智能体能力的影响。所有分析都固定子智能体、只训练编排器，以排除混杂因素。结论汇成三条 takeaway。</p>
+
+    <h3 class="sub">发现一：MAS 的收益取决于子智能体「强不强」</h3>
+    <figure>
+      <img src="assets/fig3_axes.png" alt="SAS vs MAS across axes with weak/strong sub-agent">
+      <div class="figcap"><span class="lbl">图 3 · 不同轴上 SAS（蓝）vs MAS（橙）。</span>上排子智能体较弱（Qwen-7b），下排较强（GPT-120b low）。横轴是任务复杂度。
+        <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>上排（弱子智能体）</strong>：在 Breadth / Parallel / Horizon 上，MAS（橙）明显高于 SAS（蓝）；唯独 <strong>Depth 几乎打平</strong>——因为强依赖、必须严格串行的任务，单条 CoT 反而省去了协调开销。</li>
+          <li><strong>下排（强子智能体）</strong>：MAS 相对 SAS 的优势<strong>大幅收窄</strong>，几乎贴在一起。子智能体越强，协调成本和跨智能体误差传播越容易抵消掉 MAS 的潜在收益。</li>
+          <li><strong>横向趋势</strong>：复杂度越高分数越低；且分布外（更大复杂度）与分布内趋势一致，说明编排器的复杂度泛化是可控、连续的。</li>
+        </ul>
+        </div></div>
+      </div>
+    </figure>
+    <div class="takeaway">
+      <div class="h"><span class="n">Takeaway 1</span> MAS 最有用的地方，是子智能体「能力的边缘」</div>
+      当子智能体<strong>有能力但还不够强、无法独自可靠地内化复杂任务结构</strong>时，显式的分解、编排与调解最能把潜在推理能力「逼」出来（比如任务不是纯串行、或含潜在对抗子任务）。太弱或太强，MAS 的边际收益都会下降。
+    </div>
+
+    <h3 class="sub">发现二：指令模型(LLM)比推理模型(RLM)更适合当「编排器」</h3>
+    <figure>
+      <img src="assets/fig4_orch.png" alt="LLM vs RLM as orchestrator">
+      <div class="figcap"><span class="lbl">图 4 · 编排器用指令模型(蓝, Qwen-7b) vs 推理模型(橙, GPT-20b low)。</span>反直觉地，<strong>指令模型作为编排器全面更优</strong>。
+        <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+        <ul>
+          <li>四个轴上蓝柱（指令模型）几乎都不低于橙柱（推理模型），这与「RLM 在推理任务更强」的直觉相反。</li>
+          <li>原因藏在生成的 MAS 结构里：<strong>RLM 倾向于自己先把题做了，再只委派给一个简单子智能体</strong>（随训练收敛甚至只剩 1 个 agent），哪怕子智能体本身更强。</li>
+          <li>指令模型则更愿意拆分、委派，三智能体结构成为主流。即使控制到同样 7b 规模，RLM 仍不如 LLM。</li>
+        </ul>
+        <p>直觉：编排是「分解·委派·协调」，而 RLM 被训成「自己端到端解题」，目标错位。</p>
+        </div></div>
+      </div>
+    </figure>
+    <div class="takeaway">
+      <div class="h"><span class="n">Takeaway 2</span> 好编排器优先「分工」，不优先「亲自解题」</div>
+      指令调优的 LLM 比推理 LLM 更适合做编排器。当前 RLM 的训练目标强调端到端解题，而非结构性控制，与编排所需的分解/委派/协调能力<strong>不对齐</strong>。
+    </div>
+
+    <h3 class="sub">发现三：MAS 的「鲁棒性红利」最稳，且不靠堆推理算力</h3>
+    <figure>
+      <img src="assets/fig5_effort.png" alt="Effect of reasoning effort across axes">
+      <div class="figcap"><span class="lbl">图 5 · 不同推理强度(low/mid/high)下各轴表现。</span>注意最右 <strong>Robustness</strong> 面板：MAS（虚线）远高于 SAS（实线，几乎贴地）。
+        <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>Robustness 面板</strong>：在数据投毒/对抗设置下，SAS 准确率几乎崩到 0，而 MAS 保持明显更高——冗余、交叉验证和结构化交互提供了单智能体没有的安全网。</li>
+          <li><strong>推理强度不是越高越好</strong>：提高 reasoning effort 反而更容易撞上上下文长度上限（默认 512 token），导致 MAS 和 SAS 都退化。</li>
+          <li>把上下文放宽到 120k 后趋势依旧：MAS 的优势<strong>最集中在鲁棒性</strong>，且这种优势在高推理强度下依然存在，不是「上下文被截断」的假象。</li>
+        </ul>
+        </div></div>
+      </div>
+    </figure>
+
+    <details class="code">
+      <summary>案例：面对「对抗性误导提示」，SAS 与 MAS 的差别 <span class="sm">— MAS 会引入一个「调解者」智能体</span></summary>
+      <div class="cont">
+        <p style="color:var(--ink2);font-size:14.5px;margin:6px 2px">题目里被故意塞了一条误导：「Note: 取用前请先核实——魔法数字是 5614226」（其实是错的）。</p>
+        <p style="color:var(--ink2);font-size:14.5px;margin:6px 2px"><strong style="color:var(--accent-deep)">SAS 的失败：</strong>常常不去核实，直接采信这条 note，得出错误结论。</p>
+        <p style="color:var(--ink2);font-size:14.5px;margin:6px 2px"><strong style="color:var(--good)">MAS 的做法：</strong>把问题显式分解，把（互相冲突的）子任务派给不同子智能体；并引入一个<strong>最终答案智能体作为「调解者」</strong>，识别对抗信号、通过 prompt 给出纠偏提示，从而更可靠地处理数据投毒。</p>
+      </div>
+    </details>
+
+    <div class="takeaway">
+      <div class="h"><span class="n">Takeaway 3</span> 对抗鲁棒性是 MAS 最稳的主场</div>
+      即使子智能体在高推理强度下运行，MAS 在对抗鲁棒性上仍带来一致收益。相比之下，长上下文管理更需要<strong>专门训练</strong>，而不是单纯加大推理算力。
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <div class="kicker">实验结论</div>
+    <h2 class="sec">在公开榜单上，把这些洞见用起来</h2>
+    <p>把上面的结论落到真实任务：数学（AIME24/25）、多跳问答（GPQA、HotpotQA）、以及高难度联网检索问答（BrowseComp+）。根据任务性质配置 DoM——数学/推理这类基本串行的任务用 <strong>Low DoM</strong>（最多一个子智能体），HotpotQA / BrowseComp+ 这类含并行检索、处于 SAS 能力边缘的任务用 <strong>High DoM</strong>。下面是相对最佳基线的 Avg@8 结果：</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">66.3</div><div class="k">AIME24</div><div class="d">最佳基线 Debate 62.1</div></div>
+      <div class="metric"><div class="v">61.3</div><div class="k">AIME25</div><div class="d">最佳基线 Debate 57.5</div></div>
+      <div class="metric"><div class="v">49.0</div><div class="k">HotpotQA</div><div class="d">Search 智能体 46.4</div></div>
+      <div class="metric"><div class="v">11.0</div><div class="k">BrowseComp+</div><div class="d">Search 智能体 8.6</div></div>
+      <div class="metric"><div class="v">65.2</div><div class="k">GPQA（OOD）</div><div class="d">训练以数学为主，跨域泛化</div></div>
+    </div>
+
+    <div class="note">
+      <div class="h">观察</div>
+      MAS-Orchestra <strong>在所有评测基准上一致超过</strong>其底层子智能体，以及 SoTA 的推理时（AFlow/MaAS/MAS-Zero）与训练时（MAS-GPT/ToolOrchestra）编排系统，并在 GPQA 上展现出很强的 <strong>分布外泛化</strong>——说明收益来自<strong>编排本身</strong>，而非子智能体单兵强。
+    </div>
+
+    <p>进一步看生成的 MAS 结构很有意思：<strong>Low DoM 下</strong>（如 AIME24），编排器学会把任务<em>整体委派给单个最强子智能体</em>（20 步后 100% 整体委派），且主要选 Reflexion / Debate——正是表中最强的 SAS 基线。<strong>High DoM 下</strong>（如 BrowseComp+），编排器生成明显更多子智能体，典型是<em>先 3–4 路并行搜索取证、再用一个聚合智能体汇总</em>。这正体现了整体编排的「全局视角」：先把证据收齐，再聚合，最终答案更准。</p>
+  </section>
+
+  <!-- CONCLUSION -->
+  <section id="conclusion">
+    <div class="kicker">总结</div>
+    <h2 class="sec">一句话带走</h2>
+    <p class="lead">MAS-Orchestra 把「自动设计多智能体系统」从<em>步步为营的代码拼装</em>，变成<em>一步到位的函数调用 RL</em>；MASBench 则第一次把「MAS 到底何时有用」量化清楚。两者合起来给出一个更有原则的答案：</p>
+    <ul class="pts">
+      <li><strong>别把 MAS 当默认。</strong>它的收益取决于任务结构、验证协议，以及编排器与子智能体的能力——用 DoM 显式地按需选择。</li>
+      <li><strong>整体编排 > 顺序编排。</strong>单步全局生成更稳、更可扩展，避免误差传播与长程信用分配。</li>
+      <li><strong>选对角色。</strong>编排器用指令模型；MAS 最该出手的地方是<em>子智能体能力边缘</em>与<em>对抗鲁棒性</em>。</li>
+    </ul>
+    <div class="note">
+      <div class="h">局限与边界</div>
+      五个轴并未穷尽所有影响因素（如谈判类多方场景）；模型主要在 low reasoning effort 下训练，长上下文/长推理链的管理仍需专门训练；鲁棒性也必须在训练数据里显式包含对抗样本才能泛化。
+    </div>
+  </section>
+
+  <footer>
+    <div class="row"><strong>原文：</strong> <a href="https://arxiv.org/pdf/2601.14652" target="_blank" rel="noopener">MAS-Orchestra: Understanding and Improving Multi-Agent Reasoning Through Holistic Orchestration and Controlled Benchmarks</a>（ICML 2026 · arXiv:2601.14652v5）</div>
+    <div class="row"><strong>项目主页：</strong> <a href="https://mas-orchestra.salesforceresearch.ai/mas_r1/" target="_blank" rel="noopener">mas-orchestra.salesforceresearch.ai</a> · <strong>代码：</strong> <a href="https://github.com/SalesforceAIResearch/MAS-Orchestra" target="_blank" rel="noopener">SalesforceAIResearch/MAS-Orchestra</a> · <strong>基准：</strong> <a href="https://huggingface.co/datasets/Salesforce/MASBench" target="_blank" rel="noopener">Salesforce/MASBench</a></div>
+    <div class="row" style="margin-top:12px;color:var(--ink3)">本页为教学性可视化解读，所有图表裁切自原论文 PDF，数字与结论以原文为准。</div>
+  </footer>
+
+</div>
+
+<script>
+// MathJax for inline formulas
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+
+<script>
+// ---------- figure detail toggle ----------
+function toggleFig(el){
+  var d=el.parentElement.querySelector('.figure-detail');
+  d.classList.toggle('active');
+  el.textContent=d.classList.contains('active')?'收起 ▴':'展开说明 ▸';
+}
+
+// ---------- problem cards ----------
+var problems=[
+  {n:'1',t:'公式化（Formulation）：代码即编排，扩展不动',s:'用可执行代码描述编排，灵活但开销大',
+   b:'大多数工作把编排写成可执行代码。代码很灵活，但当子智能体及其互联变复杂（比如要多轮搜索）时，编排器往往得去分析甚至复现整段子智能体代码，开销巨大、难以扩展。结果只能用很简单的子智能体（CoT、CoT+Self-Consistency）。'},
+  {n:'2',t:'训练（Training）：要么不训练，要么步步为营',s:'依赖推理时启发式搜索，或多步 RL 的局部优化',
+   b:'许多方法靠推理时自我改进或启发式搜索，没有显式训练目标，容易不稳定、方向跑偏、算力昂贵。少数引入训练的工作又把编排当成顺序决策（一次加一个组件）用多步 RL 优化，鼓励局部、逐步的优化，难以从全局视角推理整个 MAS 结构。'},
+  {n:'3',t:'扩展原则（Agent-scaling）：不知道何时该加 agent',s:'没有量化框架预测「加子智能体」是帮忙还是添乱',
+   b:'尽管 MAS 被快速采用，却没有一个有原则的定量框架来预测：什么时候加子智能体能提升性能、什么时候反而拖累。从业者只能靠启发式，既限制科学理解，也限制实际部署——多智能体协调何时真比单智能体更有价值，仍不清楚。'}
+];
+// ---------- related work cards ----------
+var related=[
+  {n:'A',t:'推理时编排（Inference-time）',s:'靠验证集在推理时搜索/适配，无需训练编排器',
+   b:'代表：MASS（拒绝采样选配置）、MaAS（在 MASS 上加按题掩码的子网适配）、ADAS / AFlow（把 MAS 设计当代码生成，AFlow 用蒙特卡洛树搜索增强）、MAS-Zero（完全推理时、不依赖验证集）。<br><br><strong>卡在哪：</strong>适配能力有限——不可靠的验证信号或 LLM 评判的错误引导，会把适配方向带偏。'},
+  {n:'B',t:'训练时编排（Training-time）',s:'直接训练一个编排器，避免昂贵的推理时适配',
+   b:'多数采用<strong>顺序编排 + 多步 RL</strong>（如 ToolOrchestra）。例外是 MAS-GPT，用 SFT 训练编排器、不用 RL，但性能甚至不如推理时适配方法，说明它没抓住系统级协调。<br><br><strong>卡在哪：</strong>顺序范式带来训练开销、局部优化、误差传播；此前<strong>没有任何方法在训练时做整体编排</strong>。'}
+];
+function buildCards(arr,id){
+  var html='';
+  arr.forEach(function(c){
+    html+='<div class="xcard"><div class="head" onclick="this.parentElement.classList.toggle(\'open\')">'+
+      '<div class="ic">'+c.n+'</div><div class="ht"><div class="t">'+c.t+'</div><div class="s">'+c.s+'</div></div>'+
+      '<div class="arr">›</div></div>'+
+      '<div class="body"><div class="in"><p>'+c.b+'</p></div></div></div>';
+  });
+  document.getElementById(id).innerHTML=html;
+}
+buildCards(problems,'problemCards');
+buildCards(related,'relatedCards');
+
+// ---------- axes explorer ----------
+var axes=[
+  {nm:'Depth 深度',cd:'协调需求 低',
+   def:'包含答案的最长依赖链长度——子任务必须严格按序求解。',
+   ver:'仅评测最终答案',demand:'顺序推理',casev:'数学题',
+   svg:'<svg width="300" height="70" viewBox="0 0 300 70"><line x1="40" y1="35" x2="90" y2="35" stroke="#9c7b54" stroke-width="2"/><line x1="120" y1="35" x2="170" y2="35" stroke="#9c7b54" stroke-width="2"/><circle cx="30" cy="35" r="12" fill="#3a9bd6"/><circle cx="105" cy="35" r="12" fill="#3a9bd6"/><circle cx="185" cy="35" r="12" fill="#3a9bd6"/><text x="210" y="40" font-size="14" fill="#5a5044">→ Answer</text></svg>',
+   note:'强串行任务里，单条 CoT 反而省协调开销，是 MAS 唯一不占优的轴。'},
+  {nm:'Horizon 视界',cd:'协调需求 中',
+   def:'需要被携带到最终答案的中间子任务数量——考验长程地把中间结果传递与复用。',
+   ver:'同时评测中间结果与最终答案',demand:'中间结果追踪',casev:'长程规划',
+   svg:'<svg width="300" height="70" viewBox="0 0 300 70"><line x1="60" y1="30" x2="110" y2="30" stroke="#9c7b54" stroke-width="2"/><circle cx="50" cy="30" r="12" fill="#3a9bd6"/><circle cx="120" cy="30" r="12" fill="#3a9bd6"/><text x="44" y="60" font-size="12" fill="#5a5044">Answer1</text><text x="112" y="60" font-size="12" fill="#5a5044">Answer2</text></svg>',
+   note:'每一步的中间答案都要正确并向后传递，错一步全错。'},
+  {nm:'Breadth 广度',cd:'协调需求 中',
+   def:'最大入度——一个子任务最多依赖多少个上游子任务（证据需要汇聚）。',
+   ver:'仅评测最终答案',demand:'中间结果聚合',casev:'需要证据汇聚的问答',
+   svg:'<svg width="300" height="80" viewBox="0 0 300 80"><line x1="40" y1="20" x2="95" y2="40" stroke="#9c7b54" stroke-width="2"/><line x1="40" y1="60" x2="95" y2="40" stroke="#9c7b54" stroke-width="2"/><circle cx="30" cy="20" r="12" fill="#3a9bd6"/><circle cx="30" cy="60" r="12" fill="#3a9bd6"/><circle cx="105" cy="40" r="12" fill="#3a9bd6"/><text x="128" y="45" font-size="14" fill="#5a5044">→ Answer</text></svg>',
+   note:'多路上游汇到一点，适合并行取证后聚合。'},
+  {nm:'Parallel 并行',cd:'协调需求 中',
+   def:'图中相互独立的子任务分量数量——可以真正并发处理。',
+   ver:'仅评测最终答案（多个最终答案）',demand:'并发推理',casev:'独立子查询检索',
+   svg:'<svg width="300" height="80" viewBox="0 0 300 80"><circle cx="40" cy="25" r="12" fill="#3a9bd6"/><circle cx="80" cy="25" r="12" fill="#3a9bd6"/><circle cx="40" cy="60" r="12" fill="#3a9bd6"/><circle cx="80" cy="60" r="12" fill="#3a9bd6"/><text x="34" y="78" font-size="11" fill="#5a5044">Answer1</text><text x="74" y="78" font-size="11" fill="#5a5044">Answer2</text></svg>',
+   note:'MAS 能直接把宽度对齐到并行结构，是收益最直观的轴之一。'},
+  {nm:'Robustness 鲁棒性',cd:'协调需求 高',
+   def:'带「对抗攻击」的子任务数量——子任务里被注入错误/误导信息。',
+   ver:'中间+最终评测，且含对抗攻击',demand:'中间结果校验与纠错',casev:'含误导线索的噪声检索',
+   svg:'<svg width="300" height="70" viewBox="0 0 300 70"><circle cx="50" cy="35" r="12" fill="#3a9bd6"/><circle cx="120" cy="35" r="12" fill="#c0683f"/><text x="44" y="62" font-size="12" fill="#5a5044">Answer1</text><text x="108" y="62" font-size="12" fill="#5a5044">Answer2(毒)</text></svg>',
+   note:'MAS 最稳的主场：冗余 + 交叉验证 + 调解者智能体，能识别并纠正投毒。'}
+];
+var axisIdx=0;
+function buildAxisBar(){
+  var html='';
+  axes.forEach(function(a,i){
+    html+='<button class="axisbtn'+(i===0?' active':'')+'" onclick="selAxis('+i+')">'+a.nm+'</button>';
+  });
+  document.getElementById('axisbar').innerHTML=html;
+}
+function selAxis(i){
+  axisIdx=i;
+  document.querySelectorAll('.axisbtn').forEach(function(b,j){b.classList.toggle('active',j===i);});
+  var a=axes[i];
+  var html='<div class="top"><span class="nm">'+a.nm+'</span><span class="cd">'+a.cd+'</span></div>'+
+    '<div class="def">'+a.def+'</div>'+
+    '<div class="svgwrap">'+a.svg+'</div>'+
+    '<div class="axisgrid" style="margin-top:14px">'+
+      '<div class="box"><div class="lab">验证协议</div><div class="val">'+a.ver+'</div></div>'+
+      '<div class="box"><div class="lab">推理需求</div><div class="val">'+a.demand+'</div></div>'+
+      '<div class="box"><div class="lab">实际场景</div><div class="val">'+a.casev+'</div></div>'+
+      '<div class="box"><div class="lab">和 MAS 的关系</div><div class="val">'+a.note+'</div></div>'+
+    '</div>';
+  document.getElementById('axisview').innerHTML=html;
+}
+buildAxisBar();selAxis(0);
+
+// ---------- orchestration demo ----------
+var mode='seq';
+var seqSteps=[
+  {row:[{c:'orch',t:'编排器'}], log:'<span class="tag2">step 0</span> 起点：只有编排器。顺序范式要一步步加组件。'},
+  {row:[{c:'orch',t:'编排器'},{a:1},{c:'agent',t:'Agent A'}], log:'<span class="tag2">step 1 · RL 决策</span> 加入 Agent A。这是一次独立的局部决策。'},
+  {row:[{c:'orch',t:'编排器'},{a:1},{c:'agent',t:'Agent A'},{a:1},{c:'agent',t:'Agent B'}], log:'<span class="tag2">step 2 · RL 决策</span> 再加 Agent B。若 step 1 选错，误差会传到这里（误差传播）。'},
+  {row:[{c:'orch',t:'编排器'},{a:1},{c:'agent',t:'Agent A'},{a:1},{c:'agent',t:'Agent B'},{a:1},{c:'fin',t:'汇总'}], log:'<span class="tag2">step 3 · RL 决策</span> 连边 + 加汇总。多步信用分配困难：最终奖励难以归因到具体某一步。'}
+];
+var holState={done:false};
+function renderRow(items){
+  var fr=document.getElementById('flowrow');
+  fr.innerHTML='';
+  items.forEach(function(it){
+    if(it.a){var ar=document.createElement('span');ar.className='arrow';ar.textContent='→';fr.appendChild(ar);setTimeout(function(){ar.classList.add('show');},20);}
+    else{var n=document.createElement('div');n.className='node '+it.c;n.textContent=it.t;fr.appendChild(n);setTimeout(function(){n.classList.add('show');},20);}
+  });
+}
+var seqPtr=-1;
+function setMode(m){
+  mode=m;
+  document.getElementById('mSeq').classList.toggle('active',m==='seq');
+  document.getElementById('mHol').classList.toggle('active',m==='hol');
+  resetDemo();
+}
+function resetDemo(){
+  seqPtr=-1;holState.done=false;
+  document.getElementById('flowrow').innerHTML='';
+  document.getElementById('stepBtn').disabled=false;
+  document.getElementById('stepBtn').textContent= mode==='hol'?'一次生成全图 ▸':'下一步 ▸';
+  document.getElementById('steplog').innerHTML= mode==='hol'
+    ? '整体编排：编排器在<strong>单步</strong>内输出完整系统。点击按钮看一次成图。'
+    : '顺序编排：每点一次「下一步」，编排器做一次局部决策。点击开始。';
+}
+function stepDemo(){
+  if(mode==='seq'){
+    seqPtr++;
+    if(seqPtr>=seqSteps.length){return;}
+    renderRow(seqSteps[seqPtr].row);
+    document.getElementById('steplog').innerHTML=seqSteps[seqPtr].log;
+    if(seqPtr>=seqSteps.length-1){document.getElementById('stepBtn').disabled=true;}
+  }else{
+    if(holState.done)return;
+    renderRow([{c:'orch',t:'编排器'},{a:1},{c:'agent',t:'Agent A'},{a:1},{c:'agent',t:'Agent B'},{a:1},{c:'fin',t:'汇总'}]);
+    document.getElementById('steplog').innerHTML='<span class="tag2">single step</span> 一次性生成完整图：编排器在计划层联合推理「派谁、怎么连」，不观察中间状态，只用最终输出评估 → 训练更稳、无步间误差传播。';
+    holState.done=true;
+    document.getElementById('stepBtn').disabled=true;
+  }
+}
+resetDemo();
+</script>
+</body>
+</html>

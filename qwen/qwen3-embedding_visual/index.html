@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qwen3 Embedding 论文图解 · 基于基座大模型的文本嵌入与重排</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg-soft:#f7f0e0;
+    --card:#f4ead7;
+    --card-2:#efe3cd;
+    --border:#e3d6bd;
+    --border-strong:#d8c7a8;
+    --ink:#2b2620;
+    --ink-soft:#4f463a;
+    --muted:#8a7d66;
+    --accent:#b07a43;
+    --accent-soft:#f0e2cb;
+    --shadow:0 1px 2px rgba(80,60,30,.06),0 8px 24px rgba(80,60,30,.05);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+    line-height:1.75;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px;}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(176,122,67,.35);}
+  a:hover{border-bottom-color:var(--accent);}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+  /* header */
+  header{padding:64px 0 24px;}
+  .eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  h1{font-size:34px;line-height:1.25;margin:14px 0 6px;font-weight:700;letter-spacing:-.01em;}
+  .subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 20px;font-weight:500;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;}
+  .badge{font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:4px 13px;color:var(--ink-soft);font-weight:500;}
+  .badge.accent{background:var(--accent-soft);border-color:var(--border-strong);color:#8a5a28;}
+
+  /* tldr */
+  .tldr{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);}
+  .tldr h2{margin:0 0 8px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);}
+  .tldr p{margin:0;font-size:17px;color:var(--ink-soft);}
+  .tldr strong{color:var(--ink);font-weight:600;}
+
+  /* sections */
+  section{padding:42px 0 8px;}
+  h2.sec{font-size:25px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em;}
+  .sec-tag{font-size:13px;color:var(--accent);font-weight:600;letter-spacing:.05em;margin-bottom:4px;}
+  h3{font-size:19px;font-weight:600;margin:30px 0 8px;}
+  p{margin:14px 0;}
+  .lead{font-size:18px;color:var(--ink-soft);}
+  strong{font-weight:600;color:var(--ink);}
+  ul.body,ol.body{margin:14px 0;padding-left:22px;}
+  ul.body li,ol.body li{margin:8px 0;}
+
+  /* pillar grid */
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0;}
+  .pillar{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+  .pillar .ic{font-size:22px;}
+  .pillar h4{margin:8px 0 4px;font-size:16px;font-weight:600;}
+  .pillar p{margin:0;font-size:14px;color:var(--muted);line-height:1.6;}
+
+  /* figure */
+  figure{margin:26px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);}
+  figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff;border:1px solid var(--border);}
+  figcaption{margin-top:12px;}
+  .fig-toggle{width:100%;text-align:left;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;font-family:inherit;color:var(--ink);font-size:14.5px;line-height:1.5;}
+  .fig-toggle:hover{background:var(--accent-soft);}
+  .fig-toggle .cap-line{font-weight:500;}
+  .fig-toggle .cap-line b{color:var(--accent);font-weight:700;}
+  .fig-arrow{flex-shrink:0;font-size:13px;color:var(--muted);font-weight:500;white-space:nowrap;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease,margin .3s ease;opacity:0;}
+  .figure-detail.active{max-height:1400px;opacity:1;margin-top:10px;}
+  .figure-detail .inner{background:var(--bg-soft);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .figure-detail ul{margin:0;padding-left:20px;}
+  .figure-detail li{margin:9px 0;font-size:15px;color:var(--ink-soft);}
+  .figure-detail li b{color:var(--ink);}
+  .figure-detail .sum{margin:12px 0 0;font-size:14px;color:var(--muted);font-style:italic;}
+
+  /* compare panel */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;}
+  .panel{border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;background:var(--card);}
+  .panel.old{background:var(--bg-soft);}
+  .panel h4{margin:0 0 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .panel.old h4{color:var(--muted);}
+  .panel.new h4{color:var(--accent);}
+  .panel ul{margin:0;padding-left:18px;}
+  .panel li{margin:7px 0;font-size:14.5px;color:var(--ink-soft);}
+
+  /* two-type cards */
+  .types{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;}
+  .typecard{border:1px solid var(--border);border-radius:var(--radius);padding:20px;background:var(--card);box-shadow:var(--shadow);}
+  .typecard .tlabel{font-size:13px;font-weight:600;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;}
+  .typecard h4{margin:6px 0 10px;font-size:18px;}
+  .typecard p{margin:8px 0;font-size:14.5px;color:var(--ink-soft);}
+  .typecard .formula{margin-top:12px;}
+
+  /* code / formula block */
+  .codeblock{background:#f1e7d4;border:1px solid var(--border-strong);border-radius:10px;padding:14px 16px;font-family:"JetBrains Mono",monospace;font-size:13.5px;color:var(--ink-soft);overflow-x:auto;line-height:1.7;white-space:pre;}
+  .codeblock .k{color:var(--accent);}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0;}
+  .metric{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;box-shadow:var(--shadow);}
+  .metric .num{font-size:32px;font-weight:700;color:var(--ink);letter-spacing:-.02em;font-family:"Inter",sans-serif;}
+  .metric .num span{font-size:16px;color:var(--accent);font-weight:600;}
+  .metric .lab{font-size:13.5px;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+  /* table */
+  .tbl-wrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--card);}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+  thead th{background:var(--card-2);font-weight:600;color:var(--ink);font-size:13.5px;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.hl{background:var(--accent-soft);}
+  tbody tr.hl td{font-weight:600;color:#7d5527;}
+  td.num,th.num{text-align:right;font-family:"JetBrains Mono",monospace;font-size:13.5px;}
+
+  /* details / examples */
+  details{background:var(--card);border:1px solid var(--border);border-radius:12px;margin:16px 0;overflow:hidden;}
+  details summary{cursor:pointer;padding:13px 16px;font-weight:500;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary .hint{font-size:13px;color:var(--muted);font-weight:400;}
+  details summary::after{content:"展开 ▾";font-size:13px;color:var(--accent);white-space:nowrap;}
+  details[open] summary::after{content:"收起 ▴";}
+  details .dbody{padding:0 16px 16px;border-top:1px solid var(--border);}
+  details .dbody p{font-size:14px;color:var(--ink-soft);}
+  details .codeblock{white-space:pre-wrap;word-break:break-word;}
+
+  .note{background:var(--bg-soft);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;margin:18px 0;font-size:15px;color:var(--ink-soft);}
+  .note b{color:var(--ink);}
+
+  /* flow strip */
+  .flow{display:flex;align-items:stretch;gap:0;margin:22px 0;flex-wrap:wrap;}
+  .flow .step{flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .flow .step .st{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.06em;}
+  .flow .step h5{margin:6px 0 4px;font-size:15px;font-weight:600;}
+  .flow .step p{margin:0;font-size:13px;color:var(--muted);line-height:1.55;}
+  .flow .arrow{display:flex;align-items:center;justify-content:center;color:var(--border-strong);font-size:22px;padding:0 6px;}
+
+  footer{margin:60px 0 50px;padding-top:24px;border-top:1px solid var(--border);color:var(--muted);font-size:14px;}
+  footer a{font-weight:500;}
+  footer p{margin:6px 0;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:27px;}
+    .pillars,.metrics{grid-template-columns:1fr;}
+    .compare,.types{grid-template-columns:1fr;}
+    .flow .arrow{transform:rotate(90deg);padding:4px 0;width:100%;}
+    .flow .step{min-width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">论文图解 · Text Embedding &amp; Reranking</div>
+  <h1>Qwen3 Embedding：用基座大模型自己「造数据」<br>训出 SOTA 的文本嵌入与重排模型</h1>
+  <p class="subtitle">Advancing Text Embedding and Reranking Through Foundation Models</p>
+  <div class="meta">
+    <span class="badge accent">2025.06 · arXiv preprint</span>
+    <span class="badge">Tongyi Lab · 阿里巴巴</span>
+    <span class="badge">0.6B / 4B / 8B</span>
+    <span class="badge">Apache 2.0 开源</span>
+    <span class="badge"><a href="https://arxiv.org/abs/2506.05176">阅读原文 ↗</a></span>
+  </div>
+  <div class="tldr">
+    <h2>TL;DR</h2>
+    <p>这篇技术报告把三件事拧成一条流水线：<strong>① 让 Qwen3 大模型自己合成约 1.5 亿条多语言训练对</strong>做大规模弱监督预训练，<strong>② 再用高质量标注 + 筛选过的合成数据做有监督微调</strong>，<strong>③ 最后用 slerp（球面线性插值）把多个检查点「融合」成更稳健的模型</strong>。基于 Qwen3 基座，做出 0.6B/4B/8B 的<strong>嵌入</strong>与<strong>重排</strong>两类模型，在 MTEB 多语言、代码检索等榜单上达到 SOTA，并全部开源。</p>
+  </div>
+</header>
+
+<section id="overview">
+  <div class="sec-tag">速览</div>
+  <h2 class="sec">三个核心支柱</h2>
+  <p class="lead">在读细节之前，先记住整篇论文真正的新意只有这三点——其余都是把它们工程化落地的配套。</p>
+  <div class="pillars">
+    <div class="pillar">
+      <div class="ic">🧪</div>
+      <h4>合成数据驱动</h4>
+      <p>不再从问答论坛 / 论文里「捡」弱监督数据，而是让基座模型按任务、语言、长度、难度可控地直接生成。</p>
+    </div>
+    <div class="pillar">
+      <div class="ic">🪜</div>
+      <h4>多阶段训练 + 融合</h4>
+      <p>大规模弱监督预训练 → 高质量有监督微调 → slerp 模型融合，逐级提升泛化与稳健性。</p>
+    </div>
+    <div class="pillar">
+      <div class="ic">⚖️</div>
+      <h4>双模型形态</h4>
+      <p>嵌入模型取末位 token 隐状态、指令感知；重排模型用 LLM 逐条判 yes/no 打分。</p>
+    </div>
+  </div>
+</section>
+
+<section id="problem">
+  <div class="sec-tag">01 · 问题</div>
+  <h2 class="sec">嵌入与重排为什么重要，又难在哪</h2>
+  <p>文本<strong>嵌入（embedding）</strong>把句子映射成向量，让机器能用相似度衡量语义关系；<strong>重排（reranking）</strong>则在候选集里把最相关的结果顶到前面。两者是搜索、问答、推荐的地基，而 <strong>RAG 与智能体（agent）</strong>的兴起，又对它们提出了更高的要求。</p>
+  <p>核心思想很统一：给定查询 <code>q</code>、文档 <code>d</code>，再加一条任务<strong>指令 <code>I</code></strong>，模型要做的就是「在这条指令定义的相似性标准下，判断 q 和 d 有多相关」。训练数据因此组织成 <code>{I, q, d⁺, d⁻₁ … d⁻ₙ}</code>——一个正样本，多个负样本。</p>
+  <p>难点在于：要同时做到<strong>可扩展（多语言、多任务、多领域）</strong>、<strong>长上下文理解</strong>，以及<strong>与具体下游任务对齐</strong>。其中最卡脖子的，是高质量、覆盖广的训练数据从哪来。</p>
+</section>
+
+<section id="prior">
+  <div class="sec-tag">02 · 已有方案</div>
+  <h2 class="sec">老办法的瓶颈：数据靠「捡」</h2>
+  <p>从 BERT 等 encoder-only 模型，到近年基于 LLM 的嵌入模型（GTE、E5、BGE 系列），多阶段训练早已是惯例：<strong>先在大规模含噪弱监督数据上预训练，再用小规模高质量数据微调</strong>。但弱监督数据的来源一直是软肋。</p>
+  <div class="compare">
+    <div class="panel old">
+      <h4>🗂️ 过去：从开源社区采集</h4>
+      <ul>
+        <li>弱监督对主要来自 Q&amp;A 论坛、学术论文等开放来源</li>
+        <li>质量与分布<strong>不可控</strong>，难按需调配</li>
+        <li>低资源语言 / 冷门任务上数据稀缺</li>
+        <li>多样性受限于「现实里恰好存在什么」</li>
+      </ul>
+    </div>
+    <div class="panel new">
+      <h4>🧪 本文：让基座模型直接合成</h4>
+      <ul>
+        <li>用基座模型的理解 + 生成能力<strong>直接造对</strong></li>
+        <li>可在提示词里任意定义任务、语言、长度、难度</li>
+        <li><strong>可控性强</strong>，质量与多样性精确管理</li>
+        <li>低资源语言场景尤其受益</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">这正是 Qwen3 Embedding 相对前作 <b>GTE-Qwen</b> 系列的关键跃迁：把「数据从哪来」从被动采集，变成主动、可控的合成。</p>
+</section>
+
+<section id="arch">
+  <div class="sec-tag">03 · 本文方法 · 模型架构</div>
+  <h2 class="sec">同一个基座，两种相关性形态</h2>
+  <p>嵌入与重排都在做「任务感知的相关性评估」，但落地方式不同。两类模型都用 Qwen3 <strong>稠密版</strong>基座初始化，共三种规格（0.6B / 4B / 8B），借此继承它的文本建模与指令遵循能力。下图左为嵌入模型，右为重排模型。</p>
+
+  <figure>
+    <img src="assets/q3e-model-arc.png" alt="Qwen3-Embedding 与 Qwen3-Reranker 的模型架构图">
+    <figcaption>
+      <button class="fig-toggle" type="button" onclick="toggleDetail(this)">
+        <span class="cap-line"><b>图 1</b> · 左：嵌入模型取 [EOS] 末位隐状态做向量；右：重排模型用 LLM 对话模板逐条判 yes/no 打分。</span>
+        <span class="fig-arrow">展开图解 ▾</span>
+      </button>
+      <div class="figure-detail">
+        <div class="inner">
+          <ul>
+            <li><b>嵌入模型（左）· 输入构造：</b>把指令和查询拼成一段上下文 <code>{Instruction} {Query}&lt;|endoftext|&gt;</code>，文档侧保持原样不加指令。这样向量是「指令感知」的——同一句话在不同任务下可得到不同表示。</li>
+            <li><b>嵌入模型 · 取向量方式：</b>沿用因果注意力的 LLM，在序列末尾追加 <code>[EOS]</code> token，取<strong>最后一层、该 [EOS] 位置的隐状态</strong>作为最终句向量。</li>
+            <li><b>重排模型（右）· 任务形式：</b>采用<strong>逐条（point-wise）</strong>判定，把「q 与 d 是否相关」框成<strong>二分类</strong>问题，套用 LLM 的 chat 模板，让模型在 system 提示下只回答 <code>yes</code> / <code>no</code>。</li>
+            <li><b>重排模型 · 打分公式：</b>不直接取生成文本，而是看下一个 token 是 yes 还是 no 的概率，做归一化得到连续相关性分数（见下方公式），便于排序。</li>
+            <li><b>两者共性：</b>都把<strong>指令 I 注入输入上下文</strong>，从而具备「指令遵循」能力，可按不同下游任务定制评判标准。</li>
+          </ul>
+          <p class="sum">一句话：嵌入模型是「编码成一个向量再比相似度」，重排模型是「让 LLM 当裁判逐条打分」，共享同一基座但目标不同。</p>
+        </div>
+      </div>
+    </figcaption>
+  </figure>
+
+  <div class="types">
+    <div class="typecard">
+      <div class="tlabel">Embedding 嵌入</div>
+      <h4>末位 token + 指令感知</h4>
+      <p>查询输入格式：</p>
+      <div class="codeblock">{Instruction} {Query}&lt;|endoftext|&gt;</div>
+      <p>取最后一层 <code>[EOS]</code> 隐状态为句向量；支持 <strong>MRL</strong>（可裁剪自定义维度）与 <strong>32K</strong> 上下文。</p>
+    </div>
+    <div class="typecard">
+      <div class="tlabel">Reranker 重排</div>
+      <h4>逐条 LLM yes/no 打分</h4>
+      <p>相关性分数由 yes/no 的概率归一化得到：</p>
+      <div class="codeblock"><span class="k">score</span>(q,d) =
+   exp( P(yes | I,q,d) )
+ ─────────────────────────────
+ exp(P(yes|·)) + exp(P(no|·))</div>
+      <p>套 chat 模板，system 提示「只能回答 yes 或 no」。</p>
+    </div>
+  </div>
+
+  <p>各规格的层数、上下文、向量维度等配置如下（仅嵌入模型有固定向量维度，重排模型输出的是分数）：</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>类型</th><th>模型</th><th class="num">参数</th><th class="num">层数</th><th class="num">上下文</th><th class="num">向量维度</th><th>MRL</th><th>指令感知</th></tr>
+      </thead>
+      <tbody>
+        <tr><td rowspan="3">嵌入</td><td>Qwen3-Embedding-0.6B</td><td class="num">0.6B</td><td class="num">28</td><td class="num">32K</td><td class="num">1024</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Qwen3-Embedding-4B</td><td class="num">4B</td><td class="num">36</td><td class="num">32K</td><td class="num">2560</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Qwen3-Embedding-8B</td><td class="num">8B</td><td class="num">36</td><td class="num">32K</td><td class="num">4096</td><td>✓</td><td>✓</td></tr>
+        <tr><td rowspan="3">重排</td><td>Qwen3-Reranker-0.6B</td><td class="num">0.6B</td><td class="num">28</td><td class="num">32K</td><td class="num">—</td><td>—</td><td>✓</td></tr>
+        <tr><td>Qwen3-Reranker-4B</td><td class="num">4B</td><td class="num">36</td><td class="num">32K</td><td class="num">—</td><td>—</td><td>✓</td></tr>
+        <tr><td>Qwen3-Reranker-8B</td><td class="num">8B</td><td class="num">36</td><td class="num">32K</td><td class="num">—</td><td>—</td><td>✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="train">
+  <div class="sec-tag">03 · 本文方法 · 训练流程</div>
+  <h2 class="sec">多阶段训练 + 模型融合</h2>
+  <p>这是全文最重要的一张图。嵌入模型走<strong>三步</strong>：合成数据弱监督预训练 → 高质量有监督微调 → 模型融合；重排模型则<strong>跳过第一步</strong>，只做有监督微调 + 融合。</p>
+
+  <figure>
+    <img src="assets/q3e-train-pipeline.png" alt="Qwen3 Embedding 与 Reranking 模型的训练流水线">
+    <figcaption>
+      <button class="fig-toggle" type="button" onclick="toggleDetail(this)">
+        <span class="cap-line"><b>图 2</b> · 训练流水线：合成数据 → 弱监督预训练 → 高质量有监督微调 → slerp 模型融合（重排线省去弱监督阶段）。</span>
+        <span class="fig-arrow">展开图解 ▾</span>
+      </button>
+      <div class="figure-detail">
+        <div class="inner">
+          <ul>
+            <li><b>起点 · 数据合成：</b>用 <strong>Qwen3-32B</strong> 合成约 <strong>1.5 亿</strong>条多任务、多语言文本对，覆盖检索、双语挖掘（bitext mining）、分类、语义相似度（STS）四类任务。</li>
+            <li><b>阶段一 · 弱监督预训练（仅嵌入）：</b>在这 1.5 亿条合成数据上用对比学习预训练，奠定泛化能力。消融实验证明这一步至关重要。</li>
+            <li><b>阶段二 · 有监督微调：</b>用约 <strong>700 万</strong>条人工标注数据 + 从合成数据中<strong>筛选出的约 1200 万</strong>条高质量对一起精调，进一步提升表现。</li>
+            <li><b>收尾 · 模型融合（slerp）：</b>把微调过程中保存的多个检查点用<strong>球面线性插值</strong>融合成一个模型，增强对不同数据分布的稳健性与泛化性。</li>
+            <li><b>两条线的区别：</b>嵌入模型走「预训练 → 微调 → 融合」三段；<strong>重排模型不做阶段一弱监督</strong>，直接「有监督微调 → 融合」两段。</li>
+          </ul>
+          <p class="sum">箭头方向即数据流向：合成数据先喂给弱监督预训练，筛选后的精华再进入微调，最后多检查点融合定型。</p>
+        </div>
+      </div>
+    </figcaption>
+  </figure>
+
+  <h3>三项关键创新</h3>
+  <div class="pillars">
+    <div class="pillar">
+      <div class="ic">①</div>
+      <h4>合成数据弱监督</h4>
+      <p>基座模型直接造对，按任务/语言/长度/难度可控生成，替代社区采集。</p>
+    </div>
+    <div class="pillar">
+      <div class="ic">②</div>
+      <h4>合成数据进微调</h4>
+      <p>因合成质量极高，从中筛出精华混入第二阶段有监督微调，再提泛化。</p>
+    </div>
+    <div class="pillar">
+      <div class="ic">③</div>
+      <h4>slerp 模型融合</h4>
+      <p>融合多个微调检查点，跨数据分布更稳健（借鉴 Li et al. 2024）。</p>
+    </div>
+  </div>
+
+  <h3>训练目标</h3>
+  <p>嵌入模型用改进版 <strong>InfoNCE 对比损失</strong>：在正样本对之外，把 K 个难负例、批内其他查询、批内其他文档都当负例。其精巧之处在于一个<strong>掩码因子 <code>m_ij</code></strong>——当某个「负例」的相似度反而超过正例 0.1 以上（很可能是<strong>假负例</strong>）时，把它从分母里屏蔽掉，避免模型被错误信号带偏。重排模型则用直接的 <strong>SFT 损失</strong>：最大化正确标签（yes/no）的概率。</p>
+  <details>
+    <summary>展开：两个损失函数<span class="hint">嵌入对比损失含假负例掩码；重排为 yes/no 概率的 SFT 损失</span></summary>
+    <div class="dbody">
+      <div class="codeblock">嵌入（改进 InfoNCE）：
+  L_embedding = - (1/N) Σ_i  log [ exp(s(q_i, d_i⁺)/τ) / Z_i ]
+
+  Z_i = exp(s(q_i,d_i⁺)/τ)
+      + Σ_k  m_ik · exp(s(q_i, d_i,k⁻)/τ)     # K 个难负例
+      + Σ_j  m_ij · exp(s(q_i, q_j)/τ)         # 批内其他查询
+      + Σ_j  m_ij · exp(s(d_i⁺, d_j)/τ)        # 批内其他文档
+
+  掩码  m_ij = 0  若 s_ij > s(q_i,d_i⁺)+0.1  或  d_j == d_i⁺   （屏蔽假负例）
+            = 1  否则
+  s(·,·) 为余弦相似度，τ 为温度系数。
+
+重排（SFT）：
+  L_reranking = - log p( l | P(q,d) )          # l = yes（正）/ no（负）</div>
+      <p>掩码因子是缓解假负例污染的关键设计——批内随机抽到的「负例」其实可能与查询高度相关，直接当负例会误导训练。</p>
+    </div>
+  </details>
+</section>
+
+<section id="syn">
+  <div class="sec-tag">03 · 本文方法 · 合成数据</div>
+  <h2 class="sec">数据是怎么「造」出来的</h2>
+  <p>合成数据是整套方法的发动机。以检索任务为例，论文用<strong>「文档 → 查询」</strong>的两阶段流水线：先给文档配置「提问者画像」，再据此生成查询。这样造出的查询更像真实用户会问的问题。</p>
+
+  <div class="flow">
+    <div class="step">
+      <div class="st">语料</div>
+      <h5>多语言文档</h5>
+      <p>取自 Qwen3 基座的预训练语料，作为文档来源。</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="st">阶段 1 · 配置</div>
+      <h5>选画像 + 类型 + 难度</h5>
+      <p>从 Persona Hub 检索 Top-5 相关角色，由 LLM 定 Character / Question_Type / Difficulty。</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="st">阶段 2 · 生成</div>
+      <h5>站在角色视角提问</h5>
+      <p>按配置再指定长度、语言，生成可检索到该文档的查询。</p>
+    </div>
+  </div>
+
+  <p>提问类型涵盖关键词、事实、摘要、判断等多个维度，叠加长度、难度、语言的组合，保证了数据的<strong>多样性与真实性</strong>。最终产出 <strong>约 1.5 亿</strong>条弱监督对；再用一个简单标准——<strong>余弦相似度 &gt; 0.7</strong>——从随机采样中筛出 <strong>约 1200 万</strong>条高质量对进入第二阶段。</p>
+
+  <details>
+    <summary>展开：合成检索数据的真实 Prompt 模板（节选）<span class="hint">两段式：先配置画像/类型/难度，再据此生成查询</span></summary>
+    <div class="dbody">
+      <p><b>阶段 1 · 配置（Configuration）</b></p>
+      <div class="codeblock">Given a **Passage** and **Character**, select the appropriate option
+from three fields: Character, Question_Type, Difficulty, and return
+the output in JSON format.
+First, select the Character likely interested in the Passage from candidates.
+Then select the Question_Type the Character might ask about the Passage.
+Finally, choose the Difficulty (high_school / university / phd).
+Question_Type: keywords / acquire_knowledge / summary / yes_or_no / background
+**Passage**: {passage}   **Character**: {character}</div>
+      <p><b>阶段 2 · 查询生成（Query Generation）</b></p>
+      <div class="codeblock">Given a **Character**, **Passage**, and **Requirement**, generate a query
+from the Character's perspective that can retrieve the Passage.
+Return JSON. **Requirement**:
+  - Type: {type};  - Difficulty: {difficulty};
+  - Length: {length} words;  - Language: {language}</div>
+      <p>角色（Character）来自 Persona Hub（Ge et al. 2024），为每篇文档检索最相关的 5 个候选角色注入「用户视角」，是提升查询多样性的关键一招。</p>
+    </div>
+  </details>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>阶段</th><th>数据来源</th><th class="num">规模</th></tr></thead>
+      <tbody>
+        <tr><td>弱监督预训练</td><td>纯合成数据（Qwen3-32B 生成）</td><td class="num">~150M</td></tr>
+        <tr><td rowspan="2">有监督微调</td><td>人工标注：MS MARCO、NQ、HotpotQA、MIRACL、MLDR、CodeSearchNet 等</td><td class="num">~7M</td></tr>
+        <tr><td>筛选后的高质量合成数据（cos &gt; 0.7）</td><td class="num">~12M</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="fun">
+  <div class="sec-tag">04 · 有意思的点</div>
+  <h2 class="sec">几个值得注意的设计取舍</h2>
+  <ul class="body">
+    <li><strong>重排模型故意省掉弱监督阶段：</strong>嵌入要学一个好的「表示空间」，弱监督预训练帮助很大；重排只需学「判别」，作者直接从高质量有监督微调起步，更高效。</li>
+    <li><strong>合成数据「质」高到能反哺微调：</strong>因为用的是强大的 Qwen3-32B，合成对质量足够好——它不只用于弱监督打底，筛选后还能混进第二阶段精调，这在以往是不敢想的。</li>
+    <li><strong>用画像（persona）造查询：</strong>给文档分配「谁会来问」的角色，让合成查询贴近真实用户语气，而非千篇一律的模板问句。</li>
+    <li><strong>假负例掩码：</strong>对比学习里批内随机负例可能其实相关；当其相似度超过正例 0.1 以上时直接屏蔽，避免「把对的当错的」。</li>
+  </ul>
+</section>
+
+<section id="exp">
+  <div class="sec-tag">05 · 实验结论</div>
+  <h2 class="sec">效果：小模型也能打，大模型登顶</h2>
+  <p>评测覆盖 MMTEB 下的 216 个任务（131 多语言 + 41 英文 v2 + 32 中文 CMTEB + 12 代码检索）。最亮眼的结论是：旗舰 <strong>Qwen3-Embedding-8B</strong> 在 MTEB 多语言与代码检索上<strong>超过此前最强的闭源模型 Gemini-Embedding</strong>；而最小的 0.6B 也已逼近顶尖基线。</p>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="num">70.58</div>
+      <div class="lab">8B · MTEB 多语言<br>（Gemini 为 68.37）</div>
+    </div>
+    <div class="metric">
+      <div class="num">80.68</div>
+      <div class="lab">8B · MTEB 代码检索<br>（Gemini 为 74.66）</div>
+    </div>
+    <div class="metric">
+      <div class="num">75.22</div>
+      <div class="lab">8B · MTEB 英文 v2<br>（Gemini 为 73.30）</div>
+    </div>
+  </div>
+
+  <p>MTEB 多语言（Mean by Task）上的对比，可看出三档模型的梯度与对闭源的反超：</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>模型</th><th class="num">参数</th><th class="num">MTEB 多语言</th></tr></thead>
+      <tbody>
+        <tr><td>multilingual-e5-large-instruct</td><td class="num">0.6B</td><td class="num">63.22</td></tr>
+        <tr><td>gte-Qwen2-7B-instruct</td><td class="num">7B</td><td class="num">62.51</td></tr>
+        <tr><td>Gemini Embedding（闭源）</td><td class="num">—</td><td class="num">68.37</td></tr>
+        <tr><td>Qwen3-Embedding-0.6B</td><td class="num">0.6B</td><td class="num">64.33</td></tr>
+        <tr><td>Qwen3-Embedding-4B</td><td class="num">4B</td><td class="num">69.45</td></tr>
+        <tr class="hl"><td>Qwen3-Embedding-8B</td><td class="num">8B</td><td class="num">70.58</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>重排：</strong>用 Qwen3-Embedding-0.6B 先召回 Top-100，再用各重排模型精排。三个 Qwen3-Reranker 都优于嵌入直检与所有基线重排器，<strong>Qwen3-Reranker-8B 在多数任务上比 0.6B 提升约 3.0 分</strong>。</p>
+
+  <h3>消融：两步缺一不可</h3>
+  <p>以 0.6B 在 MMTEB 上的成绩拆解，去掉合成数据弱监督或去掉模型融合，分数都明显下滑——印证了这两步的价值：</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>设置（Qwen3-Embedding-0.6B）</th><th class="num">MMTEB</th></tr></thead>
+      <tbody>
+        <tr><td>仅用合成数据（无后续阶段）</td><td class="num">58.49</td></tr>
+        <tr><td>去掉合成数据弱监督</td><td class="num">61.21</td></tr>
+        <tr><td>去掉模型融合</td><td class="num">62.56</td></tr>
+        <tr class="hl"><td>完整版（弱监督 + 微调 + 融合）</td><td class="num">64.33</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note"><b>结论：</b>大规模合成数据弱监督预训练 + slerp 模型融合，是 Qwen3 Embedding 取得强泛化的两大支柱；任一缺失都会让最终分数明显回落。</p>
+</section>
+
+<section id="conclusion">
+  <div class="sec-tag">06 · 结语</div>
+  <h2 class="sec">一句话总结</h2>
+  <p>Qwen3 Embedding 证明了一条务实路线：<strong>让基座大模型既当骨架、又当数据工厂</strong>——用它可控地合成海量训练对，配合多阶段训练与模型融合，就能把 0.6B/4B/8B 的嵌入与重排模型推到 SOTA，并且 0.6B 这种小模型也足够实用。所有模型以 Apache 2.0 开源，便于社区直接使用与二次开发。</p>
+</section>
+
+<footer>
+  <p><strong>Qwen3 Embedding: Advancing Text Embedding and Reranking Through Foundation Models</strong></p>
+  <p>Tongyi Lab, Alibaba Group · 2025.06 · arXiv preprint</p>
+  <p>原文：<a href="https://arxiv.org/abs/2506.05176">arxiv.org/abs/2506.05176</a> · HTML 版：<a href="https://arxiv.org/html/2506.05176v1">arxiv.org/html/2506.05176v1</a></p>
+  <p style="margin-top:10px;color:var(--border-strong);">本页为面向中文读者的教学图解，数字与方法均依据原论文，图片来自 arXiv 原文。</p>
+</footer>
+
+</div>
+
+<script>
+function toggleDetail(btn){
+  var detail = btn.nextElementSibling;
+  var open = detail.classList.toggle('active');
+  var arrow = btn.querySelector('.fig-arrow');
+  if(arrow){ arrow.textContent = open ? '收起图解 ▴' : '展开图解 ▾'; }
+}
+</script>
+</body>
+</html>

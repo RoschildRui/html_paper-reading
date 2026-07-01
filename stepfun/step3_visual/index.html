@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Step-3 解读 · 模型-系统协同设计，把大模型的解码做便宜</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23b5654a'/%3E%3Ctext x='50' y='72' font-size='54' text-anchor='middle' fill='%23fbf6ea' font-family='Arial,sans-serif' font-weight='bold'%3ES3%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --surface:#f4ead7;
+    --surface2:#efe3cd;
+    --border:#e8dcc7;
+    --line:#ddcdb0;
+    --ink:#2e2a24;
+    --ink-soft:#4a443a;
+    --muted:#7b7264;
+    --accent:#b5654a;
+    --accent-deep:#9b5037;
+    --accent-soft:rgba(181,101,74,0.10);
+    --accent-line:rgba(181,101,74,0.28);
+    --radius:14px;
+    --maxw:880px;
+    --sans:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.78;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+
+  /* ---------- top nav ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(251,246,234,0.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{max-width:var(--maxw);margin:0 auto;padding:10px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .brand{font-weight:800;letter-spacing:.2px;font-size:15px;color:var(--ink);white-space:nowrap;}
+  .brand span{color:var(--accent);}
+  .navlinks{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto;}
+  .navlinks a{
+    font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:8px;
+    transition:background .18s,color .18s;font-weight:500;
+  }
+  .navlinks a:hover{background:var(--accent-soft);color:var(--accent-deep);}
+  .src-link{color:var(--accent-deep);font-weight:600;border:1px solid var(--accent-line);}
+  .src-link:hover{background:var(--accent);color:#fff !important;}
+
+  /* ---------- header ---------- */
+  header.hero{padding:54px 0 16px;}
+  .eyebrow{display:inline-flex;gap:8px;align-items:center;font-family:var(--mono);font-size:12.5px;color:var(--accent-deep);
+    background:var(--accent-soft);border:1px solid var(--accent-line);padding:4px 11px;border-radius:999px;letter-spacing:.3px;}
+  h1{font-size:38px;line-height:1.2;margin:18px 0 6px;font-weight:800;letter-spacing:-.5px;}
+  .subtitle{font-size:18.5px;color:var(--ink-soft);font-weight:500;margin:0 0 20px;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .badge{font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 13px;color:var(--ink-soft);}
+  .badge b{color:var(--ink);font-weight:600;}
+
+  /* ---------- generic blocks ---------- */
+  section{padding:30px 0;border-top:1px solid var(--border);}
+  section:first-of-type{border-top:none;}
+  .kicker{font-family:var(--mono);font-size:12.5px;color:var(--accent-deep);letter-spacing:1.4px;text-transform:uppercase;margin:0 0 6px;}
+  h2{font-size:27px;font-weight:800;margin:2px 0 8px;letter-spacing:-.3px;}
+  h3{font-size:20px;font-weight:700;margin:26px 0 8px;}
+  h4{font-size:16.5px;font-weight:700;margin:18px 0 6px;color:var(--ink);}
+  p{margin:12px 0;}
+  strong{font-weight:700;color:var(--ink);}
+  a{color:var(--accent-deep);}
+  .lead{font-size:18.5px;color:var(--ink-soft);}
+  ul,ol{margin:12px 0;padding-left:22px;}
+  li{margin:7px 0;}
+  code{font-family:var(--mono);font-size:.86em;background:var(--surface2);padding:1.5px 6px;border-radius:6px;border:1px solid var(--border);}
+
+  /* TL;DR card */
+  .tldr{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:22px 24px;margin:8px 0 22px;}
+  .tldr h2{font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:8px;}
+  .tldr p{margin:8px 0;font-size:16.5px;color:var(--ink-soft);}
+
+  /* breakthrough cards */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0;}
+  .feat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .feat .ico{font-size:20px;}
+  .feat h4{margin:8px 0 6px;font-size:16px;}
+  .feat p{margin:0;font-size:14.5px;color:var(--muted);line-height:1.65;}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0;}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 14px;text-align:center;}
+  .metric .num{font-size:25px;font-weight:800;color:var(--accent-deep);font-family:var(--sans);letter-spacing:-.5px;line-height:1.1;}
+  .metric .lab{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45;}
+
+  /* figure */
+  figure{margin:22px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .figcap{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .figcap b{color:var(--ink-soft);}
+  .fig-toggle{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--accent-deep);cursor:pointer;font-weight:600;user-select:none;}
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .figure-detail.active{max-height:2400px;}
+  .figure-detail-inner{padding:12px 2px 2px;font-size:14.5px;color:var(--ink-soft);}
+  .figure-detail-inner ul{margin:6px 0;padding-left:20px;}
+  .figure-detail-inner li{margin:6px 0;}
+  .figure-detail-inner .sum{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted);font-size:13.5px;}
+
+  /* expandable deep cards */
+  .deck{display:flex;flex-direction:column;gap:10px;margin:16px 0;}
+  .xcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .xcard .head{padding:15px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;user-select:none;transition:background .18s;}
+  .xcard .head:hover{background:var(--surface2);}
+  .xcard .chev{color:var(--accent);font-size:14px;margin-top:3px;transition:transform .25s;flex-shrink:0;}
+  .xcard.open .chev{transform:rotate(90deg);}
+  .xcard .ht{flex:1;}
+  .xcard .ht .t{font-weight:700;font-size:16px;}
+  .xcard .ht .s{font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .xcard .body{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+  .xcard.open .body{max-height:2200px;}
+  .xcard .body-inner{padding:2px 18px 18px;font-size:15px;color:var(--ink-soft);}
+  .xcard .body-inner p:first-child{margin-top:4px;}
+
+  /* step-through pipeline */
+  .stepper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:20px 0;}
+  .stepper h4{margin:0 0 4px;}
+  .lanes{display:flex;flex-direction:column;gap:8px;margin:18px 0 6px;}
+  .lane{display:flex;align-items:center;gap:10px;}
+  .lane .lname{width:118px;flex-shrink:0;font-size:12.5px;font-weight:700;color:var(--ink-soft);text-align:right;font-family:var(--mono);}
+  .lane .lname small{display:block;font-weight:400;color:var(--muted);font-size:11px;}
+  .lane.timeaxis .lname{color:var(--muted);font-weight:500;}
+  .slots{display:flex;gap:6px;flex:1;}
+  .slot{flex:1;height:38px;border-radius:8px;border:1.5px dashed var(--line);background:var(--bg);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12.5px;color:var(--muted);
+    transition:all .35s ease;}
+  .slot.tlabel{height:22px;border:none;background:transparent;color:var(--muted);font-size:11.5px;}
+  .slot.future{opacity:.45;}
+  .slot.past{border-style:solid;border-color:var(--line);background:var(--surface2);color:var(--muted);font-weight:600;}
+  .slot.now{border-style:solid;border-color:var(--accent);background:var(--accent-soft);color:var(--accent-deep);font-weight:700;box-shadow:0 0 0 2px var(--accent-soft);}
+  .lane.busy .lname{color:var(--accent-deep);}
+  .stepdesc{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 16px;font-size:15px;color:var(--ink-soft);min-height:64px;}
+  .stepdesc b{color:var(--accent-deep);}
+  .stepctl{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap;}
+  .btn{font-family:var(--sans);font-size:14px;font-weight:600;border:1px solid var(--accent-line);background:#fff;color:var(--accent-deep);
+    padding:8px 16px;border-radius:9px;cursor:pointer;transition:all .18s;}
+  .btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.ghost{border-color:var(--border);color:var(--muted);background:transparent;}
+  .btn.ghost:hover{background:var(--surface2);color:var(--ink);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .stepcount{font-family:var(--mono);font-size:13px;color:var(--muted);margin-left:auto;}
+  .steadybadge{display:inline-block;font-size:11.5px;font-family:var(--mono);color:var(--accent-deep);background:var(--accent-soft);
+    border:1px solid var(--accent-line);border-radius:999px;padding:2px 9px;margin-left:8px;opacity:0;transition:opacity .3s;}
+  .steadybadge.show{opacity:1;}
+
+  /* tables */
+  .tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--border);border-radius:12px;}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;}
+  th,td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--border);}
+  th{background:var(--surface2);font-weight:700;color:var(--ink);font-size:13px;}
+  td:first-child,th:first-child{text-align:left;font-weight:600;}
+  tbody tr:last-child td{border-bottom:none;}
+  .hl{color:var(--accent-deep);font-weight:800;}
+  .colour-ours{background:var(--accent-soft);}
+  caption{caption-side:bottom;font-size:12.5px;color:var(--muted);padding:9px 4px 0;text-align:left;}
+
+  /* quote */
+  blockquote{margin:18px 0;padding:14px 20px;background:var(--surface);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;color:var(--ink-soft);font-size:15.5px;}
+  blockquote .src{display:block;margin-top:6px;font-size:13px;color:var(--muted);}
+
+  /* details */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:14px 0;padding:0;}
+  details summary{padding:14px 18px;cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;align-items:center;gap:10px;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary .tri{color:var(--accent);font-size:12px;transition:transform .2s;}
+  details[open] summary .tri{transform:rotate(90deg);}
+  details summary .sm{font-weight:400;color:var(--muted);font-size:13.5px;}
+  .details-body{padding:2px 18px 18px;font-size:14.5px;color:var(--ink-soft);}
+  pre{background:#2e2a24;color:#f4ead7;border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.8px;line-height:1.6;margin:10px 0;}
+  pre .c{color:#b79b78;}
+
+  /* callout */
+  .note{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:12px;padding:14px 18px;margin:16px 0;font-size:14.5px;color:var(--ink-soft);}
+  .note b{color:var(--accent-deep);}
+
+  /* two-col compare */
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .panel h4{margin:0 0 8px;display:flex;align-items:center;gap:8px;}
+  .panel p,.panel li{font-size:14px;color:var(--ink-soft);}
+  .panel ul{margin:6px 0;padding-left:18px;}
+
+  /* footer */
+  footer{border-top:1px solid var(--border);padding:30px 0 60px;color:var(--muted);font-size:14px;}
+  footer a{color:var(--accent-deep);font-weight:600;}
+  footer .ft-src{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:29px;}
+    h2{font-size:23px;}
+    .grid3,.metrics{grid-template-columns:1fr 1fr;}
+    .twocol{grid-template-columns:1fr;}
+    .navlinks{display:none;}
+    .lane .lname{width:92px;font-size:11px;}
+  }
+  @media (max-width:520px){
+    .grid3,.metrics{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Step-<span>3</span></div>
+    <nav class="navlinks">
+      <a href="#overview">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#cost">成本真相</a>
+      <a href="#mfa">MFA 注意力</a>
+      <a href="#afd">AFD 系统</a>
+      <a href="#moe">MoE 稀疏度</a>
+      <a href="#details">细节</a>
+      <a href="#results">结果</a>
+      <a class="src-link" href="https://arxiv.org/abs/2507.19427" target="_blank" rel="noopener">原文 ↗</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero" id="overview">
+    <span class="eyebrow">📄 Technical Report · StepFun 阶跃星辰</span>
+    <h1>Step-3：大模型，但解码却很便宜</h1>
+    <p class="subtitle">用「模型-系统协同设计」证明：解码成本不取决于参数量，而取决于注意力的<strong>算术强度</strong>是否匹配硬件、MoE 稀疏度是否合理、以及能否把注意力与 FFN <strong>拆开各跑各的</strong>。</p>
+    <div class="meta">
+      <span class="badge">🗓️ 发表 <b>2025.07</b></span>
+      <span class="badge">📚 <b>arXiv preprint</b> · arXiv:2507.19427</span>
+      <span class="badge">🏢 <b>StepFun Inc</b></span>
+      <span class="badge">🔗 <a href="https://arxiv.org/abs/2507.19427" target="_blank" rel="noopener">阅读原文 / Source ↗</a></span>
+    </div>
+  </header>
+
+  <!-- TL;DR -->
+  <section style="border-top:none;padding-top:14px;">
+    <div class="tldr">
+      <h2>⚡ TL;DR · 30 秒抓住核心</h2>
+      <p>推理模型越想越聪明，但「想得越长」=「解码越贵」。Step-3 是一个 <strong>321B 总参、每 token 激活 38B</strong> 的大模型（激活量比 DSv3、Qwen3-235B 都大），却把解码成本做到了同级最低。它的秘密不是「参数更少」，而是两个协同设计：</p>
+      <p>① <strong>MFA（多矩阵分解注意力）</strong>：同时压低 KV cache <em>和</em> 计算量，把注意力的「算术强度」调到约 <code>128</code>，正好卡在便宜硬件（A800/910B）的甜区，而不像 MLA（512）那样只能榨干最贵的 H800。② <strong>AFD（注意力-FFN 分离）</strong>：把注意力层和 FFN 层部署到两组不同的 GPU 上，各自用最合适的并行策略与硬件、各自跑满利用率，再用流水线把通信藏起来。</p>
+      <p>结果：在 H800、4K 上下文、50ms TPOT、FP8、无 MTP 的「对 DSv3 最有利」场景下，Step-3 跑出 <strong>4,039 tokens/GPU/s</strong>，比 DSv3 的 2,324 高约 <strong>74%</strong>；上下文越长、硬件越便宜，优势越大。</p>
+    </div>
+
+    <figure>
+      <img src="assets/x1.png" alt="近期模型在激活参数量与解码成本上的 Pareto 前沿" loading="lazy" />
+      <div class="figcap"><b>图 1（论文 Figure 1）：</b>横轴是 8K 上下文下的理论解码成本（美元 / 1M token），纵轴是每 token 激活参数量。红色五角星是 Step-3——它在最左侧（最便宜），却处于较高激活量，单点改写了整条 Pareto 前沿。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>每个圆点 = 一个模型</strong>：标注了 DSv3、Kimi K2、Qwen3 MoE、Qwen3 32B、Llama 4 Maverick、ERNIE4.5、MM M1、Pangu Pro 等近期开源模型。</li>
+          <li><strong>横轴（越左越好）= 理论解码成本</strong>：作者为每个模型都搜索了「最优部署方案」（AFD + H800/H20/A800/910B 任意组合），取最便宜的成本，对各家都很公平。</li>
+          <li><strong>纵轴 = 激活参数量</strong>：直觉上「激活越多越贵」，所以越靠左上越「反直觉地优秀」。</li>
+          <li><strong>红星 Step-3 在左上方</strong>：激活 38B（比 DSv3 的 37B、Qwen3 MoE 的 22B 都多），成本却最低（约 0.055），明显跳出了灰色的 GQA 模型 Pareto 区域。</li>
+          <li><strong>注</strong>：Step-3 的注意力「有效秩」为 16,384，与 DSv3 持平，是 Qwen3 MoE / Kimi K2 的两倍——便宜不是靠牺牲表达力换来的。</li>
+        </ul>
+        <div class="sum">一句话：这张「封面图」就是全文论点的浓缩——参数量不是成本的决定因素，协同设计才是。</div>
+      </div></div>
+    </figure>
+
+    <div class="grid3">
+      <div class="feat"><div class="ico">🎯</div><h4>MFA 注意力</h4><p>低秩分解 QK + 多查询头共享单组 KV，KV cache 与计算量双低，算术强度匹配便宜硬件。</p></div>
+      <div class="feat"><div class="ico">🔀</div><h4>AFD 分离系统</h4><p>注意力与 FFN 拆到不同 GPU 各自优化，流水线藏通信，32 卡即可部署一个解码实例。</p></div>
+      <div class="feat"><div class="ico">🧮</div><h4>成本分析框架</h4><p>把解码成本拆成「注意力 + FFN」，用算术强度 vs 硬件 roofline 解释一切，给出美元定价。</p></div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <p class="kicker">问题定义</p>
+    <h2>为什么「解码便宜」是值得单独攻关的硬骨头？</h2>
+    <p>训练贵、prefill（读入提示词）贵，但作者认为 <strong>解码（一个一个吐 token）才是单 token 最贵的环节</strong>，原因有四：</p>
+    <ul>
+      <li><strong>MFU 最低</strong>：解码时每步只算一个 token，硬件利用率天然很低，单位成本最高。</li>
+      <li><strong>推理模型放大了这件事</strong>：想得越长越聪明，于是「便宜的解码」可以直接换算成「固定预算下更高的智能」。</li>
+      <li><strong>RL 训练也受益</strong>：解码更快更便宜，强化学习的采样也更快。</li>
+      <li><strong>优化空间最大</strong>，因此技术上也最有意思。</li>
+    </ul>
+    <p>作者观察当下的开源大模型，指出了两个被普遍误用的「想当然」做法——它们正是 Step-3 想纠正的对象：</p>
+    <div class="deck">
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">① 注意力：过度压 KV cache，反而把计算量顶上去</div><div class="s">为省显存把算术强度做得很高 → 只能榨干最贵的硬件，还堵死了量化/投机解码的空间</div></div></div>
+        <div class="body"><div class="body-inner"><p>很多新注意力设计（如 MLA）一味追求「KV cache 越小越好」，代价是<strong>每读一字节 KV 要做的计算量（算术强度）非常高</strong>。这让模型只有在算力极强的硬件（H800）上才划算，换到更便宜但算力弱的卡上就严重计算受限；同时也几乎没有空间再叠加 KV 量化、MTP 等加速手段。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">② FFN：盲目追求更稀疏的 MoE，不管硬件吃不吃得消</div><div class="s">纸面上激活参数很少，真跑起来却凑不够 batch、达不到高 MFU</div></div></div>
+        <div class="body"><div class="body-inner"><p>有些模型把 MoE 做得极度稀疏（如 8/256），纸面上激活参数很小。但 <strong>稀疏度必须和硬件的算力、显存带宽、网络带宽一起考虑</strong>：太稀疏意味着要凑非常大的 batch 才能让 FFN 跑到高 MFU，否则要么硬件效率被拖垮，要么白白损失模型性能却换不到成本优势。</p></div></div>
+      </div>
+    </div>
+
+    <div class="note">📌 <b>反直觉的核心主张：</b>总参数量、激活参数量都<strong>不是</strong>解码成本的好指标。例如 Qwen3 MoE 235B 比 DSv3 少 65% 总参、少 40% 激活参数，理论解码成本却只低了 10%；而 Step-3 激活参数<strong>最多</strong>，成本反而最低。要解释这件事，必须换一套分析框架。</div>
+  </section>
+
+  <!-- COST ANALYSIS -->
+  <section id="cost">
+    <p class="kicker">核心洞察 · 重头戏之一</p>
+    <h2>成本真相：注意力才是解码成本的大头</h2>
+    <p>有了 AFD（下一节细讲），就可以把模型成本干净地拆成三块独立分析：<strong>注意力核心计算 / 注意力前后的线性投影 / FFN 计算</strong>。在「每块都能跑到硬件极限」的假设下，作者给出每 token 的理论 FLOPs、显存访问量，再乘以各硬件的「每 FLOP 单价」和「每字节访问单价」，就得到了真实可比的<strong>美元成本</strong>。</p>
+
+    <h3>四个观察</h3>
+    <div class="deck">
+      <div class="xcard open">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">观察 3（最关键）：注意力成本压倒 FFN</div><div class="s">8K 上下文时注意力已显著贵于 FFN，且随上下文增长越拉越大</div></div></div>
+        <div class="body"><div class="body-inner"><p>FFN 的成本与上下文长度无关，而注意力成本随上下文线性增长。所以<strong>注意力的设计远比激活参数量更影响成本</strong>——这正是「参数量不是好指标」的根因。优化解码，第一刀就该砍注意力。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">观察 1：Step-3 解码成本同级最低</div><div class="s">8K 时 0.055 / 1M token，32K 时 0.129，明显低于 DSv3 与 Qwen3 MoE</div></div></div>
+        <div class="body"><div class="body-inner"><p>8K 上下文下，Step-3 最便宜，约 <strong>0.055</strong> 美元 / 1M token（AFD + H800/H20），低于 DSv3 的 0.068（EP + H800）和 Qwen3 MoE 的 0.062。到 32K 上下文优势更大：Step-3 仅 <strong>0.129</strong>，而 DSv3 高达 0.211、Qwen3 MoE 0.193。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">观察 2：参数量是糟糕的成本指标</div><div class="s">Qwen3 32B 参数最少，解码成本却最高</div></div></div>
+        <div class="body"><div class="body-inner"><p>Qwen3 32B 的总参数远少于 DSv3 和 Step-3，激活参数也略少，但它的解码成本在对比中<strong>最高</strong>。这直接戳破「参数少 = 便宜」的迷思。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">观察 4：硬件友好度差异巨大</div><div class="s">MLA 离开 H800 就暴涨，GQA 离开 H20 就暴涨，MFA 处处平稳</div></div></div>
+        <div class="body"><div class="body-inner"><p>DSv3 的 MLA 在 H800 之外的硬件上成本成倍上升；Qwen3 的 GQA 因 KV 太大，在 H20 之外的硬件上也很贵。而 Step-3 的 MFA <strong>在各种硬件上成本差异都很小</strong>，这给了它「用便宜卡也划算」的自由度。</p></div></div>
+      </div>
+    </div>
+
+    <figure>
+      <img src="assets/x2.png" alt="不同模型在不同部署方案下的 8K 解码成本对比" loading="lazy" />
+      <div class="figcap"><b>图 2（论文 Figure 2）：</b>8K 上下文下，各模型在 H800 / H20 / A800 / 910B 单一硬件以及 AFD（自由组合最便宜硬件）下的理论解码成本。青色 = Step-3。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>横轴 = 部署方案</strong>：前四组是「全部跑在某一种硬件上」，最后一组 <code>AFD</code> 是「注意力和 FFN 各选最便宜的硬件再相加」。</li>
+          <li><strong>四种颜色 = 四个模型</strong>：蓝 DSv3、绿 Qwen3 MoE、红 Qwen3 32B、青 Step-3。</li>
+          <li><strong>看青色柱（Step-3）</strong>：在所有硬件下都很矮，且<strong>高度几乎不变</strong>——这就是「硬件友好」的可视化：换到便宜硬件也不吃亏。</li>
+          <li><strong>看蓝色柱（DSv3）</strong>：H800 上很矮，但换到 H20/A800/910B 就明显变高，说明 MLA 强依赖 H800。</li>
+          <li><strong>红色柱（Qwen3 32B）</strong>：几乎处处最高，印证「参数少≠便宜」。</li>
+          <li><strong>最右 AFD 组</strong>：所有模型都比单硬件更便宜，而 Step-3 仍是最矮的一根。</li>
+        </ul>
+        <div class="sum">一句话：青色柱「又矮又平」，把 MFA 的两大优点——绝对成本低、跨硬件稳定——一图说清。</div>
+      </div></div>
+    </figure>
+
+    <p>把最优部署下的成本提炼成下表，最直观：</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>模型</th><th>激活参数</th><th>解码成本 @8K<br>(USD/1M tok)</th><th>解码成本 @32K<br>(USD/1M tok)</th></tr>
+        </thead>
+        <tbody>
+          <tr class="colour-ours"><td>Step-3 <span class="hl">(本文)</span></td><td>38B</td><td class="hl">0.055</td><td class="hl">0.129</td></tr>
+          <tr><td>DSv3 (MLA)</td><td>37B</td><td>0.068</td><td>0.211</td></tr>
+          <tr><td>Qwen3 MoE 235B (GQA)</td><td>22B</td><td>0.062</td><td>0.193</td></tr>
+        </tbody>
+      </table>
+      <caption>表：最优部署下的理论解码成本（数据来自论文 Observation 1 / Table 6）。Step-3 激活参数最多，成本却最低，且上下文越长优势越大。</caption>
+    </div>
+  </section>
+
+  <!-- MFA -->
+  <section id="mfa">
+    <p class="kicker">本文方法 · 重头戏之二</p>
+    <h2>MFA：把注意力的「算术强度」调到硬件甜区</h2>
+    <p>先解一个谜：从纯数字看，Step-3 的 MFA 相比 DSv3 的 MLA，KV 访问量只少了约 10%（见下表）；可在最终美元成本里，注意力却便宜了一半还多。差距从哪来？答案是一个常被忽略的量——<strong>算术强度（arithmetic intensity）</strong>。</p>
+
+    <blockquote>
+      算术强度 = 每从显存读取 1 字节 KV，需要配套做多少次浮点运算。它由注意力<strong>设计本身</strong>决定，和 batch、上下文长度都无关。
+      <span class="src">—— 论文 §5.1</span>
+    </blockquote>
+
+    <p>每块硬件也有一个固定的「算力 / 带宽」比值，叫 <strong>roofline</strong>。只有当注意力的算术强度<strong>匹配</strong>硬件的 roofline 时，才能两头都用满；否则不是计算卡脖子（compute-bound），就是带宽卡脖子（memory-bound）。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">128</div><div class="lab">MFA 算术强度<br>(Step-3，8-bit KV)</div></div>
+      <div class="metric"><div class="num">512</div><div class="lab">MLA 算术强度<br>(DSv3，偏高)</div></div>
+      <div class="metric"><div class="num">32</div><div class="lab">GQA 算术强度<br>(Qwen3 MoE，偏低)</div></div>
+      <div class="metric"><div class="num">16,384</div><div class="lab">MFA 注意力有效秩<br>(= MLA，2× Qwen3)</div></div>
+    </div>
+
+    <p>对照各硬件 roofline：<strong>H800 ≈ 591、A800 ≈ 156、910B ≈ 175、H20 ≈ 74</strong>。可以看到：</p>
+    <ul>
+      <li><strong>MLA（512）几乎只贴着 H800</strong>：换到 A800/910B/H20 就严重计算受限，成本暴涨。</li>
+      <li><strong>GQA（32）太靠 H20</strong>：算术强度低、KV 大，在别的卡上带宽受限。</li>
+      <li><strong>MFA（128）落在 A800/910B 中间地带</strong>：离它们的 roofline 很近，离 H20 也不远，所以在便宜硬件上都很划算；同时 Step-3 故意把强度选得略低于多数硬件 roofline，<strong>给未来的 KV 量化、MTP 留出加速余量</strong>。</li>
+    </ul>
+
+    <figure>
+      <img src="assets/x7.png" alt="不同注意力设计的计算量与显存访问量，及各硬件 roofline" loading="lazy" />
+      <div class="figcap"><b>图 5（论文 Figure 5）：</b>横轴为每 token 的显存访问量（GB），纵轴为计算量（GFLOPs）。每条彩色线段是一个模型从 8K 到 32K 上下文的轨迹；每条黑色虚线是一种硬件的 roofline（斜率 = 算力/带宽比）。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>怎么读这张图</strong>：一个点的「斜率」就是它的算术强度。点的斜率比某硬件虚线<strong>陡</strong> → 计算受限（带宽没用满）；比虚线<strong>缓</strong> → 带宽受限（算力没用满）。越贴近虚线越高效。</li>
+          <li><strong>黑色虚线（硬件）</strong>：从陡到缓依次是 H800（最陡，算力强）、910B、A800、H20（最缓，带宽相对强）。</li>
+          <li><strong>蓝线 DSv3（MLA）在左上</strong>：计算量极高（32K 时近 590 GFLOPs），斜率陡峭，紧贴 H800——离开 H800 就计算受限。</li>
+          <li><strong>蓝线 Qwen3 MoE（GQA）在右下</strong>：显存访问量极大（32K 时超 3 GB），斜率很缓，贴近 H20——KV 太大，换硬件就带宽受限。</li>
+          <li><strong>红线 Step-3（MFA）在中间</strong>：计算量约为 DSv3 的 1/4，显存访问约为 Qwen3 的 1/3，<strong>两个维度同时低</strong>，斜率正好落在 A800/910B 区间——这就是「便宜硬件也划算」的几何解释。</li>
+        </ul>
+        <div class="sum">一句话：MLA 太「陡」、GQA 太「缓」，只有 MFA 同时压低了计算与访存，把斜率调进了便宜硬件的甜区。</div>
+      </div></div>
+    </figure>
+
+    <h3>MFA 到底长什么样？</h3>
+    <p>MFA 的设计思路：<strong>用「很多个、维度也很大的查询头」保住表达力，同时让它们共享同一组极小的 KV，并用低秩分解压住查询投影的计算量</strong>。在 Step-3 中的具体配置：</p>
+    <ul>
+      <li><strong>64 个查询头</strong>，全部<strong>共享 1 个 Key 头、1 个 Value 头</strong>（类似 MQA），头维度都是 256 → KV cache 每 token 只有 <code>256+256 = 512 字节</code>（8-bit），极小。</li>
+      <li><strong>查询走低秩分解</strong>：把 7168 维先下投影到 2048（低秩），归一化后再上投影到 <code>64 × 256 = 16,384</code> → 用很少的参数撑起 64 个大查询头，<strong>有效秩 16,384</strong>，与 MLA 持平、是 Qwen3 的两倍。</li>
+      <li><strong>双低的来源</strong>：单组共享 KV → 访存小；低秩查询 + 共享 KV → 计算也不大。于是算术强度落在 128 这个「不高不低」的甜区。</li>
+    </ul>
+
+    <details>
+      <summary><span class="tri">▶</span>对比三种注意力设计的取舍 <span class="sm">MFA vs MLA vs GQA 一句话各打一星</span></summary>
+      <div class="details-body">
+        <ul>
+          <li><strong>MLA（DSv3）</strong>：把多头压成一个潜向量再上投影成很多头，KV 极小但<strong>计算量/算术强度过高（512）</strong>，强绑 H800。</li>
+          <li><strong>GQA（Qwen3）</strong>：少数 KV 组被多查询头共享，简单成熟，但<strong>KV 仍偏大、算术强度过低（32）</strong>，带宽吃紧。</li>
+          <li><strong>MFA（Step-3）</strong>：共享单组 KV（像 MQA 一样省显存）+ 低秩大查询头（保表达力、控计算），<strong>算术强度 128 居中</strong>，兼顾省显存、省计算、跨硬件稳定。</li>
+        </ul>
+        <p style="color:var(--muted);font-size:13.5px;">MFA 的更完整推导见原文引用的 Multi-Matrix Factorization Attention（Hu et al., 2025）。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- AFD -->
+  <section id="afd">
+    <p class="kicker">本文方法 · 重头戏之三</p>
+    <h2>AFD：把注意力和 FFN 拆开，各跑各的</h2>
+    <p>注意力层和 FFN 层的「性格」完全不同：<strong>注意力</strong>参数少、但要存巨大的 KV cache，是<strong>显存密集型</strong>；<strong>FFN</strong>（尤其 MoE）参数巨大、但不存中间结果，是<strong>计算密集型</strong>。传统系统把它们当成一个整体部署，必然有一方被另一方拖累，GPU 利用率上不去。</p>
+    <p>AFD 的做法：<strong>把注意力层和 FFN 层部署到两组独立的 GPU 上</strong>，各自选最合适的并行策略和硬件、各自跑到高 MFU；解码时逐层把隐藏状态通过高速网络在两组之间来回传递，形成一条注意力↔FFN 互为上下游的紧耦合流水线。</p>
+
+    <figure>
+      <img src="assets/x8.png" alt="AFD 架构：注意力实例与 FFN 实例的模块划分" loading="lazy" />
+      <div class="figcap"><b>图 6（论文 Figure 6）：</b>AFD 架构的模块划分。左侧橙色 = 注意力实例，右侧蓝色 = FFN 实例，中间虚线是网络边界。FFN 可按 TP-only / EP-only / TP+EP 混合方式部署。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>左侧「注意力实例」（橙色）</strong>：负责 <code>Norm → Attn</code>、KV cache 管理，以及 MoE 里的<strong>非专家部分</strong>——包括 <code>Router</code>（路由）和 <code>Expert Combine</code>（把各专家结果加权合并）。每个 GPU 用本地 DP 处理一批独立数据。</li>
+          <li><strong>右侧「FFN 实例」（蓝色）</strong>：只负责纯 MoE 的专家计算与多卡通信，流程是 <code>TP gather/EP scatter → Expert Compute → TP scatter/EP gather</code>。</li>
+          <li><strong>A → F 方向（顶部箭头，标 fp8）</strong>：注意力实例把归一化后的激活量化成 <strong>FP8</strong> 广播给 FFN，省一半带宽。</li>
+          <li><strong>F → A 方向（底部箭头，标 bf16）</strong>：FFN 把结果以 <strong>BF16</strong> 传回，保住残差连接的高精度。</li>
+          <li><strong>中间的 expert distribution / Topk score</strong>：是注意力实例算出的路由元数据（专家分布、FP8 缩放因子等），体积很小，几乎不占带宽，用来告诉 FFN 怎么分发 token。</li>
+          <li><strong>底部 Hidden State 与 (Next layer) 回环</strong>：本层结果回到注意力实例，立刻开始下一层，形成逐层流水。</li>
+        </ul>
+        <div class="sum">一句话：注意力实例管「访存密集 + 路由」，FFN 实例管「计算密集 + 专家」，两者用 FP8↑/BF16↓ 的小流量在网络上对接。</div>
+      </div></div>
+    </figure>
+
+    <h3>关键难点：怎么让通信「白嫖」？——三阶段流水线</h3>
+    <p>拆开之后最大的风险是<strong>网络通信时间</strong>：在这种细粒度场景下，每层传输延迟和注意力、FFN 的计算时间是<strong>同一量级</strong>的。如果串行等待，通信就成了纯开销。AFD 的解法是把「注意力计算 / 通信 / FFN 计算」编排成一条<strong>三阶段流水线</strong>（每阶段 16.6ms，合计 50ms TPOT），让三种资源始终并行满载，通信被计算完全盖住。</p>
+
+    <div class="stepper" id="afdStepper">
+      <h4>🔧 一步步看：三个微批如何在流水线里并行<span class="steadybadge" id="afdSteady">稳态：四条通道全满</span></h4>
+      <p style="margin:2px 0 0;font-size:14px;color:var(--muted);">把一个大 batch 切成 3 个微批 D1/D2/D3 喂进流水线。点「下一步」看它们如何在「注意力 → A→F 通信 → FFN → F→A 通信」四条通道间错位流动。<code>'</code> 表示进入下一层。</p>
+      <div class="lanes" id="afdLanes"></div>
+      <div class="stepdesc" id="afdDesc"></div>
+      <div class="stepctl">
+        <button class="btn" id="afdPrev" onclick="afdStep(-1)">← 上一步</button>
+        <button class="btn" id="afdNext" onclick="afdStep(1)">下一步 →</button>
+        <button class="btn ghost" onclick="afdReset()">重置</button>
+        <span class="stepcount" id="afdCount"></span>
+      </div>
+    </div>
+
+    <figure>
+      <img src="assets/x9.png" alt="AFD 的通信拓扑与多阶段流水线" loading="lazy" />
+      <div class="figcap"><b>图 7（论文 Figure 7）：</b>AFD 的多阶段流水线时序图。微批 D1/D2/D3 依次经过 Attn → A→F(fp8) → FFN → F→A(bf16)，相邻层（Layer0 / Layer1）首尾衔接、流式推进。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>左侧方块阵</strong>：上排绿色 = FFN 实例的多张 GPU，下排蓝色 = 注意力实例的多张 GPU，之间通过 <strong>Direct RDMA</strong> 直连。</li>
+          <li><strong>右侧时序图的四行（自下而上）</strong>：<code>Attn</code> 注意力计算 → <code>A→F (fp8)</code> 上行通信 → <code>FFN</code> 专家计算 → <code>F→A (bf16)</code> 下行通信。横轴是时间。</li>
+          <li><strong>对角错位排列</strong>：D1 做完 Attn 立刻上行，同时 D2 开始 Attn；D1 在 FFN 计算时，D2 在通信、D3 在 Attn——任一时刻四种资源都在干活。</li>
+          <li><strong>A→F 与 F→A 是两条独立链路</strong>：不抢带宽，可同时跑。</li>
+          <li><strong>Layer0 → Layer1（带 <code>'</code> 的 D1'/D2'/D3'）</strong>：本层尾部和下一层头部无缝衔接，流水不停顿。</li>
+        </ul>
+        <div class="sum">一句话：靠 3 个微批错位填满 4 条通道，通信时间被计算「藏」起来，于是 50ms TPOT 的预算才够用。</div>
+      </div></div>
+    </figure>
+
+    <h3>AFD 相比已有系统好在哪？</h3>
+    <p>作者把 AFD 与两类代表性方案做了对比（点开看每种方案的做法与短板）：</p>
+    <div class="deck">
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">对比 1：DeepSeek 的大规模专家并行（EP-only）</div><div class="s">靠几百卡的巨型 EP 凑 batch；规模大、易拥塞、负载不均</div></div></div>
+        <div class="body"><div class="body-inner">
+          <p><strong>它怎么做：</strong>DSv3 用大规模 EP 把专家权重摊到很多卡上来放大 batch、提高 FFN 效率，一个解码实例需要约 <strong>320 张 GPU</strong>。</p>
+          <p><strong>卡在哪（vs AFD）：</strong></p>
+          <ul>
+            <li><strong>部署规模</strong>：Step-3 用 AFD 只需 <strong>32 卡</strong>；规模一大网络易拥塞，延迟变得高且不可预测，难以满足 SLA。</li>
+            <li><strong>长上下文</strong>：长文让注意力层吃紧，但 FFN 节点数固定 → FFN 被闲置；AFD 可独立扩注意力实例。</li>
+            <li><strong>负载不均</strong>：EP 有著名的专家负载不均问题，DSv3 要靠冗余专家临时平衡，费显存又不灵活。</li>
+            <li><strong>异构硬件</strong>：EP 强制同构；AFD 允许注意力、FFN 用不同硬件。</li>
+          </ul>
+          <p style="color:var(--muted);font-size:13.5px;">注：AFD 不是要取代 EP，而是互补——Step-3 内部 FFN 仍可用 TP+EP 混合。对比针对的是「不用 AFD 的纯 EP」。</p>
+        </div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">对比 2：Megascale-Infer（最早用 AFD 思想的系统）</div><div class="s">同样分离 A/F，但只追吞吐、延迟高达 150ms；且不做模型协同</div></div></div>
+        <div class="body"><div class="body-inner">
+          <p><strong>它怎么做：</strong>Megascale-Infer 是已知最早构建「注意力-FFN 分离」服务系统的工作。</p>
+          <p><strong>卡在哪（vs AFD）：</strong></p>
+          <ul>
+            <li><strong>延迟</strong>：它偏重高吞吐，报告的单 token 延迟约 <strong>150ms</strong>，远高于 Step-3 的 50ms TPOT 目标，不适合聊天等实时应用。</li>
+            <li><strong>只做系统、不做模型</strong>：它只在系统层优化；而 Step-3 的核心是<strong>模型-系统协同</strong>——用 AFD 的视角反过来设计注意力和 FFN 的架构，挖掘硬件潜力。</li>
+          </ul>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MoE sparsity -->
+  <section id="moe">
+    <p class="kicker">本文方法 · 第三块拼图</p>
+    <h2>MoE 稀疏度，要按硬件来定</h2>
+    <p>FFN 的成本主要看「能不能凑够 batch 跑到高 MFU」。MoE 越稀疏，需要凑的理想 batch 就越大（<code>B_MoE = B_dense / S</code>，S 是稀疏度）。但 batch 大了，FFN 与外界来回传的隐藏状态也变多——在 50ms / 三阶段 / 每层 16.6ms÷61≈272μs 的预算下，<strong>网络带宽会先撑不住</strong>。把这条约束反解，就得到「硬件能接受的最稀疏配置」：</p>
+
+    <div style="text-align:center;margin:14px 0;">
+      <code style="font-size:15px;padding:8px 14px;display:inline-block;">S ≥ (H × FLOPs × L) / (Net × Bandwidth × 11.1ms)</code>
+    </div>
+
+    <p>代入 Step-3 的 <code>H=7168, L=61</code>（与 DSv3 相同）和各硬件参数，得到每种硬件的<strong>最小可行稀疏度</strong>：</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>硬件</th><th>H800</th><th>H20</th><th>A800</th><th>910B</th></tr></thead>
+        <tbody>
+          <tr><td>最小稀疏度 S</td><td class="hl">0.058</td><td>0.007</td><td>0.031</td><td>0.034</td></tr>
+        </tbody>
+      </table>
+      <caption>表 7：不同硬件达到高 MFU 所需的最小 MoE 稀疏度。H800 算力最强、带宽相对低，最不能容忍过度稀疏；H20 反之。</caption>
+    </div>
+
+    <p>关键结论：<strong>H800 单位算力最便宜，但最不能容忍过稀疏的 MoE</strong>（要求 S ≥ 0.058）。所以 Step-3 刻意把稀疏度控制在约 <strong>0.08</strong>（含共享专家），保证能用上便宜的 H800。</p>
+    <div class="note">⚠️ <b>反例：</b>DSv3 若想在 H800 上跑到高 MFU，需要激活约 <b>14 个专家</b>（而非官方的 8 个）——这意味着它要么多花成本，要么「把本可获得的模型性能留在了桌上」。Kimi K2、Llama 4 Maverick 更稀疏，问题更严重。这也是为什么 §4 里那些「对它们很宽容」的理论成本，在真实部署中还会进一步上升。</div>
+
+    <details>
+      <summary><span class="tri">▶</span>那过度稀疏的模型怎么补救？两个 workaround 都有代价 <span class="sm">大 EP / 路由限制，各损一处</span></summary>
+      <div class="details-body">
+        <ul>
+          <li><strong>Workaround 1：超大 EP</strong>。当 EP 服务器数超过激活专家数 K 时，每台 FFN 服务器的网络流量下降。DSv3 官方就用 10+ 台服务器组巨型 EP。<strong>代价</strong>：更易受专家负载不均影响。</li>
+          <li><strong>Workaround 2：路由限制</strong>。强制 token 只路由到相邻专家，使每个局部不像整体那么稀疏。Kimi K2 跟随 DSv3 用了 1 但去掉了 2，网络瓶颈可能更糟。<strong>代价</strong>：损害模型表达力，且影响尚未被充分研究。</li>
+        </ul>
+        <p>Step-3 的设计从根上避开了过稀疏问题，可以用小 TP / EP / TP+EP 混合，无需任何路由限制，专家不均的影响也最小。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- INTERESTING DETAILS -->
+  <section id="details">
+    <p class="kicker">有意思的点</p>
+    <h2>几个值得单独拎出来的洞察</h2>
+
+    <h3>① 混合线性注意力模型的「陷阱」</h3>
+    <p>像 MiniMax M1（70 层线性 + 10 层全注意力）、Llama 4 Maverick 这类「混合模型」，靠把大多数层换成线性注意力来省 KV。但作者指出两个反直觉的麻烦：</p>
+    <ul>
+      <li><strong>少数全注意力层就能毁掉省下的 KV</strong>：MM M1 和 Llama 4 Maverick 仅靠它们的全注意力部分，KV cache 总量就已经<strong>超过 Step-3 整个模型</strong>——无论线性层省多少、上下文多长，总访存都比 Step-3 大。</li>
+      <li><strong>层间耗时严重不均</strong>：长上下文时全注意力层远慢于线性层，在分布式流水线（尤其 AFD）里会造成大量气泡。</li>
+    </ul>
+    <figure>
+      <img src="assets/x4.png" alt="混合线性注意力模型与 Step-3 的 KV cache 大小对比" loading="lazy" />
+      <div class="figcap"><b>图 3（论文 Figure 3，左）：</b>随上下文增长，Llama 4 M、MM M1 与 Step-3 的 KV cache 总量（GB）。Step-3（绿）始终最低；右半张图（论文中）对应的 H800 解码成本结论一致。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>横轴</strong>：上下文长度 8K / 32K / 128K（token）。</li>
+          <li><strong>纵轴</strong>：KV cache 总大小（GB）。</li>
+          <li><strong>三条线</strong>：蓝虚 Llama 4 M、橙虚 MM M1、绿实 Step-3。</li>
+          <li><strong>关键</strong>：尽管两个混合模型大部分层是线性注意力，但因全注意力层 KV 太重，三条线里 Step-3 始终最低，且差距随上下文拉大（128K 时约 4GB vs 6–7GB）。</li>
+        </ul>
+        <div class="sum">一句话：混合模型省 KV 的前提是「全注意力层别太重」，否则线性化等于白做。作者呼吁设计「对推理系统更友好的混合架构」——让每层都混合、时间更均衡。</div>
+      </div></div>
+    </figure>
+
+    <h3>② 「为硬件优化」——你是在优化训练，还是解码？</h3>
+    <p>Pangu Pro MoE 号称为华为 910B 优化，但作者发现它在 910B 上的<strong>解码</strong>成本远高于 Step-3（尽管它只激活 16.5B，不到 Step-3 一半）。原因是它的优化目标其实是<strong>训练</strong>：训练成本主要由激活参数决定，所以它训练确实比 Step-3 便宜 50%+。</p>
+    <figure>
+      <img src="assets/x6.png" alt="Step-3 与 Pangu Pro MoE 在 910B 上的解码与训练成本对比" loading="lazy" />
+      <div class="figcap"><b>图 4（论文 Figure 4）：</b>在 910B 上，Pangu MoE（红）与 Step-3（青）在解码（8K/32K）与训练（8K）三种场景下的成本（美元）。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>解码 8K / 32K（左、中两组）</strong>：Step-3 明显更便宜（如 32K 时 0.168 vs 0.395）。</li>
+          <li><strong>训练 8K（右组）</strong>：反过来，Pangu（0.076）比 Step-3（0.213）便宜，因为它激活参数少、训练 FLOPs 小。</li>
+          <li><strong>启示</strong>：协同设计前要先想清目标——训练与推理的优化方向可能完全相反。降低解码成本需要额外的模型-系统协同，不能只盯激活参数。</li>
+        </ul>
+        <div class="sum">一句话：同一个模型，训练便宜不代表解码便宜；目标不同，设计取舍就完全不同。</div>
+      </div></div>
+    </figure>
+
+    <h3>③ 量化与 MTP：注意力强度越高，越没空间加速</h3>
+    <p>「低比特存储 + 高比特计算」的量化（如 KV 存 4-bit、算 8-bit）会把算术强度<strong>翻倍</strong>；MTP（多 token 预测）效果类似。这对不同模型意味着完全不同的命运：</p>
+    <div class="twocol">
+      <div class="panel">
+        <h4>✅ MFA / GQA：还有加速空间</h4>
+        <ul>
+          <li>算术强度本来居中或偏低，翻倍后仍可能贴近甚至略超 roofline，<strong>能在多种硬件上提速</strong>。</li>
+          <li>Step-3 当初就故意把强度选得略低，正是为此留了余量。</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>⛔ MLA（DSv3）：基本榨干了</h4>
+        <ul>
+          <li>算术强度 512 已贴近 H800 roofline（591），翻倍只会越界，<strong>几乎得不到收益</strong>。</li>
+          <li>所以 DSv3 是「最不 MTP 友好」的模型。</li>
+        </ul>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:14.5px;">⚠️ 但 MTP 是把双刃剑：在 AFD 下 FFN 本就高 MFU，开启 MTP 会无条件增加 FFN 计算量，而 MTP 预测又不是 100% 命中——是否开启需要非常谨慎权衡。</p>
+
+    <h3>④ 用非旗舰硬件也能跑</h3>
+    <p>因为 AFD 能独立扩缩注意力和 FFN，所以可以用便宜卡分别承接。例如 Step-3 的注意力在 H800 上是带宽受限的，<strong>4 张 L20</strong>（带宽约为 H800 的 25%+）就能以 DP 方式顶上一张 H800；FFN 部分用约 <strong>48 张 L20</strong>（6 台服务器）即可，仍远少于 DSv3 的部署规模。作者建议：百亿~千亿级模型，至少用 L20 这一档的卡（更弱的 L4 光读线性层就把 272μs 预算耗光，不可行）。</p>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <p class="kicker">实现与结果</p>
+    <h2>真跑起来：比 DSv3 快约 74%</h2>
+    <p>在「对 DSv3 最有利」的场景（H800、4K 平均上下文、20 tokens/s 解码 SLA、FP8、无 MTP）下直接对比：</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">4,039</div><div class="lab">Step-3 峰值 TGS<br>(tokens/GPU/s, FP8 注意力)</div></div>
+      <div class="metric"><div class="num">2,324</div><div class="lab">DSv3 峰值 TGS<br>(同设置, profiling)</div></div>
+      <div class="metric"><div class="num">~74%</div><div class="lab">Step-3 吞吐提升</div></div>
+      <div class="metric"><div class="num">32</div><div class="lab">Step-3 解码实例所需 GPU<br>(2A2F；DSv3 需上百卡)</div></div>
+    </div>
+    <p style="color:var(--muted);font-size:14.5px;">4K 场景用 <code>2A2F</code>（2 注意力实例 + 2 FFN 实例 = 32 卡），总 batch 6144 拆成 3 个 2048 微批填满三阶段流水线。换更长上下文只需加注意力实例（如 8K 用 4A2F），SLA 与总吞吐保持。注意：这恰恰是 Step-3 优势最小的场景，上下文越长、硬件越便宜，差距越大。</p>
+
+    <h3>消融：MFA / MLA / GQA 单层延迟对比</h3>
+    <p>只测注意力层（含前后线性投影）的延迟，最能说明三种设计的硬件友好度差异：</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>上下文</th><th>注意力类型</th><th>H800 (μs)</th><th>H20 (μs)</th><th>A800 (μs)</th></tr>
+        </thead>
+        <tbody>
+          <tr class="colour-ours"><td rowspan="3">8K</td><td>MFA-Step3</td><td class="hl">281</td><td class="hl">438</td><td class="hl">531</td></tr>
+          <tr><td>MLA-DSv3</td><td>372</td><td>1252</td><td>—</td></tr>
+          <tr><td>GQA-Qwen3</td><td>382</td><td>812</td><td>791</td></tr>
+          <tr class="colour-ours"><td rowspan="3">32K</td><td>MFA-Step3</td><td class="hl">791</td><td class="hl">1452</td><td class="hl">1484</td></tr>
+          <tr><td>MLA-DSv3</td><td>1125</td><td>4817</td><td>—</td></tr>
+          <tr><td>GQA-Qwen3</td><td>1391</td><td>3042</td><td>3010</td></tr>
+        </tbody>
+      </table>
+      <caption>表 9：每注意力层耗时（μs），4 GPU、总 batch 256。MFA 处处最快，且在 H20/A800 和长上下文下优势更大——印证「MFA 更适合低端加速器」。（MLA 用 FlashMLA，无 SM80 实现，故 A800 缺测。）</caption>
+    </div>
+
+    <h3>另外两个消融</h3>
+    <ul>
+      <li><strong>注意力量化（FP8 vs BF16）</strong>：BF16 注意力用 3A2F 得 3,321 TGS，比 FP8 低约 18%，但仍大幅领先 DSv3。</li>
+      <li><strong>把 Step-3 放大到 600B</strong>：把 FFN 上采样到 DSv3 量级（需 3A4F），TGS 降到 3,291（仍 > DSv3 的 2,324）；这说明<strong>过稀疏的代价</strong>，也反过来说明 AFD 相对纯 EP 的优势——即便对齐到 BF16 注意力，估计仍有约 2,880 TGS。</li>
+    </ul>
+
+    <details>
+      <summary><span class="tri">▶</span>系统实现：StepMesh —— 为 AFD 量身打造的通信库 <span class="sm">CPU 执行通信、零 SM 占用、超低延迟、支持异构加速器</span></summary>
+      <div class="details-body">
+        <p>三阶段流水线要求在每层 <strong>272μs</strong> 内完成 FP8 token、缩放因子、专家分布、BF16 激活的全部传输。NCCL / DeepEP 等现有库要么延迟不稳，要么额外占用 GPU SM 拖慢计算。StepMesh 基于 GPUDirect RDMA，做到：</p>
+        <ul>
+          <li><strong>异步 API + 独立收发线程</strong>，CPU 延迟被精细控制以满足时限。</li>
+          <li><strong>通信操作在 CPU 上执行</strong>（如 RDMA PostSend），不与计算抢 GPU SM；用 NUMA 感知的 CPU 绑核降低抖动。</li>
+          <li><strong>预注册张量</strong>，直接传 GPU 显存、免序列化/拷贝；FFN 可直接从连续显存切片，省去拼接。</li>
+          <li><strong>RoCE 网络协同</strong>：拓扑感知部署（同 ToR 交换机）、纯 PFC 无拥塞控制、双 NIC 端口流量均衡。</li>
+          <li><strong>异构加速器</strong>：把加速器抽象成 backend（CPU/GPU/xPU），新硬件可快速接入。</li>
+        </ul>
+        <figure style="margin:14px 0 6px;">
+          <img src="assets/x10.png" alt="StepMesh 为 AFD 流水线定制的通信工作流" loading="lazy" />
+          <div class="figcap"><b>图 8（论文 Figure 8）：</b>StepMesh 通信工作流。注意力实例与 FFN 实例各有 NetRecv / NetSend / Main 三类 CPU 线程配合 GPU kernel，通过 RDMA NIC 直连；通信全在 CPU 侧执行以释放 GPU SM。</div>
+        </figure>
+        <p style="color:var(--muted);font-size:13.5px;">StepMesh 已开源：<a href="https://github.com/stepfun-ai/StepMesh" target="_blank" rel="noopener">github.com/stepfun-ai/StepMesh ↗</a></p>
+      </div>
+    </details>
+  </section>
+
+  <!-- CONCLUSION -->
+  <section id="conclusion">
+    <p class="kicker">结论</p>
+    <h2>一句话总结与延伸</h2>
+    <p>Step-3 用 <strong>MFA + AFD</strong> 的模型-系统协同设计，证明了「大模型」与「便宜解码」可以兼得：关键不在参数多少，而在<strong>让注意力的算术强度匹配硬件 roofline、让 MoE 稀疏度匹配硬件带宽、并把注意力与 FFN 物理拆开各自跑满</strong>。在对自己最不利的场景里，它依然把解码吞吐做到了 DSv3 的约 1.74 倍，并改写了「激活参数 × 解码成本」的 Pareto 前沿。</p>
+    <blockquote>
+      作者的下一步：启用 MTP 并评估解码收益；探索新的注意力变体继续推进 Pareto 前沿；与硬件厂商合作设计更高带宽的互联域，从而追求更稀疏的 FFN。
+      <span class="src">—— 论文 §8 Conclusion and Future Work</span>
+    </blockquote>
+
+    <h3>可以继续迭代的方向</h3>
+    <ul>
+      <li><strong>加一个「算术强度 vs roofline」交互沙盘</strong>：让读者拖动滑块改变 KV 量化位数 / batch，实时看模型点在 roofline 图上移动、从带宽受限切到计算受限——把本页最核心的概念做成可玩的。</li>
+      <li><strong>补一个成本计算器</strong>：输入上下文长度、硬件组合，按论文公式即时算出注意力 + FFN 的美元成本，直观感受「上下文越长 MFA 优势越大」。</li>
+      <li><strong>StepMesh 部分可加深</strong>：把图 9（多加速器框架）与图 8 的线程时序做成分步动画，展示一次 PushPull / GetBatch 的完整数据流。</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="ft-src">
+      📄 原文：<a href="https://arxiv.org/abs/2507.19427" target="_blank" rel="noopener">Step-3 is Large yet Affordable: Model-system Co-design for Cost-effective Decoding</a> · StepFun Inc · arXiv:2507.19427 (2025.07)<br>
+      <span style="color:var(--muted);">HTML 版（含图）：<a href="https://arxiv.org/html/2507.19427v1" target="_blank" rel="noopener">arxiv.org/html/2507.19427v1 ↗</a> · 开源系统：<a href="https://github.com/stepfun-ai/StepMesh" target="_blank" rel="noopener">StepMesh ↗</a></span>
+    </div>
+    <p>本页为教学性可视化解读，所有图片来自论文原文，核心数字与结论以原文为准。仅用于学习交流。</p>
+  </footer>
+
+</div>
+
+<script>
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    var active = d.classList.toggle('active');
+    el.textContent = active ? '收起 ▴' : '展开说明 ▸';
+  }
+  function toggleCard(headEl){
+    headEl.parentElement.classList.toggle('open');
+  }
+
+  /* ---------- AFD pipeline stepper (Gantt-style diagonal reveal) ---------- */
+  var afdLanesDef = [
+    {key:'attn', name:'Attn', sub:'注意力计算'},
+    {key:'a2f',  name:'A → F', sub:'上行 fp8'},
+    {key:'ffn',  name:'FFN', sub:'专家计算'},
+    {key:'f2a',  name:'F → A', sub:'下行 bf16'}
+  ];
+  var T = 6; // time columns t0..t5
+  var afdSchedule = {
+    attn: ['D1','D2','D3',"D1'","D2'","D3'"],
+    a2f:  ['',  'D1','D2','D3',"D1'","D2'"],
+    ffn:  ['',  '',  'D1','D2','D3',"D1'"],
+    f2a:  ['',  '',  '',  'D1','D2','D3']
+  };
+  var afdDescs = [
+    '<b>t₀ 填充期：</b>第一个微批 <b>D1</b> 进入注意力计算。此刻只有「注意力」通道在工作，其余三条空着——流水线刚启动。',
+    '<b>t₁：</b>D1 算完注意力，量化成 fp8 开始<b>上行（A→F）</b>；与此同时 <b>D2</b> 顶上注意力通道。两条通道并行了。',
+    '<b>t₂：</b>D1 抵达 FFN 开始<b>专家计算</b>，D2 在上行，<b>D3</b> 进入注意力。三条通道同时忙——只差最后一条。',
+    '<b>t₃ 进入稳态：</b>D1 完成 FFN，结果以 bf16 <b>下行（F→A）</b>；同时 D2 在 FFN、D3 在上行、下一层的 <b>D1\'</b> 已开始注意力。<b>四条通道全满，通信被计算完全盖住</b>——这正是 AFD 的目标。',
+    '<b>t₄ 稳态持续：</b>每个微批精确错位一格。任一时刻，注意力 / 上行 / FFN / 下行四种资源都没有闲置——这就是「完美流水、零气泡」的样子。',
+    '<b>t₅：</b>第一层的 D3 正在下行返回，第二层的 D1\'/D2\'/D3\' 接续推进。<b>层与层之间无缝衔接</b>，整条流水线持续满载向前。'
+  ];
+  var afdIdx = 0;
+  function afdColumnFull(col){
+    return afdLanesDef.every(function(l){ return afdSchedule[l.key][col] !== ''; });
+  }
+  function afdRender(){
+    var html = '';
+    // time axis header
+    html += '<div class="lane timeaxis"><div class="lname">时间 →</div><div class="slots">';
+    for(var c=0;c<T;c++){
+      html += '<div class="slot tlabel">t'+c+'</div>';
+    }
+    html += '</div></div>';
+    // lane rows
+    afdLanesDef.forEach(function(lane){
+      var busy = (afdSchedule[lane.key][afdIdx] !== '') ? ' busy' : '';
+      html += '<div class="lane'+busy+'"><div class="lname">'+lane.name+'<small>'+lane.sub+'</small></div><div class="slots">';
+      for(var col=0;col<T;col++){
+        var val = afdSchedule[lane.key][col];
+        if(col > afdIdx){
+          html += '<div class="slot future"></div>';
+        } else if(val === ''){
+          html += '<div class="slot"></div>';
+        } else if(col === afdIdx){
+          html += '<div class="slot now">'+val+'</div>';
+        } else {
+          html += '<div class="slot past">'+val+'</div>';
+        }
+      }
+      html += '</div></div>';
+    });
+    document.getElementById('afdLanes').innerHTML = html;
+    document.getElementById('afdDesc').innerHTML = afdDescs[afdIdx];
+    document.getElementById('afdCount').textContent = '步骤 '+(afdIdx+1)+' / '+T;
+    document.getElementById('afdPrev').disabled = (afdIdx===0);
+    document.getElementById('afdNext').disabled = (afdIdx===T-1);
+    var badge = document.getElementById('afdSteady');
+    if(afdColumnFull(afdIdx)){ badge.classList.add('show'); } else { badge.classList.remove('show'); }
+  }
+  function afdStep(dir){
+    afdIdx = Math.max(0, Math.min(T-1, afdIdx+dir));
+    afdRender();
+  }
+  function afdReset(){ afdIdx = 0; afdRender(); }
+  afdRender();
+</script>
+</body>
+</html>

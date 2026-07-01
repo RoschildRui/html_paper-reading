@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Step-DeepResearch 深读 · 用原子能力把中等模型训成专家级研究员</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf5ea; --bg2:#f3e9d6; --card:#fffdf8; --card2:#f7efe0;
+  --border:#e6dac3; --border-strong:#d8c8a8;
+  --ink:#2c2722; --ink-soft:#5f574a; --muted:#8a8073;
+  --accent:#b06a2c; --accent-deep:#8a4f1c; --accent-soft:#f0e2cb; --accent-tint:#f8efdd;
+  --maxw:1080px;
+  --shadow:0 1px 2px rgba(80,60,30,.05),0 4px 14px rgba(120,90,40,.06);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:72px}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+  font-size:17px; line-height:1.78; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px}
+h1,h2,h3,h4{line-height:1.3; color:var(--ink); font-weight:700}
+p{margin:0 0 1em}
+a{color:var(--accent); text-decoration:none}
+a:hover{text-decoration:underline}
+code,.mono{font-family:"JetBrains Mono",monospace; font-size:.9em}
+strong{font-weight:700; color:var(--ink)}
+
+/* ---------- top nav ---------- */
+.topnav{
+  position:sticky; top:0; z-index:50; background:rgba(250,245,234,.93);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--border);
+}
+.topnav .wrap{display:flex; align-items:center; gap:14px; height:56px; overflow-x:auto}
+.topnav .brand{font-weight:800; font-size:15px; color:var(--accent-deep); white-space:nowrap; letter-spacing:.2px}
+.topnav nav{display:flex; gap:4px; flex-wrap:nowrap}
+.topnav nav a{
+  color:var(--ink-soft); font-size:13.5px; font-weight:500; padding:5px 10px; border-radius:7px; white-space:nowrap;
+}
+.topnav nav a:hover{background:var(--accent-soft); color:var(--accent-deep); text-decoration:none}
+
+/* ---------- header ---------- */
+header.hero{padding:54px 0 30px; border-bottom:1px solid var(--border)}
+.tagrow{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px}
+.tag{
+  font-size:12.5px; font-weight:600; padding:4px 11px; border-radius:999px;
+  background:var(--card2); border:1px solid var(--border-strong); color:var(--ink-soft);
+}
+.tag.accent{background:var(--accent-soft); border-color:#e3cfa6; color:var(--accent-deep)}
+h1.title{font-size:38px; font-weight:800; margin:0 0 8px; letter-spacing:-.5px}
+.subtitle{font-size:19px; color:var(--ink-soft); font-weight:500; margin:0 0 20px}
+.metaline{display:flex; flex-wrap:wrap; gap:18px; font-size:14px; color:var(--muted); margin-bottom:18px}
+.metaline b{color:var(--ink-soft)}
+.srclinks{display:flex; flex-wrap:wrap; gap:10px}
+.srcbtn{
+  display:inline-flex; align-items:center; gap:7px; font-size:14px; font-weight:600;
+  padding:8px 15px; border-radius:9px; border:1px solid var(--border-strong); background:var(--card); color:var(--accent-deep);
+}
+.srcbtn:hover{background:var(--accent-soft); text-decoration:none}
+
+/* ---------- sections ---------- */
+section.block{padding:46px 0; border-bottom:1px solid var(--border)}
+.kicker{font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); margin-bottom:8px}
+h2.h{font-size:27px; font-weight:800; margin:0 0 6px; letter-spacing:-.3px}
+.lead{font-size:18px; color:var(--ink-soft); margin-bottom:22px; max-width:78ch}
+h3.sub{font-size:20px; margin:30px 0 10px; font-weight:700}
+h4.sub2{font-size:16px; margin:18px 0 6px; font-weight:700; color:var(--accent-deep)}
+
+/* ---------- metric cards ---------- */
+.metrics{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:6px 0 8px}
+.metric{
+  background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 16px; box-shadow:var(--shadow);
+}
+.metric .num{font-size:32px; font-weight:800; color:var(--accent-deep); line-height:1.1; letter-spacing:-.5px}
+.metric .num small{font-size:16px; font-weight:700}
+.metric .lab{font-size:13.5px; color:var(--muted); margin-top:6px; font-weight:500}
+
+/* ---------- callout / quote ---------- */
+.callout{
+  background:var(--accent-tint); border:1px solid #ecd9b6; border-left:4px solid var(--accent);
+  border-radius:10px; padding:16px 20px; margin:20px 0; font-size:16.5px;
+}
+.quote{
+  border-left:4px solid var(--border-strong); padding:6px 0 6px 20px; margin:18px 0;
+  font-style:italic; color:var(--ink-soft); font-size:17px;
+}
+.quote .en{font-size:14.5px; color:var(--muted); display:block; margin-top:4px; font-style:normal}
+
+/* ---------- generic card ---------- */
+.card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px; box-shadow:var(--shadow); margin:16px 0}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+
+ul.clean{margin:.4em 0 1em; padding-left:1.25em}
+ul.clean li{margin:.4em 0}
+
+/* ---------- figure ---------- */
+figure.fig{margin:22px 0; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow:var(--shadow)}
+figure.fig img{width:100%; height:auto; border-radius:8px; display:block; background:#fff}
+.figcap{font-size:14px; color:var(--muted); margin-top:10px; line-height:1.6}
+.figcap .lbl{color:var(--accent-deep); font-weight:700}
+.fig-toggle{
+  display:inline-block; cursor:pointer; user-select:none; color:var(--accent); font-weight:600; font-size:14px;
+  margin-top:8px; padding:3px 0;
+}
+.fig-toggle:hover{color:var(--accent-deep)}
+.figure-detail{max-height:0; overflow:hidden; transition:max-height .45s ease; }
+.figure-detail.active{max-height:1600px}
+.figure-detail .inner{padding:12px 16px; margin-top:10px; background:var(--card2); border:1px solid var(--border); border-radius:10px; font-size:14.5px; color:var(--ink-soft)}
+.figure-detail .inner ul{margin:.3em 0 .3em; padding-left:1.2em}
+.figure-detail .inner li{margin:.35em 0}
+.figure-detail .inner b{color:var(--ink)}
+
+/* ---------- expandable card ---------- */
+.exp{background:var(--card); border:1px solid var(--border); border-radius:14px; margin:14px 0; box-shadow:var(--shadow); overflow:hidden}
+.exp .head{display:flex; align-items:flex-start; gap:14px; padding:18px 20px; cursor:pointer; user-select:none}
+.exp .head:hover{background:var(--card2)}
+.exp .chev{flex:0 0 auto; width:22px; height:22px; margin-top:3px; transition:transform .3s ease; color:var(--accent); font-size:18px; text-align:center; line-height:22px}
+.exp.open .chev{transform:rotate(90deg)}
+.exp .htext{flex:1}
+.exp .htitle{font-size:17.5px; font-weight:700; margin:0}
+.exp .hsum{font-size:14px; color:var(--muted); margin-top:3px; font-weight:400}
+.exp .badge{display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent-deep); border:1px solid #e3cfa6; margin-left:8px; vertical-align:1px}
+.exp .body{max-height:0; overflow:hidden; transition:max-height .5s ease}
+.exp.open .body{max-height:4000px}
+.exp .body .inner{padding:4px 22px 22px; border-top:1px solid var(--border)}
+.exp .body .inner h4{margin:16px 0 4px; font-size:15.5px; color:var(--accent-deep)}
+.exp .body .inner p{font-size:15.5px}
+
+/* ---------- pipeline / flow ---------- */
+.atomflow{display:flex; flex-wrap:wrap; gap:12px; margin:16px 0}
+.atomnode{
+  flex:1 1 200px; background:var(--card2); border:1px solid var(--border-strong); border-radius:12px; padding:14px 16px;
+}
+.atomnode .n{font-weight:800; color:var(--accent-deep); font-size:15px; margin-bottom:4px}
+.atomnode .d{font-size:14px; color:var(--ink-soft)}
+
+/* reflection loop flow */
+.loop{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:16px 0; font-size:14.5px}
+.loop .step{background:var(--card2); border:1px solid var(--border-strong); border-radius:10px; padding:10px 14px; font-weight:600; color:var(--ink)}
+.loop .step.pos{background:var(--accent-soft); border-color:#e3cfa6; color:var(--accent-deep)}
+.loop .arr{color:var(--accent); font-weight:800; font-size:18px}
+
+/* ---------- step animation (training) ---------- */
+.stepper{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; box-shadow:var(--shadow); margin:18px 0}
+.stagebar{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap}
+.stagebar .s{
+  flex:1 1 0; min-width:120px; text-align:center; padding:10px 8px; border-radius:10px; font-size:13.5px; font-weight:700;
+  background:var(--bg2); border:1px solid var(--border); color:var(--muted); transition:all .3s ease; cursor:pointer;
+}
+.stagebar .s.done{background:var(--accent-soft); border-color:#e3cfa6; color:var(--accent-deep)}
+.stagebar .s.cur{background:var(--accent); border-color:var(--accent-deep); color:#fff; box-shadow:0 3px 10px rgba(176,106,44,.25)}
+.stagebar .s .si{font-size:11px; display:block; font-weight:600; opacity:.85}
+.steppanel{min-height:200px}
+.steppanel .pane{display:none; animation:fade .4s ease}
+.steppanel .pane.active{display:block}
+@keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+.steppanel h4{font-size:18px; margin:0 0 4px; color:var(--accent-deep)}
+.steppanel .meta{font-size:13px; color:var(--muted); margin-bottom:10px; font-weight:600; letter-spacing:.3px}
+.stepctrl{display:flex; gap:10px; align-items:center; margin-top:18px}
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:600; padding:9px 18px; border-radius:9px; cursor:pointer;
+  border:1px solid var(--border-strong); background:var(--card); color:var(--accent-deep); transition:all .2s ease;
+}
+.btn:hover{background:var(--accent-soft)}
+.btn.primary{background:var(--accent); border-color:var(--accent-deep); color:#fff}
+.btn.primary:hover{background:var(--accent-deep)}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+.stepcount{font-size:13.5px; color:var(--muted); margin-left:auto; font-weight:600}
+.addchip{display:inline-block; font-size:12.5px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent-deep); border:1px solid #e3cfa6; margin:2px 4px 2px 0}
+
+/* ---------- table ---------- */
+.tablewrap{overflow-x:auto; margin:14px 0}
+table.data{border-collapse:collapse; width:100%; font-size:14.5px; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden}
+table.data th,table.data td{padding:10px 13px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top}
+table.data th{background:var(--card2); font-weight:700; color:var(--ink); font-size:13.5px}
+table.data tr:last-child td{border-bottom:none}
+table.data td.c{font-weight:700; color:var(--accent-deep)}
+.tier1{background:var(--accent-soft)}
+
+/* ---------- tool pillars ---------- */
+.pillar{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 20px; box-shadow:var(--shadow)}
+.pillar .pt{font-weight:800; color:var(--accent-deep); font-size:16px; margin-bottom:4px}
+.pillar .pd{font-size:13.5px; color:var(--muted); margin-bottom:10px}
+.pillar ul{margin:0; padding-left:1.15em}
+.pillar li{font-size:14px; margin:.45em 0; color:var(--ink-soft)}
+
+details.ex{background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:0 16px; margin:14px 0}
+details.ex summary{cursor:pointer; padding:13px 0; font-weight:600; color:var(--accent-deep); font-size:15px; list-style:none}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary::before{content:"▸ "; color:var(--accent)}
+details.ex[open] summary::before{content:"▾ "}
+details.ex .dbody{padding:0 0 16px; font-size:14.5px; color:var(--ink-soft); border-top:1px solid var(--border); margin-top:2px; padding-top:12px}
+details.ex .dbody .mono{display:block; white-space:pre-wrap; background:#fbf4e6; border:1px solid var(--border); border-radius:8px; padding:12px; font-size:12.8px; line-height:1.6; color:#4a4236; overflow-x:auto}
+
+/* footer */
+footer{padding:38px 0 60px; color:var(--muted); font-size:14px}
+footer a{font-weight:600}
+.disc{font-size:12.5px; color:#a89c89; margin-top:14px}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .wrap{padding:0 16px}
+  h1.title{font-size:29px}
+  h2.h{font-size:23px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .topnav .brand{display:none}
+  .stagebar .s{min-width:0; flex-basis:46%}
+}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="wrap">
+    <span class="brand">Step-DeepResearch</span>
+    <nav>
+      <a href="#tldr">速览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#idea">核心思想</a>
+      <a href="#data">数据策略</a>
+      <a href="#training">训练管线</a>
+      <a href="#system">系统架构</a>
+      <a href="#bench">ADR-Bench</a>
+      <a href="#results">实验结论</a>
+      <a href="#limit">局限</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="tagrow">
+      <span class="tag accent">StepFun · 阶跃星辰</span>
+      <span class="tag">技术报告 Technical Report</span>
+      <span class="tag">2025.12 · arXiv preprint</span>
+      <span class="tag">cs.CL · arXiv:2512.20491</span>
+    </div>
+    <h1 class="title">Step-DeepResearch</h1>
+    <p class="subtitle">用「原子能力」数据策略，把一个 32B 中等模型，训练成专家级、低成本的深度研究 Agent</p>
+    <div class="metaline">
+      <span><b>作者：</b>StepFun Agent-Team（阶跃星辰）</span>
+      <span><b>基座：</b>Qwen2.5-32B-Base</span>
+      <span><b>核心成绩：</b>ResearchRubrics 61.42 · 单次成本 &lt; 0.5 元</span>
+    </div>
+    <div class="srclinks">
+      <a class="srcbtn" href="https://arxiv.org/abs/2512.20491" target="_blank" rel="noopener">阅读原文 arXiv ↗</a>
+      <a class="srcbtn" href="https://arxiv.org/html/2512.20491v4" target="_blank" rel="noopener">HTML 全文 ↗</a>
+      <a class="srcbtn" href="https://github.com/stepfun-ai/StepDeepResearch" target="_blank" rel="noopener">GitHub 仓库 ↗</a>
+    </div>
+  </div>
+</header>
+
+<!-- ================= TL;DR ================= -->
+<section class="block" id="tldr">
+  <div class="wrap">
+    <div class="kicker">30 秒速览</div>
+    <h2 class="h">一句话：把「深度研究」拆成可训练的原子能力，让中等模型也能自带专家级研究脑回路</h2>
+    <p class="lead">
+      现在的研究型 Agent 大多是「外挂复杂工作流 + 大模型」，或者被多跳问答（multi-hop QA）带偏成「高效爬虫」。
+      Step-DeepResearch 换了个思路：把训练目标从「预测下一个 token」改写成「决定下一个原子动作（atomic action）」，
+      围绕<strong>规划、信息获取、反思验证、报告写作</strong>四大原子能力合成数据，再用
+      <strong>Mid-training → SFT → RL</strong> 渐进训练，配合 <strong>Checklist 式 Judger</strong> 奖励，
+      最终让一个 32B 单 Agent，在质量上追平 OpenAI / Gemini DeepResearch，成本只有它们的约 1/10。
+    </p>
+    <div class="metrics">
+      <div class="metric"><div class="num">32<small>B</small></div><div class="lab">参数量（Qwen2.5-32B-Base 单 Agent）</div></div>
+      <div class="metric"><div class="num">61.42</div><div class="lab">ResearchRubrics 得分（单 Agent SOTA，仅次 Gemini 63.69）</div></div>
+      <div class="metric"><div class="num">&lt; 0.5<small> 元</small></div><div class="lab">单次推理成本，约为顶级商业系统的 1/10</div></div>
+      <div class="metric"><div class="num">110</div><div class="lab">ADR-Bench 中文真实研究任务（9 大领域）</div></div>
+    </div>
+    <div class="callout">
+      <strong>读这篇报告，你会 get 到三件事：</strong>① 为什么「搜索 ≠ 研究」，以及为什么这决定了训练方式；
+      ② 怎样把抽象的「研究能力」拆成可以合成数据、可以训练的四个原子能力；
+      ③ 一套从中期训练到强化学习的渐进配方，以及一个能廉价、稳定打分的 rubric 奖励系统。
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROBLEM ================= -->
+<section class="block" id="problem">
+  <div class="wrap">
+    <div class="kicker">问题</div>
+    <h2 class="h">搜索不等于研究：评测把 Agent 训成了「爬虫」</h2>
+    <p class="lead">
+      Deep Research 被视为通用 Agent 的「北极星」能力——处理开放式、长程、高复杂度的信息任务。
+      但 benchmark 上的分数和真实可用性之间，存在一道明显的鸿沟。论文把原因归结为任务定义的错位。
+    </p>
+
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sub2">🔍 搜索（Search）</h4>
+        <p style="margin-bottom:0">目标是<strong>定义明确、有闭式答案</strong>的查询，优化的是检索准确率。本质上像一次精准的「查资料」。</p>
+      </div>
+      <div class="card">
+        <h4 class="sub2">📚 研究（Research）</h4>
+        <p style="margin-bottom:0">是一个<strong>迭代过程</strong>：意图拆解 → 规划 → 用工具 → 跨源验证 → 综合成结构化报告。需要的是「研究员」的思维闭环。</p>
+      </div>
+    </div>
+
+    <p style="margin-top:22px">论文指出，问题出在大家拿<strong>多跳问答（multi-hop QA）</strong>当事实上的优化目标。这种压力会把 Agent 带偏：</p>
+    <ul class="clean">
+      <li>它们越来越像<strong>高效的网络爬虫</strong>——大规模收集零散事实，而不是像研究员那样把证据整合成一条连贯、可辩护的论证链。</li>
+      <li>结果就是：<strong>信息碎片化、推理链断裂、在噪声证据下产生幻觉</strong>——这些都是 Deep Research 系统落地的主要障碍。</li>
+    </ul>
+
+    <div class="quote">
+      作者的视角：把 Deep Research 重新定义为「在一组原子能力之上的长程决策」。提升可用性，靠的不是拼装更多外部组件，而是训练模型<strong>内化一套专家式的认知闭环</strong>，让它能在任务推进中自我检查、自我修正。
+      <span class="en">We reframe Deep Research as long-horizon decision-making over a set of atomic capabilities … training models to internalize an expert-like cognitive loop.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRIOR WORK ================= -->
+<section class="block" id="prior">
+  <div class="wrap">
+    <div class="kicker">已有方案速览</div>
+    <h2 class="h">两条主流路线，各自卡在哪里</h2>
+    <p class="lead">论文把现有工作分成两类对照。理解它们的局限，才能理解 Step-DeepResearch 为什么选择「端到端、原子能力、单 Agent」。</p>
+
+    <div class="exp" data-exp>
+      <div class="head" onclick="toggleCard(this)">
+        <div class="chev">▸</div>
+        <div class="htext">
+          <div class="htitle">路线一：基于工作流的编排<span class="badge">Workflow-based</span></div>
+          <div class="hsum">用通用基座 + 外部工作流编排出研究能力——把研究流程「硬编码」进系统架构。</div>
+        </div>
+      </div>
+      <div class="body"><div class="inner">
+        <p><strong>代表系统：</strong>OpenAI DeepResearch（o3-mini 推理模型 + 多步网页探索 + 异步任务管理）、Gemini DeepResearch（动态研究蓝图 + 交互式计划修订 + 100 万 token 上下文）、Claude Research、Perplexity Deep Research（Bing 式索引 + Sonar API，BM25 与稠密向量重排）。开源侧有 LangChain Open Deep Research（plan-and-execute + 自反思找知识缺口）、DeepResearchAgent（分层多 Agent）、Together AI Open Deep Research。</p>
+        <h4>它做了什么</h4>
+        <p>用预定义的工作流模式（规划→执行→反思→补搜）把研究流程编排出来，依赖外部脚手架而非模型自身能力。</p>
+        <h4>卡在哪</h4>
+        <p>这类系统本质上把固定的工作流模式<strong>硬编码进架构</strong>，对系统复杂度要求很高；而用 ReAct 等简单范式实现时，在专业场景下<strong>研究深度往往不够</strong>，满足不了真实需求。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="head" onclick="toggleCard(this)">
+        <div class="chev">▸</div>
+        <div class="htext">
+          <div class="htitle">路线二：端到端优化研究能力<span class="badge">End-to-End</span></div>
+          <div class="hsum">不靠编排，而是通过端到端训练把研究能力「内化」进模型权重。</div>
+        </div>
+      </div>
+      <div class="body"><div class="inner">
+        <p><strong>代表系统：</strong>DeepResearcher（真实网页环境用 GRPO 端到端 RL，涌现出规划、跨源验证、自反思）、Kimi-Researcher（端到端 agentic RL 支持长程多轮搜索推理 + 上下文管理 + 异步 rollout）、Tongyi DeepResearch（统一 agentic mid-training 与 post-training + 自动数据合成 + on-policy RL）。方法学上还有 WebRL（自主课程学习 + KL 约束策略更新）、Search-R1（RL 增强的搜索推理）。</p>
+        <h4>它做了什么</h4>
+        <p>把检索、推理等能力直接训练进模型，让模型在真实环境里通过试错学习，而不是依赖固定脚手架。</p>
+        <h4>卡在哪</h4>
+        <p>现有端到端工作仍主要在提升「<strong>搜索效能</strong>」（检索准确率、查询优化），<strong>缺少对深度研究真正关键的「原子核心能力」的系统化构造策略</strong>——比如长程逻辑推理、多源交叉验证、高质量报告写作。此外，如何在保持高性能的同时压低模型规模与推理成本，仍是行业难题。</p>
+      </div></div>
+    </div>
+
+    <div class="callout">
+      <strong>Step-DeepResearch 的定位：</strong>走端到端路线，但补上前人缺的那一块——<strong>系统化地构造「原子核心能力」的训练数据</strong>，并且用最精简的单 Agent ReAct 设计，而不是复杂的多 Agent 协调或重型工作流。
+    </div>
+  </div>
+</section>
+
+<!-- ================= CORE IDEA ================= -->
+<section class="block" id="idea">
+  <div class="wrap">
+    <div class="kicker">核心思想</div>
+    <h2 class="h">从「预测下一个 token」到「决定下一个原子动作」</h2>
+    <p class="lead">
+      这是全文的思想原点。预训练让模型有了海量知识；但后训练要让它在<strong>巨大的动作空间里做长程推理</strong>。
+      直接在原始 token 级空间里探索，不仅算力昂贵，还会因为分支因子随序列长度指数增长而陷入局部最优。
+    </p>
+
+    <div class="card">
+      <h4 class="sub2">统一的数据构造视角</h4>
+      <p style="margin-bottom:14px">论文定义「原子能力」为一组可迁移、高层的动作抽象，它们构成一个紧凑的动作子空间
+      <span class="mono">𝒜<sub>atomic</sub> ⊂ 𝒜<sub>token</sub></span>。数据构造的目标，就是找到一个最优子空间，<strong>同时最小化两类误差</strong>：</p>
+      <div style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--accent-deep); font-weight:600; background:var(--accent-tint); border:1px solid #ecd9b6; border-radius:10px; padding:16px">
+        min ( ε<sub>pruning</sub> &nbsp;+&nbsp; ε<sub>RL</sub> )
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div><strong>ε<sub>pruning</sub>（剪枝误差）</strong><br><span style="color:var(--ink-soft); font-size:15px">子空间太小，把潜在最优解给剪掉了——关键技能丢失。</span></div>
+        <div><strong>ε<sub>RL</sub>（学习难度）</strong><br><span style="color:var(--ink-soft); font-size:15px">子空间太大太乱，后续规划 / 强化学习在里面很难学——规划逻辑不清晰。</span></div>
+      </div>
+      <p style="margin:14px 0 0; color:var(--ink-soft); font-size:15px">在「保留关键技能」与「规划逻辑清晰」之间求 Pareto 最优——这就是把研究能力拆成四个原子能力的动机。</p>
+    </div>
+
+    <h3 class="sub">四大原子能力（全文的骨架）</h3>
+    <div class="atomflow">
+      <div class="atomnode"><div class="n">① 规划与任务分解</div><div class="d">把模糊宽泛的请求拆成可执行子任务，并根据反馈动态调整路线。</div></div>
+      <div class="atomnode"><div class="n">② 深度搜索与信息获取</div><div class="d">多跳推理、挖掘隐藏实体、信息不全时主动「拓扑游走」。</div></div>
+      <div class="atomnode"><div class="n">③ 反思、验证与交叉校验</div><div class="d">识别自身错误（自我纠正）+ 辨别网络信息真伪（事实核查）。</div></div>
+      <div class="atomnode"><div class="n">④ 报告生成</div><div class="d">把碎片化信息做结构化重组，像专家一样组织论证与引用。</div></div>
+    </div>
+    <p style="color:var(--muted); font-size:14.5px">下面两节，正是围绕这四个能力分别讲「<strong>怎么造数据</strong>（第四节）」和「<strong>怎么训练</strong>（第五节）」。</p>
+  </div>
+</section>
+
+<!-- ================= DATA STRATEGY ================= -->
+<section class="block" id="data">
+  <div class="wrap">
+    <div class="kicker">数据策略</div>
+    <h2 class="h">四大原子能力，各自的数据合成流水线</h2>
+    <p class="lead">
+      论文不孤立地堆数据集，而是围绕四个原子能力，分别设计 query 合成与轨迹生成策略。
+      点开每张卡片，看每个能力具体「怎么造出高密度、有逻辑结构的训练数据」。
+    </p>
+
+    <div class="exp" data-exp>
+      <div class="head" onclick="toggleCard(this)">
+        <div class="chev">▸</div>
+        <div class="htext">
+          <div class="htitle">能力 I · 规划与任务分解<span class="badge">逆向工程</span></div>
+          <div class="hsum">从现成的「完美报告」反推出任务与计划，再用轨迹一致性过滤保证质量。</div>
+        </div>
+      </div>
+      <div class="body"><div class="inner">
+        <h4>逆向工程合成（Reverse Engineering Synthesis）</h4>
+        <p>高质量文档（开放获取的技术报告、学术综述、研报）本身就是复杂研究任务的<strong>最终产物</strong>，里面隐含着规划逻辑。论文反过来用它们造数据：</p>
+        <ul class="clean">
+          <li>取报告的<strong>标题 + 摘要（或原文）</strong>，去掉具体实验细节与结果数据；</li>
+          <li>让 LLM <strong>反推出可能导出这份报告的「项目任务」</strong>——得到模拟真实科研 / 商业场景的高难度 query；</li>
+          <li>同时把摘要结构当作一种「事后视角（hindsight）」，合成一份引导整个研究过程的<strong>高层 Plan</strong>，保证规划路径可行、有逻辑，作为推理阶段的强约束。</li>
+        </ul>
+        <h4>轨迹一致性过滤</h4>
+        <p>为 Agent 生成执行轨迹，计算它与预设 plan 的对齐度，<strong>剔除那些「完成了任务但严重偏离预设 plan」的轨迹</strong>，确保模型学到的是严格遵循已知 hindsight 的执行过程。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="head" onclick="toggleCard(this)">
+        <div class="chev">▸</div>
+        <div class="htext">
+          <div class="htitle">能力 II · 深度搜索与信息获取<span class="badge">图谱 + 多文档</span></div>
+          <div class="hsum">用知识图谱子图采样 + 文档超链接拓扑游走，合成需要多跳推理的难题，再过滤掉简单题。</div>
+        </div>
+      </div>
+      <div class="body"><div class="inner">
+        <h4>① 基于图谱的合成（Graph-based Synthesis）</h4>
+        <p>在 Wikidata5m、CN-DBpedia 等开源知识图谱上做受控子图采样：</p>
+        <ul class="clean">
+          <li>筛 <strong>degree 在 3–10 的非通用实体</strong>作「种子节点」，避免起点太孤立或太宽泛；</li>
+          <li>以种子为中心做 <strong>BFS 扩展</strong>，构建 10–40 个节点的子图；对 degree 超过阈值（如 1000）的<strong>超级节点截断为叶子</strong>，防止语义漂移；</li>
+          <li>由于三元组常常有损、过时，<strong>不直接拿三元组出题</strong>，而是把每条边当 query 再做一次搜索，验证并忠实扩展三元组信息；</li>
+          <li>最后基于这个验证过、结构合理的子图，让 LLM 生成一个<strong>需要多跳搜索与推理的模糊化复杂问题</strong>及其答案。</li>
+        </ul>
+        <h4>② 基于多文档的合成（Multi-document Synthesis）</h4>
+        <p>针对文档间的<strong>关联检索</strong>能力，用自建索引库 Wiki-doc，利用其天然超链接结构：从随机实体出发，用 few-shot 引导一个 web 搜索 Agent 在文档索引里做<strong>拓扑游走</strong>——在不知道目标的情况下沿超链接挖信息，直到达到最大步数或收集到足够信息，最后汇总路径上所有节点信息，<strong>反向生成 ⟨Query, Answer⟩ 对</strong>。</p>
+        <h4>③ 难度过滤（Difficulty Filtering）</h4>
+        <p>用 <strong>QwQ-32b</strong> 当难度过滤器：凡是它在默认 ReAct 框架下能解出的 query，都视为「简单题」剔除。原因很巧妙——QwQ-32b 与本文模型<strong>同一个 base、同样的预训练知识，但缺少 agent 专项训练</strong>，所以它能解的就是不需要专项训练的简单任务。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="head" onclick="toggleCard(this)">
+        <div class="chev">▸</div>
+        <div class="htext">
+          <div class="htitle">能力 III · 反思、验证与交叉校验<span class="badge">闭环 + 多 Agent</span></div>
+          <div class="hsum">用「生成→验证→反思→重试」闭环造自我纠错数据，再用多 Agent teacher workflow 造专家级核查轨迹。</div>
+        </div>
+      </div>
+      <div class="body"><div class="inner">
+        <h4>① 错误—反思闭环（Error-Reflection Loop）</h4>
+        <p>用「专家模型生成 → 结果验证 → 多轮反思」的闭环，产出高质量思考轨迹：</p>
+        <div class="loop">
+          <span class="step">专家模型生成搜索 + 推理轨迹</span><span class="arr">→</span>
+          <span class="step">验证答案</span><span class="arr">→</span>
+          <span class="step pos">匹配 ✓ → 直接作正样本</span>
+        </div>
+        <div class="loop">
+          <span class="step">不匹配 ✗</span><span class="arr">→</span>
+          <span class="step">基于错误结果做反思</span><span class="arr">→</span>
+          <span class="step">保留历史记忆重试（最多 3 次）</span><span class="arr">↺</span>
+        </div>
+        <p style="margin-top:10px">对最终反思后答对的轨迹做专门<strong>后处理清洗</strong>：移除「according to user hints（根据用户提示）」这类人工诱导痕迹，让输出看起来像模型<strong>完全自发的自省与纠错</strong>。这不仅强化了挖掘未知信息的能力，还教会模型通过多源比对过滤不可靠数据。</p>
+        <h4>② 深度验证工作流（Deep Verification Workflow）</h4>
+        <p>从脱敏真实数据里清洗出数千条 ⟨段落, 判定结果⟩ 作种子，构建一个模拟人类专家核查过程的<strong>多 Agent teacher 工作流</strong>，把完整执行路径记录为 agent trace：</p>
+        <ul class="clean">
+          <li><strong>Extract Agent：</strong>把自然语言里的时间、地点、主体、核心数据、因果事件抽取成独立「验证点」；</li>
+          <li><strong>Plan Agent：</strong>分析每个验证点的必要性与所需信源类型，按逻辑依赖生成验证计划；</li>
+          <li><strong>Verify Agent：</strong>调用搜索工具与模型，做多源检索与交叉验证；</li>
+          <li><strong>Replan Agent：</strong>汇总已得信息、动态调整研究方向，减少冗余搜索；</li>
+          <li><strong>Report Agent：</strong>为每个验证点给出 <strong>support / refute / doubtful</strong> 结论 + 完整引用证据。</li>
+        </ul>
+        <p>生成的验证轨迹再经严格后验过滤：把验证点、结论、证据当三元组输入 judge 模型，检查报告结论与证据是否<strong>逻辑自洽</strong>。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="head" onclick="toggleCard(this)">
+        <div class="chev">▸</div>
+        <div class="htext">
+          <div class="htitle">能力 IV · 报告生成<span class="badge">风格 + 格式</span></div>
+          <div class="hsum">Mid-training 学专家写作风格与内容深度，SFT 学指令遵循与引用格式规范。</div>
+        </div>
+      </div>
+      <div class="body"><div class="inner">
+        <p>报告写作不是简单的文本生成，而是对碎片信息的<strong>结构化重组</strong>。论文把它拆成两个阶段：</p>
+        <h4>Mid-training：领域风格与内容深度</h4>
+        <p>构建大规模 ⟨Query, Report⟩ 对：报告来自严选的高质量人类报告（研报、深度综述），query 用前面的逆向工程方法得到。这一阶段模型聚焦于<strong>如何像专家一样组织语言、引用数据、展开深入论证</strong>，不关注具体搜索过程。</p>
+        <h4>SFT：指令遵循与格式规范</h4>
+        <p>焦点转向用户约束的指令遵循与<strong>计划一致性</strong>：对带 plan 元数据的 query，要求报告严格遵循预设结构；生成轨迹并与 plan 做对齐检查，过滤偏离样本；对「轨迹质量高但报告格式差」的样本，用专门的 system prompt 基于末轮状态<strong>重新生成报告</strong>，保证内容详实又精准响应需求。</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TRAINING ================= -->
+<section class="block" id="training">
+  <div class="wrap">
+    <div class="kicker">训练管线</div>
+    <h2 class="h">三阶段渐进训练：能力如何一层层叠加</h2>
+    <p class="lead">
+      在 Qwen2.5-32B-Base 之上，论文用 <strong>Mid-training → SFT → RL</strong> 三阶段渐进训练，
+      分工明确：中期训练「扩能力」、SFT「对齐行为」、RL「优化目标」。点「下一步」看每一阶段往模型里加了什么。
+    </p>
+
+    <div class="stepper">
+      <div class="stagebar" id="stagebar">
+        <div class="s cur" data-i="0" onclick="goStep(0)">中期训练 · 32K<span class="si">注入原子能力</span></div>
+        <div class="s" data-i="1" onclick="goStep(1)">中期训练 · 128K<span class="si">引入工具调用</span></div>
+        <div class="s" data-i="2" onclick="goStep(2)">SFT 监督微调<span class="si">组合 + 对齐</span></div>
+        <div class="s" data-i="3" onclick="goStep(3)">RL 强化学习<span class="si">真实环境优化</span></div>
+      </div>
+      <div class="steppanel" id="steppanel">
+        <div class="pane active">
+          <div class="meta">STAGE 1A · 最大上下文 32K · 纯文本 · 150B tokens</div>
+          <h4>注入四大原子能力，先把「脑回路」打好</h4>
+          <p>第一阶段中期训练专注于<strong>注入</strong>规划与任务分解、信息获取、反思验证、报告生成等原子能力。它不直接优化任务完成率，而是系统化构造高质量、面向能力的数据，让模型在规划、证据整合、自我纠正等关键维度形成<strong>稳定、可泛化的中间表征</strong>。此阶段<strong>不引入显式工具调用</strong>，确保模型在纯文本条件下先练好理解与推理。</p>
+          <div>
+            <span class="addchip">+ 主动阅读（通用/学术知识）</span>
+            <span class="addchip">+ 合成知识数据</span>
+            <span class="addchip">+ 摘要数据</span>
+            <span class="addchip">+ 推理数据</span>
+            <span class="addchip">+ 反思数据</span>
+          </div>
+          <p style="margin-top:12px; color:var(--ink-soft); font-size:15px">📈 训练动态：每 5B tokens 存一次 checkpoint，150B tokens 内 SimpleQA、TriviaQA、FRAMES 持续上升，其中 <strong>FRAMES 最大涨幅约 +10.88%</strong>（SimpleQA +1.26%，TriviaQA +2.30%），到 150B 仍未收敛——说明还有提升空间。</p>
+        </div>
+        <div class="pane">
+          <div class="meta">STAGE 1B · 最大上下文 128K · 引入工具</div>
+          <h4>扩到 128K，开始学「何时、如何调工具」</h4>
+          <p>在第一阶段能力稳定收敛的基础上，第二阶段把上下文扩到 <strong>128K</strong>，聚焦真实复杂任务场景，强化超长上下文下的检索、规划、工具增强推理。数据更贴近实际应用，覆盖<strong>网页交互、搜索流程、多工具协作</strong>等复杂结构。</p>
+          <p>引入<strong>显式工具调用</strong>后，模型不仅要生成连贯的中间推理，还要学会<strong>何时、如何选择并调用外部工具</strong>，并把返回结果整合进后续推理——显著提升 agent 式任务的实战效果。</p>
+          <div>
+            <span class="addchip">+ URL QA</span><span class="addchip">+ 深度搜索数据</span>
+            <span class="addchip">+ 网页浏览数据</span><span class="addchip">+ 规划数据</span>
+            <span class="addchip">+ 工具调用</span><span class="addchip">+ 通用对话（保通用能力）</span>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="meta">STAGE 2 · 监督微调 SFT · 全链路轨迹</div>
+          <h4>把原子能力「组合」成端到端的研究行为</h4>
+          <p>中期训练已把单项原子能力装好，SFT 阶段的核心从「单独教能力」转向<strong>把这些能力组合起来</strong>，提升长程任务的端到端表现。数据是两类全链路轨迹：<strong>Deep Search</strong>（有标准答案的多跳搜索）和 <strong>Deep Research</strong>（开放式综合研究，覆盖意图理解→规划→交叉验证→报告生成）。</p>
+          <h4 style="font-size:15.5px; color:var(--accent-deep); margin:6px 0 4px">四条关键清洗策略</h4>
+          <ul class="clean">
+            <li><strong>「正确且最短」原则：</strong>有标准答案的搜索任务，只保留步数最少、工具用得最简洁的成功轨迹——鼓励用有效推理替代冗余搜索。</li>
+            <li><strong>鲁棒性噪声注入：</strong>故意保留一定比例含工具报错（空结果、调用失败）但随后正确「反思—纠错」的轨迹，防止模型在真实网络不稳定时崩溃。</li>
+            <li><strong>认知模式去重：</strong>用严格 N-gram 去重剔除过度重复 / 退化循环的低质轨迹。</li>
+            <li><strong>严格引用与事实对齐：</strong>显式引入 <span class="mono">\cite{}</span> 引用格式，让模型在关键信息点附上引用，保证可溯源、可核实。</li>
+          </ul>
+        </div>
+        <div class="pane">
+          <div class="meta">STAGE 3 · 强化学习 RL · 真实工具环境 + Rubric 奖励</div>
+          <h4>接入真实环境，用 Checklist 式奖励逼近专家偏好</h4>
+          <p>前两阶段依赖「教师」轨迹，无法通过真实试错改进。RL 把模型<strong>直接接入真实工具环境</strong>，每个 deep-research 任务作为一个 episode：意图分析→复述 query→分步规划→围绕子问题组织工具调用→多源筛选对比交叉验证→撰写完整报告；episode 结束后由 <strong>Rubrics Judge</strong> 按预定义 rubric 打分，转成奖励信号更新策略。</p>
+          <p style="color:var(--ink-soft); font-size:15px"><strong>关键设计：</strong>用 PPO（带 critic）而非无价值函数的策略梯度变体——critic 能提供更可靠的 token 级价值估计、识别并降权重复循环等有害模式；GAE 取 <span class="mono">γ=1, λ=1</span>（不折扣、不额外平滑），简化长程稀疏奖励下的信用分配。Rubric 奖励、奖励映射的细节见下方两张小卡片。</p>
+          <p style="margin:8px 0 0; color:var(--ink-soft); font-size:15px">📈 RL reward 曲线随训练持续上升，说明 Agent 在任务分布上有效优化了策略。</p>
+        </div>
+      </div>
+      <div class="stepctrl">
+        <button class="btn" id="prevBtn" onclick="stepMove(-1)">← 上一步</button>
+        <button class="btn primary" id="nextBtn" onclick="stepMove(1)">下一步 →</button>
+        <span class="stepcount" id="stepCount">第 1 / 4 步</span>
+      </div>
+    </div>
+
+    <h3 class="sub">RL 的两块拼图：合成 rubric 数据 + 设计可靠奖励</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sub2">🧪 两步逆向合成 RL 数据</h4>
+        <p style="font-size:15px">高质量 rubric 难收集、成本高，所以要合成。<strong>第一步：</strong>用强 LLM 由少量优质样例先生成一个「隐藏任务摘要」和一组细粒度 rubric（每条 rubric = 评价维度 + 重要性权重，并标注是 explicit / implicit / negative 要求）。<strong>第二步：</strong>反过来基于这些 rubric 合成真正的用户任务 query，并重新评估每条 rubric 的角色——若与初始角色不一致，<strong>整条样本丢弃</strong>。最后由独立 judge 做<strong>目标一致性验证</strong>，给一致性分并决定是否保留。</p>
+      </div>
+      <div class="card">
+        <h4 class="sub2">⚖️ 严格二值奖励映射</h4>
+        <p style="font-size:15px">最初把每条 rubric 判成「完全满足 / 部分满足 / 不满足」三档 {1, 0.5, 0}，但发现<strong>「部分满足」这一中间档，不同强模型之间、模型与人类专家之间一致性都很低</strong>，导致奖励信号不稳。于是改成按 rubric 性质做不对称二值化：</p>
+        <ul class="clean" style="font-size:14.5px">
+          <li><strong>正向 rubric：</strong>只有「完全满足」=1，部分满足 / 不满足都=0（不全满足就不给分，防止刷低质量生成）。</li>
+          <li><strong>负向 rubric：</strong>「不满足」=0，部分满足 / 完全满足都=1（任何偏离期望都罚）。</li>
+        </ul>
+        <p style="font-size:14.5px; margin-bottom:0">再结合每条 rubric 的权重（可正可负）算总奖励，信号更可分、收敛更快。</p>
+      </div>
+    </div>
+
+    <details class="ex">
+      <summary>展开：两阶段中期训练的数据构成与对比（Table 1 / 2 / 3）</summary>
+      <div class="dbody">
+        <p style="margin-top:0"><strong>Stage 1A（32K，纯文本）数据构成：</strong></p>
+        <div class="tablewrap">
+          <table class="data">
+            <tr><th>数据类别</th><th>来源</th><th>主要形式</th><th>能力指向</th></tr>
+            <tr><td>主动阅读·通用知识</td><td>Wiki、百度百科</td><td>QA、改写</td><td>信息获取</td></tr>
+            <tr><td>主动阅读·学术</td><td>学术文章</td><td>QA、改写</td><td>信息获取</td></tr>
+            <tr><td>合成知识数据</td><td>PleIAs SYNTH</td><td>合成文本、结构化 QA、推理痕迹、多语</td><td>报告生成 + 信息获取</td></tr>
+            <tr><td>摘要数据</td><td>自有 / 混合</td><td>文档 → 摘要</td><td>报告生成</td></tr>
+            <tr><td>推理数据</td><td>自有 / 混合</td><td>多步推理文本</td><td>规划与任务分解</td></tr>
+            <tr><td>反思数据</td><td>自有 / 混合</td><td>自检与纠错</td><td>反思与验证</td></tr>
+          </table>
+        </div>
+        <p><strong>Stage 1B（128K，引入工具）数据构成：</strong></p>
+        <div class="tablewrap">
+          <table class="data">
+            <tr><th>数据类别</th><th>来源</th><th>主要形式</th><th>能力指向</th></tr>
+            <tr><td>URL QA</td><td>自有 / 混合</td><td>URL + QA</td><td>信息获取 + 规划</td></tr>
+            <tr><td>深度搜索数据</td><td>自有</td><td>搜索步骤 + 工具调用</td><td>信息获取 + 规划</td></tr>
+            <tr><td>网页浏览数据</td><td>Agent-data-collection</td><td>网页导航 + 工具调用</td><td>信息获取 + 规划</td></tr>
+            <tr><td>规划数据</td><td>自有 / 混合</td><td>任务规划 + 工具调用</td><td>规划与任务分解</td></tr>
+            <tr><td>摘要数据</td><td>自有 / 混合</td><td>长文档 / 长对话摘要</td><td>报告生成</td></tr>
+            <tr><td>推理数据</td><td>自有 / 混合</td><td>长程对话推理</td><td>规划与任务分解</td></tr>
+            <tr><td>反思数据</td><td>自有 / 混合</td><td>反思与纠错过程</td><td>反思与验证</td></tr>
+            <tr><td>通用对话数据</td><td>高质量对话语料</td><td>多轮对话</td><td>保持通用语言交互能力</td></tr>
+          </table>
+        </div>
+        <p><strong>两阶段对比（Table 3）：</strong></p>
+        <div class="tablewrap">
+          <table class="data">
+            <tr><th>维度</th><th>Stage I</th><th>Stage II</th></tr>
+            <tr><td class="c">最大上下文</td><td>32K</td><td>128K</td></tr>
+            <tr><td class="c">主要目标</td><td>知识注入 / 基础理解</td><td>检索 / 规划 / 工具增强推理</td></tr>
+            <tr><td class="c">数据侧重</td><td>百科 / 学术 / 认知模式</td><td>网页 / 搜索 / 工具调用</td></tr>
+            <tr><td class="c">是否含工具调用</td><td>否</td><td>是</td></tr>
+            <tr><td class="c">任务复杂度</td><td>中</td><td>高</td></tr>
+            <tr><td class="c">应用场景</td><td>理解 / 推理 / 简单 QA</td><td>深度搜索 / Agent 场景</td></tr>
+          </table>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ================= SYSTEM ARCHITECTURE ================= -->
+<section class="block" id="system">
+  <div class="wrap">
+    <div class="kicker">系统架构</div>
+    <h2 class="h">一个 ReAct 单 Agent，加一套为研究定制的工具系统</h2>
+    <p class="lead">
+      与依赖多 Agent 协调或重型工作流的系统不同，Step-DeepResearch 只用一个精简的 ReAct 风格<strong>单 Agent</strong>，
+      把复杂研究任务重构成「推理—行动—观察」的动态循环。下面这张原文架构图，是理解整套系统的核心。
+    </p>
+
+    <figure class="fig">
+      <img src="assets/x5.png" alt="Step-DeepResearch 系统架构图：ReAct 循环与工具集"/>
+      <div class="figcap">
+        <span class="lbl">图 · Step-DeepResearch 系统架构（原文 Figure 4）</span>：用户 query 进入后，Agent 在 ReAct 循环里交替进行思考、工具调用与观察，直到产出最终报告。
+        <br><span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>顶部 Tools（绿色工具条）：</b>统一的工具集——<b>batch_web_surfer</b>（批量网页检索）、<b>todo</b>（任务跟踪）、<b>file</b>（文件读写）、<b>shell</b>（命令行）、<b>analyze_image</b>（图像分析）。Agent 在每一轮里按需调用。</li>
+            <li><b>左侧 user query：</b>用户的研究请求作为整个循环的输入。</li>
+            <li><b>中间多个机器人节点（蓝色）：</b>同一个 Agent 的多轮迭代。每一轮内部都有 <span class="mono">&lt;think&gt;…&lt;/think&gt;</span>（显式思考）→ <span class="mono">&lt;toolcall&gt;…&lt;/toolcall&gt;</span>（发起工具调用），随后注入 <span class="mono">&lt;tool_response&gt;…&lt;/tool_response&gt;</span>（工具返回）。</li>
+            <li><b>节点间的箭头与省略号：</b>表示循环可以持续多轮，Agent <b>自主决定探索深度</b>——上方双向箭头是 Agent 与工具的交互（调用 / 返回）。</li>
+            <li><b>最右节点：</b>当信息充分时，Agent 不再发 toolcall，而是输出 <span class="mono">&lt;answer&gt;…&lt;/answer&gt;</span>，生成最终研究报告（右下文档图标）。</li>
+          </ul>
+          <p style="margin:6px 0 0"><b>一句话总结：</b>整套架构就是「思考 → 调工具 → 看结果 → 再思考」的反复循环，由模型自身决定何时停止、何时交付，三个核心阶段（规划与反思、工具执行、反馈与交叉验证）都嵌在这一个循环里。</p>
+        </div></div>
+      </div>
+    </figure>
+
+    <h3 class="sub">循环里的三个核心阶段</h3>
+    <div class="grid3">
+      <div class="card"><h4 class="sub2">规划与反思</h4><p style="font-size:14.5px; margin:0">先识别用户意图制定行动计划；后续每轮自发回顾此前结果，对照目标校验当前状态，实现动态自我纠正。</p></div>
+      <div class="card"><h4 class="sub2">工具执行</h4><p style="font-size:14.5px; margin:0">把计划落成具体动作，选最合适的工具集（如 batch_web_surfer 搜索、todo 跟踪）发起精确的数据获取请求。</p></div>
+      <div class="card"><h4 class="sub2">反馈与交叉验证</h4><p style="font-size:14.5px; margin:0">新返回注入下一轮推理，与历史上下文交叉验证——化解冲突、过滤虚假，构建逻辑严密的证据链。</p></div>
+    </div>
+
+    <h3 class="sub">为「研究」定制的三大工具系统</h3>
+    <p style="color:var(--ink-soft)">设计哲学有三条：<strong>能力对齐</strong>（提供与人类做研究相当的操作能力）、<strong>信息适配</strong>（输出结构化、高信息密度，并考虑上下文窗口与失败恢复）、<strong>架构精简</strong>（尽量合并功能相近的工具）。</p>
+    <div class="grid3">
+      <div class="pillar">
+        <div class="pt">① 权威增强的信息获取</div>
+        <div class="pd">对抗海量网络数据的信噪比失衡与权威性稀释</div>
+        <ul>
+          <li><strong>精选权威索引：</strong>专业团队评估并选出 <strong>600+ 核心权威站点</strong>（政府官网、行业研究院、国际组织、顶级学术平台），建独立索引分片，把权威内容与低质 SEO 垃圾物理隔离。</li>
+          <li><strong>知识密集型文档检索：</strong>面向专业文献 / 研报 / 白皮书，用 <strong>2000 万+ 高质量条目</strong>库，<strong>段落级</strong>粒度索引，按需召回语义段落，更低 token 拿更高密度信息。</li>
+          <li><strong>权威感知排序：</strong>排序阶段引入权威 boosting；语义相关分接近时优先权威站点内容。</li>
+        </ul>
+      </div>
+      <div class="pillar">
+        <div class="pt">② 知识管理与文件操作</div>
+        <div class="pd">把文件系统当作外部持久记忆</div>
+        <ul>
+          <li><strong>token 高效的补丁式编辑：</strong>用 patch 动作只提供「修改片段 + 最小锚点上下文」，工具用模糊匹配做原子更新；长报告局部润色时<strong>输出 token 成本降低 70%+</strong>。</li>
+          <li><strong>隐式上下文管理：</strong>工具结果超阈值时只截断注入<strong>高密度摘要</strong>，原始数据落盘到本地临时文件，Agent 按摘要线索用 file.read 做「按需分页」，把上下文压力卸载到磁盘，近乎无限上下文。</li>
+          <li><strong>有状态 todo 管理：</strong>统一入口自动判断「创建 / 重写 / 销毁」，把研究进度从模型权重解耦、持久化到工具层，防长程目标漂移。</li>
+        </ul>
+      </div>
+      <div class="pillar">
+        <div class="pt">③ 交互执行与多模态感知</div>
+        <div class="pd">桥接原始执行与专家级问题解决</div>
+        <ul>
+          <li><strong>类人终端交互：</strong>命令在受限 MCP 沙箱里运行，集成 tmux 会话与持久滚动缓冲，能稳定操作 vim 等状态刷新型程序，具备类人交互式调试能力。</li>
+          <li><strong>感知优化的弹性浏览器：</strong>用相邻动作页面截图的 <strong>PHash（感知哈希）</strong>距离判断视觉差异；页面几乎没更新时抑制图像反馈、回退到纯文本流，大幅减少多模态 token 冗余。</li>
+          <li><strong>多模态感知工具：</strong>file_parser（文档解析）、asr（音频转写）、analyze_image（图像分析），保证对复杂研究材料的高质量理解。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ADR-BENCH ================= -->
+<section class="block" id="bench">
+  <div class="wrap">
+    <div class="kicker">ADR-Bench</div>
+    <h2 class="h">为中文真实研究场景，自建一套应用驱动的评测基准</h2>
+    <p class="lead">
+      现有 benchmark（BrowseComp、GAIA、HLE 等）大多偏「闭卷考试」式的多跳检索，且高质量中文 Deep Research 评测稀缺。
+      论文构建 <strong>ADR-Bench（Application-driven Deep Research Benchmark）</strong>，让自动指标更贴近人类感知的「真实可用性」。
+    </p>
+
+    <figure class="fig">
+      <img src="assets/x6.png" alt="ADR-Bench 查询分布：9 大领域，通用 70 + 专业 40"/>
+      <div class="figcap">
+        <span class="lbl">图 · ADR-Bench 查询分布（原文 Figure 5）</span>：共 110 道题，按真实业务分布分到 9 个领域，外圈分通用（General 70）与专业（Professional 40）两大赛道。
+        <br><span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>中心 Total 110：</b>整个基准的题量。</li>
+            <li><b>内圈 9 个领域：</b>法律 Law(20)、金融与商业 Finance &amp; Business(20)、计算机与 IT(10)、教育(10)、科学与工程(10)、社会生活(10)、文学与艺术(10)、医疗(10)、政治(10)。每块大小对应题量。</li>
+            <li><b>外圈两色环（赛道）：</b>蓝色 = <b>Professional 专业（40 题）</b>，由领域专家编写 query 与 rubric 并交叉验证，只取法律、金融两个领域各 20 题；绿色 = <b>General 通用（70 题）</b>，从真实业务场景收集，每个领域 10 题。</li>
+            <li><b>为什么这样分：</b>专业领域有相对收敛的解空间、可用 rubric 自动评；通用领域开放无标准答案，用人工对比评测。两条赛道对应两套不同的评测方法（见下）。</li>
+          </ul>
+          <p style="margin:6px 0 0"><b>一句话总结：</b>这张图既是「数据集组成」，也是「评测方法分流」的依据——领域分布贴近真实使用，专业 / 通用双轨决定了每道题用 rubric 还是用人工对比来评。</p>
+        </div></div>
+      </div>
+    </figure>
+
+    <h3 class="sub">双轨评测框架</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sub2">通用领域 · 人工并排对比</h4>
+        <p style="font-size:15px; margin-bottom:0">开放、无标准答案，难以用枚举 rubric 客观刻画。改用<strong>盲审两两对比</strong>：每题给评审员看两个模型的报告，做五档判断（左好 / 右好 / 都好 / 都中 / 都差），并在<strong>信息完整度、内容深度、需求契合、可读性</strong>四个子维度打分 + 文字理由。对比引入参照锚点，更稳、更贴近主观感知。</p>
+      </div>
+      <div class="card">
+        <h4 class="sub2">专业领域 · Rubric 自动评</h4>
+        <p style="font-size:15px; margin-bottom:0">选<strong>金融、法律</strong>为代表，由专家设计相对受限的真实任务，多轮交叉验证打磨出枚举式 rubric，覆盖专业报告应有的要素，用以严格衡量专业能力——人工对比成本太高、迭代太慢，这里更适合自动化。</p>
+      </div>
+    </div>
+
+    <h3 class="sub">构造 rubric 的五条原则</h3>
+    <div class="grid3">
+      <div class="card" style="margin:0"><h4 class="sub2">① 原子性</h4><p style="font-size:14px; margin:0">每条 rubric 只描述一个清晰、单一的要求。</p></div>
+      <div class="card" style="margin:0"><h4 class="sub2">② 可验证</h4><p style="font-size:14px; margin:0">有客观判断标准，能被明确核查（如「是否引用了民法典第 XXX 条」）。</p></div>
+      <div class="card" style="margin:0"><h4 class="sub2">③ 无歧义</h4><p style="font-size:14px; margin:0">措辞清楚，不能有多种解读。</p></div>
+      <div class="card" style="margin:0"><h4 class="sub2">④ 独立性</h4><p style="font-size:14px; margin:0">条目之间相互独立、无内容重叠。</p></div>
+      <div class="card" style="margin:0"><h4 class="sub2">⑤ 对齐</h4><p style="font-size:14px; margin:0">直接对应任务核心要求，不引入无关维度。</p></div>
+    </div>
+
+    <details class="ex">
+      <summary>展开：构建评测时踩过的坑与经验（Exploratory Attempts）</summary>
+      <div class="dbody">
+        <ul class="clean">
+          <li><strong>领域切分：</strong>太少覆盖不足，太多频繁重叠。经验是 Deep Research 大致 <strong>6–12 个领域</strong>较合理；不必追求完美切分，关键是能把每个领域导向对的专家与评审。</li>
+          <li><strong>评测维度切分：</strong>每个维度要<strong>独立、明确、可执行</strong>；难以完全解耦时，办法是「打某维度分时只盯这一维度」。</li>
+          <li><strong>模型生成 rubric：</strong>尝试用 Gemini 等从金标报告自动生成 rubric 再人工精修，但发现 (a) 金标与理想报告的差距强烈决定 rubric 质量；(b) 当 LLM 当裁判时，模型生成的 rubric 难保证可评性（如无 ground truth 验数据正确性）；(c) 自动评测结果与人类感知偏离；(d) 本想减负，实际仍需大量重写对齐。</li>
+          <li><strong>单边主观打分：</strong>三份报告各打 0–10 分，评审间方差很大；压到 0–3 又无法反映差异。<strong>对比评测更稳、置信度更高、效率更好</strong>。</li>
+          <li><strong>Elo 对战的资源消耗：</strong>Elo 科学但成本高——10 题 5 模型，普通对比只需 50 次，Elo 完整榜需 150 次。若只想测一个模型与基线的差距，<strong>推荐普通对比评测</strong>。</li>
+          <li><strong>专家出题稀缺：</strong>既懂 LLM 又愿投入评测的资深专家很少，合作成本高。</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section class="block" id="results">
+  <div class="wrap">
+    <div class="kicker">实验结论</div>
+    <h2 class="h">质量追平顶级商业系统，成本只有约 1/10</h2>
+    <p class="lead">
+      核心结论一句话：<strong>一个 32B 单 Agent，在质量上进入第一梯队，在成本上断层领先。</strong>
+      下面两张原文图，分别从「成本—质量」和「专家盲评对战」两个角度，给出最直观的证据。
+    </p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">61.42</div><div class="lab">ResearchRubrics 总分（单 Agent SOTA）</div></div>
+      <div class="metric"><div class="num">+5.25</div><div class="lab">领先最强开源 Kimi-k2-thinking（56.17）的分差</div></div>
+      <div class="metric"><div class="num">67.1<small>%</small></div><div class="lab">对阵 Gemini / MiniMax，Win+Tie 累计占比（共 47/70）</div></div>
+      <div class="metric"><div class="num">&lt; 0.5<small> 元</small></div><div class="lab">单次成本，约为 Gemini(6.65)/OpenAI(5.32) 的 1/10</div></div>
+    </div>
+
+    <figure class="fig">
+      <img src="assets/x1.png" alt="ResearchRubrics 成本—效率前沿：Step-DeepResearch 近顶级性能、最低成本"/>
+      <div class="figcap">
+        <span class="lbl">图 · 成本—效率前沿（原文 Figure 1a）</span>：横轴成本（RMB，对数轴，越左越贵），纵轴 ResearchRubrics 得分。Step-DeepResearch（红星）处在右上「高性价比」前沿。
+        <br><span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>横轴（Cost, RMB, 对数轴）：</b>单次报告成本，<b>越往右越便宜</b>（注意是反向：左 10 元、右接近 0）。</li>
+            <li><b>纵轴（Score）：</b>ResearchRubrics 得分，越高越好。</li>
+            <li><b>红星 Step-DeepResearch：</b>位于右上角——得分 <b>61.42</b>、成本 &lt; 0.5 元，落在绿色「高性价比」前沿线上，标注「近顶级性能、最低成本」。</li>
+            <li><b>左上的两个高分高价点：</b>Gemini DeepResearch（≈6.65 元）、OpenAI DeepResearch（≈5.32 元）——分数略高但成本是 Step 的十几倍。</li>
+            <li><b>三种标记区分系统类型：</b>红星 = 本文（ReAct Agent）；三角 = 商业 Agent 系统；圆点 = 各基座的 ReAct Agent（如 Kimi-k2-thinking、GLM-4.6、DeepSeek-V3.2、MiniMax-M2）。</li>
+          </ul>
+          <p style="margin:6px 0 0"><b>一句话总结：</b>这张图是全文主论点的可视化——把「质量」和「成本」放在一起，Step-DeepResearch 用十分之一的钱，拿到了第一梯队的质量。</p>
+        </div></div>
+      </div>
+    </figure>
+
+    <figure class="fig">
+      <img src="assets/x2.png" alt="ADR-Bench 各维度 Win Score 雷达图：Step-DeepResearch 全维度领先"/>
+      <div class="figcap">
+        <span class="lbl">图 · ADR-Bench 专家评分雷达（原文 Figure 1b）</span>：Win Score = Win + 0.5×Tie，Step-DeepResearch（红色外圈）在所有维度上领先。
+        <br><span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>五个轴（评价维度）：</b>内容深度 Content Depth、信息完整度 Information Completeness、整体 Overall、可读性 Readability、需求契合 Requirement Fitness。</li>
+            <li><b>越靠外 = 表现越好：</b>每条彩色折线代表一个模型，红色加粗 = Step-DeepResearch，明显是最外圈那一圈。</li>
+            <li><b>对照组：</b>Kimi-Researcher、Gemini DeepResearch、OpenAI DeepResearch、Qwen DeepResearch、MiniMax Agent Pro、GLM-4.6、Kimi-k2-thinking、MiniMax-M2 等。</li>
+            <li><b>读图重点：</b>Step 在「信息完整度」「需求契合」「可读性」上拉开明显差距，「内容深度」也居前——这与正文「内容深度在重专业推理处略逊于 OpenAI/Gemini」的说法一致，但综合占优。</li>
+          </ul>
+          <p style="margin:6px 0 0"><b>一句话总结：</b>在人类专家盲评的多维度对战里，Step-DeepResearch 的 Win Score 在每个维度都领跑，印证它不是单点强，而是综合可用性强。</p>
+        </div></div>
+      </div>
+    </figure>
+
+    <h3 class="sub">分维度 / 分领域细看（ResearchRubrics）</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sub2">六个评价维度</h4>
+        <ul class="clean" style="font-size:14.5px; margin-bottom:0">
+          <li><strong>隐式标准 54.5</strong>：超过 OpenAI DeepResearch（52.4），体现底层逻辑对齐能力强。</li>
+          <li><strong>显式标准 72.0</strong>：领先优势明显。</li>
+          <li><strong>引用质量 57.0</strong>：与 Gemini 并列第一。</li>
+          <li><strong>沟通质量 58.2</strong>：所有参评模型中最高，报告清晰、专业、可读。</li>
+          <li><strong>指令遵循 64.9</strong>：略逊于 Kimi-Researcher（66.7），是少数待补的点。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 class="sub2">分领域表现（vs Kimi-Researcher）</h4>
+        <ul class="clean" style="font-size:14.5px; margin-bottom:0">
+          <li><strong>AI &amp; ML</strong> 64.8 vs 57.4、<strong>历史分析</strong> 65.8 vs 61.4、<strong>技术文档</strong> 64.6 vs 53.1（且与 Gemini 并列居首）。</li>
+          <li><strong>创意写作</strong> 63.4 领先，说明底层逻辑与知识结构能泛化到分布外任务。</li>
+          <li>仍有提升空间：<strong>STEM</strong> 64.7、<strong>哲学</strong> 46.1，落后于 Gemini（70.7 / 53.5），源于高阶推理的固有复杂度。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub">专业领域硬骨头：金融 &amp; 法律（带致命负分）</h3>
+    <p style="color:var(--ink-soft)">金融、法律子集术语密度高、多阶段推理、有严格合规风险约束。论文加入<strong>显式负向评分</strong>，专业致命错误直接判该报告「不可用（0 分）」。结果呈清晰的三梯队分布：</p>
+    <div class="tablewrap">
+      <table class="data">
+        <tr><th>梯队</th><th>分数区间</th><th>系统</th></tr>
+        <tr class="tier1"><td class="c">Tier 1</td><td>25 – 35</td><td>Gemini DeepResearch（断层领先）</td></tr>
+        <tr><td class="c">Tier 2</td><td>15 – 25</td><td>Step-DeepResearch、Kimi-Researcher、Kimi-k2-thinking、OpenAI DeepResearch</td></tr>
+        <tr><td class="c">Tier 3</td><td>0 – 15</td><td>Qwen DeepResearch、MiniMax-M2、MiniMax Agent Pro、GLM-4.6</td></tr>
+      </table>
+    </div>
+    <p style="color:var(--ink-soft); font-size:15px">关键洞察：在严格负分约束下，<strong>agent 框架的流程优化无法弥补模型本身的知识缺口</strong>，分数更多与模型固有的领域知识覆盖相关。Step-DeepResearch 能站在第二梯队前列，正是得益于其金融 / 法律场景的领域专项训练，让它具备与更大参数模型相当的专业度。</p>
+
+    <details class="ex">
+      <summary>展开：Case Study —— 中期训练带来的真实差距（Table 6）</summary>
+      <div class="dbody">
+        <p style="margin-top:0">同一道关于「大模型 repo 级代码工程能力 / SWE 数据构造」的复杂研究 query，对比<strong>有中期训练</strong> vs <strong>无中期训练</strong>版本：</p>
+        <div class="tablewrap">
+          <table class="data">
+            <tr><th>维度</th><th>Step-DeepResearch（含 Mid-training）</th><th>w/o Mid-training</th></tr>
+            <tr><td class="c">需求契合</td><td>完整抓住用户多层次需求，明确优先列出给出 PR/Issue 与 repo 级数据构造与改写方案的工作。</td><td>仅部分遵循指令，对数据构造细节着墨有限、对齐更弱。</td></tr>
+            <tr><td class="c">信息完整度</td><td>覆盖更广：SWE-bench 系列、SWE-smith、SWE-Factory、Multi-SWE-bench、SWE-RL、DeepSWE、InstructCoder、Coeditor、RepoBench、SWE-agent-trajectories、SWE-Fixer。</td><td>只覆盖六项工作，遗漏了基础数据集与关键作者。</td></tr>
+            <tr><td class="c">内容深度</td><td>给出端到端数据处理流水线、具体代码级示例，深入讨论 Issue-PR 配对、测试用例隔离、自动化环境构建等机制，并配结构化对比表。</td><td>较浅，缺乏机制级讨论与对比。</td></tr>
+          </table>
+        </div>
+        <p>结论：中期训练带来的报告质量提升与<strong>规划、信息获取等原子能力的注入强相关</strong>——这也是消融对比中「有 vs 无中期训练」拿到 30 胜 21 负的微观解释。</p>
+      </div>
+    </details>
+
+    <h3 class="sub">针对 Deep Research 模式的三处定向优化</h3>
+    <div class="grid3">
+      <div class="card" style="margin:0">
+        <h4 class="sub2">写作风格</h4>
+        <p style="font-size:14px; margin:0">早期模型 rubric 高分（57）却被人评为「信息堆砌而非深度分析」——暴露 checklist 评分偏向「信息召回」而非结构连贯。引入 <strong>Synthesis-driven Drafting</strong> 把工具轨迹转成有逻辑演绎的段落、严格限制无序列表，并用 Pairwise LLM Judger 做质控。</p>
+      </div>
+      <div class="card" style="margin:0">
+        <h4 class="sub2">时间认知</h4>
+        <p style="font-size:14px; margin:0">即便注入显式时间戳，模型仍常「时间错乱」——把当前日期当成「模拟设定」，或习惯性给查询加上过去年份（如 2023/2024）。数据清洗时做<strong>严格时间逻辑校验</strong>，凡把时间无关查询锚到过去时间戳的轨迹一律剔除。</p>
+      </div>
+      <div class="card" style="margin:0">
+        <h4 class="sub2">语言一致性</h4>
+        <p style="font-size:14px; margin:0">针对中英文混杂影响可读性，用正则 + 语言密度检测，剔除不必要语言混用的低质轨迹，保证输出一致流畅。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LIMITATIONS ================= -->
+<section class="block" id="limit">
+  <div class="wrap">
+    <div class="kicker">局限与未来</div>
+    <h2 class="h">作者自己怎么看：还差哪几步</h2>
+    <p class="lead">论文在结论里坦诚列出了当前的短板，这往往比分数更能帮你判断「这套方法适不适合你的场景」。</p>
+    <div class="grid3">
+      <div class="card"><h4 class="sub2">工具使用的鲁棒性</h4><p style="font-size:14.5px; margin:0">面对 API 变动、异常返回、跨工具复杂组合的长链任务时，系统仍有脆弱点。</p></div>
+      <div class="card"><h4 class="sub2">正确性与事实性</h4><p style="font-size:14.5px; margin:0">高噪声、证据碎片化场景下，容易产生「看似合理却无法证实」的推断。</p></div>
+      <div class="card"><h4 class="sub2">报告可读与可审计</h4><p style="font-size:14.5px; margin:0">结构组织、结论与证据的显式映射，仍有提升空间。</p></div>
+    </div>
+    <div class="callout" style="margin-top:22px">
+      <strong>未来三个方向：</strong>① <strong>协作智能</strong>——引入 planner / retriever / verifier / writer 等专门角色的多 Agent 范式，用共识机制降幻觉；② <strong>环境适应性</strong>——让 Agent 在动态、部分可观测环境中持续探索与纠错；③ <strong>更严的训练目标</strong>——把事实一致性、可溯源引用纳入指标，结合偏好学习与过程监督，让输出从「看起来对」变成「可验证地、清楚地对」。
+    </div>
+    <div class="quote">
+      我们希望这项工作能启发社区，继续把自主 Agent 的前沿推向 AGI；并证明：通过精细的训练方案，<strong>中等规模模型也能达到专家级的深度研究能力</strong>。
+      <span class="en">… medium-sized models can achieve expert-level Deep Research capabilities … the most cost-effective Deep Research agent model currently available.</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p style="margin-bottom:6px">
+      原文：<a href="https://arxiv.org/abs/2512.20491" target="_blank" rel="noopener">Step-DeepResearch Technical Report</a>
+      · StepFun Agent-Team（阶跃星辰）· arXiv:2512.20491（2025.12，v4）· cs.CL
+    </p>
+    <p style="margin-bottom:6px">
+      代码 / 模型：<a href="https://github.com/stepfun-ai/StepDeepResearch" target="_blank" rel="noopener">github.com/stepfun-ai/StepDeepResearch</a>
+      · HTML 全文：<a href="https://arxiv.org/html/2512.20491v4" target="_blank" rel="noopener">arxiv.org/html/2512.20491v4</a>
+    </p>
+    <p class="disc">本页面为面向中文读者的教学性可视化解读，图片取自原论文 arXiv HTML 版（Figure 1a/1b、4、5）。所有数据与结论以原文为准；如有出入，请以原论文为准。</p>
+  </div>
+</footer>
+
+<script>
+// ---- expandable cards (toggle on header only) ----
+function toggleCard(headEl){
+  var card = headEl.closest('[data-exp]');
+  if(card){ card.classList.toggle('open'); }
+}
+
+// ---- figure detail toggle ----
+function toggleFigDetail(el){
+  var d = el.nextElementSibling;
+  if(!d) return;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// ---- training step animation ----
+var stepIndex = 0;
+var totalSteps = 4;
+function renderStep(){
+  var panes = document.querySelectorAll('#steppanel .pane');
+  for(var i=0;i<panes.length;i++){
+    panes[i].classList.toggle('active', i===stepIndex);
+  }
+  var stages = document.querySelectorAll('#stagebar .s');
+  for(var j=0;j<stages.length;j++){
+    stages[j].classList.remove('cur','done');
+    if(j<stepIndex){ stages[j].classList.add('done'); }
+    else if(j===stepIndex){ stages[j].classList.add('cur'); }
+  }
+  document.getElementById('stepCount').textContent = '第 ' + (stepIndex+1) + ' / ' + totalSteps + ' 步';
+  document.getElementById('prevBtn').disabled = (stepIndex===0);
+  document.getElementById('nextBtn').disabled = (stepIndex===totalSteps-1);
+}
+function stepMove(d){
+  stepIndex = Math.min(totalSteps-1, Math.max(0, stepIndex+d));
+  renderStep();
+}
+function goStep(i){
+  stepIndex = Math.min(totalSteps-1, Math.max(0, i));
+  renderStep();
+}
+renderStep();
+</script>
+</body>
+</html>

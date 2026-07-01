@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeepSeek-V3.2-Exp：用 DSA 稀疏注意力打通长上下文效率</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg2:#f4ead7;
+    --bg3:#e8dcc7;
+    --line:#dccdb4;
+    --ink:#2e2a23;
+    --ink2:#5d564a;
+    --ink3:#857c6c;
+    --accent:#bf6b3a;
+    --accent-soft:#f0e0cd;
+    --green:#5f8a52;
+    --green-soft:#e6efde;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.78;font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px;}
+  section{padding:46px 0;border-top:1px solid var(--line);}
+  section:first-of-type{border-top:none;}
+  h2{font-size:1.62rem;font-weight:800;letter-spacing:-.01em;margin:0 0 6px;line-height:1.3;}
+  h3{font-size:1.16rem;font-weight:700;margin:30px 0 10px;}
+  .sec-kicker{font-family:var(--mono);font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:10px;}
+  p{margin:13px 0;}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(191,107,58,.32);}
+  a:hover{border-bottom-color:var(--accent);}
+  strong{font-weight:700;color:var(--ink);}
+  ul{margin:13px 0;padding-left:0;list-style:none;}
+  ul li{position:relative;padding-left:22px;margin:9px 0;}
+  ul li::before{content:"";position:absolute;left:4px;top:.72em;width:6px;height:6px;border-radius:2px;background:var(--accent);opacity:.65;}
+  .lead{font-size:1.06rem;color:var(--ink2);}
+
+  /* ---------- top nav ---------- */
+  nav.top{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  nav.top .inner{max-width:880px;margin:0 auto;padding:9px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  nav.top .brand{font-weight:700;font-size:.92rem;color:var(--ink);white-space:nowrap;}
+  nav.top .brand b{color:var(--accent);}
+  nav.top .links{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;}
+  nav.top .links a{font-size:.8rem;color:var(--ink2);border:1px solid var(--line);border-radius:999px;padding:3px 11px;background:var(--bg);}
+  nav.top .links a:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ---------- header ---------- */
+  header.hero{padding:54px 0 40px;}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .badge{font-family:var(--mono);font-size:.74rem;padding:4px 11px;border-radius:6px;background:var(--bg2);border:1px solid var(--line);color:var(--ink2);}
+  .badge.accent{background:var(--accent-soft);border-color:#e3c8a8;color:#8a4a23;}
+  header.hero h1{font-size:2.35rem;line-height:1.18;font-weight:800;letter-spacing:-.02em;margin:0 0 14px;}
+  header.hero .sub{font-size:1.12rem;color:var(--ink2);max-width:680px;}
+  .src-row{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;}
+  .src-row a{display:inline-flex;align-items:center;gap:6px;font-size:.86rem;background:var(--ink);color:var(--bg);padding:8px 15px;border-radius:8px;border:none;}
+  .src-row a:hover{background:var(--accent);}
+  .src-row a.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line);}
+  .src-row a.ghost:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ---------- tldr ---------- */
+  .tldr{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:26px 28px;}
+  .tldr h2{font-size:1.05rem;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+  .tldr .big{font-size:1.14rem;color:var(--ink);line-height:1.75;}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0 4px;}
+  .metric{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px 14px;text-align:center;}
+  .metric .num{font-family:var(--mono);font-size:1.5rem;font-weight:600;color:var(--accent);line-height:1.15;}
+  .metric .lab{font-size:.8rem;color:var(--ink2);margin-top:6px;}
+
+  /* ---------- figures ---------- */
+  figure{margin:26px 0;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  figure img{width:100%;display:block;border-radius:8px;background:#fff;border:1px solid var(--line);}
+  .fig-cap{margin-top:12px;font-size:.93rem;color:var(--ink2);}
+  .fig-cap .fnum{font-family:var(--mono);font-size:.78rem;color:var(--accent);font-weight:600;}
+  .fig-toggle{display:inline-block;margin-top:8px;font-size:.85rem;color:var(--accent);cursor:pointer;user-select:none;font-weight:600;}
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .42s ease,opacity .3s ease,margin .3s ease;opacity:0;}
+  .figure-detail.active{max-height:1600px;opacity:1;margin-top:12px;}
+  .figure-detail ul{margin:0;}
+  .figure-detail li{font-size:.92rem;color:var(--ink2);}
+  .figure-detail .sumline{font-size:.9rem;color:var(--ink);background:var(--bg);border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:10px;}
+
+  /* ---------- expandable card ---------- */
+  .xcard{border:1px solid var(--line);border-radius:13px;margin:16px 0;background:var(--bg2);overflow:hidden;}
+  .xcard .xhead{padding:16px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:13px;user-select:none;}
+  .xcard .xhead:hover{background:var(--bg3);}
+  .xcard .chev{flex-shrink:0;width:20px;height:20px;margin-top:2px;transition:transform .3s ease;color:var(--accent);}
+  .xcard.open .chev{transform:rotate(90deg);}
+  .xcard .xt{flex:1;}
+  .xcard .xtitle{font-weight:700;font-size:1.02rem;}
+  .xcard .xtag{font-family:var(--mono);font-size:.68rem;background:var(--accent-soft);color:#8a4a23;padding:2px 7px;border-radius:5px;margin-left:8px;white-space:nowrap;}
+  .xcard .xsum{font-size:.88rem;color:var(--ink3);margin-top:4px;}
+  .xcard .xbody{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+  .xcard.open .xbody{max-height:3000px;}
+  .xcard .xinner{padding:2px 18px 20px;}
+
+  /* ---------- step animation ---------- */
+  .stepper{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:22px;margin:24px 0;}
+  .stage-track{display:flex;gap:10px;margin-bottom:18px;}
+  .stage-pill{flex:1;text-align:center;font-size:.82rem;padding:9px 6px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink3);transition:all .3s ease;font-weight:600;}
+  .stage-pill.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .stage-pill.done{background:var(--green-soft);color:var(--green);border-color:#cfe0c2;}
+  .stage-view{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:18px;min-height:148px;}
+  .stage-view h4{margin:0 0 4px;font-size:1.05rem;}
+  .stage-view .meta{font-family:var(--mono);font-size:.76rem;color:var(--accent);margin-bottom:10px;}
+  .stage-view p{margin:8px 0;font-size:.95rem;color:var(--ink2);}
+  .stage-ctrl{display:flex;gap:10px;margin-top:16px;align-items:center;}
+  .btn{font-family:var(--sans);font-size:.86rem;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;transition:all .2s ease;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.primary:hover{background:#a85a2d;color:#fff;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .step-count{font-size:.82rem;color:var(--ink3);margin-left:auto;font-family:var(--mono);}
+
+  /* ---------- math / formula ---------- */
+  .formula{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:16px 0;font-family:var(--mono);font-size:.98rem;color:var(--ink);overflow-x:auto;text-align:center;}
+  .formula .eqn{font-style:italic;}
+  .formula sub,.formula sup{font-style:normal;font-size:.7em;}
+  .formula .tag{float:right;color:var(--ink3);font-size:.82rem;font-style:normal;}
+
+  /* ---------- quote ---------- */
+  .quote{border-left:3px solid var(--accent);background:var(--bg2);padding:14px 20px;border-radius:0 10px 10px 0;margin:22px 0;color:var(--ink2);font-size:.97rem;}
+  .quote .who{display:block;margin-top:8px;font-size:.82rem;color:var(--ink3);font-family:var(--mono);}
+
+  /* ---------- compare table ---------- */
+  .tbl-wrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:12px;}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;}
+  th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--line);}
+  th{background:var(--bg3);font-weight:700;font-size:.82rem;}
+  td.num,th.num{text-align:center;font-family:var(--mono);}
+  tr:last-child td{border-bottom:none;}
+  .up{color:var(--green);font-weight:600;}
+  .dn{color:var(--accent);font-weight:600;}
+  .grp{background:var(--bg2);font-weight:700;font-size:.8rem;color:var(--ink2);}
+
+  /* ---------- two col ---------- */
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;}
+  .pane{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--bg2);}
+  .pane h4{margin:0 0 6px;font-size:.98rem;display:flex;align-items:center;gap:7px;}
+  .pane .tagline{font-size:.8rem;color:var(--ink3);font-family:var(--mono);margin-bottom:8px;}
+  .pane p{font-size:.92rem;color:var(--ink2);margin:7px 0;}
+
+  /* ---------- diagram (self-made svg) ---------- */
+  .svgbox{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px;margin:24px 0;}
+  .svgbox svg{width:100%;height:auto;display:block;}
+  .svg-cap{font-size:.88rem;color:var(--ink3);margin-top:12px;text-align:center;}
+
+  details{margin:14px 0;border:1px solid var(--line);border-radius:11px;background:var(--bg2);padding:0 16px;}
+  details summary{cursor:pointer;padding:14px 0;font-weight:600;font-size:.95rem;list-style:none;display:flex;align-items:center;gap:8px;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:"▸";color:var(--accent);transition:transform .25s;}
+  details[open] summary::before{transform:rotate(90deg);}
+  details .dbody{padding:0 0 16px;font-size:.93rem;color:var(--ink2);}
+  details .dbody code,code.inl{font-family:var(--mono);font-size:.85em;background:var(--bg3);padding:1px 6px;border-radius:4px;}
+
+  footer{border-top:1px solid var(--line);padding:36px 0 60px;color:var(--ink3);font-size:.88rem;}
+  footer a{color:var(--ink2);}
+  .note{font-size:.84rem;color:var(--ink3);background:var(--bg2);border:1px dashed var(--line);border-radius:10px;padding:12px 16px;margin:18px 0;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    header.hero h1{font-size:1.8rem;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .twocol{grid-template-columns:1fr;}
+    nav.top .brand{font-size:.82rem;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="inner">
+    <span class="brand"><b>DSA</b> · DeepSeek-V3.2-Exp 解读</span>
+    <div class="links">
+      <a href="#tldr">速览</a>
+      <a href="#problem">问题</a>
+      <a href="#baseline">基线</a>
+      <a href="#dsa">DSA 方法</a>
+      <a href="#train">训练</a>
+      <a href="#results">结论</a>
+      <a href="https://github.com/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener">原文 ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="badges">
+    <span class="badge accent">2025.09 · 技术报告 Tech Report</span>
+    <span class="badge">DeepSeek-AI</span>
+    <span class="badge">开源 · MIT License</span>
+    <span class="badge">实验版 Experimental</span>
+  </div>
+  <h1>DeepSeek-V3.2-Exp：用稀疏注意力<br/>打通长上下文的效率瓶颈</h1>
+  <p class="sub">在 V3.1-Terminus 基础上，仅通过「继续训练」引入 <strong>DeepSeek 稀疏注意力（DSA）</strong>，把核心注意力的计算复杂度从 O(L²) 降到 O(Lk)。长文本训练与推理大幅提速、API 降价 50%+，而模型质量几乎不变。</p>
+  <div class="src-row">
+    <a href="https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf" target="_blank" rel="noopener">📄 技术报告 PDF</a>
+    <a class="ghost" href="https://github.com/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener">GitHub 仓库</a>
+    <a class="ghost" href="https://api-docs.deepseek.com/news/news250929" target="_blank" rel="noopener">官方发布说明</a>
+    <a class="ghost" href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener">HuggingFace 权重</a>
+  </div>
+</header>
+
+<!-- ============ TL;DR ============ -->
+<section id="tldr" style="border-top:none;padding-top:8px;">
+  <div class="tldr">
+    <h2>⚡ 一句话核心</h2>
+    <p class="big">标准注意力让每个 token 都去看「前面所有 token」，序列越长成本按 <strong>平方</strong> 暴涨。DSA 给模型加了一个轻量「<strong>闪电索引器</strong>」先快速打分，每个 query 只<strong>挑出最相关的 2048 个 token</strong> 做真正的注意力计算——长上下文成本骤降，质量却和稠密版基本持平。它是 DeepSeek 迈向下一代架构的一块「实验性垫脚石」。</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">O(L²)→O(Lk)</div><div class="lab">核心注意力复杂度</div></div>
+    <div class="metric"><div class="num">top-2048</div><div class="lab">每 query 只选这么多 KV</div></div>
+    <div class="metric"><div class="num">50%+</div><div class="lab">API 价格直接下调</div></div>
+    <div class="metric"><div class="num">≈ 持平</div><div class="lab">对比 V3.1-Terminus 的精度</div></div>
+  </div>
+
+  <h3>读这篇你会 get 到什么</h3>
+  <ul>
+    <li><strong>为什么长上下文这么贵</strong>：注意力的二次方成本墙，以及它如何卡住长文档、Agent、长链推理。</li>
+    <li><strong>DSA 怎么做</strong>：闪电索引器 + top-k 选择两件套，如何嫁接在 MLA 之上。</li>
+    <li><strong>怎么把稠密模型「改造」成稀疏</strong>：两阶段继续训练（稠密热身 → 稀疏适配）的精巧设计。</li>
+    <li><strong>代价是什么</strong>：几乎不掉点，少数指标的小幅波动作者也给了诚实解释。</li>
+  </ul>
+</section>
+
+<!-- ============ 问题 ============ -->
+<section id="problem">
+  <div class="sec-kicker">The Problem</div>
+  <h2>长上下文的「二次方成本墙」</h2>
+  <p>Transformer 的注意力机制里，序列中<strong>每一个 token 都要和它前面的所有 token 算一次相关性</strong>。当上下文长度为 L 时，这一步的计算量正比于 L²。上下文翻一倍，注意力的计算和显存读写就翻四倍。</p>
+  <p>对于今天的长文档问答、代码仓库级理解、长链思维推理、以及需要把大量历史塞进上下文的 Agent 来说，L 动辄几万到十几万。<strong>注意力很快从「不起眼的一步」变成主导整条推理成本的瓶颈</strong>——尤其在 128K 这种长度下。</p>
+  <p>直觉上，模型真的需要让每个 token 都精读前面十几万个 token 吗？显然不必。<strong>绝大多数注意力权重都集中在少数几个真正相关的 token 上</strong>，其余的几乎是浪费。稀疏注意力的核心赌注就是：只要能<strong>又快又准地挑出那几个关键 token</strong>，就能省掉绝大部分计算，而几乎不损失效果。难点在「又快又准地挑」——挑选本身不能比省下来的计算还贵。</p>
+
+  <div class="svgbox">
+    <svg viewBox="0 0 720 230" role="img" aria-label="稠密注意力 vs 稀疏注意力示意">
+      <!-- left: dense -->
+      <text x="120" y="22" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="600" fill="#2e2a23">稠密注意力 · O(L²)</text>
+      <!-- query token -->
+      <circle cx="120" cy="180" r="13" fill="#bf6b3a"/>
+      <text x="120" y="184" text-anchor="middle" font-size="11" fill="#fff" font-family="JetBrains Mono">qₜ</text>
+      <!-- previous tokens row -->
+      <g>
+        <!-- all lines to all tokens -->
+        <line x1="120" y1="167" x2="30"  y2="70" stroke="#c9b79a" stroke-width="1.3"/>
+        <line x1="120" y1="167" x2="65"  y2="70" stroke="#c9b79a" stroke-width="1.3"/>
+        <line x1="120" y1="167" x2="100" y2="70" stroke="#c9b79a" stroke-width="1.3"/>
+        <line x1="120" y1="167" x2="135" y2="70" stroke="#c9b79a" stroke-width="1.3"/>
+        <line x1="120" y1="167" x2="170" y2="70" stroke="#c9b79a" stroke-width="1.3"/>
+        <line x1="120" y1="167" x2="205" y2="70" stroke="#c9b79a" stroke-width="1.3"/>
+      </g>
+      <g fill="#e8dcc7" stroke="#c9b79a">
+        <circle cx="30"  cy="60" r="11"/><circle cx="65" cy="60" r="11"/><circle cx="100" cy="60" r="11"/>
+        <circle cx="135" cy="60" r="11"/><circle cx="170" cy="60" r="11"/><circle cx="205" cy="60" r="11"/>
+      </g>
+      <text x="120" y="212" text-anchor="middle" font-size="11.5" fill="#857c6c">看全部 → 大多是浪费</text>
+
+      <!-- divider -->
+      <line x1="360" y1="40" x2="360" y2="200" stroke="#dccdb4" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+      <!-- right: sparse -->
+      <text x="540" y="22" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="600" fill="#5f8a52">DSA 稀疏注意力 · O(Lk)</text>
+      <circle cx="540" cy="180" r="13" fill="#bf6b3a"/>
+      <text x="540" y="184" text-anchor="middle" font-size="11" fill="#fff" font-family="JetBrains Mono">qₜ</text>
+      <!-- indexer node -->
+      <rect x="585" y="150" width="60" height="26" rx="6" fill="#e6efde" stroke="#5f8a52"/>
+      <text x="615" y="167" text-anchor="middle" font-size="10.5" fill="#5f8a52" font-family="JetBrains Mono">索引器</text>
+      <line x1="553" y1="176" x2="585" y2="166" stroke="#5f8a52" stroke-width="1.3"/>
+      <!-- selected lines (2 green) + faded -->
+      <line x1="540" y1="167" x2="485" y2="70" stroke="#5f8a52" stroke-width="2.2"/>
+      <line x1="540" y1="167" x2="590" y2="70" stroke="#5f8a52" stroke-width="2.2"/>
+      <line x1="540" y1="167" x2="450" y2="70" stroke="#e3d6bf" stroke-width="1"/>
+      <line x1="540" y1="167" x2="520" y2="70" stroke="#e3d6bf" stroke-width="1"/>
+      <line x1="540" y1="167" x2="555" y2="70" stroke="#e3d6bf" stroke-width="1"/>
+      <line x1="540" y1="167" x2="625" y2="70" stroke="#e3d6bf" stroke-width="1"/>
+      <g stroke="#cfcabe">
+        <circle cx="450" cy="60" r="11" fill="#f0ead9"/>
+        <circle cx="485" cy="60" r="11" fill="#5f8a52"/>
+        <circle cx="520" cy="60" r="11" fill="#f0ead9"/>
+        <circle cx="555" cy="60" r="11" fill="#f0ead9"/>
+        <circle cx="590" cy="60" r="11" fill="#5f8a52"/>
+        <circle cx="625" cy="60" r="11" fill="#f0ead9"/>
+      </g>
+      <text x="540" y="212" text-anchor="middle" font-size="11.5" fill="#857c6c">索引器先打分 → 只看 top-k</text>
+    </svg>
+    <div class="svg-cap">示意图（依据论文方法自制）：左边稠密注意力对所有历史 token 一视同仁；右边 DSA 先用轻量索引器打分，只把计算花在少数被选中的 token 上。</div>
+  </div>
+</section>
+
+<!-- ============ 基线 ============ -->
+<section id="baseline">
+  <div class="sec-kicker">Baseline · 出发点</div>
+  <h2>它从哪儿改：V3.1-Terminus 的稠密 MLA</h2>
+  <p>V3.2-Exp <strong>不是从零训练的新模型</strong>。它的起点是 DeepSeek-V3.1 系列的最后一版 <strong>V3.1-Terminus</strong>（上下文已扩展到 128K）。报告强调：相比 V3.1-Terminus，V3.2-Exp <strong>唯一的架构改动就是引入 DSA</strong>——其余一切（参数规模、训练数据分布、后训练流程）都刻意对齐，目的就是干净地把「引入稀疏注意力」这一个变量的影响隔离出来。</p>
+  <p>V3.1 用的注意力是 DeepSeek 自家的 <strong>MLA（Multi-head Latent Attention，多头潜在注意力）</strong>。MLA 把每个 token 的 key/value 压缩成一个低维「潜在向量」来省显存，但它本质上仍是<strong>稠密</strong>的：每个 query 还是要扫过前面所有的潜在向量。这正是 DSA 要动手的地方——把「扫全部」换成「只扫挑出来的 top-k」。</p>
+
+  <div class="xcard" id="card-mla">
+    <div class="xhead" onclick="toggleCard('card-mla')">
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+      <div class="xt">
+        <div class="xtitle">MLA 的两种运行模式：MHA 与 MQA<span class="xtag">附录 A · 原图</span></div>
+        <div class="xsum">为什么 DSA 要选 MQA 模式来实例化——一句话：让每个 KV 被所有 query 头共享，稀疏 kernel 才划算。</div>
+      </div>
+    </div>
+    <div class="xbody"><div class="xinner">
+      <p>MLA 有两种等价的展开方式。V3.1-Terminus 中：<strong>训练 / prefilling 用 MHA 模式</strong>（多头，各头有独立 KV），<strong>decoding 用 MQA 模式</strong>（多 query 共享同一份压缩潜在向量）。两种模式之间可以相互转换。</p>
+      <figure>
+        <img src="assets/fig4_mla_modes.png" alt="MLA 的 MHA 与 MQA 两种模式" />
+        <div class="fig-cap"><span class="fnum">Figure 4（附录）</span> MLA 的 MHA 模式（左）与 MQA 模式（右）示意。</div>
+        <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+        <div class="figure-detail">
+          <ul>
+            <li><strong>共同的两端</strong>：两张图都从底部「Input Hidden hₜ」出发，最终汇到顶部「Output Hidden uₜ」，中间是 Core Attention 模块。</li>
+            <li><strong>MHA 模式（左）</strong>：标注为 Multi-Head Attention。每个注意力头各自有自己的 key（kᶜ）、value（vᶜ）和 RoPE 分量 kᴿ，KV 不共享。这种模式表达力强，适合训练和 prefilling 阶段一次性处理整段序列。</li>
+            <li><strong>MQA 模式（右）</strong>：标注为 Multi-Query Attention。所有 query 头共享同一份压缩潜在向量 cᴷⱽ（图中右侧那一条），通过 W·c 在线还原出各头所需的量。KV 缓存极小，适合逐 token 的 decoding。</li>
+            <li><strong>为什么 DSA 选 MQA</strong>：在 kernel 层面，稀疏注意力要高效，必须让<strong>同一个被选中的 KV 条目被多个 query 共享</strong>（否则每个头各挑各的，访存无法对齐、稀疏白做）。MQA 模式天然满足这一点，所以 DSA 基于 MLA 的 MQA 模式来实例化。</li>
+          </ul>
+          <div class="sumline">一句话：MQA 模式让「一份 KV 服务所有 query 头」，这是稀疏 kernel 能跑得快的前提。</div>
+        </div>
+      </figure>
+    </div></div>
+  </div>
+
+  <div class="quote">
+    DSA 并非凭空出现。它的精神前身是 DeepSeek 同团队在 <strong>NSA（Native Sparse Attention，原生稀疏注意力）</strong> 上的工作——一种「硬件对齐、可原生训练」的稀疏注意力。报告正是引用 NSA 的结论来论证「每个 KV 条目必须被多个 query 共享」这一 kernel 设计约束。
+    <span class="who">Yuan et al., Native Sparse Attention, ACL 2025 · <a href="https://aclanthology.org/2025.acl-long.1126/" target="_blank" rel="noopener">aclanthology.org ↗</a></span>
+  </div>
+</section>
+
+<!-- ============ DSA 方法 ============ -->
+<section id="dsa">
+  <div class="sec-kicker">Core Method · 重头戏</div>
+  <h2>DeepSeek 稀疏注意力（DSA）怎么工作</h2>
+  <p>DSA 的原型由两个部件组成，配合完成「先选、再算」的两步走：一个负责<strong>快速打分挑人</strong>的闪电索引器，一个负责<strong>只对挑中者做注意力</strong>的细粒度选择机制。下面这张图是全文最重要的一张——它展示了 DSA 如何嵌进 MLA 的注意力流水线。</p>
+
+  <figure>
+    <img src="assets/fig1_dsa_arch.png" alt="DeepSeek-V3.2-Exp 的 DSA 注意力架构" />
+    <div class="fig-cap"><span class="fnum">Figure 1</span> DeepSeek-V3.2-Exp 的注意力架构：DSA 实例化在 MLA 之上。<strong>绿色部分</strong>就是 DSA 新增的「按索引器选 top-k KV」的通路。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><strong>底部入口 · Input Hidden hₜ</strong>：当前 token 的隐藏向量，是所有分支共同的输入，向上同时喂给主注意力和绿色的索引器。</li>
+        <li><strong>左侧主干（黑色）· MLA 注意力</strong>：hₜ 经 cₜ^Q 投影出 query，拆成压缩分量 q^C 与 RoPE 分量 q^R 后 concatenate；KV 侧得到压缩潜在向量 c^KV 与 k^R。这条主干就是原来 V3.1 的稠密 MLA。</li>
+        <li><strong>右侧绿色 · Lightning Indexer（闪电索引器）</strong>：从 hₜ 另外算出索引专用的 q^I、k^I 和权重 w^I（部分施加 RoPE），用一个很轻的打分公式算出 query 对每个历史 token 的「索引分数」。它头数少、可用 FP8，所以极快。</li>
+        <li><strong>中间绿色 · Top-k Selector（top-k 选择器）</strong>：拿索引器的分数排序，只保留得分最高的 k 个 KV 条目，其余全部丢弃。这是把 O(L²) 砍成 O(Lk) 的关键开关。</li>
+        <li><strong>顶部 · Multi-Query Attention（Core Attention）</strong>：真正的注意力只在被选中的少数 KV 上进行，输出 oₜ，再汇成 Output Hidden uₜ。绿色箭头标明「索引器打分 → 选择器筛选 → 核心注意力只算选中项」这条数据流。</li>
+      </ul>
+      <div class="sumline">一句话：绿色通路是 DSA 的全部新增——一个轻量索引器在旁边快速打分，选择器据此把昂贵的核心注意力限制在少数关键 token 上。</div>
+    </div>
+  </figure>
+
+  <h3>① 闪电索引器：又快又粗地打分</h3>
+  <p>索引器要回答一个问题：对当前 query token hₜ 来说，前面的某个 token hₛ <strong>值不值得细看</strong>？它给出一个索引分数 Iₜ,ₛ：</p>
+  <div class="formula">
+    <span class="tag">(1)</span>
+    <span class="eqn">I<sub>t,s</sub> = Σ<sub>j=1</sub><sup>Hᴵ</sup> w<sup>I</sup><sub>t,j</sub> · ReLU( q<sup>I</sup><sub>t,j</sub> · k<sup>I</sup><sub>s</sub> )</span>
+  </div>
+  <ul>
+    <li><strong>少数头（Hᴵ 很小）</strong>：索引器只有很少几个头，远少于主注意力，天生省算。</li>
+    <li><strong>ReLU 而非 Softmax</strong>：作者明说是为了<strong>吞吐量</strong>——ReLU 比 Softmax 便宜得多，索引器只需粗排，不需要精确的概率分布。</li>
+    <li><strong>可用 FP8</strong>：索引器精度要求低，可以低精度实现，进一步压成本。</li>
+  </ul>
+  <p>正因为「头少 + ReLU + FP8」，索引器虽然形式上仍是对所有 token 打分（复杂度 O(L²)），但<strong>每一分的单价极低</strong>，比让主注意力直接稠密计算便宜太多。</p>
+
+  <h3>② 细粒度 top-k 选择：只对挑中者做注意力</h3>
+  <p>有了每个 query 的索引分数 {Iₜ,ₛ}，选择机制只取分数最高的 k 个对应的 KV 条目 {cₛ}，然后<strong>只在这些被选中的条目上</strong>做真正的注意力：</p>
+  <div class="formula">
+    <span class="tag">(2)</span>
+    <span class="eqn">u<sub>t</sub> = Attn( h<sub>t</sub> , { c<sub>s</sub> : I<sub>t,s</sub> ∈ Top-k(I<sub>t,:</sub>) } )</span>
+  </div>
+  <p>这里的「细粒度」是指：选择以<strong>单个 token / KV 条目</strong>为单位，而不是粗暴地按块（block）丢弃。报告称这是<strong>首次实现细粒度稀疏注意力</strong>，且在几乎不损质量的前提下大幅提效。训练时取的 <code class="inl">k = 2048</code>。</p>
+
+  <h3>③ 嫁接在 MLA 之上（MQA 模式）</h3>
+  <p>为了能从 V3.1-Terminus <strong>继续训练</strong>而不是重训，DSA 直接实例化在 MLA 上。具体选 MLA 的 <strong>MQA 模式</strong>：让每个潜在向量（即 MLA 的 KV 条目）被该 token 的<strong>所有 query 头共享</strong>。这样一来，「被选中的 KV」对所有头是同一批，访存对齐，稀疏 kernel 才能真正跑出加速——否则各头各选各的，稀疏只是纸面上的。</p>
+</section>
+
+<!-- ============ 训练 ============ -->
+<section id="train">
+  <div class="sec-kicker">Training · 改造手术</div>
+  <h2>怎么把稠密模型「续训」成稀疏</h2>
+  <p>难点在于：直接给一个训练好的稠密模型套上 top-k 稀疏，会因为分布突变而掉点。DeepSeek 的做法是<strong>分两阶段继续预训练</strong>，先让索引器学会模仿稠密注意力的「注意力偏好」，再放开稀疏。两阶段的数据分布都和 V3.1-Terminus 的 128K 长上下文扩展数据完全对齐。点击下面的「下一步」跟着走一遍。</p>
+
+  <div class="stepper" id="train-stepper">
+    <div class="stage-track">
+      <div class="stage-pill on" data-i="0">① 稠密热身</div>
+      <div class="stage-pill" data-i="1">② 稀疏训练</div>
+      <div class="stage-pill" data-i="2">③ 后训练</div>
+    </div>
+    <div class="stage-view" id="stage-view"></div>
+    <div class="stage-ctrl">
+      <button class="btn" id="btn-prev" onclick="stepMove(-1)">← 上一步</button>
+      <button class="btn primary" id="btn-next" onclick="stepMove(1)">下一步 →</button>
+      <span class="step-count" id="step-count"></span>
+    </div>
+  </div>
+
+  <p>这套设计里有一个特别关键的细节，值得单独点出：</p>
+  <div class="quote">
+    在稀疏阶段，作者<strong>把索引器的输入从计算图里 detach（切断梯度）</strong>，让两套信号互不干扰：<strong>索引器只由 KL 对齐损失 L<sub>I</sub> 训练</strong>（学着模仿主注意力该关注谁），<strong>主模型只由语言建模损失训练</strong>（学着在稀疏条件下把任务做好）。各司其职，避免两个目标互相拉扯。
+    <span class="who">§2.1 Sparse Training Stage</span>
+  </div>
+
+  <div class="xcard" id="card-post">
+    <div class="xhead" onclick="toggleCard('card-post')">
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+      <div class="xt">
+        <div class="xtitle">后训练细节：专家蒸馏 + 单阶段混合 RL<span class="xtag">§2.2</span></div>
+        <div class="xsum">为隔离 DSA 的影响，后训练流程、算法、数据全部沿用 V3.1-Terminus——但 RL 改成了「一锅炖」。</div>
+      </div>
+    </div>
+    <div class="xbody"><div class="xinner">
+      <p><strong>专家蒸馏（Specialist Distillation）</strong>：先为每个领域各训练一个「专科模型」，都从同一个 V3.2 预训练基座微调而来，覆盖数学、竞赛编程、通用逻辑推理、Agent 编程、Agent 搜索五个专业领域，外加写作与通用问答。每个专科用大规模 RL 训练，再用它们生产领域数据来蒸馏最终模型。报告说：蒸馏后的模型只比专科略低，<strong>这点差距随后用 RL 训练就能补平</strong>。思考模式（长链 CoT）与非思考模式（直接回答）由不同模型分别生成数据。</p>
+      <p><strong>混合 RL（Mixed RL Training）</strong>：算法仍是 <strong>GRPO</strong>。与以往 DeepSeek 多阶段 RL 不同，这次把<strong>推理、Agent、人类对齐三类训练合并进单一 RL 阶段</strong>。好处是既能平衡多领域表现，又能<strong>避开多阶段训练常见的「灾难性遗忘」</strong>。奖励设计：推理与 Agent 任务用基于规则的结果奖励 + 长度惩罚 + 语言一致性奖励；通用任务用「每条 prompt 自带评分细则（rubric）」的生成式奖励模型。整体权衡两对矛盾：长度 vs 准确率、语言一致性 vs 准确率。</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ 实验结论 ============ -->
+<section id="results">
+  <div class="sec-kicker">Results · 一句话结论</div>
+  <h2>效果：几乎不掉点，长上下文成本骤降</h2>
+  <p>因为训练配置刻意和 V3.1-Terminus 对齐，这套对比能干净地回答一个问题：<strong>引入稀疏，到底要付出多少质量代价？</strong>答案是——几乎没有。</p>
+
+  <h3>① 长上下文推理成本：这才是重点</h3>
+  <p>DSA 把核心注意力从 O(L²) 降到 O(Lk)。虽然索引器本身仍是 O(L²)，但它的单价远低于稠密 MLA，所以端到端依然大幅加速。下图是在 H800 集群（按 2 USD/GPU·小时折算）实测的每百万 token 成本随位置变化：</p>
+  <figure>
+    <img src="assets/cost.jpg" alt="V3.1-Terminus 与 V3.2-Exp 在 H800 上的推理成本对比" />
+    <div class="fig-cap"><span class="fnum">Figure 3</span> Prefilling（左）与 Decoding（右）的每百万 token 成本随 token 位置的变化。蓝线 = V3.1-Terminus，橙线 = V3.2-Exp。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><strong>横轴 token 位置（0K→128K），纵轴每百万 token 成本（美元）</strong>：位置越靠后，说明上下文越长，注意力成本越高。</li>
+        <li><strong>蓝线（V3.1-Terminus，稠密）</strong>：成本随位置近似<strong>线性陡增</strong>（反映 O(L²) 的边际成本随长度上升），到 128K 时显著偏高。</li>
+        <li><strong>橙线（V3.2-Exp，DSA）</strong>：曲线<strong>平缓得多</strong>，长上下文端的成本远低于蓝线，二者差距随位置拉大。</li>
+        <li><strong>Decoding 端（右图）差距更夸张</strong>：逐 token 生成时，稀疏带来的节省被放大，长序列下橙线几乎贴着底部。</li>
+        <li><strong>短序列的特别处理</strong>：报告提到对短序列 prefilling 专门实现了一个 masked MHA 模式来「模拟」DSA，在短上下文下也能更高效——所以两条线在很短处几乎重合。</li>
+      </ul>
+      <div class="sumline">一句话：上下文越长，DSA 省得越多；这正是 API 能直接降价 50%+ 的底气。（图中具体数值为读自原图的近似刻度）</div>
+    </div>
+  </figure>
+
+  <h3>② 质量：和 V3.1-Terminus 基本持平</h3>
+  <p>跨多个领域的公开 benchmark 上，V3.2-Exp 与 V3.1-Terminus <strong>互有胜负、整体持平</strong>：部分指标略涨（如 AIME 2025、Codeforces、BrowseComp），少数略降。作者对略降的几项给了诚实解释——<strong>不是稀疏伤了能力，而是 V3.2-Exp 生成的推理 token 更少</strong>；用「输出 token 数相当」的中间检查点对比时，差距就消失了。</p>
+
+  <details>
+    <summary>展开完整 benchmark 对比表（Table 1）</summary>
+    <div class="dbody">
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Benchmark（指标）</th><th class="num">V3.1-Terminus</th><th class="num">V3.2-Exp</th></tr></thead>
+        <tbody>
+          <tr><td class="grp" colspan="3">General · 通用</td></tr>
+          <tr><td>MMLU-Pro (EM)</td><td class="num">85.0</td><td class="num">85.0</td></tr>
+          <tr><td>GPQA-Diamond (Pass@1)</td><td class="num">80.7</td><td class="num dn">79.9</td></tr>
+          <tr><td>Humanity's Last Exam (Pass@1)</td><td class="num">21.7</td><td class="num dn">19.8</td></tr>
+          <tr><td class="grp" colspan="3">Search Agent · 搜索智能体</td></tr>
+          <tr><td>BrowseComp (Acc.)</td><td class="num">38.5</td><td class="num up">40.1</td></tr>
+          <tr><td>BrowseComp-zh (Acc.)</td><td class="num">45.0</td><td class="num up">47.9</td></tr>
+          <tr><td>SimpleQA (Acc.)</td><td class="num">96.8</td><td class="num up">97.1</td></tr>
+          <tr><td class="grp" colspan="3">Code · 代码</td></tr>
+          <tr><td>LiveCodeBench (2408–2505)</td><td class="num">74.9</td><td class="num dn">74.1</td></tr>
+          <tr><td>Codeforces-Div1 (Rating)</td><td class="num">2046</td><td class="num up">2121</td></tr>
+          <tr><td>Aider-Polyglot (Acc.)</td><td class="num">76.1</td><td class="num dn">74.5</td></tr>
+          <tr><td class="grp" colspan="3">Code Agent · 代码智能体</td></tr>
+          <tr><td>SWE Verified (Agent)</td><td class="num">68.4</td><td class="num dn">67.8</td></tr>
+          <tr><td>SWE-bench Multilingual</td><td class="num">57.8</td><td class="num up">57.9</td></tr>
+          <tr><td>Terminal-bench</td><td class="num">36.7</td><td class="num up">37.7</td></tr>
+          <tr><td class="grp" colspan="3">Math · 数学</td></tr>
+          <tr><td>AIME 2025 (Pass@1)</td><td class="num">88.4</td><td class="num up">89.3</td></tr>
+          <tr><td>HMMT 2025 (Pass@1)</td><td class="num">86.1</td><td class="num dn">83.6</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p style="font-size:.85rem;color:var(--ink3);margin-top:10px;"><span class="up">绿色</span> = V3.2-Exp 更高，<span class="dn">橙色</span> = 略低。GPQA / HLE / HMMT 的下降被作者归因于「生成 token 更少」，用 token 数相当的检查点对比时差距收敛。</p>
+    </div>
+  </details>
+
+  <h3>③ 训练稳定性：RL 曲线高度重合</h3>
+  <p>作者还对比了两个模型在 BrowseComp 与 SWE Verified 上的 RL 训练曲线，二者<strong>走势紧密贴合</strong>，说明在 DSA 下继续训练是稳定的，并没有因为稀疏而出现训练动力学上的异常。</p>
+  <figure>
+    <img src="assets/fig2_rl_curves.png" alt="V3.1-Terminus 与 V3.2-Exp 的 RL 训练曲线" />
+    <div class="fig-cap"><span class="fnum">Figure 2</span> 在 BrowseComp（左）与 SWE Verified（右）上的 RL 训练曲线。实线 = 准确率，虚线 = 平均输出 token 数。</div>
+    <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><strong>横轴 = RL 训练步数，左纵轴 = 准确率（实线），右纵轴 = 平均输出 token 数（虚线）</strong>。</li>
+        <li><strong>蓝 = V3.1-Terminus，橙 = V3.2-Exp</strong>：两条准确率实线在整个训练过程中几乎缠绕在一起，随步数稳步上升。</li>
+        <li><strong>含义</strong>：稀疏注意力没有破坏 RL 的收敛行为——V3.2-Exp 的提升节奏与稠密版几乎一致，佐证了 DSA 的训练稳定性。</li>
+      </ul>
+      <div class="sumline">一句话：曲线重合 = 「换成稀疏」几乎不影响 RL 的学习动力学。</div>
+    </div>
+  </figure>
+
+  <h3>④ 作者自己的保留</h3>
+  <p>报告结尾很克制：尽管内部评测结果乐观，团队<strong>仍在真实世界的大规模场景里继续验证</strong>，以排查稀疏注意力架构可能存在的潜在局限。这也是它被命名为「<strong>Exp</strong>（实验版）」、并被定位为迈向下一代架构「中间一步」的原因。</p>
+
+  <div class="note">说明：本页内容全部基于实际获取的材料——技术报告 PDF（已用 pdftotext 全文抽取）、GitHub README（含 Table 1 与官方 cost 图）、以及官方发布说明。Figure 1 / 2 / 4 由 PDF 原页裁切而来，Figure 3（cost）取自仓库原图。图 3 中的具体美元数值为读自图表的近似刻度，原文正文未给出精确数字，已在说明中标注。</p>
+</section>
+
+<footer>
+  <div class="wrap" style="padding:0;">
+    <p><strong>原文：</strong>DeepSeek-V3.2-Exp: Boosting Long-Context Efficiency with DeepSeek Sparse Attention · DeepSeek-AI · 2025.09（技术报告）</p>
+    <p>
+      <a href="https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf" target="_blank" rel="noopener">技术报告 PDF</a> ·
+      <a href="https://github.com/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://api-docs.deepseek.com/news/news250929" target="_blank" rel="noopener">发布说明</a> ·
+      <a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp" target="_blank" rel="noopener">HuggingFace</a> ·
+      <a href="https://aclanthology.org/2025.acl-long.1126/" target="_blank" rel="noopener">NSA (ACL 2025)</a>
+    </p>
+    <p style="margin-top:14px;color:var(--ink3);">本页为教学性可视化解读，非官方材料；所有图片版权归 DeepSeek-AI 所有。</p>
+  </div>
+</footer>
+
+</div>
+
+<script>
+// ---------- figure caption toggle ----------
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  var open = d.classList.toggle('active');
+  el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+}
+
+// ---------- expandable card toggle ----------
+function toggleCard(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ---------- training stepper ----------
+var stages = [
+  {
+    title: '① 稠密热身阶段（Dense Warm-up）',
+    meta: '保持稠密注意力 · 冻结除索引器外全部参数 · 学习率 1e-3 · 1000 步 · 2.1B tokens',
+    body: [
+      '目标：先让闪电索引器「学会」主注意力的偏好，但<strong>暂不动用稀疏</strong>。',
+      '做法：维持稠密注意力，冻结模型其余所有参数，只训练索引器。把主注意力各头的分数相加并沿序列做 L1 归一化，得到目标分布 pₜ；用 KL 散度 Lᴵ = Σ DKL(pₜ ‖ Softmax(Iₜ)) 让索引器分布去逼近它。',
+      '规模：每步 16 条 128K 序列，共 1000 步 ≈ 2.1B tokens（相对很小，只是热身）。'
+    ]
+  },
+  {
+    title: '② 稀疏训练阶段（Sparse Training）',
+    meta: '启用 top-k 选择 · 放开全部参数 · 学习率 7.3e-6 · k=2048 · 15000 步 · 943.7B tokens',
+    body: [
+      '目标：正式引入 top-k 稀疏，让<strong>整个模型适应稀疏注意力的分布</strong>。',
+      '做法：开启细粒度 token 选择，优化所有参数。KL 对齐<strong>只在被选中的 token 集合 Sₜ 上</strong>计算。关键设计：把索引器输入从计算图 detach——索引器只由 Lᴵ 训练，主模型只由语言建模损失训练，互不干扰。',
+      '规模：每 query 选 k=2048 个 KV；每步 480 条 128K 序列，共 15000 步 ≈ 943.7B tokens（主力训练量）。'
+    ]
+  },
+  {
+    title: '③ 后训练（Post-Training）',
+    meta: '专家蒸馏 + 单阶段混合 RL（GRPO）· 流程/算法/数据对齐 V3.1-Terminus',
+    body: [
+      '目标：在稀疏基座上完成对齐与能力强化，<strong>同时严格对齐 V3.1 的后训练设置</strong>以隔离 DSA 的影响。',
+      '专家蒸馏：先训练各领域专科模型（数学/竞赛编程/逻辑推理/Agent 编程/Agent 搜索 + 写作问答），再蒸馏回最终模型。',
+      '混合 RL：用 GRPO，把推理 + Agent + 人类对齐合并到<strong>单一 RL 阶段</strong>，规避多阶段训练的灾难性遗忘。后训练同样全程使用稀疏注意力。'
+    ]
+  }
+];
+var cur = 0;
+function renderStage(){
+  var s = stages[cur];
+  var v = document.getElementById('stage-view');
+  v.innerHTML = '<h4>'+s.title+'</h4><div class="meta">'+s.meta+'</div>'+
+    s.body.map(function(p){return '<p>'+p+'</p>';}).join('');
+  document.querySelectorAll('#train-stepper .stage-pill').forEach(function(p){
+    var i = +p.getAttribute('data-i');
+    p.classList.remove('on','done');
+    if(i===cur) p.classList.add('on');
+    else if(i<cur) p.classList.add('done');
+  });
+  document.getElementById('btn-prev').disabled = (cur===0);
+  document.getElementById('btn-next').disabled = (cur===stages.length-1);
+  document.getElementById('step-count').textContent = '阶段 '+(cur+1)+' / '+stages.length;
+}
+function stepMove(d){
+  cur = Math.max(0, Math.min(stages.length-1, cur+d));
+  renderStage();
+}
+document.querySelectorAll('#train-stepper .stage-pill').forEach(function(p){
+  p.addEventListener('click', function(){ cur = +p.getAttribute('data-i'); renderStage(); });
+});
+renderStage();
+</script>
+</body>
+</html>

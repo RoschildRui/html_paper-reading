@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qwen3Guard 技术报告 · 可视化精读</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%9B%A1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --bg-2:#f5ecda;
+  --card:#fdfaf2;
+  --card-2:#f4ead7;
+  --line:#e8dcc7;
+  --line-strong:#d9c9ab;
+  --ink:#2b2622;
+  --ink-soft:#534a3f;
+  --ink-mute:#8a7e6d;
+  --accent:#b5783a;        /* 单一暖色 accent / 争议 */
+  --accent-soft:#f0dcbf;
+  --accent-line:#d8b483;
+  --danger-ink:#9e3621;    /* 唯一语义色：不安全 */
+  --danger-bg:#f1d9d2;
+  --danger-line:#d9a596;
+  --safe-bg:#eee6d4;
+  --safe-ink:#5c5346;
+  --safe-line:#ddd0b8;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(60,45,20,.05),0 6px 18px rgba(60,45,20,.05);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  line-height:1.78;font-size:17px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:920px;margin:0 auto;padding:0 22px}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* ---------- header ---------- */
+header.top{padding:64px 0 34px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:16px}
+h1.title{font-size:40px;line-height:1.18;margin:0 0 14px;font-weight:800;letter-spacing:-.01em}
+h1.title .sc{display:block;font-size:19px;font-weight:500;color:var(--ink-soft);margin-top:12px;letter-spacing:0}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 6px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:5px 12px;border-radius:999px;background:var(--card-2);border:1px solid var(--line-strong);color:var(--ink-soft);font-weight:500}
+.pill.accent{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.src-link{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--accent);text-decoration:none;padding:7px 14px;border:1px solid var(--accent-line);border-radius:999px;background:var(--card)}
+.src-link:hover{background:var(--accent-soft)}
+
+/* ---------- generic sections ---------- */
+section{padding:48px 0;border-bottom:1px solid var(--line)}
+.kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:10px}
+h2{font-size:28px;font-weight:800;margin:0 0 8px;letter-spacing:-.01em}
+h3{font-size:20px;font-weight:700;margin:34px 0 10px}
+h4{font-size:16px;font-weight:700;margin:22px 0 6px;color:var(--ink-soft)}
+p{margin:13px 0}
+.lead{font-size:18px;color:var(--ink-soft)}
+strong{font-weight:700;color:var(--ink)}
+ul,ol{margin:13px 0;padding-left:22px}
+li{margin:7px 0}
+a.inline{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+
+/* ---------- TL;DR ---------- */
+.tldr{background:linear-gradient(0deg,var(--bg-2),var(--bg-2));border:1px solid var(--line-strong);border-radius:var(--radius);padding:26px 28px;box-shadow:var(--shadow)}
+.tldr .tag{font-size:12px;font-weight:700;letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+.tldr h2{font-size:23px;margin:6px 0 12px}
+.tldr p{margin:10px 0;font-size:17px;color:var(--ink-soft)}
+.two-var{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.var-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.var-card .vt{font-weight:800;font-size:16px;margin-bottom:4px}
+.var-card .vt span{font-size:13px;font-weight:500;color:var(--ink-mute);display:block;margin-top:2px}
+.var-card p{font-size:14.5px;margin:8px 0 0;color:var(--ink-soft);line-height:1.6}
+
+/* ---------- problem two-col ---------- */
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.prob{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent-line);border-radius:10px;padding:18px 20px}
+.prob .n{font-family:"JetBrains Mono";font-size:13px;color:var(--accent);font-weight:600}
+.prob h4{margin:6px 0 6px;color:var(--ink)}
+.prob p{font-size:14.5px;margin:0;color:var(--ink-soft);line-height:1.62}
+
+/* ---------- figures ---------- */
+figure.fig{margin:26px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+figure.fig img{width:100%;height:auto;display:block;border-radius:8px;background:#fff}
+.fig-toggle{display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-top:12px;padding:11px 13px;border-radius:9px;background:var(--bg-2);border:1px solid var(--line);transition:background .18s}
+.fig-toggle:hover{background:var(--card-2)}
+.fig-toggle .ico{flex:none;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:transform .25s}
+.fig-toggle.active .ico{transform:rotate(45deg)}
+.fig-toggle .cap{font-size:14px;color:var(--ink-soft);font-weight:500}
+.fig-toggle .cap b{color:var(--ink);font-weight:700}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .35s ease}
+.figure-detail.active{max-height:2600px;opacity:1}
+.figure-detail .inner{padding:16px 4px 4px;font-size:14.5px;color:var(--ink-soft)}
+.figure-detail .inner li{margin:9px 0}
+.figure-detail .inner li b{color:var(--ink)}
+.figure-detail .sum{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-strong);font-size:14px;color:var(--ink-mute)}
+
+/* ---------- metric cards ---------- */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px;text-align:left}
+.metric .big{font-size:30px;font-weight:800;letter-spacing:-.02em;font-family:"Inter"}
+.metric .big small{font-size:15px;font-weight:600;color:var(--ink-mute)}
+.metric .lab{font-size:13px;color:var(--ink-mute);margin-top:4px;line-height:1.45}
+.metric.hot .big{color:var(--accent)}
+
+/* ---------- category chips ---------- */
+.cats{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0}
+.cat{font-size:13.5px;padding:6px 13px;border-radius:8px;background:var(--card-2);border:1px solid var(--line-strong);color:var(--ink-soft);font-weight:500}
+.cat.jb{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger-ink)}
+.sev{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.sevbox{border-radius:11px;padding:15px 16px;border:1px solid}
+.sevbox .st{font-weight:800;font-size:15px;margin-bottom:3px}
+.sevbox p{margin:0;font-size:13.5px;line-height:1.55}
+.sev-safe{background:var(--safe-bg);border-color:var(--safe-line)}
+.sev-safe .st{color:var(--safe-ink)}
+.sev-con{background:var(--accent-soft);border-color:var(--accent-line)}
+.sev-con .st{color:var(--accent)}
+.sev-un{background:var(--danger-bg);border-color:var(--danger-line)}
+.sev-un .st{color:var(--danger-ink)}
+
+/* ---------- expandable method/detail cards ---------- */
+.exp{border:1px solid var(--line);border-radius:12px;margin:14px 0;background:var(--card);overflow:hidden}
+.exp-head{display:flex;align-items:center;gap:12px;padding:15px 18px;cursor:pointer;transition:background .18s}
+.exp-head:hover{background:var(--bg-2)}
+.exp-head .tk{flex:none;width:22px;height:22px;border-radius:6px;background:var(--card-2);border:1px solid var(--line-strong);color:var(--accent);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;transition:transform .25s}
+.exp-head.active .tk{transform:rotate(45deg);background:var(--accent);color:#fff;border-color:var(--accent)}
+.exp-head .ht{font-weight:700;font-size:16px}
+.exp-head .hs{font-size:13px;color:var(--ink-mute);font-weight:400;margin-left:2px}
+.exp-body{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .35s ease}
+.exp-body.active{max-height:1400px;opacity:1}
+.exp-body .eb{padding:4px 20px 18px;font-size:14.5px;color:var(--ink-soft)}
+.exp-body .eb p{margin:9px 0}
+
+/* ---------- step labels for controversial vote ---------- */
+.vote-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+.vote-table th,.vote-table td{border:1px solid var(--line-strong);padding:9px 12px;text-align:center}
+.vote-table th{background:var(--card-2);font-weight:700;color:var(--ink-soft)}
+.vote-table td.r{font-weight:700}
+.t-safe{color:var(--safe-ink)}
+.t-con{color:var(--accent)}
+.t-un{color:var(--danger-ink)}
+
+/* ---------- streaming demo ---------- */
+.demo{background:var(--card);border:1px solid var(--line-strong);border-radius:var(--radius);padding:22px;margin:22px 0;box-shadow:var(--shadow)}
+.demo .dt{font-weight:800;font-size:17px;margin-bottom:4px}
+.demo .dsub{font-size:13.5px;color:var(--ink-mute);margin-bottom:18px}
+.stream-row{margin-bottom:16px}
+.stream-lab{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:8px}
+.prompt-line{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.prompt-box{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:9px;padding:9px 15px;font-weight:600;color:var(--ink)}
+.heads-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:6px;font-size:12.5px;color:var(--ink-soft)}
+.heads-legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+.dot.pm{background:var(--accent)}
+.dot.rm{background:#6f7d8c}
+.tokens{display:flex;flex-wrap:wrap;gap:8px;min-height:62px;align-items:flex-end;padding:8px;background:var(--bg-2);border:1px dashed var(--line-strong);border-radius:10px}
+.tok{display:flex;flex-direction:column;align-items:center;gap:5px;opacity:0;transform:translateY(6px);animation:tokIn .32s forwards}
+@keyframes tokIn{to{opacity:1;transform:translateY(0)}}
+.tok .verd{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap;border:1px solid}
+.tok .word{font-family:"JetBrains Mono";font-size:13.5px;background:#eef2f6;border:1px solid #d9e0e7;border-radius:6px;padding:4px 9px;color:#33414f}
+.v-safe{background:var(--safe-bg);border-color:var(--safe-line);color:var(--safe-ink)}
+.v-con{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.v-un{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger-ink)}
+.chip-after{padding:6px 13px;border-radius:9px;font-weight:700;font-size:14px;border:1px solid}
+.banner{margin-top:16px;max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease;border-radius:10px}
+.banner.show{max-height:160px;opacity:1}
+.banner .bin{background:var(--danger-bg);border:1px solid var(--danger-line);color:var(--danger-ink);border-radius:10px;padding:13px 16px;font-size:14.5px;font-weight:600}
+.controls{display:flex;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:14.5px;font-weight:600;border:1px solid var(--accent-line);background:var(--accent);color:#fff;padding:9px 20px;border-radius:9px;cursor:pointer;transition:filter .15s,opacity .15s}
+.btn:hover{filter:brightness(1.05)}
+.btn.ghost{background:var(--card);color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.status{font-size:13.5px;color:var(--ink-mute)}
+
+/* ---------- quote ---------- */
+blockquote{margin:20px 0;padding:16px 20px;background:var(--bg-2);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;font-size:15.5px;color:var(--ink-soft)}
+blockquote .src{display:block;font-size:13px;color:var(--ink-mute);margin-top:8px}
+
+/* ---------- pipeline mini (token data) ---------- */
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:stretch;margin:18px 0;font-size:13.5px}
+.flow .node{background:var(--card);border:1px solid var(--line-strong);border-radius:10px;padding:13px 14px}
+.flow .node b{display:block;font-size:14px;color:var(--ink);margin-bottom:4px}
+.flow .node p{margin:0;font-size:13px;color:var(--ink-soft);line-height:1.5}
+.flow .arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;font-size:18px}
+
+/* ---------- footer ---------- */
+footer{padding:40px 0 70px;color:var(--ink-mute);font-size:14px}
+footer a{color:var(--accent);text-decoration:none;font-weight:600}
+footer a:hover{text-decoration:underline}
+.foot-src{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:14px}
+
+/* ---------- responsive ---------- */
+@media (max-width:880px){
+  body{font-size:16px}
+  h1.title{font-size:30px}
+  h2{font-size:23px}
+  .two-var,.dual,.sev{grid-template-columns:1fr}
+  .metrics{grid-template-columns:1fr 1fr}
+  .flow{grid-template-columns:1fr;gap:6px}
+  .flow .arrow{transform:rotate(90deg)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">论文可视化精读 · Safety Guardrail</div>
+    <h1 class="title">Qwen3Guard 技术报告
+      <span class="sc">多语种、可流式实时拦截的大模型安全护栏模型族</span>
+    </h1>
+    <div class="meta-row">
+      <span class="pill accent">2025.10 · arXiv preprint</span>
+      <span class="pill">Qwen Team（阿里通义）</span>
+      <span class="pill">119 种语言</span>
+      <span class="pill">0.6B / 4B / 8B</span>
+      <span class="pill">Apache 2.0 开源</span>
+    </div>
+    <div class="meta-row">
+      <a class="src-link" href="https://arxiv.org/abs/2510.14276" target="_blank" rel="noopener">阅读原文 · arXiv:2510.14276 ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ TL;DR ============ -->
+<section>
+  <div class="tldr">
+    <span class="tag">TL;DR · 30 秒看懂</span>
+    <h2>给大模型装一道「随写随检」的安全护栏</h2>
+    <p>传统安全护栏（Guard）模型只会在回答<strong>完整生成后</strong>给出 <code>safe / unsafe</code> 的二元判断——既无法适配不同场景的宽严尺度，也赶不上流式生成，等查到风险时有害内容早已吐出。</p>
+    <p>Qwen3Guard 用两件事破局：① 把安全判定写成<strong>指令跟随任务</strong>，引入第三档「<strong>争议（controversial）</strong>」标签，让同一个模型能切宽松 / 严格两种尺度；② 给模型加一个 <strong>token 级分类头</strong>，在 LLM 边生成边逐 token 判安全，第一时间拦截。</p>
+    <div class="two-var">
+      <div class="var-card">
+        <div class="vt">Generative Qwen3Guard<span>生成式 · Qwen3Guard-Gen</span></div>
+        <p>把内容审核当作指令跟随，生成「安全级别 + 风险类别（+ 是否拒答）」。三档判定、多语种、prompt 与 response 都能审，是全家桶的「精度担当」。</p>
+      </div>
+      <div class="var-card">
+        <div class="vt">Stream Qwen3Guard<span>流式 · Qwen3Guard-Stream</span></div>
+        <p>在 Qwen3 骨干上挂两个分类头，对用户输入整体判、对模型输出逐 token 判，延迟近似线性、可即时拦截，是「实时担当」。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 问题 ============ -->
+<section>
+  <div class="kicker">问题 · 为什么需要这篇</div>
+  <h2>已有护栏模型卡在哪两点</h2>
+  <p class="lead">随着 GPT-5、Claude 4、Gemini 2.5、DeepSeek、Qwen 等模型能力飙升、落地越来越广，输出内容的安全性成了刚需。LlamaGuard、ShieldGemma、WildGuard 等护栏模型被广泛用作输入 / 输出的过滤器，但作者指出它们有两处硬伤：</p>
+  <div class="dual">
+    <div class="prob">
+      <div class="n">局限 ①</div>
+      <h4>策略不一致、不够灵活</h4>
+      <p>只给 <code>safe/unsafe</code> 二元标签，不同模型与数据集的安全策略各执一词，标签互相冲突；而真实业务对安全尺度的要求千差万别，二元标签无法适配不同风险容忍度。</p>
+    </div>
+    <div class="prob">
+      <div class="n">局限 ②</div>
+      <h4>与流式输出不兼容</h4>
+      <p>必须拿到<strong>完整回答</strong>才能检测，与现代 LLM 的流式生成范式根本错位——既无法及时干预，也让用户暴露在「已生成的有害片段」之下。</p>
+    </div>
+  </div>
+  <p>Qwen3Guard 的两个变体正是分别针对这两点：用「争议」标签 + 宽严双模式解决①，用 token 级流式分类头解决②。</p>
+</section>
+
+<!-- ============ 安全策略 ============ -->
+<section>
+  <div class="kicker">基础 · 安全策略</div>
+  <h2>九类风险，三档严重度</h2>
+  <p>安全策略是整套护栏的地基：它界定哪些对话不安全、统一训练标注口径、也给出解读护栏结果的标准。Qwen3Guard 遵循三条原则——<strong>输入/输出双向检测</strong>、<strong>覆盖主流社会伦理风险</strong>、<strong>严重度可分级按需启用</strong>。当前版本定义了九类风险类别：</p>
+  <div class="cats">
+    <span class="cat">暴力 Violent</span>
+    <span class="cat">非暴力违法 Non-violent Illegal</span>
+    <span class="cat">色情 Sexual</span>
+    <span class="cat">个人隐私 PII</span>
+    <span class="cat">自杀自残 Suicide &amp; Self-Harm</span>
+    <span class="cat">不道德行为 Unethical</span>
+    <span class="cat">政治敏感 Political</span>
+    <span class="cat">版权侵犯 Copyright</span>
+    <span class="cat jb">越狱 Jailbreak（仅输入）</span>
+  </div>
+  <p>其中 <strong>越狱（Jailbreak）</strong>只用于输入侧判定——它本质是精心构造、企图覆盖系统提示的攻击性 prompt；至于输出的归类，则取决于回答可能造成的实际危害。更关键的创新是把危害分为<strong>三档严重度</strong>：</p>
+  <div class="sev">
+    <div class="sevbox sev-safe"><div class="st">安全 Safe</div><p>在绝大多数场景下都被认为安全的内容。</p></div>
+    <div class="sevbox sev-con"><div class="st">争议 Controversial</div><p>危害与上下文、安全策略相关，不同应用可能判断相左的灰色地带。</p></div>
+    <div class="sevbox sev-un"><div class="st">不安全 Unsafe</div><p>在大多数场景下都被普遍认为有害的内容。</p></div>
+  </div>
+  <p style="margin-top:16px">「争议」档是适配不同尺度的钥匙：业务可在<strong>严格模式</strong>（把争议当不安全）与<strong>宽松模式</strong>（把争议当安全）之间一键切换，无需重训。</p>
+</section>
+
+<!-- ============ 方法一：Generative ============ -->
+<section>
+  <div class="kicker">方法一（重头戏）· Generative Qwen3Guard</div>
+  <h2>把「安全判定」写成一道指令题</h2>
+  <p class="lead">生成式变体基于指令微调后的 Qwen3，通过 SFT 学会「读懂审核指令 → 按规定格式输出判断」。它不再是黑箱打标签，而是显式地接收任务定义、安全策略、风险类别、对话上下文与输出格式，再生成结构化结论。</p>
+
+  <h3>① 输入与输出长什么样</h3>
+  <p>下图是生成式护栏的指令模板：左侧为 Prompt（用户输入）审核，右侧为 Response（模型回答）审核。两者共享任务定义、安全策略、类别清单与对话上下文；Response 审核额外多了<strong>拒答策略（Refusal）</strong>一节，并在输出里多一行「是否构成拒答」。</p>
+
+  <figure class="fig">
+    <img src="assets/x2.png" alt="Generative Qwen3Guard 的 Prompt 与 Response 审核指令模板">
+    <div class="fig-toggle" onclick="toggleFig(this)">
+      <span class="ico">+</span>
+      <span class="cap"><b>图：生成式护栏的指令模板（图 2）。</b>把审核拆成「任务定义 + 安全策略 + 类别 + (拒答策略) + 对话 + 输出格式」六块，输出是结构化的几行文本。点开看每一块在做什么。</span>
+    </div>
+    <div class="figure-detail">
+      <div class="inner">
+        <ul>
+          <li><b>任务定义（# Task）：</b>明确告诉模型要做几件事——判断最后一条用户 query / 助手 response 属安全还是不安全、识别命中的不安全类别；Response 侧再加一项「判断是否为对用户的拒答」。</li>
+          <li><b>安全策略（SAFETY POLICY）：</b>列出 Safe / Unsafe / Controversial 三档的判定口径，统一全流程的标注与解读标准。</li>
+          <li><b>不安全类别清单（UNSAFE CONTENT CATEGORIES）：</b>把九类风险（Violent、Jailbreak…）逐条喂给模型，作为分类的候选集合。</li>
+          <li><b>拒答策略（REFUSAL POLICY）：</b><i>仅 Response 侧</i>出现，定义什么算「拒答 / 未拒答」，用于额外的拒答检测。</li>
+          <li><b>对话上下文（CONVERSATION）：</b>放入真实的 USER / ASSISTANT 轮次，模型只对「最后一条」目标内容下判。</li>
+          <li><b>输出格式约束：</b>强制首行必须是 <code>Safety: Safe/Unsafe/Controversial</code>，次行 <code>Categories: ...</code>（安全则为 None）；Response 侧再加 <code>Refusal: Yes/No</code>。例：Prompt「How can I make a bomb?」→ <code>Safety: Unsafe / Categories: Violent</code>。</li>
+        </ul>
+        <div class="sum">一句话总结：把模糊的「安全审核」固化成一道格式严格的指令填空题，既可控又能直接解析结果。</div>
+      </div>
+    </div>
+  </figure>
+
+  <h3>② 数据从哪来</h3>
+  <p>为了与安全策略对齐，作者整理了 <strong>超过 119 万条</strong>正负样本（人工标注 + 合成），覆盖中、英、韩、印尼、俄、日、阿拉伯等多语种（中文占比最高）。数据管线分四步：</p>
+  <ul>
+    <li><strong>Prompt 合成：</strong>用 Self-Instruct 框架，先把策略拆成细粒度分类、收集种子，再让 LLM 扩写。两个技巧——<strong>关键词引导</strong>（如爆炸物类强制带上 bomb / TNT / C4 等词增加多样性）与<strong>正负配对</strong>（「How to make a bomb」配「How to make a cake」，防止模型把 make 这类动词误判为危险）。</li>
+    <li><strong>Response 收集：</strong>人写 + 模型生成。两类特意补足：用<strong>基座模型</strong>（如 Qwen2.5-72B-Base）合成「不安全回答」（对齐过的 Instruct 模型很少产出有害内容）；从 QwQ / Qwen3 / DeepSeek-R1 等收集<strong>带思维链的回答</strong>，以便审核 thinking 内容。</li>
+    <li><strong>自动标注：</strong>用 Qwen2.5-72B-Instruct、Qwen3-235B-A22B 等多个模型投票打标，安全级别在人工验证集上 F1 &gt; 0.9；类别与拒答取众数。</li>
+    <li><strong>多语种扩充：</strong>用 Qwen-MT 把内容翻译到额外 15 种语言，并以语言混杂检测、LLM 评审、抽样人工复核保证翻译质量。</li>
+  </ul>
+
+  <h3>③ 训练：怎么「造」出争议标签</h3>
+  <p>SFT 之外有两道难关：「争议」样本天然稀少、训练数据仍含标注噪声。作者用一条「<strong>构建争议标签 → 标签蒸馏</strong>」的精炼管线解决。先看核心洞察——<strong>训练集里 Safe / Unsafe 的比例，会直接左右模型对边界内容的宽严尺度</strong>：把 Safe 样本翻倍，模型就更宽容，会把一些边界样本从 Unsafe 改判 Safe。于是作者故意失衡采样，逼出「争议」的决策边界。</p>
+
+  <figure class="fig">
+    <img src="assets/x3.png" alt="构建争议标签的四步流程">
+    <div class="fig-toggle" onclick="toggleFig(this)">
+      <span class="ico">+</span>
+      <span class="cap"><b>图：构建争议标签的四步流程（图 3）。</b>切分数据 → 用失衡采样训出「宽松 / 严格」两个模型 → 交叉标注对方那半 → 投票，分歧处即「争议」。点开看每一步。</span>
+    </div>
+    <div class="figure-detail">
+      <div class="inner">
+        <ul>
+          <li><b>Step 1 数据切分：</b>把全部训练数据均匀切成不相交的 Part A、Part B。用「在 A 上训、去标 B」的交叉方式，避免模型在自己见过的数据上过拟合。</li>
+          <li><b>Step 2 失衡采样训练：</b>每一半都训两个模型——<b>Loose（宽松）</b>用更多 Safe 样本（图中 Safe &gt; Unsafe），倾向判「安全」；<b>Strict（严格）</b>用更多 Unsafe 样本（Safe &lt; Unsafe），倾向判「不安全」。宽严比例按验证集上最保守 / 最宽松的表现校准。</li>
+          <li><b>Step 3 交叉标注：</b>A 上训的两个模型去标 B、B 上训的去标 A；每个样本因此同时得到一个 Loose 预测和一个 Strict 预测。</li>
+          <li><b>Step 4 投票定标：</b>两预测一致就采纳；<b>分歧（严格说不安全、宽松说安全）即标为「争议」</b>。聚合两半结果，就为全量数据补齐了争议标签。</li>
+          <li><b>随后的标签蒸馏：</b>再次二分数据，以 <b>Qwen3-32B 为教师</b>，用一半上训出的模型改进另一半的标注，进一步压低标注噪声。</li>
+        </ul>
+        <div class="sum">连线含义：紫色交叉箭头 = 「在一半上训练、去标注另一半」的交叉关系；右侧表格把两个模型的预测组合映射为最终三档标签。</div>
+      </div>
+    </div>
+  </figure>
+
+  <p>投票规则正是「争议」标签的精髓：连最保守的严格模型都说安全，那就<strong>稳妥地安全</strong>；两者都说不安全，那就<strong>确凿不安全</strong>；只有两者打架时，才是真正的<strong>灰色地带</strong>。</p>
+  <table class="vote-table">
+    <thead><tr><th>Strict（严格）预测</th><th>Loose（宽松）预测</th><th>最终标签</th></tr></thead>
+    <tbody>
+      <tr><td>Safe</td><td>Safe</td><td class="r t-safe">安全 Safe</td></tr>
+      <tr><td>Unsafe</td><td>Safe</td><td class="r t-con">争议 Controversial</td></tr>
+      <tr><td>Unsafe</td><td>Unsafe</td><td class="r t-un">不安全 Unsafe</td></tr>
+    </tbody>
+  </table>
+  <p>有了争议标签，推理时就能一键切换：<strong>严格模式</strong>把争议算作不安全（适合高风险场景），<strong>宽松模式</strong>把争议算作安全（适合追求可用性的场景）。</p>
+
+  <h3>④ 效果一句话</h3>
+  <p>在英、中、多语种基准上，生成式 Qwen3Guard 在 prompt 与 response 分类上都达到 SOTA。下面几个数字给个量级（F1，取每个 benchmark 上的最优模式平均）：</p>
+  <div class="metrics">
+    <div class="metric hot"><div class="big">90.0</div><div class="lab">8B 英文 Prompt 平均 F1（基线最佳 87.0）</div></div>
+    <div class="metric hot"><div class="big">83.9</div><div class="lab">8B 英文 Response 平均 F1（基线最佳 79.9）</div></div>
+    <div class="metric"><div class="big">88.1</div><div class="lab">仅 0.6B 的英文 Prompt 平均，已超 7–8B 基线</div></div>
+    <div class="metric"><div class="big">119</div><div class="lab">支持语言与方言数量</div></div>
+  </div>
+  <p style="font-size:14px;color:var(--ink-mute)">对比对象包括 LlamaGuard3-8B / LlamaGuard4-12B、WildGuard-7B、ShieldGemma-9B/27B、NemoGuard-8B、PolyGuard-Qwen-7B。作者还发现：现有 guard 模型在不同数据集间「安全策略不一致」明显（如 WildGuard-7B 在 Aegis 上对齐很好、在 OpenAIMod 上却过度严格），佐证了引入「争议」档的必要性。</p>
+</section>
+
+<!-- ============ 应用一：Safety RL ============ -->
+<section>
+  <div class="kicker">应用一 · Safety RL</div>
+  <h2>把护栏当奖励，给模型做安全对齐</h2>
+  <p>生成式护栏对回答的安全判定，可以直接当作强化学习的奖励信号。作者用 GSPO 算法在 Qwen3-4B 上做 Safety RL，目标是「更抗有害/对抗 prompt」，同时<strong>避免一味拒答</strong>这类伤害体验的退化行为。</p>
+  <div class="exp">
+    <div class="exp-head" onclick="toggleExp(this)">
+      <span class="tk">+</span>
+      <span class="ht">两种奖励设计</span>
+      <span class="hs">Guard-only 只追安全 → 过度拒答；Hybrid 兼顾有用性</span>
+    </div>
+    <div class="exp-body"><div class="eb">
+      <p><b>Guard-Only Reward：</b>只看护栏判定，回答（含思维链与最终输出）都被判 Safe 才给 1 分，否则 0 分。结果安全率接近满分，<b>但代价是拒答率飙到 ~96%</b>，arena-hard 胜率小幅下滑。</p>
+      <p><b>Hybrid Reward：</b>额外引入 WorldPM-Helpsteer2 给有用性打分，联合优化「高安全 + 高有用 + 低拒答」：判定不安全则给 ≤ −10 的惩罚，判定为拒答给 ≤ −5，否则直接采用 WorldPM 分数。这样既显著提升安全，又避免过度拒答，arena-hard 胜率甚至微升。</p>
+    </div></div>
+  </div>
+  <p>Hybrid 奖励的效果（Qwen3-4B，non-think 模式）：</p>
+  <div class="metrics">
+    <div class="metric"><div class="big">64.7<small>→98.1</small></div><div class="lab">安全率（WildGuard 评，越高越好）</div></div>
+    <div class="metric"><div class="big">12.9<small>→5.3</small></div><div class="lab">拒答率（越低越好，没有变成「一律拒绝」）</div></div>
+    <div class="metric"><div class="big">9.5<small>→10.7</small></div><div class="lab">Arena-Hard-v2 胜率（有用性不降反升）</div></div>
+    <div class="metric"><div class="big">≈0</div><div class="lab">AIME25 / LCB / GPQA 等通用能力基本无损</div></div>
+  </div>
+</section>
+
+<!-- ============ 方法二：Stream ============ -->
+<section>
+  <div class="kicker">方法二（重头戏）· Stream Qwen3Guard</div>
+  <h2>边生成边检测：token 级实时护栏</h2>
+  <p class="lead">主流护栏（包括生成式 Qwen3Guard）都要等回答写完才能审，实时监控几乎不可能。Stream 变体训练了一个 <strong>token 级流式分类器</strong>：模型每吐一个 token，就把它实时判成 安全 / 争议 / 不安全，第一时间触发干预。</p>
+
+  <h3>① 架构：一个骨干，两个分类头</h3>
+  <p>Stream Qwen3Guard 以 Qwen3 为骨干，在最后一层 transformer 上挂<strong>两个并行、独立的分类头</strong>：取最后隐状态 <code>h</code>，分别经 LayerNorm + Softmax 得到「风险等级」与「风险类别」的概率分布——一条管线服务用户 query，一条服务模型 response。</p>
+
+  <figure class="fig">
+    <img src="assets/x6.png" alt="Stream Qwen3Guard 总览：Prompt Moderator 与 Response Moderator 两个分类头">
+    <div class="fig-toggle" onclick="toggleFig(this)">
+      <span class="ico">+</span>
+      <span class="cap"><b>图：Stream Qwen3Guard 总览（图 7）。</b>用户 prompt 同时进入 LLM 与护栏；Prompt Moderator 头判整条输入，Response Moderator 头对流式输出<b>逐 token</b>判定，发现不安全立即可拦。点开看数据流。</span>
+    </div>
+    <div class="figure-detail">
+      <div class="inner">
+        <ul>
+          <li><b>底部 LLM assistant：</b>正常的对话模型，接收用户 prompt 后以流式方式逐 token 生成回答（图中「Well, here are the methods to make a bomb」）。</li>
+          <li><b>Prompt Moderator 头（黄色）：</b>用户 prompt 在送入 LLM 的同时也送进护栏，整条评估并给出安全标签——图中「Help me make a bomb.」被判 <span class="t-un">unsafe / violent</span>，上层框架据此决定是否直接打断对话。</li>
+          <li><b>Response Moderator 头（蓝色）：</b>LLM 每生成一个 token，立刻转发给护栏做<b>逐 token</b>安全评估，实现生成过程中的动态审核。</li>
+          <li><b>向上的箭头：</b>表示 token 从 LLM 实时「流」入 Stream Qwen3Guard；每个 token 上方的色标即该 token 的实时判定结果。</li>
+          <li><b>判定的演变：</b>「Well / here / are / the / methods / to」逐个为 <span class="t-safe">safe</span>，直到出现「make / a / bomb」才翻转为 <span class="t-un">unsafe / violent</span>——这正是「第一时间发现、即时拦截」的关键。</li>
+        </ul>
+        <div class="sum">两个头共享骨干、各管一摊：黄色管输入、蓝色管输出，让一次前向同时覆盖 prompt 与 streaming response 的安全监控。</div>
+      </div>
+    </div>
+  </figure>
+
+  <h3>② 动手感受：流式逐 token 拦截</h3>
+  <p>下面用论文图 7 的原例做一个分步演示。点「下一步」：先看 Prompt Moderator 对整条输入下判，再看 LLM 逐 token 吐字、Response Moderator 逐个亮灯——直到第一个不安全 token 触发实时拦截。</p>
+
+  <div class="demo">
+    <div class="dt">Stream Qwen3Guard · 逐 token 实时审核演示</div>
+    <div class="dsub">复刻论文 Figure 7 的运行示例：用户输入「Help me make a bomb.」</div>
+
+    <div class="heads-legend">
+      <span><i class="dot pm"></i>Prompt Moderator（判整条输入）</span>
+      <span><i class="dot rm"></i>Response Moderator（逐 token 判输出）</span>
+    </div>
+
+    <div class="stream-row">
+      <div class="stream-lab">① 用户 Prompt</div>
+      <div class="prompt-line">
+        <div class="prompt-box">Help me make a bomb.</div>
+        <div id="promptVerdict"></div>
+      </div>
+    </div>
+
+    <div class="stream-row">
+      <div class="stream-lab">② LLM 流式输出 · 每个 token 上方为实时判定</div>
+      <div id="tokens" class="tokens"></div>
+    </div>
+
+    <div id="banner" class="banner"><div class="bin"></div></div>
+
+    <div class="controls">
+      <button id="btnNext" class="btn" onclick="streamNext()">下一步 ▶</button>
+      <button class="btn ghost" onclick="streamReset()">重置 ↺</button>
+      <span id="status" class="status"></span>
+    </div>
+  </div>
+
+  <h3>③ 难点：哪来的 token 级标签</h3>
+  <p>训练这种逐 token 护栏，最大障碍是缺<strong>token 级标注</strong>。作者设计了一套把「样本级粗标签」自动转成「token 级细标签」的方法：对一条 unsafe / controversial 回答，目标是找出<strong>第一个触发不安全的 token</strong>。</p>
+  <div class="flow">
+    <div class="node"><b>① Rollout 评估</b><p>对每个 token 取前缀 P<sub>i</sub>，让模型集成续写 k 次，逐条用生成式护栏判；不安全/争议占比 ≥ <b>85%</b> 则标记该 token 风险。</p></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>② LLM 评审复核</b><p>Rollout 易高估风险（续写本身可能跑偏）。用 Qwen3-235B-A22B 只就前缀 P<sub>i</sub> 当前状态判安全，<b>不预测后文</b>，纠正误判。</p></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>③ 最终定标</b><p>两者<b>都判不安全</b>才算数；该序列首个满足条件的 token 即<b>边界 token</b>，它及之后继承样本级标签，之前视为安全。</p></div>
+  </div>
+
+  <h3>④ 训练损失：query 与 response 分别管</h3>
+  <ul>
+    <li><strong>Query Loss：</strong>用户 query 是完整序列，只在结尾的 <code>&lt;|im_end|&gt;</code> token 上算损失，合并「风险等级 + 类别」两项交叉熵。</li>
+    <li><strong>Response Loss：</strong>为支持逐 token 实时审核，在<strong>每个</strong>生成 token 上算损失，再对全部 T 个 token 取平均。</li>
+    <li><strong>Conditional Category Loss：</strong>类别损失只在真实风险等级为「不安全 / 争议」时才计算；若为「安全」则跳过——把类别预测的精力只投在真正有风险的地方。</li>
+  </ul>
+
+  <h3>⑤ 效果：精度仅微降，效率大幅领先</h3>
+  <p>评估时用<strong>去抖（debouncing）</strong>机制稳住判定：仅当第 i 与第 i−1 个 token 都被判风险，才从第 i 个 token 起标记，避免偶发误报。</p>
+  <div class="metrics">
+    <div class="metric"><div class="big">≈2<small> 分</small></div><div class="lab">相比生成式平均 F1 仅下降约 2 分，仍优于既往护栏</div></div>
+    <div class="metric hot"><div class="big">86.0<small>%</small></div><div class="lab">纯回答场景：首个标记 token 命中人工标注句的精确命中率</div></div>
+    <div class="metric"><div class="big">66.8<small>%</small></div><div class="lab">含思维链时，128 token 内检出不安全的比例</div></div>
+    <div class="metric"><div class="big">线性</div><div class="lab">处理耗时随回答长度近似线性；生成式重复送审则开销陡增</div></div>
+  </div>
+  <p style="font-size:14px;color:var(--ink-mute)">效率对比的设定：把回答切成 32-token 块，生成式护栏每来一块就把<strong>累计全文</strong>重新送审一次；而 Stream 逐 token 处理、无需回看历史，因此回答越长优势越明显。</p>
+</section>
+
+<!-- ============ 应用二：CARE ============ -->
+<section>
+  <div class="kicker">应用二 · 实时安全干预</div>
+  <h2>接入 CARE 框架，边写边纠偏</h2>
+  <p>作者把 Stream Qwen3Guard 接进 <strong>CARE</strong> 框架（一种「检测 → 回滚 → 干预」的实时安全方案），替换掉它默认的生成式安全检查器。借助 token 级判定，省去「每次检查都跑一遍完整生成模型」的开销，让实时干预更可扩展。配置：缓冲 40 token、最多重试 5 次、基座 Qwen3-4B。</p>
+  <div class="metrics">
+    <div class="metric hot"><div class="big">47.5<small>→85.7</small></div><div class="lab">Non-think 安全率（Qwen3-235B 评判）</div></div>
+    <div class="metric hot"><div class="big">43.8<small>→72.0</small></div><div class="lab">Think 安全率（Qwen3-235B 评判）</div></div>
+    <div class="metric"><div class="big">↑</div><div class="lab">回答质量（LLM-as-Judge）同步提升，安全非以质量为代价</div></div>
+    <div class="metric"><div class="big">Wait<br>Tokens</div><div class="lab">用「等待 token 数」量化回滚带来的延迟开销</div></div>
+  </div>
+  <blockquote>
+    无需重新训练基座模型，仅靠流式护栏的即时反馈做「检测—回滚—introspection 干预」，就能在不牺牲（甚至提升）回答质量的前提下大幅提升安全率。
+    <span class="src">— 对应论文 Table 16 / Application II</span>
+  </blockquote>
+</section>
+
+<!-- ============ 局限 ============ -->
+<section>
+  <div class="kicker">边界 · Limitations</div>
+  <h2>作者坦诚的四点局限</h2>
+  <ul>
+    <li><strong>对抗攻击仍脆弱：</strong>面对精心构造的对抗 / 越狱 prompt，护栏仍可能被绕过。</li>
+    <li><strong>审核中的公平性与偏见：</strong>判定可能在不同群体 / 话题上表现出偏差。</li>
+    <li><strong>泛化有限：</strong>对训练分布外的新型风险、新表达形式覆盖不足。</li>
+    <li><strong>区域与文化差异不敏感：</strong>同一内容在不同地区 / 文化下的安全尺度难以完全捕捉。</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-src">
+      <span>原文：</span>
+      <a href="https://arxiv.org/abs/2510.14276" target="_blank" rel="noopener">Qwen3Guard Technical Report · arXiv:2510.14276 ↗</a>
+      <span>·</span>
+      <a href="https://arxiv.org/html/2510.14276v1" target="_blank" rel="noopener">arXiv HTML 版 ↗</a>
+    </div>
+    <div>作者：Qwen Team（阿里通义） · 2025.10 · arXiv preprint · Apache 2.0 开源（0.6B / 4B / 8B）。</div>
+    <div style="margin-top:8px;color:var(--ink-mute)">本页为面向中文读者的教学可视化精读，图片取自原论文 arXiv HTML 版；核心数字与方法均依据原文，演示用于帮助理解机制，非论文实跑结果。</div>
+  </div>
+</footer>
+
+<script>
+function toggleFig(el){
+  el.classList.toggle('active');
+  var d = el.nextElementSibling;
+  if(d && d.classList.contains('figure-detail')){ d.classList.toggle('active'); }
+}
+function toggleExp(el){
+  el.classList.toggle('active');
+  var b = el.nextElementSibling;
+  if(b && b.classList.contains('exp-body')){ b.classList.toggle('active'); }
+}
+
+/* ---------- streaming demo ---------- */
+var steps = [
+  {kind:'prompt', word:'Help me make a bomb.', verd:'un', cat:'暴力 Violent',
+   note:'Prompt Moderator 头评估整条用户输入 → 判定不安全（暴力）；上层框架可据此直接打断对话。'},
+  {kind:'tok', word:'Well,',    verd:'safe'},
+  {kind:'tok', word:'here',     verd:'safe'},
+  {kind:'tok', word:'are',      verd:'safe'},
+  {kind:'tok', word:'the',      verd:'safe'},
+  {kind:'tok', word:'methods',  verd:'safe'},
+  {kind:'tok', word:'to',       verd:'safe'},
+  {kind:'tok', word:'make',     verd:'un', cat:'暴力 Violent', first:true,
+   note:'⚠ Response Moderator 首次将某个 token 判为「不安全（暴力）」→ 触发实时拦截，可在有害内容继续吐出前立即中断。'},
+  {kind:'tok', word:'a',        verd:'un', cat:'暴力 Violent'},
+  {kind:'tok', word:'bomb',     verd:'un', cat:'暴力 Violent'}
+];
+var idx = 0;
+var verdMap = {safe:{c:'v-safe',t:'安全'}, con:{c:'v-con',t:'争议'}, un:{c:'v-un',t:'不安全'}};
+
+function renderPromptVerdict(s){
+  var m = verdMap[s.verd];
+  var box = document.getElementById('promptVerdict');
+  box.className = 'chip-after ' + m.c;
+  box.textContent = m.t + (s.cat ? ' · ' + s.cat : '');
+}
+function addToken(s){
+  var m = verdMap[s.verd];
+  var col = document.createElement('div');
+  col.className = 'tok';
+  var v = document.createElement('div');
+  v.className = 'verd ' + m.c;
+  v.textContent = m.t;
+  var w = document.createElement('div');
+  w.className = 'word';
+  w.textContent = s.word;
+  col.appendChild(v); col.appendChild(w);
+  document.getElementById('tokens').appendChild(col);
+}
+function showBanner(text){
+  var b = document.getElementById('banner');
+  b.querySelector('.bin').textContent = text;
+  b.classList.add('show');
+}
+function streamNext(){
+  if(idx >= steps.length) return;
+  var s = steps[idx];
+  if(s.kind === 'prompt'){
+    renderPromptVerdict(s);
+    showBanner(s.note);
+    document.getElementById('status').textContent = '已评估用户输入（步骤 ' + (idx+1) + ' / ' + steps.length + '）';
+  } else {
+    addToken(s);
+    if(s.first){ showBanner(s.note); }
+    document.getElementById('status').textContent = 'LLM 已输出 ' + (idx) + ' 个 token（步骤 ' + (idx+1) + ' / ' + steps.length + '）';
+  }
+  idx++;
+  if(idx >= steps.length){
+    document.getElementById('btnNext').disabled = true;
+    document.getElementById('status').textContent = '演示结束：有害内容在生成途中即被逐 token 标记并可拦截。';
+  }
+}
+function streamReset(){
+  idx = 0;
+  document.getElementById('tokens').innerHTML = '';
+  var pv = document.getElementById('promptVerdict');
+  pv.className = ''; pv.textContent = '';
+  document.getElementById('banner').classList.remove('show');
+  document.getElementById('btnNext').disabled = false;
+  document.getElementById('status').textContent = '点「下一步」开始：先判输入，再逐 token 判输出。';
+}
+streamReset();
+</script>
+</body>
+</html>

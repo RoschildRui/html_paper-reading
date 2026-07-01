@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qwen3 技术报告 · 中文导读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;
+  line-height:1.78;
+  -webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* ---------- top nav ---------- */
+.topnav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,246,234,.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+}
+.topnav-inner{
+  max-width:var(--maxw);margin:0 auto;padding:9px 22px;
+  display:flex;align-items:center;gap:16px;
+}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{
+  color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;
+  padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s;
+}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{
+  white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;
+  color:var(--accent-deep);border:1px solid var(--border-strong);
+  padding:4px 11px;border-radius:7px;transition:all .18s;
+}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* ---------- layout ---------- */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* ---------- header ---------- */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{
+  font-size:12.5px;font-weight:500;color:var(--ink-soft);
+  background:var(--surface);border:1px solid var(--border);
+  padding:4px 11px;border-radius:20px;
+}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* ---------- metric cards ---------- */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{
+  background:var(--surface);border:1px solid var(--border);border-radius:13px;
+  padding:16px 15px;box-shadow:var(--shadow);
+}
+.metric .v{font-size:27px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em;font-family:"Inter",sans-serif}
+.metric .v .u{font-size:15px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:13px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* ---------- quote / highlight ---------- */
+.quote{
+  border-left:3px solid var(--accent);background:var(--surface);
+  padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0;
+}
+.quote.big{font-size:21px;font-weight:600;color:var(--ink);line-height:1.5}
+.callout{
+  background:var(--accent-soft);border:1px solid var(--border-strong);
+  border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px;
+}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* ---------- before/after ---------- */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft)}
+.panel.after .tag{background:#e6d4ad;color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* ---------- table ---------- */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+
+/* ---------- expandable cards (grid) ---------- */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:340px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0}
+
+/* ---------- deep cards (stages) ---------- */
+.deep-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin:13px 0;box-shadow:var(--shadow);overflow:hidden;transition:border-color .2s}
+.deep-card.open{border-color:var(--border-strong)}
+.deep-card .dc-head{display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer;user-select:none}
+.deep-card .dc-stage{flex-shrink:0;width:40px;height:40px;border-radius:11px;background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;border:1px solid var(--border-strong)}
+.deep-card .dc-tt{flex:1}
+.deep-card .dc-title{font-weight:700;font-size:16.5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.deep-card .dc-en{font-size:12.5px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;font-weight:400}
+.deep-card .dc-sum{font-size:13.5px;color:var(--ink-soft);margin-top:2px;line-height:1.5}
+.deep-card .dc-arrow{flex-shrink:0;color:var(--accent);transition:transform .3s;font-size:13px}
+.deep-card.open .dc-arrow{transform:rotate(90deg)}
+.deep-card .dc-body{max-height:0;overflow:hidden;transition:max-height .45s ease}
+.deep-card.open .dc-body{max-height:1400px}
+.deep-card .dc-body-inner{padding:2px 18px 18px 72px;border-top:1px solid var(--border)}
+.deep-card .dc-body-inner p{font-size:14.5px;margin:13px 0 10px}
+.deep-card .dc-body-inner h4{font-size:13.5px;font-weight:700;margin:14px 0 4px;color:var(--accent-deep)}
+.note-soft{font-size:13px;color:var(--ink-faint);font-style:italic;border-top:1px dashed var(--border-strong);padding-top:9px;margin-top:12px}
+
+/* ---------- figure ---------- */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:760px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* ---------- code ---------- */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:13px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .fl{color:var(--accent-deep);font-weight:600}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+.code-label{font-size:12.5px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* ---------- step animation (thinking budget) ---------- */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.tb-track{position:relative;height:38px;background:var(--surface-3);border-radius:9px;margin:8px 0 6px;overflow:hidden}
+.tb-fill{position:absolute;left:0;top:0;height:100%;width:3%;background:linear-gradient(90deg,#cda45f,#b27a2b);transition:width .6s ease,background .4s ease;border-radius:9px}
+.tb-fill.halted{background:linear-gradient(90deg,#b27a2b,#8f5f1d)}
+.tb-thresh{position:absolute;top:-3px;bottom:-3px;left:70%;width:2px;background:var(--border-strong);z-index:2;transition:background .35s,width .35s,box-shadow .35s}
+.tb-thresh.hit{background:var(--accent-deep);width:3px;box-shadow:0 0 0 3px var(--accent-soft)}
+.tb-thresh::after{content:"思考预算上限";position:absolute;top:-19px;left:50%;transform:translateX(-50%);font-size:10.5px;color:var(--accent-deep);white-space:nowrap;font-weight:600}
+.tb-track-label{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;color:#fff;font-weight:600;z-index:3;text-shadow:0 1px 2px rgba(80,50,10,.35);mix-blend-mode:normal}
+.tb-steps{margin:18px 0 8px;min-height:96px}
+.tb-step{display:none}
+.tb-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.tb-step .sh{font-weight:700;font-size:15px;margin-bottom:4px;color:var(--accent-deep)}
+.tb-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.6}
+.tb-inject,.tb-answer{margin-top:13px;max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.tb-inject.show,.tb-answer.show{max-height:200px;opacity:1}
+.tb-inject pre{background:var(--mono-bg);color:var(--ink);border-left:3px solid var(--accent);border-radius:9px;padding:11px 13px;font-size:12px;overflow-x:auto;margin:0;line-height:1.55}
+.tb-inject pre .hl{color:var(--accent-deep);font-weight:700}
+.tb-answer .ab{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--accent-deep);font-weight:600}
+.tb-controls{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.tb-controls button{
+  font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);
+  padding:7px 16px;border-radius:9px;transition:all .18s;
+}
+.tb-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.tb-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tb-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.tb-controls button:disabled{opacity:.4;cursor:not-allowed}
+.tb-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* ---------- pretraining flow ---------- */
+.flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:22px 0;position:relative}
+.flow .fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow);position:relative}
+.flow .fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.flow .fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.flow .fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.5}
+.flow .fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+.flow .farrow{display:none}
+.flow-2{grid-template-columns:1fr 1fr}
+
+/* ---------- footer ---------- */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+/* ---------- responsive ---------- */
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .deep-card .dc-body-inner{padding-left:18px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== NAV ===================== -->
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Qwen3 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#why">为什么</a>
+      <a href="#family">模型家族</a>
+      <a href="#arch">架构</a>
+      <a href="#pretrain">预训练</a>
+      <a href="#posttrain">后训练流程</a>
+      <a href="#thinking">思考控制</a>
+      <a href="#distill">蒸馏</a>
+      <a href="#results">实验结论</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2505.09388" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ===================== HERO ===================== -->
+  <header class="hero">
+    <div class="kicker">技术报告 · 中文导读</div>
+    <h1>Qwen3 技术报告</h1>
+    <p class="subtitle">把「会思考的推理模型」和「快速回答的对话模型」<br>合并进同一个、可调档的模型族</p>
+    <div class="meta-chips">
+      <span class="chip accent">2025.05</span>
+      <span class="chip">arXiv preprint · 2505.09388</span>
+      <span class="chip">Qwen Team（阿里巴巴）</span>
+      <span class="chip">Apache 2.0 开源</span>
+      <span class="chip">cs.CL</span>
+    </div>
+  </header>
+
+  <!-- ===================== TL;DR ===================== -->
+  <section id="tldr">
+    <p class="lead">Qwen3 是通义千问家族的最新一代<strong>开源</strong>大模型，覆盖从 <strong>0.6B 到 235B</strong> 的 8 个模型（含稠密 Dense 与混合专家 MoE 两种架构）。它最核心的改变是：<strong>不再需要在「对话模型」和「推理模型」之间切换</strong>——thinking（深度推理）与 non-thinking（快速回答）两种模式被融合进同一个模型，用户用一行标记 <code>/think</code>、<code>/no_think</code> 就能实时切换，还能通过<strong>「思考预算」</strong>精确控制模型该想多久。配合<strong>「强到弱蒸馏」</strong>，小模型的训练成本大幅降低；预训练数据扩展到 <strong>36 万亿 tokens</strong>、覆盖 119 种语言。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">8<span class="u"> 个模型</span></div><div class="k">0.6B–235B 参数<br>6 Dense + 2 MoE</div></div>
+      <div class="metric"><div class="v">36<span class="u"> 万亿</span></div><div class="k">预训练 tokens<br>（是 Qwen2.5 的 2 倍）</div></div>
+      <div class="metric"><div class="v">119<span class="u"> 语言</span></div><div class="k">语言 / 方言<br>（Qwen2.5 仅 29）</div></div>
+      <div class="metric"><div class="v">1<span class="u"> 个模型</span></div><div class="k">推理 + 对话统一<br>（核心创新）</div></div>
+    </div>
+
+    <div class="quote big">一个模型，两种模式，一个旋钮。</div>
+
+    <div class="callout">
+      <div class="t">这篇导读怎么读</div>
+      先用「为什么」理解 Qwen3 想解决的痛点 → 看清「模型家族」与「架构」 → 顺着「预训练 → 后训练」两条训练主线 → 重点深入「思考控制」（全文最核心的创新）→ 最后一眼扫过实验结论。
+    </div>
+  </section>
+
+  <!-- ===================== WHY ===================== -->
+  <section id="why">
+    <h2><span class="num">01</span> 为什么需要 Qwen3</h2>
+    <p>过去要同时做好「快速对话」和「深度推理」两件事，往往得部署<strong>两个不同的模型</strong>：一个像 GPT-4o 那样擅长即时、贴合上下文的对话；另一个像 QwQ-32B、o1 那样擅长多步推理。用户和开发者必须在它们之间<strong>手动切换</strong>——既麻烦，又要承担双份的部署与维护成本。</p>
+    <p>Qwen3 的回答是：把两种能力装进<strong>同一个模型</strong>，让模型根据用户输入或聊天模板动态决定「现在要不要思考、思考多深」。这正是后面所有训练设计（尤其是后训练流程）真正服务的目标。</p>
+
+    <div class="twocol">
+      <div class="panel before">
+        <div class="ph"><span class="tag">过去</span>两个模型</div>
+        <ul>
+          <li>对话模型（如 GPT-4o 类）负责快速回答</li>
+          <li>推理模型（如 QwQ-32B / o1 类）负责多步思考</li>
+          <li>切换任务＝切换模型，流程割裂</li>
+          <li>同时部署两套，成本翻倍</li>
+        </ul>
+      </div>
+      <div class="panel after">
+        <div class="ph"><span class="tag">Qwen3</span>一个模型</div>
+        <ul>
+          <li>单一模型同时具备思考 / 非思考两种模式</li>
+          <li><code>/think</code>、<code>/no_think</code> 标记实时切换</li>
+          <li>「思考预算」精细控制推理深度</li>
+          <li>只需部署一份，省算力、省运维</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FAMILY ===================== -->
+  <section id="family">
+    <h2><span class="num">02</span> 模型家族一览</h2>
+    <p>Qwen3 一次性发布 <strong>6 个稠密模型</strong>（0.6B / 1.7B / 4B / 8B / 14B / 32B）和 <strong>2 个 MoE 模型</strong>（30B-A3B、235B-A22B），满足从端侧到旗舰的不同需求。旗舰 <strong>Qwen3-235B-A22B</strong> 总参数 235B、每 token 仅激活 22B——兼顾性能与推理效率。</p>
+
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>模型</th><th>架构</th><th>层数</th><th>注意力头 Q/KV</th><th>专家（总/激活）</th><th>上下文</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Qwen3-0.6B</td><td>Dense</td><td>28</td><td>16 / 8</td><td class="dim">—</td><td>32K</td></tr>
+          <tr><td>Qwen3-1.7B</td><td>Dense</td><td>28</td><td>16 / 8</td><td class="dim">—</td><td>32K</td></tr>
+          <tr><td>Qwen3-4B</td><td>Dense</td><td>36</td><td>32 / 8</td><td class="dim">—</td><td>128K</td></tr>
+          <tr><td>Qwen3-8B</td><td>Dense</td><td>36</td><td>32 / 8</td><td class="dim">—</td><td>128K</td></tr>
+          <tr><td>Qwen3-14B</td><td>Dense</td><td>40</td><td>40 / 8</td><td class="dim">—</td><td>128K</td></tr>
+          <tr><td>Qwen3-32B</td><td>Dense</td><td>64</td><td>64 / 8</td><td class="dim">—</td><td>128K</td></tr>
+          <tr><td>Qwen3-30B-A3B</td><td>MoE</td><td>48</td><td>32 / 4</td><td>128 / 8</td><td>128K</td></tr>
+          <tr class="hl"><td>Qwen3-235B-A22B</td><td>MoE</td><td>94</td><td>64 / 4</td><td>128 / 8</td><td>128K</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px">注：表中上下文长度为模型设计能力；预训练阶段序列长度逐步扩展（见「预训练」），推理时再借 YARN + DCA 进一步外推。命名中 <code>A22B</code> 表示「激活 22B 参数」。</p>
+  </section>
+
+  <!-- ===================== ARCHITECTURE ===================== -->
+  <section id="arch">
+    <h2><span class="num">03</span> 架构</h2>
+    <p>Dense 模型整体沿用 Qwen2.5 已经被验证成熟的设计：<strong>GQA</strong>（分组查询注意力）、<strong>SwiGLU</strong>、<strong>RoPE</strong>（旋转位置编码）、带 pre-norm 的 <strong>RMSNorm</strong>。在此之上，Qwen3 做了两处面向<strong>训练稳定性</strong>的改动；MoE 模型则在专家设计上做了更细的优化。点开下面卡片看每一处改动的来龙去脉。</p>
+
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧭</span>QK-Norm（替代 QKV-bias）</div>
+        <div class="xs">去掉 Qwen2 的 QKV-bias，给注意力引入 QK-Norm，让训练更稳。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开 ▸</span>
+        <div class="xdetail"><p>Qwen2 在注意力中使用 QKV-bias，Qwen3 将其移除，并在注意力机制中引入 <b>QK-Norm</b>。这一改动的目的是确保 Qwen3 的<b>训练稳定性</b>，避免大规模训练中出现的不稳定现象。其余组件（GQA、SwiGLU、RoPE、RMSNorm + pre-norm）与 Qwen2.5 保持一致。</p></div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧩</span>细粒度专家分割</div>
+        <div class="xs">MoE 共 128 个专家，每个 token 激活其中 8 个。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开 ▸</span>
+        <div class="xdetail"><p>Qwen3-MoE 沿用 Qwen2.5-MoE 的思路，采用 <b>细粒度专家分割</b>（fine-grained expert segmentation）。两个 MoE 模型都设有 <b>128 个专家</b>，每个 token 路由到 <b>8 个激活专家</b>。更细的专家划分让每个专家更专注，提升参数利用效率。</p></div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">✂️</span>去掉共享专家</div>
+        <div class="xs">与 Qwen2.5-MoE 不同，Qwen3-MoE 不设共享专家。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开 ▸</span>
+        <div class="xdetail"><p>Qwen2.5-MoE 中存在「共享专家」（shared experts，所有 token 都会经过），而 <b>Qwen3-MoE 取消了共享专家</b>。这是 Qwen3 MoE 设计与上一代的一个明确区别，配合下面的负载均衡策略一起鼓励专家分工。</p></div>
+      </div>
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚖️</span>全局批负载均衡</div>
+        <div class="xs">用 global-batch 负载均衡损失鼓励专家专业化。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开 ▸</span>
+        <div class="xdetail"><p>Qwen3 采用 <b>global-batch load balancing loss</b>（全局批负载均衡损失），让不同专家在整个批次范围内被均衡地使用，从而<b>鼓励专家专业化</b>。论文指出，这些架构与训练上的改进共同带来了下游任务上的显著提升。</p></div>
+      </div>
+    </div>
+    <p class="muted" style="font-size:13.5px">分词器沿用 Qwen 的 <strong>BBPE</strong>（byte-level byte-pair encoding），词表大小 <strong>151,669</strong>。</p>
+  </section>
+
+  <!-- ===================== PRE-TRAINING ===================== -->
+  <section id="pretrain">
+    <h2><span class="num">04</span> 预训练</h2>
+
+    <h3>数据：怎么把语料扩到 36 万亿 tokens</h3>
+    <p>相比 Qwen2.5，Qwen3 的语料规模和多样性都大幅提升：<strong>token 数翻倍、语言数翻三倍</strong>（29 → 119 种语言和方言），总量约 <strong>36 万亿 tokens</strong>。扩充语料主要靠三招：</p>
+    <ul class="tight">
+      <li><strong>PDF 文本提取</strong>：先用 Qwen2.5-VL 对海量 PDF 类文档做文字识别，再用 Qwen2.5 精修识别结果，最终额外得到<strong>数万亿</strong>高质量文本 tokens。</li>
+      <li><strong>合成数据</strong>：用 Qwen2.5、Qwen2.5-Math、Qwen2.5-Coder 合成教材、问答、指令、代码片段等多种格式，覆盖数十个领域，规模同样达数万亿 tokens。</li>
+      <li><strong>实例级数据配比</strong>：自研多语言标注系统，对 30 万亿以上 tokens 按「教育价值 / 领域 / 安全」等维度打标；不同于 DoReMi、DoGE、RegMix 在<strong>领域级别</strong>调配比，Qwen3 用小代理模型做大量消融，在 <strong>instance（实例）级别</strong>优化数据混合。</li>
+    </ul>
+
+    <h3>三阶段预训练：打基础 → 强推理 → 拉长上下文</h3>
+    <p>预训练分三个阶段递进，序列长度从 4K 一路扩到 32K：</p>
+    <div class="flow">
+      <div class="fnode">
+        <div class="ftag">STAGE S1</div>
+        <div class="fname">通用阶段</div>
+        <div class="fdesc">在超过 30 万亿 tokens 上训练，打牢语言能力与通用世界知识，覆盖全部 119 种语言。</div>
+        <div class="fseq">序列长 4,096</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STAGE S2</div>
+        <div class="fname">推理阶段</div>
+        <div class="fdesc">提高 STEM、代码、推理、合成数据的比例，用约 5 万亿更高质量 tokens 继续训练，并加速学习率衰减。</div>
+        <div class="fseq">序列长 4,096</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STAGE S3</div>
+        <div class="fname">长上下文阶段</div>
+        <div class="fdesc">用数千亿长文本 tokens 把上下文从 4K 扩到 32K；RoPE base 频率 1万→100万（ABF），再借 YARN + DCA 在推理时实现 4× 外推。</div>
+        <div class="fseq">序列长 32,768</div>
+      </div>
+    </div>
+    <p class="muted" style="font-size:13.5px">长上下文语料里，75% 是 16K–32K 长度的文本，25% 是 4K–16K。Qwen3 还基于这三个阶段开发了 scaling law 来预测最优学习率、batch size 等超参。</p>
+
+    <h3>基座模型评测：更少参数，更强表现</h3>
+    <p>在 15 个基准（涵盖通用、数学/STEM、代码、多语言）上，Qwen3 基座模型的几条关键结论：</p>
+    <div class="quote"><strong>Qwen3-235B-A22B-Base</strong> 在 15 个基准中的 <strong>14 个</strong>上超过 DeepSeek-V3-Base，却只用约 <strong>1/3 总参数、2/3 激活参数</strong>。</div>
+    <div class="quote"><strong>Qwen3-32B-Base</strong> 在 <strong>10/15</strong> 个基准上超过上一代旗舰稠密模型 Qwen2.5-72B-Base（如 MMLU-Pro 65.54 vs 58.07），参数还<strong>不到一半</strong>。</div>
+    <div class="quote">MoE 架构红利：用 <strong>1/5 的激活参数</strong>即可达到同等稠密模型的水平，大幅降低推理与训练成本。</div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span> 看一眼旗舰基座的对比数字（Table 3 节选） <span class="sub">Qwen3-235B-A22B-Base vs 主流开源基座</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap" style="margin:6px 0 0">
+          <table class="data">
+            <thead><tr><th>基准</th><th>Qwen2.5-72B</th><th>Llama-4-Maverick</th><th>DeepSeek-V3</th><th>Qwen3-235B-A22B</th></tr></thead>
+            <tbody>
+              <tr><td>总参数 / 激活</td><td>72B / 72B</td><td>402B / 17B</td><td>671B / 37B</td><td>235B / 22B</td></tr>
+              <tr><td>MMLU</td><td>86.06</td><td>85.16</td><td>87.19</td><td class="hl" style="background:var(--accent-soft);color:var(--accent-deep);font-weight:700">87.81</td></tr>
+              <tr><td>MMLU-Pro</td><td>58.07</td><td>63.91</td><td>59.84</td><td style="color:var(--accent-deep);font-weight:700">68.18</td></tr>
+              <tr><td>GSM8K</td><td>91.50</td><td>87.72</td><td>87.57</td><td style="color:var(--accent-deep);font-weight:700">94.39</td></tr>
+              <tr><td>MATH</td><td>62.12</td><td>63.32</td><td>62.62</td><td style="color:var(--accent-deep);font-weight:700">71.84</td></tr>
+              <tr><td>EvalPlus（代码）</td><td>65.93</td><td>68.38</td><td>63.75</td><td style="color:var(--accent-deep);font-weight:700">77.60</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px;margin-top:10px">数字来自论文 Table 3（base 模型，非思考评测设定）。原表还含一列 Qwen2.5-Plus（MoE）基线，此处从略；完整 15 项对比见原文。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== POST-TRAINING ===================== -->
+  <section id="posttrain">
+    <h2><span class="num">05</span> 后训练流程（重头戏）</h2>
+    <p>后训练是把「思考 / 非思考」两种能力真正塑造进模型的地方，它有两条并行的主线：</p>
+    <ul class="tight">
+      <li><strong>旗舰模型</strong>走完整的<strong>四阶段</strong>流程：前两阶段练「思考」，后两阶段融入「非思考」。</li>
+      <li><strong>轻量模型</strong>不重复跑四阶段，而是直接从旗舰模型做<strong>强到弱蒸馏</strong>（详见第 07 节「蒸馏」），省下大量算力。</li>
+    </ul>
+
+    <div class="figure">
+      <img src="https://arxiv.org/html/2505.09388v1/x1.png" alt="Qwen3 后训练流程图" loading="lazy"
+        onerror="this.style.display='none';document.getElementById('fig1-fallback').style.display='block';">
+      <div id="fig1-fallback" style="display:none;padding:16px;border:1px dashed var(--border-strong);border-radius:11px;color:var(--ink-soft);font-size:14px">
+        图片暂时无法加载，可点击 <a href="https://arxiv.org/html/2505.09388v1/x1.png" target="_blank" rel="noopener">这里在原文查看 Figure 1</a>。流程：旗舰模型 Base → Stage 1 Long-CoT Cold Start → Stage 2 Reasoning RL → Stage 3 Thinking Mode Fusion → Stage 4 General RL → Qwen3-235B-A22B / 32B；轻量模型 Base → Strong-to-Weak Distillation → 30B-A3B / 14B / 8B / 4B / 1.7B / 0.6B，由旗舰模型输出喂入蒸馏。
+      </div>
+      <div class="fig-cap"><span class="lbl">图 1：</span>Qwen3 后训练流程。上半部分是旗舰模型的四阶段训练，下半部分是轻量模型的蒸馏路径。<span class="src" style="border:none;padding:0;font-weight:600">（图源：原论文 Figure 1）</span></div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>上半（Flagship Models，暖色区）</b>：旗舰模型从 Base 出发，依次经过 Stage 1 → Stage 2 → Stage 3 → Stage 4，最终产出红框中的 <b>Qwen3-235B-A22B</b> 与 <b>Qwen3-32B</b>。</li>
+          <li><b>Stage 1 · Long-CoT Cold Start</b>：用长链式思维数据冷启动，给模型「种下」推理范式。</li>
+          <li><b>Stage 2 · Reasoning RL</b>：强化学习专攻数学、代码等可验证推理任务，把推理能力顶上去。</li>
+          <li><b>Stage 3 · Thinking Mode Fusion</b>：把「非思考」能力融合进已有的「思考」模型，让一个模型兼具两种模式。</li>
+          <li><b>Stage 4 · General RL</b>：通用领域强化学习，在广泛下游任务上做最后的对齐与打磨。</li>
+          <li><b>下半（Lightweight Models，冷色区）</b>：轻量模型 Base 不走四阶段，而是经过 <b>Strong-to-Weak Distillation</b> 得到 30B-A3B / 14B / 8B / 4B / 1.7B / 0.6B。</li>
+          <li><b>跨区箭头</b>：从旗舰最终模型有一条箭头<b>向下</b>指向蒸馏框——意味着小模型的「老师」正是训练完成的旗舰模型。</li>
+        </ul>
+        <p style="font-size:13.5px;color:var(--ink-soft)">一句话总结：旗舰靠四阶段「炼」出来，小模型靠蒸馏「教」出来，两条线在蒸馏处汇合。</p>
+      </div>
+    </div>
+
+    <p>下面四张卡片对应旗舰模型的四个阶段，<strong>默认折叠</strong>，点击标题展开看每个阶段的动机与做法。</p>
+
+    <!-- Stage 1 -->
+    <div class="deep-card">
+      <div class="dc-head" onclick="toggleCard(this)">
+        <div class="dc-stage">S1</div>
+        <div class="dc-tt">
+          <div class="dc-title">Long-CoT 冷启动 <span class="dc-en">Long-CoT Cold Start</span></div>
+          <div class="dc-sum">用精挑细选、可验证的长链思维数据给模型「种下」推理范式，但刻意不追求刷分。</div>
+        </div>
+        <div class="dc-arrow">▶</div>
+      </div>
+      <div class="dc-body"><div class="dc-body-inner">
+        <p><strong>动机</strong>：在做强化学习之前，先让模型学会「长链式思维（long-CoT）」的基本样子。这一步求的是「种下好的推理范式」，而不是马上把分数刷高。</p>
+        <h4>数据怎么构建：两阶段过滤</h4>
+        <p>数据覆盖数学、代码、逻辑推理、通用 STEM，每道题都配有<strong>可验证的参考答案或测试用例</strong>。构建经过严格的两轮过滤：</p>
+        <p><strong>① Query 过滤</strong>：用 Qwen2.5-72B-Instruct 剔除不易验证的问题（含多个子问题、或纯文本生成类）；并剔除「不用 CoT 就能答对」的题，防止模型靠浅层猜测；同时标注领域，保持各领域均衡。</p>
+        <p><strong>② Response 过滤</strong>：用 QwQ-32B 为每道题生成 N 个候选答案（QwQ-32B 始终答不对时由人工评估）。对 Pass@N 为正的题，再剔除以下响应：①最终答案错误；②大量重复；③明显是猜测、缺乏推理；④思考过程与总结结论不一致；⑤语言混杂或风格突变；⑥疑似与验证集过于相似。</p>
+        <p class="note-soft">关键取舍：此阶段刻意<strong>少样本、少步数</strong>，目的是不限制模型潜力，为后续 RL 留出提升空间。</p>
+      </div></div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="deep-card">
+      <div class="dc-head" onclick="toggleCard(this)">
+        <div class="dc-stage">S2</div>
+        <div class="dc-tt">
+          <div class="dc-title">推理强化学习 <span class="dc-en">Reasoning RL</span></div>
+          <div class="dc-sum">用 3,995 对高难度可验证题做 GRPO 强化学习，AIME&#39;24 从 70.1 一路涨到 85.1。</div>
+        </div>
+        <div class="dc-arrow">▶</div>
+      </div>
+      <div class="dc-body"><div class="dc-body-inner">
+        <p><strong>数据筛选的四条标准</strong>：用于本阶段的「题—验证器」对必须满足：① 没在冷启动阶段用过；② 对冷启动后的模型是「可学的」；③ 尽可能难；④ 覆盖广泛子领域。</p>
+        <p>最终收集 <strong>3,995 对</strong>「题—验证器」，采用 <strong>GRPO</strong> 更新模型参数。训练上的经验：用<strong>大 batch + 每题高 rollout 次数</strong>，并引入<strong>off-policy 训练</strong>提升样本效率；同时通过控制模型<strong>熵（entropy）</strong>稳步上升或保持平稳，来平衡探索与利用，这对稳定训练至关重要。</p>
+        <h4>结果</h4>
+        <p>单次 RL 运行、<strong>无需人工干预超参</strong>，训练奖励与验证性能持续提升。例如 Qwen3-235B-A22B 的 <strong>AIME&#39;24 成绩在 170 个 RL 步内从 70.1 提升到 85.1</strong>。</p>
+      </div></div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="deep-card">
+      <div class="dc-head" onclick="toggleCard(this)">
+        <div class="dc-stage">S3</div>
+        <div class="dc-tt">
+          <div class="dc-title">思考模式融合 <span class="dc-en">Thinking Mode Fusion</span></div>
+          <div class="dc-sum">在推理模型上继续 SFT，把「非思考」能力融进来，并设计聊天模板实现模式切换。</div>
+        </div>
+        <div class="dc-arrow">▶</div>
+      </div>
+      <div class="dc-body"><div class="dc-body-inner">
+        <p><strong>目标</strong>：把「非思考」能力融合进 Stage 2 已经练好的「思考」模型，让开发者既能控制推理行为，又不用为两种模式分别部署模型。做法是在 Reasoning RL 模型上做<strong>持续 SFT</strong>，并设计聊天模板来融合两种模式。</p>
+        <h4>SFT 数据怎么配</h4>
+        <p><strong>思考数据</strong>：用 Stage 2 模型自己对 Stage 1 的 query 做<strong>拒绝采样</strong>生成——这样保证不损害 Stage 2 已有的推理性能。<strong>非思考数据</strong>：精心覆盖代码、数学、指令遵循、多语言、创意写作、问答、角色扮演等多样任务，并用<strong>自动生成的 checklist</strong> 评估质量；为提升低资源语言表现，特意提高了翻译任务比例。</p>
+        <p class="note-soft">本阶段顺带带来两个关键机制：聊天模板（模式切换）与思考预算（深度控制）——它们正是下一节「思考控制」的主角。</p>
+      </div></div>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="deep-card">
+      <div class="dc-head" onclick="toggleCard(this)">
+        <div class="dc-stage">S4</div>
+        <div class="dc-tt">
+          <div class="dc-title">通用强化学习 <span class="dc-en">General RL</span></div>
+          <div class="dc-sum">通用领域 RL，在广泛下游任务上做最后的对齐与性能打磨。</div>
+        </div>
+        <div class="dc-arrow">▶</div>
+      </div>
+      <div class="dc-body"><div class="dc-body-inner">
+        <p><strong>定位</strong>：后两个阶段（Stage 3 + Stage 4）共同负责把「非思考」能力整合进模型。Stage 3 先把<strong>带推理路径与不带推理路径的数据合并成一个统一数据集</strong>做 SFT；Stage 4 在此基础上做<strong>通用领域强化学习</strong>。</p>
+        <h4>这一步在优化什么</h4>
+        <p>General RL 在<strong>广泛的下游任务类型</strong>上施加强化学习信号，目标是全面提升模型在各类真实任务上的综合表现与对齐（而不再局限于前两阶段聚焦的数学 / 代码推理），最终产出旗舰模型 Qwen3-235B-A22B 与 Qwen3-32B。</p>
+        <p class="note-soft">说明：本节在 arXiv v1 的 HTML 渲染中内容有限（LaTeXML 转换在此处截断），以上依据论文摘要、引言中对「合并推理 / 非推理数据统一微调 + 通用领域 RL」的描述与 Figure 1 整理；更细的设置请以原文 PDF 为准。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ===================== THINKING CONTROL ===================== -->
+  <section id="thinking">
+    <h2><span class="num">06</span> 思考控制：聊天模板 + 思考预算</h2>
+    <p>这是 Qwen3 最核心的创新落地。模式融合之后，怎么<strong>让用户来控制</strong>模型「想不想」「想多久」？答案是两套机制：用<strong>聊天模板</strong>切换模式，用<strong>思考预算</strong>控制深度。</p>
+
+    <h3>机制一：聊天模板切换模式</h3>
+    <p>模式切换靠聊天模板里的 <code>/think</code> 与 <code>/no_think</code> 标记——它们既可以写在<strong>用户 query</strong> 里，也可以写在 <strong>system message</strong> 里。<strong>默认是思考模式</strong>：为了让模型在没有任何标记时也会思考，团队特意加入了「用户 query 不含 <code>/think</code>」的思考模式训练样本，因此 <code>/think</code> 通常可省略；而加上 <code>/no_think</code> 就关闭思考。一个关键设计：<strong>非思考模式下仍保留一个「空的 think block」</strong>——既保证模型内部格式一致，也让开发者可以直接拼一个空 think block 来强制关闭思考。多轮对话里可随机插入多个标记，模型<strong>以最后一个标记为准</strong>。下面是两种模式的模板对比（对应论文 Table 9）：</p>
+
+    <div class="twocol">
+      <div class="panel after" style="padding-bottom:18px">
+        <div class="code-label">🧠 思考模式（默认）</div>
+        <pre class="code"><span class="fl">&lt;|im_start|&gt;</span>user
+{用户问题} /think<span class="fl">&lt;|im_end|&gt;</span>   <span class="cm"># /think 是默认，可省略</span>
+<span class="fl">&lt;|im_start|&gt;</span>assistant
+<span class="em">&lt;think&gt;</span>
+{模型的多步推理过程……}
+<span class="em">&lt;/think&gt;</span>
+
+{最终回答}<span class="fl">&lt;|im_end|&gt;</span></pre>
+      </div>
+      <div class="panel before" style="padding-bottom:18px;background:var(--surface)">
+        <div class="code-label">⚡ 非思考模式</div>
+        <pre class="code"><span class="fl">&lt;|im_start|&gt;</span>user
+{用户问题} <span class="em">/no_think</span><span class="fl">&lt;|im_end|&gt;</span>
+<span class="fl">&lt;|im_start|&gt;</span>assistant
+<span class="em">&lt;think&gt;</span>
+<span class="em">&lt;/think&gt;</span>   <span class="cm"># 保留空的 think block</span>
+
+{最终回答}<span class="fl">&lt;|im_end|&gt;</span></pre>
+      </div>
+    </div>
+    <p class="muted" style="font-size:13.5px">在 Hugging Face 的 tokenizer 里，这一行为通过参数 <code>enable_thinking=False</code> 实现。</p>
+
+    <h3>机制二：思考预算（一步步看它怎么工作）</h3>
+    <p>既然模型能在「完整思考」和「完全不思考」之间自如切换，它<strong>自然也学会了处理「思考到一半」的情况</strong>——这正是思考预算的基础。值得注意：这个能力<strong>不是被显式训练出来的，而是模式融合之后「涌现」的</strong>。点「下一步」跟着走一遍：</p>
+
+    <div class="stepbox" id="tb-stage">
+      <div style="position:relative;padding-top:20px">
+        <div class="tb-track">
+          <div class="tb-fill" id="tb-fill"></div>
+          <div class="tb-thresh"></div>
+          <div class="tb-track-label">思考 tokens 累积中…</div>
+        </div>
+      </div>
+
+      <div class="tb-steps">
+        <div class="tb-step active" data-step="0">
+          <div class="sh">① 用户提问 + 设定思考预算</div>
+          <div class="sb">用户提出一个复杂问题，同时设定一个「思考预算」上限（例如：思考最多用掉某个 token 数）。此时模型还没开始思考。</div>
+        </div>
+        <div class="tb-step" data-step="1">
+          <div class="sh">② 模型进入思考模式，逐步累积推理</div>
+          <div class="sb">模型在 <code>&lt;think&gt;</code> 块里一步步推理，思考 tokens 不断累积——进度条向右增长。</div>
+        </div>
+        <div class="tb-step" data-step="2">
+          <div class="sh">③ 思考长度逼近预算上限</div>
+          <div class="sb">推理还在继续，长度逐渐接近用户设定的阈值（进度条触及竖线标记）。</div>
+        </div>
+        <div class="tb-step" data-step="3">
+          <div class="sh">④ 达到阈值 → 手动截断 + 注入停止指令</div>
+          <div class="sb">一旦思考长度达到阈值，系统<strong>手动中止</strong>思考，并向序列中<strong>注入一句停止指令</strong>（见下方），强制收尾 think 块。</div>
+        </div>
+        <div class="tb-step" data-step="4">
+          <div class="sh">⑤ 基于已有推理，直接作答</div>
+          <div class="sb">收到停止指令后，模型<strong>基于到目前为止积累的推理</strong>直接生成最终答案——在「想得更久」和「答得更快」之间完成权衡。</div>
+        </div>
+      </div>
+
+      <div class="tb-inject" id="tb-inject">
+        <div style="font-size:12px;color:var(--ink-faint);margin-bottom:5px">注入的停止指令（论文原文）：</div>
+        <pre>Considering the limited time by the user, I have to give the solution based on the thinking directly now.
+<span class="hl">&lt;/think&gt;</span></pre>
+      </div>
+      <div class="tb-answer" id="tb-answer">
+        <div class="ab">✓ 最终答案已基于「不完整但已足够」的推理生成 —— 这一能力是模式融合后自然涌现的。</div>
+      </div>
+
+      <div class="tb-controls">
+        <button id="tb-prev" onclick="tbPrev()">‹ 上一步</button>
+        <button id="tb-next" class="primary" onclick="tbNext()">下一步 ›</button>
+        <button onclick="tbReset()">重置</button>
+        <span class="tb-counter" id="tb-counter">1 / 5</span>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="t">为什么这件事重要</div>
+      它把「推理深度」变成了一个用户可调的<strong>连续旋钮</strong>：简单问题少想、省延迟；复杂问题多想、提性能。论文还观察到——<strong>给的思考预算越大，模型在各类任务上的表现越是稳定提升</strong>。
+    </div>
+  </section>
+
+  <!-- ===================== DISTILLATION ===================== -->
+  <section id="distill">
+    <h2><span class="num">07</span> 强到弱蒸馏：小模型怎么便宜地造出来</h2>
+    <p>让每个小模型都跑一遍完整四阶段训练太贵了。Qwen3 对 <strong>5 个稠密模型（0.6B / 1.7B / 4B / 8B / 14B）和 1 个 MoE 模型（30B-A3B）</strong>改用<strong>强到弱蒸馏</strong>：用已经训练好的旗舰 <strong>Qwen3-32B 与 Qwen3-235B-A22B 当「教师」</strong>，把能力迁移给小「学生」。注意——目标不只是提性能，还要把 <code>/think</code> / <code>/no_think</code> 的<strong>模式切换能力</strong>一并传给小模型。整个过程分两个阶段，顺序很关键：</p>
+
+    <div class="flow flow-2">
+      <div class="fnode">
+        <div class="ftag">PHASE 1</div>
+        <div class="fname">Off-policy 蒸馏</div>
+        <div class="fdesc">把教师在 <code>/think</code> 与 <code>/no_think</code> 两种模式下生成的输出<strong>合在一起</strong>，让学生对这些「教师答案」做<strong>响应蒸馏</strong>。学生由此先学到<strong>基本推理能力</strong>与<strong>模式切换</strong>，为下一阶段打基础。</div>
+        <div class="fseq">学生学「教师的输出」</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">PHASE 2</div>
+        <div class="fname">On-policy 蒸馏</div>
+        <div class="fdesc">学生<strong>自己</strong>采样 prompt、在 <code>/think</code> 或 <code>/no_think</code> 模式下生成响应（on-policy 序列）；再对齐学生与教师（32B 或 235B-A22B）的 <strong>logits</strong>、<strong>最小化 KL 散度</strong>来微调。</div>
+        <div class="fseq">学生学「教师的概率分布」</div>
+      </div>
+    </div>
+
+    <h3>关键证据：蒸馏 vs 直接强化学习</h3>
+    <p>论文做了一个很干净的对照实验：从<strong>同一个「off-policy 蒸馏后的 8B 检查点」</strong>出发，分两条路继续训练——要么直接做强化学习（RL），要么做 on-policy 蒸馏（两边都只用数学 + 代码数据）。结论非常鲜明：</p>
+
+    <div class="metrics metrics-3">
+      <div class="metric"><div class="v">≈1/10<span class="u"> GPU 时</span></div><div class="k">on-policy 蒸馏仅 1,800 GPU 时<br>而 RL 要 17,920 GPU 时</div></div>
+      <div class="metric"><div class="v">全指标 ↑</div><div class="k">蒸馏在每个基准上都优于 RL<br>（如 AIME&#39;24 74.4 vs 67.6）</div></div>
+      <div class="metric"><div class="v">pass@64 ↑</div><div class="k">蒸馏扩大探索空间<br>而 RL 的 pass@64 原地不动</div></div>
+    </div>
+
+    <div class="quote big" style="font-size:17px">最有意思的一点：<strong>RL 只能强化模型已经会的东西</strong>（pass@64 维持 90.0 / 83.3 不变），而<strong>蒸馏从教师 logits 学到了新东西</strong>——pass@64 升到 93.3 / 86.7。也就是说，蒸馏不只让学生「答得更稳」，还抬高了它的<strong>推理潜力上限</strong>。</div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span> 看对照实验数字（Table 21 · Qwen3-8B） <span class="sub">括号内为 pass@64</span></summary>
+      <div class="ex-body">
+        <div class="tablewrap" style="margin:6px 0 0">
+          <table class="data">
+            <thead><tr><th>方法</th><th>AIME&#39;24</th><th>AIME&#39;25</th><th>MATH500</th><th>LiveCodeBench v5</th><th>GPU 时</th></tr></thead>
+            <tbody>
+              <tr><td>Off-policy 蒸馏（起点）</td><td>55.0 (90.0)</td><td>42.8 (83.3)</td><td>92.4</td><td>42.0</td><td class="dim">—</td></tr>
+              <tr><td>＋ 强化学习 (RL)</td><td>67.6 (90.0)</td><td>55.5 (83.3)</td><td>94.8</td><td>52.9</td><td>17,920</td></tr>
+              <tr class="hl"><td>＋ On-policy 蒸馏</td><td>74.4 (93.3)</td><td>65.5 (86.7)</td><td>97.0</td><td>60.3</td><td>1,800</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:13px;margin-top:10px">两条路都从同一个 off-policy 蒸馏 8B 检查点出发，仅用数学 / 代码数据训练。注意 RL 的 pass@64（括号内）与起点持平，而 on-policy 蒸馏的 pass@64 明显上升。数字来自论文 Table 21。</p>
+      </div>
+    </details>
+
+    <div class="callout">
+      <div class="t">一句话总结</div>
+      先用 off-policy 蒸馏让小模型「会说话、会切模式」，再用 on-policy 蒸馏对齐 logits 把推理能力顶上去——<strong>性能更好、还便宜约 10 倍</strong>，并保留对推理过程的细粒度控制，省去为每个小模型单独跑四阶段的必要。
+    </div>
+    <p class="note-soft">说明：§4.5 蒸馏方法与 §4.7 对照实验（Table 21）在 arXiv v1 的 HTML 渲染中被 LaTeXML 截断，以上内容取自同一篇 v1 的完整 PDF，核心数字均与原文对齐。</p>
+  </section>
+
+  <!-- ===================== RESULTS ===================== -->
+  <section id="results">
+    <h2><span class="num">08</span> 实验结论（一眼扫过）</h2>
+    <p>后训练完成的旗舰 <strong>Qwen3-235B-A22B</strong> 在代码、数学、Agent 任务上，比肩甚至超过更大的 MoE 模型与闭源模型。几个最有代表性的数字：</p>
+    <div class="metrics">
+      <div class="metric"><div class="v">85.7</div><div class="k">AIME&#39;24<br>（数学竞赛）</div></div>
+      <div class="metric"><div class="v">81.5</div><div class="k">AIME&#39;25<br>（数学竞赛）</div></div>
+      <div class="metric"><div class="v">70.7</div><div class="k">LiveCodeBench v5<br>（代码）</div></div>
+      <div class="metric"><div class="v">70.8</div><div class="k">BFCL v3<br>（函数调用 / Agent）</div></div>
+    </div>
+    <div class="quote big" style="font-size:18px">CodeForces 评分高达 <strong>2,056</strong>；而且——思考预算给得越多，性能越是稳定上升。</div>
+    <p class="muted" style="font-size:13.5px">这些是后训练模型在思考模式下的代表性结果；基座模型的对比见「预训练」一节。本导读不堆砌完整实验表，只取最能说明问题的数字。</p>
+  </section>
+
+</div>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="footer-inner">
+    <div class="ft">原文</div>
+    <p>Qwen3 Technical Report · Qwen Team（阿里巴巴）· arXiv:2505.09388 · 2025.05 · Apache 2.0</p>
+    <p>
+      阅读原文：<a href="https://arxiv.org/abs/2505.09388" target="_blank" rel="noopener">arxiv.org/abs/2505.09388</a>　·
+      HTML 全文：<a href="https://arxiv.org/html/2505.09388v1" target="_blank" rel="noopener">arxiv.org/html/2505.09388v1</a>
+    </p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:14px">本页为面向中文读者的可视化导读，内容依据 arXiv v1 HTML 渲染整理；核心数字均与原文对齐。图 1 来自原论文。</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明卡片展开/收起（仅用于图片）
+function toggleFigDetail(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起说明 ▴' : '展开说明 ▸';
+}
+// 架构小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开 ▸';
+}
+// 后训练阶段深度卡片：用计算高度做展开/收起，避免固定 max-height 裁剪长内容
+function toggleCard(head){
+  var card = head.parentElement;
+  var body = card.querySelector('.dc-body');
+  if (card.classList.contains('open')){
+    body.style.maxHeight = '';
+    card.classList.remove('open');
+  } else {
+    card.classList.add('open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+
+// ---- 思考预算步进动画 ----
+var tbIdx = 0;
+var tbWidths = [3, 34, 62, 70, 70];
+var tbLabels = ['等待开始…', '思考 tokens 累积中…', '思考 tokens 累积中…', '已达上限，停止思考', '已达上限，停止思考'];
+function tbRender(){
+  var steps = document.querySelectorAll('#tb-stage .tb-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === tbIdx);
+  }
+  var fill = document.getElementById('tb-fill');
+  fill.style.width = tbWidths[tbIdx] + '%';
+  fill.classList.toggle('halted', tbIdx >= 3);
+  document.querySelector('#tb-stage .tb-thresh').classList.toggle('hit', tbIdx >= 3);
+  document.querySelector('#tb-stage .tb-track-label').textContent = tbLabels[tbIdx];
+  document.getElementById('tb-inject').classList.toggle('show', tbIdx >= 3);
+  document.getElementById('tb-answer').classList.toggle('show', tbIdx >= 4);
+  document.getElementById('tb-counter').textContent = (tbIdx+1) + ' / 5';
+  document.getElementById('tb-prev').disabled = (tbIdx === 0);
+  document.getElementById('tb-next').disabled = (tbIdx === 4);
+}
+function tbNext(){ if (tbIdx < 4){ tbIdx++; tbRender(); } }
+function tbPrev(){ if (tbIdx > 0){ tbIdx--; tbRender(); } }
+function tbReset(){ tbIdx = 0; tbRender(); }
+tbRender();
+
+// ---- 导航高亮（scroll-spy）----
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

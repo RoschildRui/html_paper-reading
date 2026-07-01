@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeepSeek-V3.2 解读 · 稀疏注意力 + 扩展 RL + 智能体合成</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23b5654a'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle' fill='%23fbf6ea' font-family='Arial,sans-serif' font-weight='bold'%3EV%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --surface:#f4ead7;
+    --surface2:#efe3cd;
+    --border:#e8dcc7;
+    --line:#ddcdb0;
+    --ink:#2e2a24;
+    --ink-soft:#4a443a;
+    --muted:#7b7264;
+    --accent:#b5654a;
+    --accent-deep:#9b5037;
+    --accent-soft:rgba(181,101,74,0.10);
+    --accent-line:rgba(181,101,74,0.28);
+    --radius:14px;
+    --maxw:880px;
+    --sans:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.78;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+
+  /* ---------- top nav ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(251,246,234,0.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{max-width:var(--maxw);margin:0 auto;padding:10px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .brand{font-weight:800;letter-spacing:.2px;font-size:15px;color:var(--ink);white-space:nowrap;}
+  .brand span{color:var(--accent);}
+  .navlinks{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto;}
+  .navlinks a{
+    font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:8px;
+    transition:background .18s,color .18s;font-weight:500;
+  }
+  .navlinks a:hover{background:var(--accent-soft);color:var(--accent-deep);}
+  .src-link{color:var(--accent-deep);font-weight:600;border:1px solid var(--accent-line);}
+  .src-link:hover{background:var(--accent);color:#fff !important;}
+
+  /* ---------- header ---------- */
+  header.hero{padding:54px 0 16px;}
+  .eyebrow{display:inline-flex;gap:8px;align-items:center;font-family:var(--mono);font-size:12.5px;color:var(--accent-deep);
+    background:var(--accent-soft);border:1px solid var(--accent-line);padding:4px 11px;border-radius:999px;letter-spacing:.3px;}
+  h1{font-size:40px;line-height:1.18;margin:18px 0 6px;font-weight:800;letter-spacing:-.5px;}
+  .subtitle{font-size:18.5px;color:var(--ink-soft);font-weight:500;margin:0 0 20px;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .badge{font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 13px;color:var(--ink-soft);}
+  .badge b{color:var(--ink);font-weight:600;}
+
+  /* ---------- generic blocks ---------- */
+  section{padding:30px 0;border-top:1px solid var(--border);}
+  section:first-of-type{border-top:none;}
+  .kicker{font-family:var(--mono);font-size:12.5px;color:var(--accent-deep);letter-spacing:1.4px;text-transform:uppercase;margin:0 0 6px;}
+  h2{font-size:27px;font-weight:800;margin:2px 0 8px;letter-spacing:-.3px;}
+  h3{font-size:20px;font-weight:700;margin:26px 0 8px;}
+  h4{font-size:16.5px;font-weight:700;margin:18px 0 6px;color:var(--ink);}
+  p{margin:12px 0;}
+  strong{font-weight:700;color:var(--ink);}
+  a{color:var(--accent-deep);}
+  .lead{font-size:18.5px;color:var(--ink-soft);}
+  ul,ol{margin:12px 0;padding-left:22px;}
+  li{margin:7px 0;}
+  code{font-family:var(--mono);font-size:.88em;background:var(--surface2);padding:1.5px 6px;border-radius:6px;border:1px solid var(--border);}
+
+  /* TL;DR card */
+  .tldr{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:22px 24px;margin:8px 0 22px;}
+  .tldr h2{font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:8px;}
+  .tldr p{margin:8px 0;font-size:16.5px;color:var(--ink-soft);}
+
+  /* breakthrough cards */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0;}
+  .feat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .feat .ico{font-size:20px;}
+  .feat h4{margin:8px 0 6px;font-size:16px;}
+  .feat p{margin:0;font-size:14.5px;color:var(--muted);line-height:1.65;}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0;}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 14px;text-align:center;}
+  .metric .num{font-size:26px;font-weight:800;color:var(--accent-deep);font-family:var(--sans);letter-spacing:-.5px;line-height:1.1;}
+  .metric .lab{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45;}
+
+  /* figure */
+  figure{margin:22px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .figcap{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .figcap b{color:var(--ink-soft);}
+  .fig-toggle{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--accent-deep);cursor:pointer;font-weight:600;user-select:none;}
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+  .figure-detail.active{max-height:1400px;}
+  .figure-detail-inner{padding:12px 2px 2px;font-size:14.5px;color:var(--ink-soft);}
+  .figure-detail-inner ul{margin:6px 0;padding-left:20px;}
+  .figure-detail-inner li{margin:6px 0;}
+  .figure-detail-inner .sum{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted);font-size:13.5px;}
+
+  /* expandable deep cards */
+  .deck{display:flex;flex-direction:column;gap:10px;margin:16px 0;}
+  .xcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .xcard .head{padding:15px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;user-select:none;transition:background .18s;}
+  .xcard .head:hover{background:var(--surface2);}
+  .xcard .chev{color:var(--accent);font-size:14px;margin-top:3px;transition:transform .25s;flex-shrink:0;}
+  .xcard.open .chev{transform:rotate(90deg);}
+  .xcard .ht{flex:1;}
+  .xcard .ht .t{font-weight:700;font-size:16px;}
+  .xcard .ht .s{font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .xcard .body{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .xcard.open .body{max-height:1600px;}
+  .xcard .body-inner{padding:2px 18px 18px;font-size:15px;color:var(--ink-soft);}
+  .xcard .body-inner p:first-child{margin-top:4px;}
+
+  /* step-through */
+  .stepper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:20px 0;}
+  .stepper h4{margin:0 0 4px;}
+  .stage{display:flex;align-items:flex-end;gap:6px;justify-content:center;margin:22px 0 6px;min-height:118px;flex-wrap:nowrap;}
+  .tok{position:relative;width:34px;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .tok .score{font-family:var(--mono);font-size:11px;color:var(--muted);height:14px;opacity:0;transition:opacity .35s;}
+  .tok .score.show{opacity:1;}
+  .tok .box{width:26px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--line);transition:all .35s;}
+  .tok .lab{font-family:var(--mono);font-size:10px;color:var(--muted);}
+  .tok.dim .box{opacity:.42;}
+  .tok.sel .box{background:var(--accent-soft);border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);}
+  .tok.q .box{background:var(--ink);border-color:var(--ink);}
+  .tok.q .lab{color:var(--ink);font-weight:700;}
+  .stepdesc{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 16px;font-size:15px;color:var(--ink-soft);min-height:60px;}
+  .stepdesc b{color:var(--accent-deep);}
+  .stepctl{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap;}
+  .btn{font-family:var(--sans);font-size:14px;font-weight:600;border:1px solid var(--accent-line);background:#fff;color:var(--accent-deep);
+    padding:8px 16px;border-radius:9px;cursor:pointer;transition:all .18s;}
+  .btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.ghost{border-color:var(--border);color:var(--muted);background:transparent;}
+  .btn.ghost:hover{background:var(--surface2);color:var(--ink);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .stepcount{font-family:var(--mono);font-size:13px;color:var(--muted);margin-left:auto;}
+
+  /* tables */
+  .tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--border);border-radius:12px;}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:540px;}
+  th,td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--border);}
+  th{background:var(--surface2);font-weight:700;color:var(--ink);font-size:13px;}
+  td:first-child,th:first-child{text-align:left;font-weight:600;}
+  tbody tr:last-child td{border-bottom:none;}
+  .hl{color:var(--accent-deep);font-weight:800;}
+  .colour-ours{background:var(--accent-soft);}
+  caption{caption-side:bottom;font-size:12.5px;color:var(--muted);padding:9px 4px 0;text-align:left;}
+
+  /* quote */
+  blockquote{margin:18px 0;padding:14px 20px;background:var(--surface);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;color:var(--ink-soft);font-size:15.5px;}
+
+  /* details */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:14px 0;padding:0;}
+  details summary{padding:14px 18px;cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;align-items:center;gap:10px;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary .tri{color:var(--accent);font-size:12px;transition:transform .2s;}
+  details[open] summary .tri{transform:rotate(90deg);}
+  details summary .sm{font-weight:400;color:var(--muted);font-size:13.5px;}
+  .details-body{padding:2px 18px 18px;font-size:14.5px;color:var(--ink-soft);}
+  pre{background:#2e2a24;color:#f4ead7;border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.8px;line-height:1.6;margin:10px 0;}
+  pre .c{color:#b79b78;}
+
+  /* callout */
+  .note{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:12px;padding:14px 18px;margin:16px 0;font-size:14.5px;color:var(--ink-soft);}
+  .note b{color:var(--accent-deep);}
+
+  /* footer */
+  footer{border-top:1px solid var(--border);padding:30px 0 60px;color:var(--muted);font-size:14px;}
+  footer a{color:var(--accent-deep);font-weight:600;}
+  footer .ft-src{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1{font-size:30px;}
+    h2{font-size:23px;}
+    .grid3,.metrics{grid-template-columns:1fr 1fr;}
+    .navlinks{display:none;}
+    .tok{width:26px;}
+    .tok .box{width:20px;}
+  }
+  @media (max-width:520px){
+    .grid3,.metrics{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">DeepSeek-<span>V3.2</span></div>
+    <nav class="navlinks">
+      <a href="#overview">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#dsa">DSA 架构</a>
+      <a href="#rl">扩展 RL</a>
+      <a href="#agent">智能体</a>
+      <a href="#eval">实验</a>
+      <a href="#limit">局限</a>
+      <a class="src-link" href="https://arxiv.org/abs/2512.02556" target="_blank" rel="noopener">原文 ↗</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero" id="overview">
+    <span class="eyebrow">📄 Technical Report · DeepSeek-AI</span>
+    <h1>DeepSeek-V3.2：把开源大模型推向前沿</h1>
+    <p class="subtitle">用稀疏注意力换效率、用扩展强化学习换推理、用大规模合成换智能体能力——在更低成本下逼近 GPT-5 与 Gemini-3.0-Pro。</p>
+    <div class="meta">
+      <span class="badge">🗓️ 发表 <b>2025.12</b></span>
+      <span class="badge">📚 <b>arXiv preprint</b> · arXiv:2512.02556</span>
+      <span class="badge">🏢 <b>DeepSeek-AI</b></span>
+      <span class="badge">🔗 <a href="https://arxiv.org/abs/2512.02556" target="_blank" rel="noopener">阅读原文 / Source ↗</a></span>
+    </div>
+  </header>
+
+  <!-- TL;DR -->
+  <section style="border-top:none;padding-top:14px;">
+    <div class="tldr">
+      <h2>⚡ TL;DR · 30 秒抓住核心</h2>
+      <p>开源模型与闭源前沿的差距正在拉大。DeepSeek-V3.2 把这归结为三个短板——<strong>长序列注意力太贵、后训练算力投入不足、智能体泛化能力弱</strong>，并分别给出解法。</p>
+      <p>① <strong>DeepSeek 稀疏注意力 (DSA)</strong>：用一个轻量「索引器」为每个 query 只挑出 top-k 个最相关的历史 token 做注意力，把核心复杂度从 <code>O(L²)</code> 降到 <code>O(Lk)</code>，长上下文几乎不掉点。② <strong>可扩展 RL</strong>：把后训练算力堆到超过预训练的 10%，配套一整套稳定 GRPO 的技巧，性能追平 GPT-5。③ <strong>大规模智能体任务合成</strong>：自动造出 1,800+ 环境、85,000 条复杂指令，让模型学会「在推理中调用工具」。</p>
+      <p>高算力变体 <strong>DeepSeek-V3.2-Speciale</strong> 更进一步，在 IMO / IOI / ICPC World Final / CMO 2025 全部拿到金牌级成绩。</p>
+    </div>
+
+    <figure>
+      <img src="assets/x1.png" alt="DeepSeek-V3.2 与各模型的基准对比" loading="lazy" />
+      <div class="figcap"><b>图 1：</b>DeepSeek-V3.2 / Speciale 与 GPT-5-High、Claude-4.5-Sonnet、Gemini-3.0-Pro 在「推理能力」与「智能体能力」两大类基准上的对比。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>左半区（Reasoning Capabilities）</strong>：AIME 2025、HMMT 2025、HLE、Codeforces。蓝色实心是 Speciale、蓝色斜纹是 V3.2-Thinking；可见 Speciale 在 AIME(96.0)、HMMT(99.2)、Codeforces(2701) 上达到甚至超过 Gemini-3.0-Pro（最右浅灰）。</li>
+          <li><strong>右半区（Agentic Capabilities）</strong>：SWE Verified、Terminal Bench 2.0、τ²-Bench、Tool-Decathlon。V3.2 在这些真实/合成智能体任务上明显领先其他开源模型，并接近闭源前沿。</li>
+          <li><strong>双纵轴</strong>：左轴是准确率 / Pass@1 (%)，右轴专门给 Codeforces 的 Rating（分值量级不同，单独标尺）。</li>
+          <li><strong>柱顶数字</strong>是各模型的具体得分，方便横向对照——这张图是全文结论的「封面」，后文逐项展开。</li>
+        </ul>
+        <div class="sum">一句话：V3.2 把开源模型的推理与智能体能力同时推到了接近 GPT-5 / Gemini-3.0-Pro 的水平。</div>
+      </div></div>
+    </figure>
+
+    <div class="grid3">
+      <div class="feat"><div class="ico">🪶</div><h4>DSA 稀疏注意力</h4><p>轻量索引器 + top-k 选择，长序列注意力从平方级降到近线性，长上下文不掉点。</p></div>
+      <div class="feat"><div class="ico">📈</div><h4>可扩展强化学习</h4><p>稳定 GRPO 的四项技巧，把后训练算力扩到 >10% 预训练，推理追平 GPT-5。</p></div>
+      <div class="feat"><div class="ico">🧰</div><h4>智能体任务合成</h4><p>自动生成「难解但易验证」的环境与任务，让推理与工具调用融为一体。</p></div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <p class="kicker">问题定义</p>
+    <h2>开源模型为什么追不上闭源？</h2>
+    <p>自 o1、DeepSeek-R1 之后，推理模型让 LLM 在可验证领域大幅跃进。但过去几个月出现了分化：<strong>闭源专有模型（GPT-5、Claude-4.5、Gemini-3.0）的进步速度明显更快</strong>，开源与闭源的差距不是在收敛，而是在<strong>拉大</strong>。</p>
+    <p>作者把这种落后拆成三个具体短板，并让全文的三大贡献逐一对应：</p>
+    <div class="deck">
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">① 架构：vanilla 注意力对长序列太低效</div><div class="s">平方级复杂度成为可扩展部署与后训练的瓶颈 → 用 DSA 解决</div></div></div>
+        <div class="body"><div class="body-inner"><p>主流模型仍依赖标准注意力，其计算量随序列长度平方增长。这不仅推高长文本的推理成本，也限制了在长序列上做大规模后训练的可行性。<strong>对应解法：DeepSeek 稀疏注意力 (DSA)。</strong></p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">② 资源：后训练算力投入不足</div><div class="s">难任务上表现受限，因为 RL/后训练阶段算力没堆够 → 用可扩展 RL 解决</div></div></div>
+        <div class="body"><div class="body-inner"><p>开源模型普遍在后训练阶段算力投入偏低，导致在硬任务上能力受限。本文把后训练算力预算提升到<strong>超过预训练成本的 10%</strong>，并设计稳定的 RL 协议让算力能持续扩展。<strong>对应解法：Scaling GRPO。</strong></p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">③ 智能体：泛化与指令遵循明显落后</div><div class="s">在真实部署的工具调用场景里不如闭源 → 用大规模智能体合成解决</div></div></div>
+        <div class="body"><div class="body-inner"><p>在 AI Agent 场景（MCP-Universe、MCP-Mark、Tool-Decathlon 等长尾任务）中，开源模型的泛化与指令遵循能力明显落后，限制了真实落地效果。本文用<strong>冷启动 + 大规模智能体任务合成</strong>来补足。<strong>对应解法：智能体任务合成管线。</strong></p></div></div>
+      </div>
+    </div>
+    <div class="note">📌 <b>定位提醒：</b>DeepSeek-V3.2 是 V3.2-Exp 的正式版，架构与 V3.2-Exp <b>完全一致</b>；相对上一代 DeepSeek-V3.1-Terminus，唯一的架构改动就是通过<b>继续训练</b>引入了 DSA。本文真正的增量集中在后训练（扩展 RL + 智能体合成）。</div>
+  </section>
+
+  <!-- DSA -->
+  <section id="dsa">
+    <p class="kicker">核心架构 · 重头戏</p>
+    <h2>DSA：只对最相关的 token 算注意力</h2>
+    <p>DSA 的目标很直接：长序列里大部分历史 token 对当前 query 其实不重要，那就只挑重要的算。它由两个组件组成：</p>
+    <ul>
+      <li><strong>闪电索引器（Lightning Indexer）</strong>：为当前 query token <code>h_t</code> 和每个历史 token <code>h_s</code> 算一个相关性分数 <code>I(t,s)</code>。它 head 数很少、可用 FP8、激活函数选 ReLU（为吞吐考虑），所以「打分」这一步极其便宜。</li>
+      <li><strong>细粒度 token 选择</strong>：只保留分数最高的 <strong>top-k</strong> 个 key-value 条目，query 仅对这 k 个做注意力，输出 <code>u_t</code>。</li>
+    </ul>
+
+    <!-- step-through -->
+    <div class="stepper" id="dsaStepper">
+      <h4>🔎 一步步看 DSA 怎么选 token</h4>
+      <p style="margin:2px 0 0;font-size:14px;color:var(--muted);">黑色块是当前 query token，灰色块是它前面的历史 token。点「下一步」跟着机制走一遍。</p>
+      <div class="stage" id="dsaStage"></div>
+      <div class="stepdesc" id="dsaDesc"></div>
+      <div class="stepctl">
+        <button class="btn" id="dsaPrev" onclick="dsaStep(-1)">← 上一步</button>
+        <button class="btn" id="dsaNext" onclick="dsaStep(1)">下一步 →</button>
+        <button class="btn ghost" onclick="dsaReset()">重置</button>
+        <span class="stepcount" id="dsaCount"></span>
+      </div>
+    </div>
+
+    <figure>
+      <img src="assets/x2.png" alt="DeepSeek-V3.2 在 MLA 下实例化 DSA 的注意力架构" loading="lazy" />
+      <div class="figcap"><b>图 2：</b>DeepSeek-V3.2 的注意力架构——DSA 在 MLA 之上实例化。绿色部分展示 DSA 如何根据索引器选出 top-k 个 key-value 条目。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>底部 Input Hidden h_t</strong>：输入隐藏状态，向上分别派生出 query 侧与 key-value 侧的表示，以及右侧绿色的索引器输入。</li>
+          <li><strong>左侧 query 分支</strong>：从压缩潜向量 <code>c_t^Q</code> 生成 <code>q^C</code>，再拼上经过 RoPE 的 <code>q^R</code>，得到完整的 query 表示 <code>[q^A; q^R]</code>。</li>
+          <li><strong>中部 key-value 分支</strong>：MLA 的潜向量 <code>c^KV</code> 与位置编码 <code>k^R</code> 拼接，作为候选的 key-value 条目集合。</li>
+          <li><strong>右侧绿色 = DSA 新增</strong>：Lightning Indexer 用少量 head 算出每个历史 token 的索引分数（绿色直方图），送进 <strong>Top-k Selector</strong>。</li>
+          <li><strong>Top-k Selector → Core Attention</strong>：选择器只把得分最高的 k 个条目放行，核心的 Multi-Query Attention 仅在这 k 个上计算，最终得到输出隐藏状态 <code>u_t</code>。</li>
+          <li><strong>为何在 MLA 上做</strong>：MLA 的每个潜向量（即一个 key-value 条目）被 query 的所有 head 共享，正好契合「一个条目供多 query 复用」的核数效率需求，因此 DSA 基于 MLA 的 MQA 模式实现。</li>
+        </ul>
+        <div class="sum">一句话：绿色索引器负责「便宜地打分选人」，原有的注意力只在被选中的少数 token 上「认真计算」。</div>
+      </div></div>
+    </figure>
+
+    <h3>怎么把 DSA「长」进一个已有模型：两段继续训练</h3>
+    <p>DSA 不是从零训练，而是从 <strong>DeepSeek-V3.1-Terminus（已扩到 128K 上下文）</strong>的 checkpoint 出发，做继续预训练。分两阶段：</p>
+    <div class="deck">
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">阶段一 · Dense Warm-up（稠密预热）</div><div class="s">只训索引器、冻结其余参数，用 KL 把索引分数对齐真实注意力 · 仅 2.1B tokens</div></div></div>
+        <div class="body"><div class="body-inner">
+          <p>先保持<strong>稠密注意力</strong>，冻结模型其余全部参数，只训练闪电索引器。做法：把主注意力所有 head 的分数求和、沿序列做 L1 归一化得到目标分布 <code>p(t,:)</code>，再让索引器输出去拟合它——优化目标是 KL 散度损失。</p>
+          <p>学习率 <code>1e-3</code>，只训 1000 步，每步 16 条 128K 序列，合计约 <strong>2.1B tokens</strong>。目的只是给索引器一个好的初始化。</p>
+        </div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">阶段二 · Sparse Training（稀疏训练）</div><div class="s">引入 top-k 选择、放开全部参数适应稀疏模式 · 943.7B tokens · k=2048</div></div></div>
+        <div class="body"><div class="body-inner">
+          <p>引入细粒度 token 选择，<strong>放开全部参数</strong>让模型适应 DSA 的稀疏模式。索引器仍对齐主注意力分布，但只在被选中的 token 集合 <code>S_t</code> 上算 KL。</p>
+          <p>关键工程细节：<strong>索引器的输入从计算图中 detach</strong>，单独优化——索引器只吃 KL 损失的梯度，主模型只吃语言建模损失。学习率 <code>7.3e-6</code>，每个 query 选 <strong>2048</strong> 个 key-value token，主模型与索引器一起训 15000 步，合计约 <strong>943.7B tokens</strong>。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <h3>效率与「不掉点」</h3>
+    <p>DSA 把主模型的核心注意力复杂度从 <code>O(L²)</code> 降到 <code>O(Lk)</code>（<code>k≪L</code>）。索引器本身仍是 <code>O(L²)</code>，但计算量远小于原 MLA，配合优化实现，长上下文端到端显著提速。</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">O(L²)→O(Lk)</div><div class="lab">核心注意力复杂度</div></div>
+      <div class="metric"><div class="num">2048</div><div class="lab">每个 query 选中的 token 数 k</div></div>
+      <div class="metric"><div class="num">128K</div><div class="lab">支持的上下文长度</div></div>
+      <div class="metric"><div class="num">≈0 掉点</div><div class="lab">短/长上下文性能基本无退化</div></div>
+    </div>
+    <p>作者在 2025 年 9 月用一套覆盖多种能力的基准评测了 V3.2-Exp，并与 V3.1-Terminus 对比：<strong>效率大幅提升的同时，短/长上下文任务都没有明显性能退化</strong>。ChatBot Arena 的 Elo（2025-11-10）也与上一代基本持平；独立的长上下文评测（AA-LCR、Fiction.liveBench）甚至略有提升。</p>
+
+    <details>
+      <summary><span class="tri">▶</span>附：MLA 的 MHA 与 MQA 两种模式 <span class="sm">DSA 为何选 MQA 模式实例化（图 7）</span></summary>
+      <div class="details-body">
+        <p>MLA 可以在 MHA 模式与 MQA 模式之间转换。对 V3.1-Terminus 而言，<strong>训练与 prefilling 用 MHA 模式，decoding 用 MQA 模式</strong>。DSA 选择基于 MQA 模式实例化，因为此时每个潜向量（key-value 条目）被所有 query head 共享，最契合核函数层面「一个条目供多 query 复用」的效率要求。</p>
+        <figure style="margin:8px 0 0;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <img src="assets/x7.png" alt="MLA 的 MHA 模式" loading="lazy" style="flex:1;min-width:220px;width:auto;" />
+            <img src="assets/x8.png" alt="MLA 的 MQA 模式" loading="lazy" style="flex:1;min-width:220px;width:auto;" />
+          </div>
+          <div class="figcap"><b>图 7：</b>左 (a) MLA 的 MHA 模式，右 (b) MLA 的 MQA 模式，以及两者之间的转换关系。</div>
+        </figure>
+      </div>
+    </details>
+  </section>
+
+  <!-- RL -->
+  <section id="rl">
+    <p class="kicker">后训练 · 把算力堆起来</p>
+    <h2>Scaling GRPO：让 RL 稳定地扩到大算力</h2>
+    <p>后训练流程沿用 V3.2-Exp：<strong>专家蒸馏（Specialist Distillation）+ 混合 RL 训练</strong>。先为每个领域（数学、编程、通用逻辑推理、通用智能体、智能体编程、智能体搜索）从同一个 base checkpoint 微调出专精模型，再用它们产出领域数据喂给最终模型。实验显示，蒸馏数据训练出的模型只比专精模型略差，<strong>这点差距会被后续 RL 抹平</strong>。</p>
+    <p>RL 算法采用 <strong>GRPO</strong>，把推理、智能体、人类对齐<strong>合并进一个 RL 阶段</strong>，既平衡多领域表现，又避免多阶段训练常见的灾难性遗忘。在此基础上，作者给出四项稳定大规模 RL 的关键技巧：</p>
+
+    <div class="deck">
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">① 无偏 KL 估计（Unbiased KL Estimate）</div><div class="s">修正 K3 估计器，用重要性采样比让 KL 梯度无偏 → 稳定收敛</div></div></div>
+        <div class="body"><div class="body-inner"><p>原始 K3 估计器在「采样 token 在当前策略下概率远低于参考策略」时，会给这些 token 分配过大、无界的梯度权重，导致噪声更新累积、训练不稳。作者用当前策略与旧策略之间的重要性采样比修正 K3，使 <strong>KL 估计器的梯度无偏</strong>，消除系统性误差。实践中发现不同领域适合不同强度的 KL 正则——例如数学，弱 KL 甚至不加反而更好。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">② 离策略序列屏蔽（Off-Policy Sequence Masking）</div><div class="s">屏蔽偏离过大的「负样本」序列 → 容忍 off-policy，提升稳定性</div></div></div>
+        <div class="body"><div class="body-inner"><p>为效率，rollout 通常一大批生成后切成多个 mini-batch 做多步更新，这天然引入 off-policy；推理框架与训练框架的实现差异又会加剧。作者在 GRPO loss 里加一个二值 mask：当某序列的<strong>优势为负、且与采样策略的 KL 偏离超过阈值 δ</strong> 时就屏蔽它。直觉是——模型从自己的错误里学最有用，但「高度偏离的负样本」会误导甚至破坏优化。注意只屏蔽负优势序列。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">③ 保持路由（Keep Routing）</div><div class="s">强制训练复用采样时的 MoE 专家路由 → MoE RL 稳定性的关键</div></div></div>
+        <div class="body"><div class="body-inner"><p>MoE 只激活部分专家。但推理与训练框架的差异加上参数更新，会让同一输入在推理/训练时<strong>路由到不同专家</strong>，造成激活参数子空间突变，破坏优化、放大 off-policy。解法：把采样时（推理框架）用的专家路由路径保存下来，<strong>训练时强制走同样的路由</strong>，确保优化的是同一批专家参数。这项操作自 V3-0324 起就被证明对 MoE 的 RL 稳定性至关重要。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">④ 保持采样掩码（Keep Sampling Mask）</div><div class="s">把 top-p/top-k 的截断掩码同步到训练 → 两策略动作空间一致</div></div></div>
+        <div class="body"><div class="body-inner"><p>top-p / top-k 采样能避免选到极低概率 token，但会让旧策略与当前策略的<strong>动作空间不一致</strong>，违反重要性采样前提、破坏稳定。解法：把采样时的截断掩码保存下来，训练时应用到当前策略，确保两者共享相同的动作子空间。实验发现 <strong>top-p + Keep Sampling Mask</strong> 能有效保持 RL 训练中的语言一致性。</p></div></div>
+      </div>
+    </div>
+
+    <div class="note">🚀 <b>算力即性能：</b>过去几个月，作者持续观察到「RL 算力预算越大、性能越好」的趋势，目前后训练算力已 <b>超过预训练成本的 10%</b>，并推测继续加算力推理还能更强。</div>
+
+    <h3>两个最终产物：V3.2 与 V3.2-Speciale</h3>
+    <p><strong>DeepSeek-V3.2</strong>（正式版）整合了从专家蒸馏来的推理、智能体、人类对齐数据，经数千步继续 RL 得到最终 checkpoint——它在训练时用了<strong>长度惩罚奖励</strong>来压缩输出、优化成本/延迟。</p>
+    <p><strong>DeepSeek-V3.2-Speciale</strong> 是探索「延长思考」上限的实验变体：只用推理数据训练、<strong>降低长度惩罚</strong>，并引入 DeepSeekMath-V2 的数据与奖励方法强化数学证明能力。代价是 token 效率明显更低，但换来更强的推理上限。</p>
+  </section>
+
+  <!-- AGENT -->
+  <section id="agent">
+    <p class="kicker">后训练 · 让推理走进工具调用</p>
+    <h2>Thinking in Tool-Use：在推理过程中调用工具</h2>
+    <p>DeepSeek-R1 证明了「思考」能显著提升解难题的能力。本文要把思考能力<strong>带进工具调用场景</strong>，关键有三块：思考的上下文管理、冷启动、大规模智能体任务。</p>
+
+    <h3>① 思考保留：别每轮都重新想一遍</h3>
+    <p>直接照搬 R1 的策略（第二轮消息一来就丢掉推理内容）会造成严重的 token 浪费——模型被迫为每次工具调用<strong>把整个问题重新推理一遍</strong>。本文为工具调用量身定制了上下文管理规则：</p>
+    <ul>
+      <li><strong>只有当新的 user 消息进来时，才丢弃历史推理内容</strong>；如果只是追加工具相关消息（如工具输出），推理内容会被完整保留。</li>
+      <li>即使删掉了推理痕迹，<strong>工具调用及其结果仍保留在上下文中</strong>。</li>
+    </ul>
+
+    <figure>
+      <img src="assets/x5.jpeg" alt="工具调用场景下的思考保留机制" loading="lazy" />
+      <div class="figcap"><b>图 4：</b>工具调用场景下的「思考保留」机制。蓝色块为 Thinking，浅蓝为工具调用，灰色为用户消息/工具结果。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ul>
+          <li><strong>Turn 1.1 → 1.2 → 1.3</strong>：在同一个用户回合内连续调用工具。每一步的输入（Input）都<strong>累积保留</strong>了前面的 Thinking（蓝色）、Tool call、Tool result，模型不必重新推理，直接在已有思考上继续。</li>
+          <li><strong>蓝色 Thinking 块逐轮叠加</strong>：Thinking 1.1、1.2、1.3 依次保留进上下文，体现「推理在工具交互中被持续复用」。</li>
+          <li><strong>Turn 1.3 的 Output</strong>：给出 Thinking 1.3 + Answer 1，完成本回合用户请求。</li>
+          <li><strong>Turn 2.1 是关键转折</strong>：新的 User message 2 到来时，前面所有历史 Thinking 被<strong>丢弃</strong>（输入里不再有蓝色思考块），但 Tool call / Tool result / Answer 1 仍然保留——干净地开启新一轮思考 Thinking 2.1。</li>
+          <li><strong>注意</strong>：Roo Code、Terminus 等框架用 user 消息模拟工具交互，可能享受不到这套保留机制，作者建议这类框架改用非思考模式。</li>
+        </ul>
+        <div class="sum">一句话：思考在「同一用户回合的多次工具调用」间保留以省 token，遇到「新用户消息」才清空重来。</div>
+      </div></div>
+    </figure>
+
+    <h3>② 冷启动：用提示词把推理和工具缝在一起</h3>
+    <p>手头已有「非智能体的推理数据」和「无推理的智能体数据」。冷启动的思路是：相信模型<strong>有能力遵循明确指令</strong>，于是用精心设计的 system prompt，把工具执行嵌进推理过程。这样虽然「推理中调工具」的模式还不稳健，但模型偶尔能产出理想轨迹，<strong>为后续 RL 提供了起点</strong>。</p>
+    <details>
+      <summary><span class="tri">▶</span>看冷启动用到的三类 system prompt（附录 Table 6–8） <span class="sm">推理 / 智能体 / 推理中调工具，三种模板</span></summary>
+      <div class="details-body">
+        <p><strong>(1) 纯推理</strong>：要求模型用 <code>&lt;think&gt;&lt;/think&gt;</code> 标签包住推理过程，标签后再给最终答案。</p>
+        <p><strong>(2) 智能体（无推理）</strong>：system prompt 里给出工具说明 <code>{TOOL-DESCRIPTIONS}</code> 和调用格式 <code>{TOOLCALL-FORMAT}</code>，模型直接多轮调用工具。</p>
+        <p><strong>(3) 推理中调工具</strong>（本文目标形态）：允许在 <code>&lt;think&gt;</code> 内<strong>多次</strong>调用 Python 工具（最多 20 次代码执行），鼓励「让代码干重活、推理保持简洁」，最终答案里不再调用工具。</p>
+      </div>
+    </details>
+
+    <h3>③ 大规模智能体任务：真实环境 + 合成环境</h3>
+    <p>多样化的 RL 任务对鲁棒性至关重要。搜索、代码工程、代码解释这类用<strong>真实工具</strong>（真实搜索 API、编码工具、Jupyter）；其余任务的环境与提示都<strong>合成</strong>构造。四类智能体任务规模如下：</p>
+    <div class="tablewrap">
+      <table>
+        <caption>表 1：不同智能体任务的数量、环境类型（真实/合成）与提示来源（抽取/合成）。</caption>
+        <thead><tr><th>任务类型</th><th>任务数量</th><th>环境</th><th>提示来源</th></tr></thead>
+        <tbody>
+          <tr><td>代码智能体 Code agent</td><td>24,667</td><td>真实</td><td>抽取</td></tr>
+          <tr><td>搜索智能体 Search agent</td><td>50,275</td><td>真实</td><td>合成</td></tr>
+          <tr><td>通用智能体 General agent</td><td>4,417</td><td>合成</td><td>合成</td></tr>
+          <tr><td>代码解释器 Code interpreter</td><td>5,908</td><td>真实</td><td>抽取</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="deck">
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">搜索智能体：多智能体造数据流水线</div><div class="s">长尾实体 → 提问 → 多候选作答 → 带搜索的验证 → 只留「真值对、所有候选错」</div></div></div>
+        <div class="body"><div class="body-inner"><p>先从大规模网络语料采样有信息量的<strong>长尾实体</strong>；提问智能体用可配置深度/广度的搜索工具探索实体、凝练成 QA 对；多个异构配置的作答智能体产出多样候选；带搜索能力的<strong>验证智能体</strong>多遍校验，只保留「真值正确、且所有候选都可验证为错」的样本。再混入对搜索确有帮助的 helpful 数据，并用生成式奖励模型按多维 rubric 打分，兼顾事实可靠性与实用帮助度。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">代码智能体：从 GitHub issue-PR 造可执行环境</div><div class="s">挖百万级 issue-PR 对，自动搭可复现环境，用 F2P/P2F 测试判定是否真修好</div></div></div>
+        <div class="body"><div class="body-inner"><p>从 GitHub 挖掘数百万 issue-PR 对，用启发式规则 + LLM 判断严格过滤，要求每条含合理 issue 描述、相关 gold patch、验证用 test patch。自动化环境搭建智能体负责装包、解依赖、跑测试，结果以 JUnit 格式输出。只有当<strong>打上 gold patch 后 F2P（fail→pass）测试数非零、且 P2F（pass→fail）为零</strong>（即修好了且无回归）才算环境搭建成功。最终建成数万个可复现的 issue 修复环境，覆盖 Python/Java/JS/TS/C/C++/Go/PHP。</p></div></div>
+      </div>
+      <div class="xcard">
+        <div class="head" onclick="toggleCard(this)"><span class="chev">▶</span><div class="ht"><div class="t">通用智能体：自动合成「难解但易验证」的环境</div><div class="s">环境合成智能体造 1,827 个环境，自带工具集、任务、验证器；逐步加难度</div></div></div>
+        <div class="body"><div class="body-inner">
+          <p>用自动环境合成智能体造出 <strong>1,827 个</strong>面向任务的环境。流程：给定任务类别（如规划行程）和带 bash/搜索工具的沙盒，智能体先取数据存进沙盒数据库；再合成一组任务专用工具（每个是一个函数）；然后提出一个简单任务连同 Python 实现的<strong>解函数与验证函数</strong>——解函数只能调用工具或做逻辑计算、不能直接访问数据库，保证任务只能经工具接口解决；若解未通过验证就反复修正，再迭代<strong>加大难度</strong>、必要时扩充工具集。</p>
+          <p>最终得到数千个 ⟨环境, 工具, 任务, 验证器⟩ 元组，用 V3.2 做 RL 并只保留 pass@100 非零的实例，得到 1,827 个环境、共 <strong>4,417 个任务</strong>。核心直觉：在巨大组合空间里<strong>找出满足所有约束的解很难，但检查一个候选解是否满足约束却相对容易</strong>。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <details>
+      <summary><span class="tri">▶</span>具体示例：合成的「三天行程规划」任务 <span class="sm">条件式预算约束 + 工具集 + 提交格式，展示「难解易验证」</span></summary>
+      <div class="details-body">
+        <p>这是一个典型的合成任务：从杭州出发的三天行程（10/1–10/3），约束层层嵌套——不能重复城市/酒店/景点/餐厅；推荐项必须真实位于当天所在城市；第二天还有<strong>条件式预算规则</strong>：</p>
+        <ul>
+          <li>若第二天住豪华酒店（≥800 CNY/晚）：两餐合计 &lt;350 CNY、餐厅评分均 ≥4.0、下午景点门票 &lt;120 CNY；</li>
+          <li>若中高档（500–800 CNY）：至少一家餐厅 ≥4.0、门票 &lt;180 CNY；</li>
+          <li>若经济型（200–500 CNY）：至少一家餐厅评分 ≥3.2。</li>
+        </ul>
+        <p>模型需通过一组工具函数（<code>get_all_hotels_by_city</code>、<code>get_infos_by_restaurant</code>、<code>get_inter_city_transport</code>、<code>submit_result</code> 等十余个）查询数据并提交结构化 JSON 结果：</p>
+        <pre>[
+  {<span class="c">"time"</span>: "2025-10-01", <span class="c">"city"</span>: "...",
+   <span class="c">"hotel"</span>: "...", <span class="c">"afternoon_restaurant"</span>: "...",
+   <span class="c">"afternoon_attraction"</span>: "...", <span class="c">"evening_restaurant"</span>: "..."},
+  { ... 10-02 ... },
+  { ... 10-03 ... }
+]</pre>
+        <p>这个例子很好地说明了为什么「合成任务」适合 RL：搜索可行解需要在庞大组合空间里满足全部约束（难），但给定候选解逐条核对约束（易验证）——天然提供可靠奖励信号。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- EVAL -->
+  <section id="eval">
+    <p class="kicker">实验结论 · 轻量速览</p>
+    <h2>结果：推理追平 GPT-5，智能体大幅缩小差距</h2>
+    <p>评测温度设 1.0、上下文 128K，工具类基准用标准 function call 格式、模型置于思考模式。下表挑选有代表性的几项（DeepSeek-V3.2 为思考模式，<span class="hl">高亮列</span>）：</p>
+    <div class="tablewrap">
+      <table>
+        <caption>表 2（节选）：DeepSeek-V3.2 与闭源/开源模型对比。* 表示使用上下文管理技术后的成绩。</caption>
+        <thead><tr><th>基准 (指标)</th><th>Claude-4.5<br>Sonnet</th><th>GPT-5<br>High</th><th>Gemini-3.0<br>Pro</th><th>Kimi-K2<br>Thinking</th><th class="colour-ours">DeepSeek<br>V3.2</th></tr></thead>
+        <tbody>
+          <tr><td>GPQA Diamond</td><td>83.4</td><td>85.7</td><td>91.9</td><td>84.5</td><td class="colour-ours">82.4</td></tr>
+          <tr><td>HLE (text)</td><td>13.7</td><td>26.3</td><td>37.7</td><td>23.9</td><td class="colour-ours">25.1</td></tr>
+          <tr><td>AIME 2025</td><td>87.0</td><td>94.6</td><td>95.0</td><td>94.5</td><td class="colour-ours">93.1</td></tr>
+          <tr><td>HMMT Feb 2025</td><td>79.2</td><td>88.3</td><td>97.5</td><td>89.4</td><td class="colour-ours">92.5</td></tr>
+          <tr><td>LiveCodeBench</td><td>64.0</td><td>84.5</td><td>90.7</td><td>82.6</td><td class="colour-ours">83.3</td></tr>
+          <tr><td>SWE Verified</td><td>77.2</td><td>74.9</td><td>76.2</td><td>71.3</td><td class="colour-ours">73.1</td></tr>
+          <tr><td>SWE Multilingual</td><td>68.0</td><td>55.3</td><td>—</td><td>61.1</td><td class="colour-ours hl">70.2</td></tr>
+          <tr><td>BrowseComp</td><td>24.1</td><td>54.9</td><td>—</td><td>60.2*</td><td class="colour-ours hl">67.6*</td></tr>
+          <tr><td>τ²-Bench</td><td>84.7</td><td>80.2</td><td>85.4</td><td>74.3</td><td class="colour-ours">80.3</td></tr>
+          <tr><td>Tool-Decathlon</td><td>38.6</td><td>29.0</td><td>36.4</td><td>17.6</td><td class="colour-ours hl">35.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li><strong>推理：</strong>与 GPT-5-High 大体相当，略逊于 Gemini-3.0-Pro；相比 Kimi-K2-Thinking，用<strong>明显更少的输出 token</strong>拿到相当分数。</li>
+      <li><strong>代码智能体：</strong>在 SWE Verified、Terminal Bench 2.0 上显著领先其他开源模型；SWE Multilingual 上 <strong>70.2</strong> 为开源最佳。</li>
+      <li><strong>搜索智能体：</strong>因 128K 上限，BrowseComp 约 20%+ 用例超长，配合上下文管理后从 51.4 提升到 <strong>67.6</strong>。</li>
+      <li><strong>工具使用：</strong>大幅缩小开源与闭源差距，且这些环境/工具集在 RL 训练中<strong>未见过</strong>——说明推理策略能泛化到域外智能体场景。</li>
+    </ul>
+
+    <h3>DeepSeek-V3.2-Speciale：金牌级推理上限</h3>
+    <p>放开长度限制后，Speciale 用更多推理 token 在多个基准上<strong>超过 Gemini-3.0-Pro</strong>。它在四大顶级竞赛上拿到金牌级成绩（无针对性训练）：</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">IMO 🥇</div><div class="lab">2025 国际数学奥林匹克<br>35/42 金牌</div></div>
+      <div class="metric"><div class="num">IOI 🥇</div><div class="lab">2025 国际信息学奥赛<br>492/600 · 排名第 10</div></div>
+      <div class="metric"><div class="num">ICPC WF 🥇</div><div class="lab">2025 ICPC 全球总决赛<br>10/12 · 排名第 2</div></div>
+      <div class="metric"><div class="num">CMO 🥇</div><div class="lab">2025 中国数学奥林匹克<br>102/126 金牌</div></div>
+    </div>
+    <p>同时，Speciale 也展示了「<strong>用 token 换分数</strong>」的代价。下表对比准确率与输出 token 量（千）：</p>
+    <div class="tablewrap">
+      <table>
+        <caption>表 3（节选）：推理模型的准确率与输出 token 数（括号内，单位 k）。</caption>
+        <thead><tr><th>基准</th><th>GPT-5 High</th><th>Gemini-3.0 Pro</th><th class="colour-ours">V3.2 Thinking</th><th class="colour-ours">V3.2 Speciale</th></tr></thead>
+        <tbody>
+          <tr><td>AIME 2025</td><td>94.6 (13k)</td><td>95.0 (15k)</td><td class="colour-ours">93.1 (16k)</td><td class="colour-ours">96.0 (23k)</td></tr>
+          <tr><td>HMMT Feb 2025</td><td>88.3 (16k)</td><td>97.5 (16k)</td><td class="colour-ours">92.5 (19k)</td><td class="colour-ours hl">99.2 (27k)</td></tr>
+          <tr><td>HMMT Nov 2025</td><td>89.2 (20k)</td><td>93.3 (15k)</td><td class="colour-ours">90.2 (18k)</td><td class="colour-ours hl">94.4 (25k)</td></tr>
+          <tr><td>CodeForces</td><td>2537 (29k)</td><td>2708 (22k)</td><td class="colour-ours">2386 (42k)</td><td class="colour-ours">2701 (77k)</td></tr>
+          <tr><td>HLE</td><td>26.3 (15k)</td><td>37.7 (15k)</td><td class="colour-ours">25.1 (21k)</td><td class="colour-ours">30.6 (35k)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <blockquote>Speciale 分数更高，但 token 效率显著不如 Gemini-3.0-Pro。为压低部署成本与延迟，正式版 V3.2 才施加了更严的 token 约束来平衡性能与成本——token 效率仍是重要的未来方向。</blockquote>
+
+    <h3>消融：合成的智能体任务真的有用吗？</h3>
+    <p>作者问两个问题，并给出干净的答案：</p>
+    <ul>
+      <li><strong>合成任务够难吗？</strong>随机抽 50 个通用合成任务，V3.2-Exp 仅 12% 准确率，前沿闭源模型最高也只到 62%（GPT-5-Thinking）——说明这些任务对双方都有挑战。</li>
+      <li><strong>能泛化吗？</strong>只在合成智能体任务（非思考模式）上做 RL，就能在 τ²-Bench、MCP-Mark、MCP-Universe 上比 SFT checkpoint <strong>大幅提升</strong>；而只在代码/搜索环境做 RL 则没有提升——凸显合成数据的泛化潜力（图 5）。</li>
+    </ul>
+
+    <h3>测试时算力：串行（上下文管理）vs 并行</h3>
+    <p>即便有 128K 上下文，搜索类智能体仍常因超长被截断。作者在 token 用量超过窗口 80% 时引入上下文管理来扩展预算（图 6）：</p>
+    <ul>
+      <li><strong>Summary</strong>：总结溢出轨迹后重启 rollout——把平均步数拉到 364，最高到 60.2，但效率偏低。</li>
+      <li><strong>Discard-75% / Discard-all</strong>：丢弃前 75% / 全部历史工具调用以腾空间。<strong>Discard-all 简单却高效</strong>，拿到 67.6，与并行扩展相当但用更少步数。</li>
+      <li><strong>结论：</strong>测试时算力既能串行（上下文管理）也能并行扩展；不同策略效率/可扩展性不同，所以 benchmark 时必须把真实算力成本算进去。</li>
+    </ul>
+  </section>
+
+  <!-- LIMIT -->
+  <section id="limit">
+    <p class="kicker">局限与未来</p>
+    <h2>仍然落后前沿的地方</h2>
+    <p>作者很诚实地列出与 Gemini-3.0-Pro 等前沿闭源相比的差距：</p>
+    <div class="grid3">
+      <div class="feat"><div class="ico">🌍</div><h4>世界知识广度不足</h4><p>总训练 FLOPs 更少，知识广度仍落后；计划通过扩大预训练算力来弥补。</p></div>
+      <div class="feat"><div class="ico">🧮</div><h4>token 效率偏低</h4><p>通常要更长的生成轨迹才能匹配 Gemini-3.0-Pro 的输出质量；未来聚焦提升推理链的「智能密度」。</p></div>
+      <div class="feat"><div class="ico">🧩</div><h4>复杂任务仍逊于前沿</h4><p>最难的复杂任务上仍不及前沿模型，需进一步打磨基座与后训练配方。</p></div>
+    </div>
+    <p style="margin-top:18px;">总体而言，DeepSeek-V3.2 用 DSA 解决了长上下文的计算复杂度而不牺牲性能，用扩展 RL 把推理追到 GPT-5 水平，用大规模智能体合成显著增强了工具使用能力；而 Speciale 的 IMO/IOI 金牌，为开源大模型立下了一个新的里程碑。</p>
+  </section>
+
+  <footer>
+    <div class="ft-src">
+      📄 <b>原文：</b>DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models · DeepSeek-AI ·
+      <a href="https://arxiv.org/abs/2512.02556" target="_blank" rel="noopener">arXiv:2512.02556 ↗</a>
+      <br />
+      <span style="font-size:13px;">相关资源：<a href="https://arxiv.org/html/2512.02556v1" target="_blank" rel="noopener">arXiv HTML 全文</a> · <a href="https://github.com/deepseek-ai/DeepSeek-V3.2" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/deepseek-ai/DeepSeek-Math-V2" target="_blank" rel="noopener">DeepSeek-Math-V2</a></span>
+    </div>
+    <div style="font-size:13px;">本页为教学性可视化解读，所有图片来自 arXiv HTML 版原文（已逐一验证可访问），数据与结论以原文为准。发表时间 2025.12 · arXiv preprint。</div>
+  </footer>
+
+</div>
+
+<script>
+  // ---- figure caption toggles ----
+  function toggleFigDetail(el){
+    var panel = el.nextElementSibling;
+    var open = panel.classList.toggle('active');
+    el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+  }
+  // ---- expandable deep cards ----
+  function toggleCard(head){
+    head.parentElement.classList.toggle('open');
+  }
+
+  // ---- DSA step-through ----
+  var NTOK = 12;
+  var selected = [2,5,6,10]; // top-k chosen indices (history tokens)
+  var scores  = ['.1','.7','.9','.2','.3','.8','.9','.1','.4','.2','.6','.0'];
+  var dsaState = 0;
+  var DSA_STEPS = [
+    {
+      desc: '<b>第 0 步 · 起点</b>：最右黑色块是当前要计算注意力的 query token，它前面是一长串历史 token。标准注意力会对<b>全部</b>历史 token 计算，长序列下成本是 O(L²)。',
+      mode: 'idle'
+    },
+    {
+      desc: '<b>第 1 步 · 闪电索引器打分</b>：用少量 head（可 FP8、ReLU 激活）为每个历史 token 算一个相关性分数 I(t,s)。这一步很<b>便宜</b>，只负责「粗筛」。',
+      mode: 'score'
+    },
+    {
+      desc: '<b>第 2 步 · Top-k 选择</b>：只保留分数最高的 k 个 token（论文中 k=2048）。其余 token 被忽略，不参与后续注意力计算。',
+      mode: 'select'
+    },
+    {
+      desc: '<b>第 3 步 · 稀疏注意力</b>：query 仅对被选中的 k 个 key-value 条目做注意力，输出 u_t。核心复杂度从 O(L²) 降到 <b>O(Lk)</b>，长上下文几乎不掉点。',
+      mode: 'attend'
+    }
+  ];
+
+  function buildStage(){
+    var stage = document.getElementById('dsaStage');
+    var html = '';
+    for(var i=0;i<NTOK;i++){
+      html += '<div class="tok" data-i="'+i+'">'
+            + '<div class="score">'+scores[i]+'</div>'
+            + '<div class="box"></div>'
+            + '<div class="lab">s'+(i+1)+'</div></div>';
+    }
+    // query token
+    html += '<div class="tok q" data-q="1">'
+          + '<div class="score">&nbsp;</div>'
+          + '<div class="box"></div>'
+          + '<div class="lab">q</div></div>';
+    stage.innerHTML = html;
+  }
+
+  function renderDSA(){
+    var step = DSA_STEPS[dsaState];
+    var toks = document.querySelectorAll('#dsaStage .tok[data-i]');
+    toks.forEach(function(t){
+      var i = parseInt(t.getAttribute('data-i'),10);
+      var sc = t.querySelector('.score');
+      t.classList.remove('sel','dim');
+      sc.classList.remove('show');
+      if(step.mode==='score'){
+        sc.classList.add('show');
+      } else if(step.mode==='select' || step.mode==='attend'){
+        sc.classList.add('show');
+        if(selected.indexOf(i)>=0){ t.classList.add('sel'); }
+        else { t.classList.add('dim'); }
+      }
+    });
+    document.getElementById('dsaDesc').innerHTML = step.desc;
+    document.getElementById('dsaCount').textContent = '步骤 '+(dsaState+1)+' / '+DSA_STEPS.length;
+    document.getElementById('dsaPrev').disabled = (dsaState===0);
+    document.getElementById('dsaNext').disabled = (dsaState===DSA_STEPS.length-1);
+  }
+  function dsaStep(d){
+    dsaState = Math.max(0, Math.min(DSA_STEPS.length-1, dsaState+d));
+    renderDSA();
+  }
+  function dsaReset(){ dsaState = 0; renderDSA(); }
+
+  buildStage();
+  renderDSA();
+</script>
+</body>
+</html>

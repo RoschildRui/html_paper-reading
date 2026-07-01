@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DCRC：用「数据中心的编译」治金融问答的数字幻觉</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecdb;
+  --surface-2:#efe2cb;
+  --surface-3:#e9dabf;
+  --border:#e1d2b6;
+  --border-strong:#d3bf9c;
+  --ink:#2c2419;
+  --ink-soft:#6b5d49;
+  --ink-faint:#9c8c73;
+  --accent:#b06a28;
+  --accent-deep:#8f5418;
+  --accent-bg:#f1ddbf;
+  --accept:#5a7a4e;
+  --accept-bg:#e5ecd9;
+  --accept-border:#bcceac;
+  --reject:#b04734;
+  --reject-bg:#f3ddd5;
+  --reject-border:#e2b8ab;
+  --radius:14px;
+  --maxw:1080px;
+  --shadow:0 1px 2px rgba(60,44,20,.06), 0 6px 18px rgba(60,44,20,.05);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+  line-height:1.78;font-size:17px;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0;border-top:1px solid var(--border)}
+section:first-of-type{border-top:none}
+h1,h2,h3,h4{line-height:1.3;font-weight:700;letter-spacing:.2px}
+h2{font-size:27px;margin:0 0 6px}
+h3{font-size:20px;margin:30px 0 10px}
+h4{font-size:16.5px;margin:18px 0 8px}
+p{margin:12px 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(176,106,40,.32)}
+a:hover{color:var(--accent-deep)}
+strong{font-weight:700;color:#231c12}
+code{font-family:"JetBrains Mono",monospace;font-size:.86em;background:var(--surface-2);
+  padding:1px 6px;border-radius:5px;border:1px solid var(--border)}
+.mono{font-family:"JetBrains Mono",monospace}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:18.5px;color:#3a3022}
+.muted{color:var(--ink-soft)}
+.small{font-size:14px}
+
+/* ---------- top nav ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topbar .row{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;
+  gap:16px;padding:10px 22px}
+.topbar .brand{font-weight:800;font-size:15px;letter-spacing:.3px;white-space:nowrap}
+.topbar nav{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;font-weight:500}
+.topbar nav a{color:var(--ink-soft);border:none}
+.topbar nav a:hover{color:var(--accent)}
+.topbar .src{margin-left:auto;font-size:13px;font-weight:600;white-space:nowrap}
+@media(max-width:880px){.topbar nav{display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:54px 0 40px}
+.hero h1{font-size:38px;font-weight:800;margin:14px 0 8px;letter-spacing:.2px}
+.hero .sub{font-size:18px;color:var(--ink-soft);font-weight:500}
+.meta{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 4px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+  background:var(--surface);border:1px solid var(--border-strong);
+  padding:5px 12px;border-radius:999px;color:var(--ink-soft)}
+.tag.accent{background:var(--accent-bg);border-color:#d8b885;color:var(--accent-deep)}
+
+/* ---------- tldr ---------- */
+.tldr{background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%);
+  border:1px solid var(--border-strong);border-radius:18px;padding:26px 28px;margin-top:8px}
+.tldr h2{font-size:21px;margin-bottom:10px;display:flex;align-items:center;gap:9px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+.metric{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 14px;text-align:center}
+.metric .num{font-size:30px;font-weight:800;color:var(--accent);font-family:"Inter",sans-serif;line-height:1.1}
+.metric .num small{font-size:15px;font-weight:700}
+.metric .lab{font-size:12.5px;color:var(--ink-soft);margin-top:6px;font-weight:500}
+.metric .delta{font-size:12px;color:var(--accept);font-weight:700;margin-top:3px}
+@media(max-width:880px){.metrics{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- figures ---------- */
+figure{margin:22px 0;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+figure img{width:100%;display:block;border-radius:8px;background:#fff;border:1px solid var(--border)}
+.figcap{font-size:13.5px;color:var(--ink-soft);margin-top:12px;display:flex;gap:8px;align-items:flex-start}
+.figcap .fignum{color:var(--accent);font-weight:700;white-space:nowrap}
+.fig-toggle{display:inline-block;margin-top:10px;font-size:13.5px;font-weight:600;color:var(--accent);
+  cursor:pointer;user-select:none;border-bottom:1px dashed rgba(176,106,40,.4)}
+.fig-toggle:hover{color:var(--accent-deep)}
+.figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease,opacity .35s ease;opacity:0}
+.figure-detail.active{max-height:1600px;opacity:1;margin-top:14px}
+.figure-detail ul{margin:6px 0 2px;padding-left:4px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin:9px 0;font-size:14.5px;color:#40362700;color:#403627}
+.figure-detail li::before{content:"";position:absolute;left:2px;top:9px;width:7px;height:7px;
+  border-radius:2px;background:var(--accent)}
+.figure-detail .sumline{font-size:14px;color:var(--ink-soft);margin-top:10px;font-style:italic}
+
+/* ---------- callout ---------- */
+.callout{border-left:3px solid var(--accent);background:var(--surface);
+  border-radius:0 12px 12px 0;padding:14px 18px;margin:20px 0}
+.callout.idea{border-left-color:var(--accent)}
+.quote{font-size:18px;font-style:italic;color:#3a3022;border-left:3px solid var(--border-strong);
+  padding:6px 18px;margin:18px 0}
+
+/* ---------- challenge cards ---------- */
+.chal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+.chal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;display:flex;flex-direction:column}
+.chal .h{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.chal .en{font-size:12px;color:var(--ink-faint);font-weight:500;margin-bottom:12px}
+.chal .badrow,.chal .goodrow{font-size:13.5px;padding:10px 12px;border-radius:9px;margin-top:8px}
+.chal .badrow{background:var(--reject-bg);border:1px solid var(--reject-border)}
+.chal .goodrow{background:var(--accept-bg);border:1px solid var(--accept-border)}
+.chal .lbl{font-weight:700;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:3px}
+.chal .badrow .lbl{color:var(--reject)}
+.chal .goodrow .lbl{color:var(--accept)}
+@media(max-width:880px){.chal-grid{grid-template-columns:1fr}}
+
+/* ---------- expandable cards ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  margin:14px 0;overflow:hidden;box-shadow:var(--shadow)}
+.card .head{padding:16px 18px;cursor:pointer;user-select:none;display:flex;align-items:flex-start;gap:12px}
+.card .head:hover{background:var(--surface-2)}
+.card .chev{margin-left:auto;color:var(--accent);font-size:13px;transition:transform .3s;flex-shrink:0;margin-top:3px}
+.card.open .chev{transform:rotate(90deg)}
+.card .ttl{font-weight:700;font-size:16.5px}
+.card .ptag{display:inline-block;font-size:11.5px;font-weight:700;background:var(--accent-bg);
+  color:var(--accent-deep);padding:2px 9px;border-radius:6px;margin-left:8px;border:1px solid #d8b885;vertical-align:middle}
+.card .onel{font-size:13.5px;color:var(--ink-soft);margin-top:3px}
+.card .body{max-height:0;overflow:hidden;transition:max-height .5s ease}
+.card.open .body{max-height:2400px}
+.card .body-inner{padding:2px 18px 20px}
+
+/* ---------- reward grid ---------- */
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.rcard{background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:14px}
+.rcard .rt{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;color:var(--accent-deep)}
+.rcard .rd{font-size:13px;color:var(--ink-soft);margin-top:5px}
+.rcard.penalty{background:var(--reject-bg);border-color:var(--reject-border)}
+.rcard.penalty .rt{color:var(--reject)}
+@media(max-width:880px){.rgrid{grid-template-columns:1fr}}
+
+/* ---------- tabs (negative injection) ---------- */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 0}
+.tab{font-size:14px;font-weight:600;padding:8px 16px;border-radius:9px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);color:var(--ink-soft);user-select:none}
+.tab.active{background:var(--accent-bg);border-color:#d8b885;color:var(--accent-deep)}
+.tabpane{display:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:0 12px 12px 12px;padding:18px;margin-top:-1px}
+.tabpane.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.evrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 14px;
+  border-radius:9px;margin:8px 0;font-size:14px}
+.evrow.pos{background:var(--accept-bg);border:1px solid var(--accept-border)}
+.evrow.neg{background:var(--reject-bg);border:1px solid var(--reject-border)}
+.evrow .code{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.evrow.pos .code{background:#d6e3c6;color:var(--accept)}
+.evrow.neg .code{background:#ecc7bc;color:var(--reject)}
+
+/* ---------- stepper (PMI example) ---------- */
+.stepper{background:var(--surface);border:1px solid var(--border-strong);border-radius:18px;
+  padding:22px;margin:22px 0;box-shadow:var(--shadow)}
+.stepbar{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.stepdot{flex:1;min-width:50px;height:5px;border-radius:3px;background:var(--surface-3)}
+.stepdot.done{background:var(--accent)}
+.stepdot.cur{background:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+.stephead{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.stepno{flex-shrink:0;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;
+  font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+.steptitle{font-weight:700;font-size:18px}
+.stepdesc{font-size:14.5px;color:var(--ink-soft);margin:4px 0 16px}
+.stepstage{min-height:230px}
+.stepctrl{display:flex;gap:10px;align-items:center;margin-top:18px}
+.btn{font-family:inherit;font-size:14px;font-weight:600;padding:9px 18px;border-radius:9px;
+  cursor:pointer;border:1px solid var(--border-strong);background:var(--bg);color:var(--ink)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-deep)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.stepcount{margin-left:auto;font-size:13px;color:var(--ink-faint);font-weight:600}
+
+/* pieces used inside stepper */
+.qbox{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:14.5px}
+.qbox .qq{font-weight:600}
+.taskrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.taskchip{background:var(--accent-bg);border:1px solid #d8b885;border-radius:9px;padding:8px 12px;font-size:13.5px}
+.taskchip b{color:var(--accent-deep)}
+.evtable{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+.evtable th,.evtable td{padding:7px 9px;border:1px solid var(--border);text-align:left}
+.evtable th{background:var(--surface-2);font-weight:700;font-size:12px}
+.evtable td.v{font-family:"JetBrains Mono",monospace;font-weight:700}
+.pill{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.pill.a{background:#d6e3c6;color:var(--accept)}
+.pill.r{background:#ecc7bc;color:var(--reject)}
+.exec-line{font-family:"JetBrains Mono",monospace;font-size:13px;padding:7px 12px;border-radius:8px;
+  margin:6px 0;background:var(--bg);border:1px solid var(--border);opacity:.35;transition:.3s}
+.exec-line.on{opacity:1;border-color:var(--accent);background:var(--accent-bg)}
+.exec-line .res{float:right;font-weight:700;color:var(--accent-deep)}
+.resultbox{background:var(--accept-bg);border:1px solid var(--accept-border);border-radius:10px;
+  padding:14px 16px;margin-top:12px;font-size:15px}
+.resultbox b{color:var(--accept);font-size:20px;font-family:"JetBrains Mono",monospace}
+.auditbox{background:var(--bg);border:1px dashed var(--border-strong);border-radius:10px;padding:12px 14px;
+  margin-top:12px;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.7;color:var(--ink-soft)}
+.auditbox .ac{color:var(--accept);font-weight:700}
+.auditbox .rc{color:var(--reject);font-weight:700}
+
+/* ---------- code/details ---------- */
+details{background:var(--surface);border:1px solid var(--border);border-radius:11px;margin:16px 0;overflow:hidden}
+details summary{padding:13px 16px;cursor:pointer;font-weight:600;font-size:14.5px;user-select:none;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸";color:var(--accent);margin-right:9px;display:inline-block;transition:transform .25s}
+details[open] summary::before{transform:rotate(90deg)}
+details summary .sm{font-weight:400;color:var(--ink-faint);font-size:13px}
+pre{margin:0;padding:16px;background:#2a2114;color:#ece3d2;overflow:auto;font-family:"JetBrains Mono",monospace;
+  font-size:12.5px;line-height:1.65}
+pre .k{color:#e0a36b}.pre .s{color:#a9c98a}
+pre .c{color:#8c7d63}.pre .n{color:#d8a0a0}
+
+/* ---------- compare table ---------- */
+.tablewrap{overflow-x:auto;margin:18px 0}
+table.cmp{width:100%;border-collapse:collapse;font-size:14px}
+table.cmp th,table.cmp td{padding:10px 12px;border:1px solid var(--border);text-align:center}
+table.cmp th{background:var(--surface-2);font-weight:700}
+table.cmp td:first-child,table.cmp th:first-child{text-align:left}
+table.cmp tr.ours{background:var(--accent-bg)}
+table.cmp tr.ours td{font-weight:700;color:var(--accent-deep)}
+table.cmp .best{color:var(--accent-deep);font-weight:800}
+
+/* ---------- pipeline (related work) ---------- */
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.fnode{background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600}
+.farrow{color:var(--accent);font-weight:800}
+.fnode.bad{border-color:var(--reject-border);background:var(--reject-bg)}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--border);padding:30px 0 60px;color:var(--ink-soft);font-size:13.5px}
+footer a{font-weight:600}
+.foot-title{font-weight:700;color:var(--ink);font-size:15px;margin-bottom:6px}
+
+.divtip{font-size:13px;color:var(--ink-faint);margin-top:4px}
+.kbd{font-family:"JetBrains Mono",monospace;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:5px;padding:1px 6px;font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="row">
+    <span class="brand">DCRC · 数据中心推理编译器</span>
+    <nav>
+      <a href="#problem">三大挑战</a>
+      <a href="#related">已有方案</a>
+      <a href="#method">DCRC 方法</a>
+      <a href="#walk">完整示例</a>
+      <a href="#insight">有趣的点</a>
+      <a href="#exp">实验结论</a>
+    </nav>
+    <span class="src"><a href="../714_Fighting_Numerical_Halluci.pdf" target="_blank">原文 PDF ↗</a></span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="eyebrow">金融问答 · 数值推理 · 大模型可信性</div>
+    <h1>用「数据中心的编译」，<br>治金融问答里的数字幻觉</h1>
+    <div class="sub">Fighting Numerical Hallucinations via Data-centric Compilation for Online Financial QA</div>
+    <div class="meta">
+      <span class="tag accent">⏱ 约 2026 · 双盲匿名提交（ACM 模板）</span>
+      <span class="tag">作者：Hao Chen, Xing Tang 等 · 腾讯 FiT</span>
+      <span class="tag">已落地：腾讯元宝 YuanBao 金融问答</span>
+    </div>
+  </header>
+
+  <!-- ============ TL;DR ============ -->
+  <div class="tldr">
+    <h2>🎯 30 秒读懂</h2>
+    <p class="lead" style="margin-top:4px">
+      大模型在金融问答里很会「<strong>一本正经地算错数</strong>」。哪怕用 RAG 把财报喂进去，它仍然会三种翻车：
+      <strong>挑选错相似的噪声数字、用「概率猜词」假装算数、推理过程无法验证</strong>。
+    </p>
+    <p>
+      本文不去优化模型本身，而是换一条路——<strong>数据中心（data-centric）</strong>地训练一个「结构化智能体 DSA」，
+      把问答改造成「<strong>编译 + 执行</strong>」两段：DSA 像编译器一样<strong>挑证据、写出可执行程序</strong>（把不确定性关在这一步），
+      再交给<strong>确定性的符号执行器</strong>去算（这一步 100% 可复现）。每一步都留下可审计的日志。
+    </p>
+    <div class="metrics">
+      <div class="metric">
+        <div class="num">84.66<small>%</small></div>
+        <div class="lab">FinQA-Test 执行准确率（DSA-7B）</div>
+        <div class="delta">+9.34pp vs 上一最佳 FINDER</div>
+      </div>
+      <div class="metric">
+        <div class="num">6.82<small>%</small></div>
+        <div class="lab">腾讯元宝线上幻觉率</div>
+        <div class="delta">从 12.44% 降下来（相对 −45%）</div>
+      </div>
+      <div class="metric">
+        <div class="num">99.6<small>%</small></div>
+        <div class="lab">审计逻辑准确率（7B）</div>
+        <div class="delta">拒绝理由几乎全对</div>
+      </div>
+      <div class="metric">
+        <div class="num">88<small>%</small></div>
+        <div class="lab">线上用户满意度</div>
+        <div class="delta">从 72% 提升 +16pp</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PROBLEM ============ -->
+  <section id="problem">
+    <div class="eyebrow">问题</div>
+    <h2>为什么金融问答的数字幻觉这么难治？</h2>
+    <p>
+      想象用户问：<em>「腾讯 2025 年<strong>归母净利润</strong>的增长率是多少？」</em>
+      系统用 RAG 检索到一堆财报片段，里面既有正确事实，也混进了「长得很像但其实不对」的干扰项。
+      标准做法（RAG + LLM、或 CoT）会在三个地方接连失手——这正是论文用 Figure 1 讲清楚的故事。
+    </p>
+
+    <figure>
+      <img src="assets/fig1.png" alt="Figure 1: DCRC 与标准方法在金融 QA 例子上的对比">
+      <div class="figcap"><span class="fignum">Figure 1</span>
+        <span>同一个「腾讯净利润增长率」问题，上排是标准方法（RAG+LLM / CoT）在三个挑战上各自翻车，下排是 DCRC 如何逐一化解。</span></div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>顶部输入</strong>：用户问题 + 检索到的上下文。上下文里 Fact A（2025 归母净利润 PATMI=1800）和 Fact B（2024=1500）是正解所需；Noise C（2025 净利润 NP=1850）和 Noise D（阿里 2025 PATMI=1100）是干扰。</li>
+          <li><strong>左列 · 挑战 1 噪声敏感</strong>：标准 RAG 因为「净利润」和「归母净利润」语义太近，错选了 Noise C 的 1850（Concept Confusion）；DCRC 则建「共享证据池」并施加符号约束，精确区分 A/B/C。</li>
+          <li><strong>中列 · 挑战 2 计算脆弱</strong>：LLM 用概率生成 token，把 (1800−1500)/1500 算成「25%」；DCRC 改成确定性算子 <code>subtract→divide</code>，得到精确的 20%。</li>
+          <li><strong>右列 · 挑战 3 可审计性危机</strong>：CoT 只甩出「增长 25%」，悄悄排除了 1850/1100 却不解释（Silent Exclusion）；DCRC 为每条证据打 <span class="mono">Accept[Exact_Match]</span> / <span class="mono">Reject[Concept_Shift]</span> 标签，形成可验证的证据链。</li>
+        </ul>
+        <div class="sumline">一句话：标准方法「选错→算错→还说不清」，DCRC 用「证据池 + 确定性算子 + 审计日志」把三处漏洞一次性堵上。</div>
+      </div>
+    </figure>
+
+    <div class="chal-grid">
+      <div class="chal">
+        <div class="h">🎯 挑战 1 · 噪声敏感</div>
+        <div class="en">Noise Sensitivity（语义相近 vs 符号相异）</div>
+        <div class="badrow"><span class="lbl">标准方法</span>「净利润」和「归母净利润」嵌入太像，检索器把 NP=1850 也当成答案。</div>
+        <div class="goodrow"><span class="lbl">DCRC</span>显式判别并 <b>拒绝</b> 概念漂移的干扰项，只接受精确匹配。</div>
+      </div>
+      <div class="chal">
+        <div class="h">🧮 挑战 2 · 计算脆弱</div>
+        <div class="en">Calculation Fragility（概率模仿 vs 确定执行）</div>
+        <div class="badrow"><span class="lbl">标准方法</span>下一 token 预测「假装」在算数，20% 被生成成「25%」。</div>
+        <div class="goodrow"><span class="lbl">DCRC</span>把算式交给符号执行器，<b>确定性</b>计算、结果可复现。</div>
+      </div>
+      <div class="chal">
+        <div class="h">🔍 挑战 3 · 可审计性危机</div>
+        <div class="en">Auditability Crisis（似是而非 vs 透明验证）</div>
+        <div class="badrow"><span class="lbl">标准方法</span>CoT 悄悄丢弃证据，不说为什么，无法核查。</div>
+        <div class="goodrow"><span class="lbl">DCRC</span>逐条记录 <b>接受/拒绝 + 理由码</b>，留下完整审计链。</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>核心观察：</strong>这三个问题是<strong>耦合</strong>的——单独修检索器或单独修生成器都不够。
+      论文因此主张：与其继续「模型中心」地打补丁，不如从<strong>数据</strong>入手，让模型学会「编译 + 执行」这一套可信流程。
+    </div>
+  </section>
+
+  <!-- ============ RELATED WORK ============ -->
+  <section id="related">
+    <div class="eyebrow">已有方案</div>
+    <h2>retriever-generator 框架卡在哪？</h2>
+    <p>
+      过去主流的金融数值推理都落在「<strong>检索器 → 生成器</strong>」两段式框架里，研究者各自优化其中一段。
+      但正因为两段是<strong>解耦</strong>的，无法统一应对上面三个挑战。下面挑三个代表性 SOTA 看它们各自做了什么、又卡在哪
+      （点开看方法与流程）。
+    </p>
+
+    <div class="card">
+      <div class="head" onclick="toggleCard(this)">
+        <div>
+          <span class="ttl">APOLLO<span class="ptag">LREC-COLING'24</span></span>
+          <div class="onel">给检索器加「数字感知的负采样」，让它更会区分关键数值——但生成阶段仍是概率计算。</div>
+        </div>
+        <span class="chev">▶</span>
+      </div>
+      <div class="body"><div class="body-inner">
+        <div class="flow">
+          <span class="fnode">文档</span><span class="farrow">→</span>
+          <span class="fnode" style="border-color:var(--accent);background:var(--accent-bg)">检索器（数字感知负采样）</span>
+          <span class="farrow">→</span><span class="fnode bad">生成器（概率计算）</span><span class="farrow">→</span><span class="fnode">答案</span>
+        </div>
+        <p><strong>做了什么：</strong>针对「数值容易被忽略」的痛点，APOLLO 在训练检索器时引入 number-aware negative sampling，
+        构造数值上易混淆的负样本，让检索器学会挑出真正关键的数字事实。</p>
+        <p><strong>卡在哪：</strong>它只优化了「找证据」这一段，找到证据后<strong>仍交给普通生成器做计算</strong>，
+        计算脆弱与可审计性问题原样保留。</p>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="head" onclick="toggleCard(this)">
+        <div>
+          <span class="ttl">ENCORE<span class="ptag">ACL'24</span></span>
+          <div class="onel">通过「拆解答案公式」反推出可靠的推理过程来监督生成器——推理更可靠，但仍是文本生成。</div>
+        </div>
+        <span class="chev">▶</span>
+      </div>
+      <div class="body"><div class="body-inner">
+        <div class="flow">
+          <span class="fnode">文档</span><span class="farrow">→</span><span class="fnode">检索</span><span class="farrow">→</span>
+          <span class="fnode" style="border-color:var(--accent);background:var(--accent-bg)">生成器（答案公式分解→可靠推理）</span>
+          <span class="farrow">→</span><span class="fnode">答案</span>
+        </div>
+        <p><strong>做了什么：</strong>ENCORE 从标注的答案公式出发，分解出「可靠的推理过程」作为监督信号，
+        引导生成器学会更靠谱的多步推理链路。</p>
+        <p><strong>卡在哪：</strong>它聚焦于优化<strong>生成器</strong>的推理质量，但计算本身依旧由语言模型「生成」，
+        缺乏确定性执行与对噪声证据的显式拒绝机制。</p>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="head" onclick="toggleCard(this)">
+        <div>
+          <span class="ttl">FINDER<span class="ptag">EMNLP'25</span></span>
+          <div class="onel">生成式检索做事实抽取 + 动态选 in-context 示例来增强 Program-of-Thought——本文最强对比基线。</div>
+        </div>
+        <span class="chev">▶</span>
+      </div>
+      <div class="body"><div class="body-inner">
+        <div class="flow">
+          <span class="fnode">文档</span><span class="farrow">→</span>
+          <span class="fnode" style="border-color:var(--accent);background:var(--accent-bg)">生成式检索（事实抽取）</span>
+          <span class="farrow">→</span><span class="fnode">动态选示例</span><span class="farrow">→</span>
+          <span class="fnode">PoT 提示生成程序</span><span class="farrow">→</span><span class="fnode">答案</span>
+        </div>
+        <p><strong>做了什么：</strong>FINDER 用生成式检索器抽取事实，并动态挑选最相关的 in-context 例子来强化
+        Program-of-Thought 提示，从而生成可执行的计算程序。它是表现最强的前序方法（FinQA-Test 75.32%）。</p>
+        <p><strong>卡在哪：</strong>它依赖<strong>提示工程</strong>而非训练出的判别能力，对「相似但不同」的噪声证据缺少显式拒绝，
+        也没有结构化的审计输出。本文 DSA-7B 在同等 7B 参数下把它再提升 9.34pp。</p>
+      </div></div>
+    </div>
+
+    <div class="callout idea">
+      <strong>共同短板：</strong>这些方法都是「<strong>模型中心</strong>」——要么修检索、要么修生成，
+      <strong>把不确定的「算」和「判断证据」都留在了语言模型内部</strong>。本文的切入点恰恰相反：从数据出发，
+      训练一个会「编译」的智能体，把计算外包给确定性执行器。
+    </div>
+  </section>
+
+  <!-- ============ METHOD OVERVIEW ============ -->
+  <section id="method">
+    <div class="eyebrow">本文方法 · 重头戏</div>
+    <h2>DCRC：把问答变成「编译 + 执行」</h2>
+    <p>
+      DCRC（Data-centric Reasoning Compiler）训练一个 <strong>DSA（Data-centric Structuring Agent，数据中心结构化智能体）</strong>，
+      让它扮演「编译器」的角色。整体形式化为：
+    </p>
+    <div class="callout" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:16px">
+      a = E(I), &nbsp; I = π(q, D)
+    </div>
+    <p>
+      给定问题 <code>q</code> 和检索文档 <code>D</code>，DSA <code>π</code> 先把它们<strong>编译</strong>成一份可验证的中间表示 <code>I</code>；
+      再由确定性执行器 <code>E</code> <strong>执行</strong> <code>I</code> 得到答案 <code>a</code>。
+      中间表示 <code>I</code> 必须含三样东西：<strong>① 子任务拆解 T、② 带审计决策的证据池 P、③ 符号计算逻辑 L</strong>。
+    </p>
+
+    <figure>
+      <img src="assets/fig2.png" alt="Figure 2: DCRC 三阶段整体架构">
+      <div class="figcap"><span class="fignum">Figure 2</span>
+        <span>DCRC 的三阶段总架构：① 对抗数据构建 → ② 多阶段训练 → ③ 编译-执行推理。右侧给出一个 DSA 输出示例。</span></div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>Phase 1 数据构建（左）</strong>：用一个「教师委员会」（GPT-5.2 / Gemini-3 / Claude-4.5）对每个样本各自产出 DSA 候选，再<strong>硬投票</strong>定金标准（≥2 个接受且数值一致才算正样本）；接着<strong>注入硬负样本</strong>（概念/时间/实体三种漂移），最后用一致性过滤器清洗。</li>
+          <li><strong>Phase 2 多阶段训练（中）</strong>：先做<strong>结构感知 SFT</strong>——对 <code>Accept/Reject/tag/why</code> 这些关键 token 把 loss 权重提到 2.0，逼模型重点学「判断边界」；再用 <strong>GRPO</strong> 强化学习，配五维奖励（格式 / 检索 F1 / 一致性惩罚 / 可执行 / 准确）。</li>
+          <li><strong>Phase 3 推理执行（右）</strong>：训练好的 DSA 先<strong>编译</strong>（任务拆解 → 共享证据池 → 逐任务对抗审计 → 输出结构化程序），再进入<strong>确定性图遍历执行</strong>（符号绑定与冲突检测 → 算子注册表沙箱执行 → 数值结果 + 审计报告）。</li>
+          <li><strong>右侧 DSA Example</strong>：展示了一份真实中间表示——tasks（T1/T2）、pool（每条证据在不同任务下的 Accept/Reject 路由）、logic（<code>subtract→divide</code>）、以及最终 audit log。</li>
+        </ul>
+        <div class="sumline">一句话：左边「造好数据」、中间「练好判断」、右边「编译再确定性地执行」，三段环环相扣。</div>
+      </div>
+    </figure>
+
+    <!-- Phase 1 -->
+    <h3>Phase 1 · 对抗数据构建：教模型「学会拒绝」</h3>
+    <p>数据是 DCRC 的命门。光有正样本不够，关键是让模型见过<strong>足够刁钻的负样本</strong>。三步走：</p>
+    <ul>
+      <li><strong>① 异构共识挖掘</strong>：用 K 个不同的强模型组成「教师委员会」，各自独立产出结构化 DSA；对每个候选值做<strong>硬投票</strong>，只有当多数（≥⌈K/2⌉）都「接受」且<strong>抽取的数值一致</strong>时，才纳入正样本集，消除单模型偏见与幻觉。</li>
+      <li><strong>② 硬负样本注入</strong>：基于正样本做<strong>受控扰动</strong>，模拟真实世界三类错误模式（见下方切换演示）。</li>
+      <li><strong>③ 一致性过滤</strong>：再用一个验证模型检查每条样本的 <code>tag</code> 与 <code>why</code> 是否语义自洽，不通过就丢弃。</li>
+    </ul>
+
+    <p class="muted small" style="margin-top:18px"><strong>三种硬负样本</strong>（以「腾讯 2025 归母净利润 = 1800」为正样本，点击切换）：</p>
+    <div class="tabs">
+      <div class="tab active" onclick="showTab(event,'concept')">概念漂移 Concept Shift</div>
+      <div class="tab" onclick="showTab(event,'temporal')">时间错配 Temporal Mismatch</div>
+      <div class="tab" onclick="showTab(event,'entity')">实体混淆 Entity Confusion</div>
+    </div>
+    <div id="concept" class="tabpane active">
+      <div class="evrow pos"><span>✅ 目标：腾讯 · 2025 · <b>归母净利润 (PATMI)</b> = 1800</span><span class="code">ACCEPT [Exact_Match]</span></div>
+      <div class="evrow neg"><span>⚠️ 干扰：腾讯 · 2025 · <b>净利润 (NP)</b> = 1850</span><span class="code">REJECT [Concept_Shift]</span></div>
+      <p class="small muted" style="margin:10px 0 0">指标名称语义极近、定义不同。「净利润」≠「归母净利润」，这是金融问答最致命的混淆源。</p>
+    </div>
+    <div id="temporal" class="tabpane">
+      <div class="evrow pos"><span>✅ 目标：腾讯 · <b>2025</b> · 归母净利润 = 1800</span><span class="code">ACCEPT [Exact_Match]</span></div>
+      <div class="evrow neg"><span>⚠️ 干扰：腾讯 · <b>2022</b> · 归母净利润 = 1500</span><span class="code">REJECT [Time_Mismatch]</span></div>
+      <p class="small muted" style="margin:10px 0 0">指标类型对，但年份/期间不符。查 2025 的数据却混进了往年的值。</p>
+    </div>
+    <div id="entity" class="tabpane">
+      <div class="evrow pos"><span>✅ 目标：<b>腾讯</b> · 2025 · 归母净利润 = 1800</span><span class="code">ACCEPT [Exact_Match]</span></div>
+      <div class="evrow neg"><span>⚠️ 干扰：<b>阿里巴巴</b> · 2025 · 归母净利润 = 1100</span><span class="code">REJECT [Entity_Mismatch]</span></div>
+      <p class="small muted" style="margin:10px 0 0">指标和年份都对，但主体（公司/子公司 vs 集团）不符。</p>
+    </div>
+
+    <!-- Phase 2 -->
+    <h3>Phase 2 · 多阶段训练：先学格式，再学决策</h3>
+    <h4>Stage 1：结构感知 SFT（让关键 token「更重」）</h4>
+    <p>
+      普通 SFT 对每个 token 一视同仁。但 DSA 的<strong>灵魂是审计决策</strong>（Accept / Reject）。
+      于是论文对这些关键 token 的损失乘上权重 <code>α = 2.0</code>，逼模型把注意力放在「分类决策边界」上，而非流水账式的字段填充。
+    </p>
+    <div class="callout" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:2">
+      w<sub>t</sub> = 2.0 &nbsp;若&nbsp; y<sub>t</sub> ∈ {Accept, Reject, tag, why}；&nbsp; 否则 w<sub>t</sub> = 1.0
+    </div>
+
+    <h4>Stage 2：GRPO 强化学习（五维奖励）</h4>
+    <p>SFT 打好底子后，用 GRPO（组相对策略优化）进一步打磨决策质量。奖励由五个维度组成——注意其中有一个<strong>重罚项</strong>：</p>
+    <div class="rgrid">
+      <div class="rcard"><div class="rt">R_format</div><div class="rd">输出是否为合法、符合 schema 的 JSON（1 / 0）</div></div>
+      <div class="rcard"><div class="rt">R_retrieval</div><div class="rd">证据审计的 F1 分数，平衡精确率与召回率</div></div>
+      <div class="rcard"><div class="rt">R_exec</div><div class="rd">生成的计算逻辑能否被符号执行器跑通（1 / 0）</div></div>
+      <div class="rcard"><div class="rt">R_accuracy</div><div class="rd">执行结果与标准答案是否一致（误差 &lt; ε）</div></div>
+      <div class="rcard penalty"><div class="rt">R_consistency = −5</div><div class="rd">若某个被 <b>Reject</b> 的值竟然出现在最终公式里 → 重罚，杜绝「自相矛盾」</div></div>
+      <div class="rcard" style="display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-weight:600">R_total = 五项之和</div>
+    </div>
+    <p class="small muted">这个 −5 的一致性惩罚很巧妙：它直接用奖励信号封死了「嘴上说拒绝、手上却用了」这种最隐蔽的逻辑漏洞。</p>
+
+    <!-- Phase 3 -->
+    <h3>Phase 3 · 编译-执行推理：不确定性只留在编译阶段</h3>
+    <p>训练好的 DSA 在推理时分工明确：<strong>编译</strong>这步可以「不确定」（用 LLM 挑证据、写程序），但<strong>执行</strong>这步必须「确定」。</p>
+    <h4>① 编译：产出中间表示 I</h4>
+    <ul>
+      <li><strong>任务拆解 T</strong>：把复杂问题拆成原子子任务，每个含 <code>target</code>（目标指标）+ <code>constraint</code>（时间/条件）。</li>
+      <li><strong>共享证据池 P</strong>：每条证据带<strong>多头决策路由</strong>——同一个数字，在不同子任务视角下分别给出 Accept/Reject + 理由。</li>
+      <li><strong>符号逻辑 L</strong>：引用预注册算子库写出的计算表达式，如 <code>subtract(1800,1500), divide(#0,1500)</code>。</li>
+    </ul>
+    <h4>② 执行：确定性符号求值（三步）</h4>
+    <ul>
+      <li><strong>多头路由聚合</strong>：遍历证据池，按决策标签把证据分配到对应任务桶 B<sub>i</sub>，同时生成审计日志。</li>
+      <li><strong>符号绑定 + 冲突检测</strong>：每个任务桶做一致性核验——恰好 1 个值则<code>绑定</code>，多个值则报 <code>CONFLICT</code>，0 个则报 <code>MISSING</code>。</li>
+      <li><strong>沙箱算子执行</strong>：只调用预注册算子库（add/subtract/.../table_avg），在安全沙箱里求值，<strong>彻底杜绝代码注入</strong>。</li>
+    </ul>
+
+    <details>
+      <summary>查看 DSA 的提示词与输出 Schema <span class="sm">（附录 A：角色设定 + JSON 格式 + 理由码表）</span></summary>
+<pre><span class="c">## Role: 专业的金融数值推理分析师</span>
+<span class="c">## Task: 理解问题 → 抽取证据 → 判别过滤 → 构造计算</span>
+<span class="c">## Output Format (严格 JSON):</span>
+{
+  "tasks": {
+    "T1": { "target": "目标指标名", "constraint": "时间/条件" }
+  },
+  "pool": [
+    { "id": "E1", "val": "原始数值", "src": "来源文本片段",
+      "decisions": {
+        "T1": { "tag": "ACCEPT", "why": "[Exact_Match]" },
+        "T2": { "tag": "REJECT", "why": "[Time_Mismatch]" } } }
+  ],
+  "logic": "计算表达式"
+}
+<span class="c">## ACCEPT 理由码:</span> [Exact_Match] [Derived_Match]
+<span class="c">## REJECT 理由码:</span> [Time_Mismatch] [Entity_Mismatch] [Concept_Shift] [Unit_Error] [Irrelevant]
+<span class="c">## 算子:</span> add subtract multiply divide exp greater
+<span class="c">## 引用:</span> 用 #N 引用第 N 步结果 — subtract(100,80), divide(#0,80) = 0.25</pre>
+    </details>
+  </section>
+
+  <!-- ============ WALKTHROUGH ============ -->
+  <section id="walk">
+    <div class="eyebrow">跟着例子走一遍</div>
+    <h2>一个真实样例：PMI vs 标普 500 的五年回报差</h2>
+    <p>
+      论文附录 B/C 给了一个完整 running example。问题是：
+      <em>「截至 2018 年的五年里，PMI 普通股相比标普 500 指数的<strong>百分比回报差</strong>是多少？」</em>
+      标准答案 <code>−0.538</code>。下面一步步看 DSA 如何编译再确定性执行——注意它如何在<strong>同一张表里同时接受与拒绝同一个数字</strong>（取决于是哪个子任务）。
+    </p>
+
+    <div class="stepper">
+      <div class="stepbar" id="stepbar"></div>
+      <div class="stephead">
+        <div class="stepno" id="stepno">1</div>
+        <div class="steptitle" id="steptitle"></div>
+      </div>
+      <div class="stepdesc" id="stepdesc"></div>
+      <div class="stepstage" id="stepstage"></div>
+      <div class="stepctrl">
+        <button class="btn" id="btnprev" onclick="pmiStep(-1)">← 上一步</button>
+        <button class="btn primary" id="btnnext" onclick="pmiStep(1)">下一步 →</button>
+        <button class="btn" onclick="pmiReset()">重置</button>
+        <span class="stepcount" id="stepcount"></span>
+      </div>
+    </div>
+
+    <details>
+      <summary>查看完整 DSA 输出 JSON 与执行轨迹 <span class="sm">（附录 B/C 原文，含 5 条证据与逐步求值）</span></summary>
+<pre><span class="c"># DSA 输出</span>
+"tasks": { "T1": {"target":"pmi","constraint":"december 31 2018"},
+           "T2": {"target":"s&p 500 index","constraint":"december 31 2018"} }
+"pool":
+  E1 val 96.50  -> T1 ACCEPT[Exact_Match] | T2 REJECT[Concept_Shift]
+  E2 val 150.30 -> T1 REJECT[Concept_Shift] | T2 ACCEPT[Exact_Match]
+  E3 val 100.00 -> ALL REJECT[Time_Mismatch]   (这是 2013 年的基准值)
+  E4 val 127.70 -> ALL REJECT[Concept_Shift]
+  E5 val 144.50 -> ALL REJECT[Time_Mismatch]   (这是 2017 年的值)
+"logic": subtract(96.50, const_100), divide(#0, const_100),
+         subtract(150.30, const_100), divide(#2, const_100),
+         subtract(#1, #3)
+
+<span class="c"># 确定性执行</span>
+Step 0: subtract(96.50, 100)  = -3.50
+Step 1: divide(#0, 100)       = -0.035
+Step 2: subtract(150.30, 100) = 50.30
+Step 3: divide(#2, 100)       = 0.503
+Step 4: subtract(#1, #3)      = -0.538   <span class="c"># 最终结果</span></pre>
+    </details>
+  </section>
+
+  <!-- ============ INSIGHTS ============ -->
+  <section id="insight">
+    <div class="eyebrow">几个有意思的点</div>
+    <h2>为什么这套设计「优雅」？</h2>
+
+    <h3>① 「负向推理」：不仅说为什么对，还说为什么错</h3>
+    <p>
+      传统 CoT 只演示「<strong>如何得到正确答案</strong>」；DCRC 额外显式记录「<strong>为什么排除了那些错误选项</strong>」。
+      论文称之为 <strong>Negative Reasoning（负向推理）</strong>——审计逻辑准确率高达 99.6%，
+      拒绝理由几乎完美对齐预定义的错误分类（<code>[Time_Mismatch]</code>、<code>[Entity_Mismatch]</code> 等），而不是含糊的自由文本解释。
+    </p>
+
+    <h3>② 把不确定性「关进笼子」</h3>
+    <p>
+      整套方法的哲学可以一句话概括：
+    </p>
+    <div class="quote">让语言模型的不确定性只停留在<strong>编译阶段</strong>（挑证据、写程序），而把<strong>执行阶段</strong>（数值计算）做成 100% 确定、可复现的符号求值。</div>
+    <p>
+      这也解释了为什么<strong>即便完全不训练</strong>，光是改成「结构化编译」输出，1.5B 基座就能从 CoT 的 32.45% 升到 35.10%——
+      结构化本身就在引导更精确的信息抽取。
+    </p>
+
+    <h3>③ 沙箱算子注册表：安全又确定</h3>
+    <p>
+      执行器只会调用<strong>预注册</strong>的函数（<code>add / subtract / divide / table_avg ...</code>），用 <code>#N</code> 引用前序步骤结果，
+      结果统一四舍五入到 5 位小数。好处有三：<strong>杜绝任意代码注入、支持多步引用、输出确定可复现</strong>。
+    </p>
+    <details>
+      <summary>查看算子注册表实现 <span class="sm">（附录 C：10 个内置算子 + 设计原则）</span></summary>
+<pre>OPERATOR_REGISTRY = {
+  "add":      lambda a,b: a + b,
+  "subtract": lambda a,b: a - b,
+  "multiply": lambda a,b: a * b,
+  "divide":   lambda a,b: a / b,
+  "exp":      lambda a,b: a ** b,
+  "greater":  lambda a,b: "yes" if a > b else "no",
+  "table_max": lambda row: max(row),
+  "table_min": lambda row: min(row),
+  "table_sum": lambda row: sum(row),
+  "table_avg": lambda row: sum(row) / len(row),
+}
+<span class="c"># 设计原则：① 沙箱执行（只调注册函数）② #N 引用解析 ③ 确定性输出（round 5 位）</span></pre>
+    </details>
+  </section>
+
+  <!-- ============ EXPERIMENTS ============ -->
+  <section id="exp">
+    <div class="eyebrow">实验结论</div>
+    <h2>到底有多强？</h2>
+
+    <h3>RQ1 · 对比 SOTA（FinQA / ConvFinQA 执行准确率 %）</h3>
+    <div class="tablewrap">
+      <table class="cmp">
+        <thead><tr><th>方法</th><th>FinQA-Dev</th><th>FinQA-Test</th><th>ConvFinQA-Dev</th></tr></thead>
+        <tbody>
+          <tr><td>ENCORE</td><td>71.60</td><td>69.40</td><td>76.00</td></tr>
+          <tr><td>APOLLO</td><td>72.91</td><td>71.07</td><td>78.76</td></tr>
+          <tr><td>FINDER（前最佳，7B）</td><td>77.13</td><td>75.32</td><td>81.95</td></tr>
+          <tr class="ours"><td>DSA-1.5B（本文，最小）</td><td>73.05</td><td>73.50</td><td>71.00</td></tr>
+          <tr class="ours"><td>DSA-3B（本文）</td><td>79.45</td><td>79.12</td><td>78.50</td></tr>
+          <tr class="ours"><td>DSA-7B（本文）</td><td class="best">84.71</td><td class="best">84.66</td><td class="best">85.67</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      连<strong>最小的 1.5B</strong> 模型（73.50%）都已超过 ENCORE / APOLLO；<strong>7B</strong> 在 FinQA-Test 上比前最佳 FINDER 高出
+      <strong>9.34 个百分点</strong>，并在两个数据集上全面最优，泛化性良好。
+    </p>
+
+    <h3>RQ2–RQ4 · 范式、可审计性与消融</h3>
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric">
+        <div class="num">+7.16<small>pp</small></div>
+        <div class="lab">RQ2：编译范式 vs CoT（7B：84.66% vs 77.50%）</div>
+      </div>
+      <div class="metric">
+        <div class="num">97.2<small>%</small></div>
+        <div class="lab">RQ3：噪声过滤精确率（7B，证据召回 96.4%）</div>
+      </div>
+      <div class="metric">
+        <div class="num">−7.1<small>pp</small></div>
+        <div class="lab">RQ4：去掉对抗审计(ICCD)，7B 掉得最多</div>
+      </div>
+    </div>
+    <p class="small muted">
+      消融排序：<strong>对抗审计(ICCD)</strong>（−7.1）&gt; 结构化 SFT（−4.5）&gt; 负样本注入（−3.3）&gt; 多维奖励（−1.7）。
+      多维奖励虽然掉分最小，但去掉后「被拒证据却出现在计算里」的自相矛盾案例显著增多——它守的是逻辑一致性。
+    </p>
+
+    <h3>RQ5 · 超参敏感性</h3>
+    <figure>
+      <img src="assets/fig3.png" alt="Figure 3: 超参敏感性分析" style="max-width:560px;margin:0 auto">
+      <div class="figcap"><span class="fignum">Figure 3</span>
+        <span>(a) 标签权重 λ 与 (b) 正负样本比例 对 FinQA-Test 的影响，均呈「倒 U」曲线，小模型更敏感。</span></div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>(a) 标签权重 λ</strong>：1.5B 模型在极端值处明显掉分（λ=1.0 时 69.40% vs λ=2.0 时 73.50%），大模型相对稳定。</li>
+          <li><strong>(b) 正负样本比例</strong>：负样本过多（1:4）会让模型「过度拒绝」有效证据，小模型退化尤其明显。</li>
+          <li><strong>结论</strong>：折中取 <code>λ=2.0</code> + <code>1:2</code> 比例，在各规模下都接近最优（图中圆圈标注）。</li>
+        </ul>
+        <div class="sumline">一句话：关键 token 要加权、负样本要够刁但别过量，过犹不及。</div>
+      </div>
+    </figure>
+
+    <h3>线上 A/B：腾讯元宝真实环境</h3>
+    <p>
+      把 DCRC 部署进腾讯元宝金融问答做 7 天 A/B（9:1 流量，人工评 2000 条事实声明）。DSA 模块跑在 2×H20（vLLM），平均输出 182 token、延迟 0.92s。
+    </p>
+    <figure style="background:var(--surface);padding:20px">
+      <img src="assets/fig4.png" alt="Figure 4: 在线金融问答系统架构" style="max-width:560px;margin:0 auto">
+      <div class="figcap"><span class="fignum">Figure 4</span>
+        <span>线上系统架构：蓝色为主链路，橙色为 DSA 增强分支（本文贡献，A/B 测试核心）。</span></div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>意图分类</strong>：用户问题先判断「是否为数值类问题」，是则触发增强分支。</li>
+          <li><strong>主链路（蓝）</strong>：检索模块（查询扩展 → 工具调用 → 粗排 → 精排）→ Top-K 片段 → 大规模生成器 LLM。</li>
+          <li><strong>增强分支（橙）</strong>：DSA 生成 + DSA 执行 → 「增强融合」把结构化证据/程序结果作为 Enhanced Context 喂回主生成器。</li>
+          <li><strong>关键设计</strong>：DSA 是<strong>旁路增强</strong>而非替换——既保留通用生成能力，又在数值问题上注入可审计的确定性结果。</li>
+        </ul>
+        <div class="sumline">一句话：DSA 作为可插拔的「数值可信增强」挂在主链路旁，按意图触发。</div>
+      </div>
+    </figure>
+
+    <div class="tablewrap">
+      <table class="cmp">
+        <thead><tr><th>线上指标（7 天）</th><th>Baseline</th><th>+DSA</th><th>Δ</th></tr></thead>
+        <tbody>
+          <tr><td>幻觉率 ↓</td><td>12.44%</td><td>6.82%</td><td class="best">−5.62pp</td></tr>
+          <tr><td>回答准确率 ↑</td><td>85.26%</td><td>91.48%</td><td class="best">+6.22pp</td></tr>
+          <tr><td>实时指标准确率 ↑</td><td>87.79%</td><td>95.69%</td><td class="best">+7.90pp</td></tr>
+          <tr><td>历史指标准确率 ↑</td><td>86.73%</td><td>93.37%</td><td class="best">+6.64pp</td></tr>
+          <tr><td>用户满意度 ↑</td><td>72.00%</td><td>88.00%</td><td class="best">+16.00pp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      实时指标（股价、最新季报）提升最猛（+7.90pp），因为这类数据更新频繁、最容易被检索噪声污染——恰是 DSA「显式拒绝」最能发力的地方。
+      用 <strong>0.92s 的额外延迟</strong> 换来这些质量提升，在高风险金融场景里是划算的取舍。
+    </p>
+
+    <div class="callout idea">
+      <strong>结论：</strong>DCRC 用「对抗数据构建 + 多阶段训练 + 编译-执行推理」三段式，把标准大模型改造成可信的推理引擎，
+      系统性化解噪声敏感、计算脆弱与可审计性危机。论文展望未来扩展到<strong>多跳跨文档推理</strong>与<strong>实时流式金融数据</strong>。
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-title">Fighting Numerical Hallucinations via Data-centric Compilation for Online Financial QA</div>
+    <p>作者：Hao Chen, Xing Tang, Qirui Liu, Weijie Shi, Shiwei Li, Fuyuan Lyu, Weihong Luo, Xiku Du, Xiuqiang He（腾讯 FiT 等）· 约 2026 · 双盲匿名提交（ACM 模板）</p>
+    <p>原文：<a href="../714_Fighting_Numerical_Halluci.pdf" target="_blank">714_Fighting_Numerical_Halluci.pdf ↗</a> · 落地平台：<a href="https://yuanbao.tencent.com/chat/" target="_blank">腾讯元宝 YuanBao ↗</a></p>
+    <p class="divtip">本页为教学可视化重制，图 1/2/3/4 取自原文 PDF 渲染。正文为面向中文读者的解读，专有名词与代码保留英文原文。</p>
+  </footer>
+
+</div>
+
+<script>
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+function toggleCard(headEl){
+  headEl.parentElement.classList.toggle('open');
+}
+function showTab(ev, id){
+  var pane = document.getElementById(id);
+  var group = pane.parentElement;
+  var tabsRow = ev.currentTarget.parentElement;
+  Array.prototype.forEach.call(tabsRow.children, function(t){ t.classList.remove('active'); });
+  ev.currentTarget.classList.add('active');
+  ['concept','temporal','entity'].forEach(function(x){
+    document.getElementById(x).classList.remove('active');
+  });
+  pane.classList.add('active');
+}
+
+/* ---------------- PMI stepper ---------------- */
+var PMI_STEPS = [
+  {
+    t:'拆解任务',
+    d:'DSA 先把复杂问题拆成原子子任务。这里要算两个标的的五年回报，再相减。',
+    html:
+      '<div class="qbox"><span class="qq">问题：</span>截至 2018 年的五年里，PMI 普通股相比标普 500 指数的百分比回报差是多少？</div>'+
+      '<div class="taskrow">'+
+        '<div class="taskchip"><b>T1</b> · target: <b>pmi</b> · constraint: december 31 2018</div>'+
+        '<div class="taskchip"><b>T2</b> · target: <b>s&amp;p 500 index</b> · constraint: december 31 2018</div>'+
+      '</div>'
+  },
+  {
+    t:'抽取候选证据',
+    d:'从财报表格里抽出所有「可能相关/易混淆」的数值，连同来源文本 src 一起入池——先不下判断。',
+    html:
+      '<table class="evtable"><thead><tr><th>ID</th><th>值</th><th>来源片段 src</th></tr></thead><tbody>'+
+      '<tr><td>E1</td><td class="v">96.50</td><td>dec 31 2018 | $96.50 | $127.70 | $150.30</td></tr>'+
+      '<tr><td>E2</td><td class="v">150.30</td><td>dec 31 2018 | $96.50 | $127.70 | $150.30</td></tr>'+
+      '<tr><td>E3</td><td class="v">100.00</td><td>dec 31 2013 | $100.00 | $100.00 | $100.00</td></tr>'+
+      '<tr><td>E4</td><td class="v">127.70</td><td>dec 31 2018 | $96.50 | $127.70 | $150.30</td></tr>'+
+      '<tr><td>E5</td><td class="v">144.50</td><td>dec 31 2017 | $144.50 | $140.50 | $157.20</td></tr>'+
+      '</tbody></table>'
+  },
+  {
+    t:'逐任务对抗审计',
+    d:'关键一步：同一个数字在不同任务下结论可能相反。E1=96.50 对 T1(PMI) 是精确匹配，对 T2(标普) 却是概念漂移。',
+    html:
+      '<table class="evtable"><thead><tr><th>ID</th><th>值</th><th>对 T1（PMI）</th><th>对 T2（标普）</th></tr></thead><tbody>'+
+      '<tr><td>E1</td><td class="v">96.50</td><td><span class="pill a">ACCEPT [Exact_Match]</span></td><td><span class="pill r">REJECT [Concept_Shift]</span></td></tr>'+
+      '<tr><td>E2</td><td class="v">150.30</td><td><span class="pill r">REJECT [Concept_Shift]</span></td><td><span class="pill a">ACCEPT [Exact_Match]</span></td></tr>'+
+      '<tr><td>E3</td><td class="v">100.00</td><td colspan="2" style="text-align:center"><span class="pill r">ALL REJECT [Time_Mismatch] · 2013 基准</span></td></tr>'+
+      '<tr><td>E4</td><td class="v">127.70</td><td colspan="2" style="text-align:center"><span class="pill r">ALL REJECT [Concept_Shift]</span></td></tr>'+
+      '<tr><td>E5</td><td class="v">144.50</td><td colspan="2" style="text-align:center"><span class="pill r">ALL REJECT [Time_Mismatch] · 2017</span></td></tr>'+
+      '</tbody></table>'
+  },
+  {
+    t:'合成符号程序 L',
+    d:'只用被接受的证据，写出引用预注册算子的计算表达式。const_100 是回报指数的基准值（2013 年 = 100）。',
+    html:
+      '<div class="auditbox" style="font-size:13px;color:var(--ink)">'+
+      'logic = <br>&nbsp;&nbsp;subtract(96.50, const_100), divide(#0, const_100),<br>'+
+      '&nbsp;&nbsp;subtract(150.30, const_100), divide(#2, const_100),<br>'+
+      '&nbsp;&nbsp;subtract(#1, #3)</div>'+
+      '<p class="small muted">含义：(PMI回报) − (标普回报) = (96.50−100)/100 − (150.30−100)/100。</p>'
+  },
+  {
+    t:'确定性执行',
+    d:'交给符号执行器逐步求值。这一步完全确定、可复现——没有任何「概率猜词」。点「下一步」逐行点亮。',
+    exec:true
+  },
+  {
+    t:'输出结果 + 审计日志',
+    d:'得到最终答案，并自动生成完整审计链：接受了谁、拒绝了谁、为什么、用了什么公式。',
+    html:
+      '<div class="resultbox">最终结果：<b>−0.538</b> &nbsp;✓ 与标准答案一致</div>'+
+      '<div class="auditbox">'+
+      '<span class="ac">Accepted</span>: 96.50 ([Exact_Match]), 150.30 ([Exact_Match])<br>'+
+      '<span class="rc">Rejected</span>: 96.50 ([Concept_Shift]), 150.30 ([Concept_Shift]), 100.00 ([Time_Mismatch]), 127.70 ([Concept_Shift]), 144.50 ([Time_Mismatch])<br>'+
+      'Logic: subtract(96.50,100), divide(#0,100), subtract(150.30,100), divide(#2,100), subtract(#1,#3)<br>'+
+      'Result: <span class="ac">-0.538</span></div>'
+  }
+];
+
+var EXEC_LINES = [
+  {c:'Step 0: subtract(96.50, 100)', r:'-3.50'},
+  {c:'Step 1: divide(#0, 100)', r:'-0.035'},
+  {c:'Step 2: subtract(150.30, 100)', r:'50.30'},
+  {c:'Step 3: divide(#2, 100)', r:'0.503'},
+  {c:'Step 4: subtract(#1, #3)', r:'-0.538'}
+];
+
+var pmiCur = 0;
+function buildBar(){
+  var bar = document.getElementById('stepbar');
+  bar.innerHTML = '';
+  for(var i=0;i<PMI_STEPS.length;i++){
+    var d = document.createElement('div');
+    d.className = 'stepdot';
+    bar.appendChild(d);
+  }
+}
+function renderExec(){
+  var html = '';
+  for(var i=0;i<EXEC_LINES.length;i++){
+    html += '<div class="exec-line" data-ex="'+i+'"><span class="res">= '+EXEC_LINES[i].r+'</span>'+EXEC_LINES[i].c+'</div>';
+  }
+  html += '<p class="small muted" id="execnote">连续点「下一步」逐行执行；引用 #N 指向前序步骤结果。</p>';
+  return html;
+}
+var execProgress = 0;
+function renderPmi(){
+  var s = PMI_STEPS[pmiCur];
+  document.getElementById('stepno').textContent = (pmiCur+1);
+  document.getElementById('steptitle').textContent = s.t;
+  document.getElementById('stepdesc').textContent = s.d;
+  document.getElementById('stepcount').textContent = (pmiCur+1)+' / '+PMI_STEPS.length;
+  var stage = document.getElementById('stepstage');
+  if(s.exec){
+    stage.innerHTML = renderExec();
+    execProgress = 0;
+    paintExec();
+  } else {
+    stage.innerHTML = s.html;
+  }
+  var dots = document.getElementById('stepbar').children;
+  for(var i=0;i<dots.length;i++){
+    dots[i].className = 'stepdot' + (i<pmiCur?' done':'') + (i===pmiCur?' cur':'');
+  }
+  document.getElementById('btnprev').disabled = (pmiCur===0);
+  var next = document.getElementById('btnnext');
+  next.textContent = (pmiCur===PMI_STEPS.length-1) ? '已到结尾 ✓' : '下一步 →';
+}
+function paintExec(){
+  var lines = document.querySelectorAll('#stepstage .exec-line');
+  for(var i=0;i<lines.length;i++){
+    lines[i].classList.toggle('on', i<execProgress);
+  }
+}
+function pmiStep(dir){
+  var s = PMI_STEPS[pmiCur];
+  // within exec step, advance line-by-line first
+  if(dir>0 && s.exec && execProgress < EXEC_LINES.length){
+    execProgress++;
+    paintExec();
+    return;
+  }
+  var nx = pmiCur + dir;
+  if(nx<0 || nx>=PMI_STEPS.length) return;
+  pmiCur = nx;
+  renderPmi();
+}
+function pmiReset(){ pmiCur = 0; execProgress = 0; renderPmi(); }
+buildBar();
+renderPmi();
+</script>
+</body>
+</html>

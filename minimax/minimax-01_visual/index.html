@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniMax-01：用 Lightning Attention 把上下文扩到百万级</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg2:#f6eedd;
+    --card:#f4ead7;
+    --card2:#f9f2e4;
+    --panel:#efe3cd;
+    --line:#e3d6bf;
+    --line2:#d8c8ac;
+    --ink:#2b2620;
+    --ink2:#4a4034;
+    --muted:#857a64;
+    --muted2:#9b8f76;
+    --accent:#b06a2c;
+    --accent-soft:#f0e2cb;
+    --light:#cf924f;
+    --soft:#7d9a8a;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Inter','Noto Sans SC',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.75;font-size:16.5px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px;}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(176,106,44,.32);}
+  a:hover{border-bottom-color:var(--accent);}
+  h1,h2,h3{line-height:1.3;color:var(--ink);font-weight:700;}
+  h2{font-size:1.5rem;margin:0 0 4px;}
+  h3{font-size:1.12rem;margin:26px 0 8px;}
+  p{margin:13px 0;}
+  strong{font-weight:700;color:var(--ink);}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel);padding:1px 6px;border-radius:5px;color:var(--ink2);}
+  .mono{font-family:var(--mono);}
+
+  /* header */
+  header.top{
+    background:linear-gradient(180deg,#f7eeda 0%,var(--bg) 100%);
+    border-bottom:1px solid var(--line);padding:40px 0 26px;
+  }
+  .tag{
+    display:inline-block;font-size:.74rem;letter-spacing:.04em;font-weight:600;
+    color:var(--accent);background:var(--accent-soft);
+    border:1px solid #e6cfa8;border-radius:20px;padding:3px 12px;margin-bottom:14px;
+  }
+  header.top h1{font-size:2.05rem;margin:0 0 12px;letter-spacing:-.01em;}
+  .sub{color:var(--ink2);font-size:1.02rem;margin:0 0 18px;max-width:680px;}
+  .meta{display:flex;flex-wrap:wrap;gap:9px 14px;align-items:center;font-size:.85rem;color:var(--muted);}
+  .meta .pill{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:4px 11px;}
+  .meta a.src{
+    background:var(--accent);color:#fff;border:none;border-radius:7px;
+    padding:5px 14px;font-weight:600;font-size:.85rem;
+  }
+  .meta a.src:hover{background:#9a5b22;}
+
+  /* nav */
+  nav.toc{
+    position:sticky;top:0;z-index:20;background:rgba(251,246,234,.93);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+    font-size:.83rem;
+  }
+  nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:9px;padding-bottom:9px;}
+  nav.toc a{
+    white-space:nowrap;color:var(--muted);border:none;padding:3px 9px;border-radius:6px;
+  }
+  nav.toc a:hover{background:var(--card);color:var(--ink);}
+
+  section{padding:34px 0 8px;border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+  .lead{font-size:.83rem;font-weight:600;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+
+  /* tldr box */
+  .tldr{
+    background:var(--card);border:1px solid var(--line2);border-left:3px solid var(--accent);
+    border-radius:12px;padding:20px 22px;margin:8px 0 4px;
+  }
+  .tldr p{margin:8px 0;}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0 6px;}
+  .metric{
+    background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:15px 14px;text-align:center;
+  }
+  .metric .num{font-size:1.5rem;font-weight:700;color:var(--accent);font-family:var(--sans);line-height:1.15;}
+  .metric .lab{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.35;}
+
+  /* expandable cards */
+  .ecard{background:var(--card2);border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden;}
+  .ecard-head{padding:16px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;transition:background .15s;}
+  .ecard-head:hover{background:var(--card);}
+  .ecard-title{font-weight:700;font-size:1.04rem;}
+  .ecard-venue{font-size:.72rem;color:var(--muted2);margin-left:8px;font-weight:500;}
+  .ecard-sum{font-size:.85rem;color:var(--muted);margin-top:4px;}
+  .ecard-arrow{color:var(--accent);font-size:.9rem;transition:transform .25s;margin-top:3px;flex-shrink:0;}
+  .ecard.open .ecard-arrow{transform:rotate(90deg);}
+  .ecard-body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+  .ecard.open .ecard-body{max-height:2400px;}
+  .ecard-inner{padding:2px 18px 18px;border-top:1px solid var(--line);}
+  .ecard-inner p:first-child{margin-top:14px;}
+
+  /* figure block */
+  .fig{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:18px;margin:20px 0;}
+  .fig-stage{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:20px 16px;overflow-x:auto;}
+  .fig-cap{font-size:.85rem;color:var(--muted);margin-top:12px;}
+  .fig-num{font-weight:700;color:var(--ink2);}
+  .fig-toggle{display:inline-block;margin-top:10px;color:var(--accent);font-size:.86rem;font-weight:600;cursor:pointer;user-select:none;}
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .figure-detail.active{max-height:1600px;}
+  .figure-detail ul{margin:12px 0 2px;padding-left:20px;}
+  .figure-detail li{margin:7px 0;font-size:.92rem;color:var(--ink2);}
+  .figure-detail .end{font-size:.9rem;color:var(--muted);margin-top:10px;font-style:italic;}
+
+  /* architecture diagram */
+  .arch{display:flex;gap:18px;align-items:stretch;justify-content:center;flex-wrap:wrap;}
+  .arch-col{display:flex;flex-direction:column;align-items:center;gap:0;}
+  .arch-io{font-family:var(--mono);font-size:.8rem;color:var(--muted);padding:6px 14px;background:var(--panel);border-radius:7px;border:1px solid var(--line);}
+  .arch-arrow{color:var(--muted2);font-size:1.1rem;margin:5px 0;}
+  .block-group{position:relative;border:1.5px dashed var(--line2);border-radius:12px;padding:14px 14px 12px;background:rgba(239,227,205,.35);}
+  .block-group-lab{position:absolute;top:-11px;left:14px;background:var(--card2);font-size:.72rem;color:var(--accent);font-weight:700;padding:0 8px;border:1px solid var(--line);border-radius:20px;}
+  .layer{display:flex;gap:8px;margin:7px 0;align-items:stretch;}
+  .layer-i{width:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.68rem;color:var(--muted2);}
+  .mix{border-radius:8px;padding:8px 10px;font-size:.78rem;font-weight:600;text-align:center;min-width:128px;border:1px solid;line-height:1.25;}
+  .mix small{display:block;font-weight:400;font-size:.68rem;opacity:.8;margin-top:1px;}
+  .mix.light{background:#f1ead9;border-color:#d8c8ac;color:#6a5d44;}
+  .mix.soft{background:#e9efe9;border-color:#c2d3c6;color:#4f6657;}
+  .mix.moe{background:#f6e8d4;border-color:#e2c79c;color:#8a5a23;}
+  .arch-plus{display:flex;align-items:center;color:var(--muted2);font-weight:700;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:16px;font-size:.78rem;color:var(--ink2);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;border:1px solid;}
+  .dot.light{background:#f1ead9;border-color:#d8c8ac;}
+  .dot.soft{background:#e9efe9;border-color:#c2d3c6;}
+  .dot.moe{background:#f6e8d4;border-color:#e2c79c;}
+
+  /* lightning tiling diagram */
+  .tile-wrap{display:flex;gap:26px;justify-content:center;align-items:center;flex-wrap:wrap;}
+  .tile-grid{display:grid;grid-template-columns:repeat(4,38px);grid-template-rows:repeat(4,38px);gap:4px;}
+  .cell{border-radius:5px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-family:var(--mono);color:var(--muted2);background:var(--card);}
+  .cell.intra{background:#efe1c6;border-color:#d8b87f;color:#8a5a23;font-weight:600;}
+  .cell.inter{background:#e7eee8;border-color:#bcd0c0;color:#4f6657;}
+  .cell.zero{background:var(--bg2);color:#c3b69c;}
+  .kv-flow{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:.78rem;color:var(--ink2);}
+  .kv-box{background:#f6e8d4;border:1px solid #e2c79c;border-radius:8px;padding:8px 13px;font-family:var(--mono);font-size:.74rem;color:#8a5a23;text-align:center;}
+  .kv-arrow{color:var(--accent);font-size:1.2rem;}
+
+  /* right-product comparison */
+  .rp{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .rp-panel{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center;}
+  .rp-panel.good{border-color:#cdaf7e;background:#f9f1e3;}
+  .rp-eq{font-family:var(--mono);font-size:1rem;color:var(--ink);margin:6px 0;}
+  .rp-tag{font-size:.74rem;font-weight:700;letter-spacing:.03em;}
+  .rp-tag.bad{color:#a7603a;}
+  .rp-tag.ok{color:#5d7a68;}
+  .rp-cost{font-family:var(--mono);font-size:.9rem;margin-top:8px;color:var(--ink2);}
+  .rp-note{font-size:.76rem;color:var(--muted);margin-top:6px;}
+
+  ul.body-list{margin:13px 0;padding-left:4px;list-style:none;}
+  ul.body-list li{position:relative;padding-left:22px;margin:9px 0;}
+  ul.body-list li::before{content:"▪";position:absolute;left:4px;color:var(--accent);}
+
+  blockquote{
+    margin:18px 0;padding:14px 18px;background:var(--card);border-left:3px solid var(--light);
+    border-radius:0 10px 10px 0;color:var(--ink2);font-size:.95rem;
+  }
+  blockquote .zh{display:block;margin-top:6px;color:var(--muted);font-size:.88rem;}
+
+  details{background:var(--card2);border:1px solid var(--line);border-radius:10px;margin:14px 0;padding:0;}
+  details summary{cursor:pointer;padding:13px 16px;font-weight:600;font-size:.92rem;color:var(--ink2);list-style:none;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:"▸ ";color:var(--accent);}
+  details[open] summary::before{content:"▾ ";}
+  details .det-in{padding:2px 16px 16px;font-size:.92rem;color:var(--ink2);border-top:1px solid var(--line);}
+  details .sum-hint{font-weight:400;color:var(--muted);font-size:.84rem;margin-left:4px;}
+
+  .codeblock{background:#f3ead8;border:1px solid var(--line2);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:.82rem;color:var(--ink2);overflow-x:auto;line-height:1.6;white-space:pre;}
+  .codeblock .kw{color:var(--accent);font-weight:600;}
+  .codeblock .cm{color:var(--muted2);}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
+  .mini{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:15px 16px;}
+  .mini h4{margin:0 0 6px;font-size:.96rem;color:var(--ink);}
+  .mini p{margin:6px 0;font-size:.9rem;color:var(--ink2);}
+
+  footer{background:var(--bg2);border-top:1px solid var(--line);padding:30px 0 40px;font-size:.86rem;color:var(--muted);}
+  footer a{font-weight:600;}
+  footer .frow{margin:6px 0;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    header.top h1{font-size:1.6rem;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .rp{grid-template-columns:1fr;}
+    .twocol{grid-template-columns:1fr;}
+    .arch{flex-direction:column;align-items:center;}
+    .tile-wrap{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="tag">线性注意力 · 混合架构 · 长上下文</span>
+    <h1>MiniMax-01：用 Lightning Attention 把上下文扩到百万级</h1>
+    <p class="sub">第一次在数千亿参数的商用级模型里，把<strong>线性注意力</strong>真正跑通——上下文窗口比 GPT-4o / Claude-3.5-Sonnet 长 20–32 倍，性能却仍在同一梯队。</p>
+    <div class="meta">
+      <span class="pill">MiniMax-Text-01 &amp; MiniMax-VL-01</span>
+      <span class="pill">发表时间：2025 年 1 月</span>
+      <span class="pill">venue：arXiv preprint 2025.01</span>
+      <a class="src" href="https://arxiv.org/abs/2501.08313" target="_blank" rel="noopener">阅读原文 / Source ↗</a>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#tldr">TL;DR</a>
+    <a href="#problem">问题</a>
+    <a href="#prior">已有方案</a>
+    <a href="#method">本文方法</a>
+    <a href="#why">为何有效</a>
+    <a href="#details">有意思的点</a>
+    <a href="#exp">实验结论</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- TL;DR -->
+  <section id="tldr">
+    <div class="lead">TL;DR</div>
+    <h2>30 秒看懂</h2>
+    <div class="tldr">
+      <p>Transformer 用的 <strong>softmax 注意力</strong>计算量随序列长度<strong>平方级</strong>增长，是上下文窗口难以变长的根本瓶颈。MiniMax 把绝大多数层换成 <strong>Lightning Attention</strong>（一种 I/O 感知、真正线性复杂度的线性注意力），再用 <strong>MoE</strong> 把参数堆到 4560 亿。</p>
+      <p>关键设计是一种<strong>混合架构</strong>：每 7 层 Lightning Attention 之后插 1 层 softmax 注意力，既拿到线性的速度，又补回线性注意力欠缺的<strong>检索能力</strong>。结果：训练时支持 <strong>100 万 token</strong> 上下文、推理可外推到 <strong>400 万 token</strong>，而综合性能对标 GPT-4o 与 Claude-3.5-Sonnet。</p>
+      <p style="margin-bottom:0;">配套还重写了整套训练/推理框架（LASP+、Varlen Ring Attention、EP/ETP 通信重叠、定制 CUDA kernel），端到端 MFU 超过 75%。模型权重已开源：<a href="https://github.com/MiniMax-AI/MiniMax-01" target="_blank" rel="noopener">github.com/MiniMax-AI/MiniMax-01 ↗</a>。</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">456B</div><div class="lab">总参数</div></div>
+      <div class="metric"><div class="num">45.9B</div><div class="lab">每 token 激活参数</div></div>
+      <div class="metric"><div class="num">32</div><div class="lab">专家数（top-2 路由）</div></div>
+      <div class="metric"><div class="num">80</div><div class="lab">层（7 线性 : 1 softmax）</div></div>
+      <div class="metric"><div class="num">1M → 4M</div><div class="lab">训练 / 推理上下文</div></div>
+      <div class="metric"><div class="num">&gt;75%</div><div class="lab">端到端 MFU（H20）</div></div>
+      <div class="metric"><div class="num">512B</div><div class="lab">VL-01 视觉语言训练 token</div></div>
+      <div class="metric"><div class="num">200K</div><div class="lab">词表大小（BPE）</div></div>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section id="problem">
+    <div class="lead">问题定义</div>
+    <h2>为什么上下文窗口卡住了</h2>
+    <p>过去两年上下文窗口能变长，主要靠更强的 GPU 和更好的 I/O 感知 softmax 注意力实现（如 FlashAttention）。但大多数模型仍停在 <strong>32K–256K</strong>，再往上越来越难——因为 Transformer 的注意力是<strong>平方复杂度</strong>：序列翻倍，计算量变四倍，增速远超硬件进步。</p>
+    <p>而现实需求往往超出这个范围：把一整本专业书当上下文、给模型整个代码工程、用成百上千示例做 in-context learning，都需要远更长的窗口。学界为降复杂度提出过<strong>稀疏注意力、线性注意力、长卷积、状态空间模型（Mamba）、线性 RNN</strong> 等方案，理论上都很美——</p>
+    <p style="margin-bottom:4px;">但它们有一个共同尴尬：</p>
+    <blockquote>Despite their theoretical promise, these innovations have seen limited adoption in commercial-scale models.
+    <span class="zh">尽管理论上前景可观，这些创新在商用规模的模型里几乎没被采用过。</span></blockquote>
+    <p>本文的目标，就是<strong>第一次把线性注意力真正用到数千亿参数的旗舰模型上</strong>，在不牺牲性能的前提下，把上下文窗口拉长一个数量级。这要求同时平衡好三件事：网络架构、数据、计算。</p>
+  </section>
+
+  <!-- Prior approaches -->
+  <section id="prior">
+    <div class="lead">已有方案速览</div>
+    <h2>三类注意力，各卡在哪</h2>
+    <p>为理解 MiniMax 的取舍，先看与它直接形成对比的三条路线。点击展开看每种「做了什么、怎么做、卡在哪」。</p>
+
+    <div class="ecard">
+      <div class="ecard-head" onclick="toggleCard(this)">
+        <div>
+          <span class="ecard-title">① Softmax 注意力（标准 Transformer）</span>
+          <span class="ecard-venue">Vaswani et al., NeurIPS 2017</span>
+          <div class="ecard-sum">检索能力强、是事实标准，但计算/显存随长度平方增长，长上下文太贵。</div>
+        </div>
+        <span class="ecard-arrow">▸</span>
+      </div>
+      <div class="ecard-body"><div class="ecard-inner">
+        <p><strong>做了什么：</strong>对每个 query，计算它与所有 key 的相似度 <code>Softmax(QKᵀ/√d)·V</code>，得到一张 <code>n×n</code> 的注意力矩阵。它能精确地「回看」全部历史 token，因此<strong>检索/in-context learning 能力极强</strong>，是当今几乎所有顶级模型的基座。</p>
+        <p><strong>卡在哪：</strong>那张 <code>n×n</code> 矩阵就是诅咒——计算与显存都是 <strong>O(n²)</strong>。序列从 100K 到 1M，注意力开销涨 100 倍。FlashAttention 这类 I/O 感知实现只能把常数项压下来，<strong>改变不了平方这个量级</strong>。所以窗口再往上走，硬件根本追不上。</p>
+        <p style="margin-bottom:0;"><strong>与本文关系：</strong>MiniMax 没有完全抛弃它——而是把它当成「检索专用层」，每 8 层只保留 1 层 softmax 注意力来补检索短板。</p>
+      </div></div>
+    </div>
+
+    <div class="ecard">
+      <div class="ecard-head" onclick="toggleCard(this)">
+        <div>
+          <span class="ecard-title">② 线性注意力（右乘核技巧 / TransNormer）</span>
+          <span class="ecard-venue">Qin et al., 2022</span>
+          <div class="ecard-sum">用结合律把复杂度降到线性 O(n)，但 causal 场景要算 cumsum、不可并行，且检索弱。</div>
+        </div>
+        <span class="ecard-arrow">▸</span>
+      </div>
+      <div class="ecard-body"><div class="ecard-inner">
+        <p><strong>做了什么：</strong>去掉 softmax 后，注意力变成纯矩阵乘 <code>(QKᵀ)V</code>。利用矩阵乘法结合律改成 <code>Q(KᵀV)</code>——先算 <code>KᵀV</code> 得到一个只有 <code>d×d</code> 的小矩阵（与序列长度无关），复杂度从 <strong>O(n²d) 降到 O(nd²)</strong>，对长序列就是线性。</p>
+        <p><strong>卡在哪：</strong>在<strong>因果语言建模</strong>（每个 token 只能看前面）下，右乘的优势被破坏，必须沿序列做 <code>cumsum</code>（前缀和）累积 <code>KᵀV</code> 状态。这个 cumsum <strong>串行、无法高效并行</strong>，在 GPU 上慢——这也是为什么这个九年前就被提出的机制，至今 LLaMA3、Qwen2.5、DeepSeek-V3、Mistral 都没用它。</p>
+        <p style="margin-bottom:0;"><strong>与本文关系：</strong>Lightning Attention 正是这条路线的「工程化升级版」——用分块（tiling）绕开 cumsum，是 MiniMax 架构的主力层。</p>
+      </div></div>
+    </div>
+
+    <div class="ecard">
+      <div class="ecard-head" onclick="toggleCard(this)">
+        <div>
+          <span class="ecard-title">③ 状态空间模型 / 线性 RNN（Mamba 系等）</span>
+          <span class="ecard-venue">Gu &amp; Dao, 2023–2024</span>
+          <div class="ecard-sum">同样把序列建模做成线性递推，但纯线性模型普遍检索受限，未在商用规模验证。</div>
+        </div>
+        <span class="ecard-arrow">▸</span>
+      </div>
+      <div class="ecard-body"><div class="ecard-inner">
+        <p><strong>做了什么：</strong>把序列建模写成一个随时间更新的<strong>固定大小隐藏状态</strong>的递推过程（SSM / 线性 RNN），推理时每步只更新状态、不重算整段历史，因此天然线性、显存恒定。</p>
+        <p><strong>卡在哪：</strong>和纯线性注意力同病相怜——<strong>固定状态容量有限，检索能力弱</strong>。本文实验也复现了这一点：纯线性模型在语言建模上接近 Transformer，但在 NIAH（大海捞针）这类检索任务上明显落后，不适合直接做 LLM。同时它们也<strong>没有在数千亿参数规模被验证过</strong>。</p>
+        <p style="margin-bottom:0;"><strong>与本文关系：</strong>作者对比了 hybrid-cosformer2、hybrid-hgrn2、滑动窗口注意力等多种混合变体，最终 <strong>hybrid-lightning 全面胜出</strong>，成为最终选择。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- Method -->
+  <section id="method">
+    <div class="lead">本文方法 · 重头戏</div>
+    <h2>混合架构 + Lightning Attention + MoE</h2>
+    <p>MiniMax-Text-01 沿用 Transformer 的「块」结构：每个块 = 一个 <strong>channel mixer（注意力）</strong> + 一个 <strong>feature mixer（MLP）</strong>。但作者在两处都做了替换：channel mixer 大部分换成 Lightning Attention，feature mixer 换成 MoE。下面这张架构图是全文最重要的图。</p>
+
+    <!-- FIG 1: hybrid architecture -->
+    <div class="fig">
+      <div class="fig-stage">
+        <div class="arch">
+          <div class="arch-col">
+            <div class="arch-io">输入 token 序列</div>
+            <div class="arch-arrow">↓</div>
+            <div class="block-group">
+              <div class="block-group-lab">× 10 组 = 80 层</div>
+              <div class="layer"><div class="layer-i">L1</div><div class="mix light">Lightning Attn<small>channel mixer</small></div><div class="arch-plus">+</div><div class="mix moe">MoE<small>feature mixer</small></div></div>
+              <div class="layer"><div class="layer-i">L2</div><div class="mix light">Lightning Attn</div><div class="arch-plus">+</div><div class="mix moe">MoE</div></div>
+              <div class="layer"><div class="layer-i">⋮</div><div class="mix light">Lightning Attn ×7</div><div class="arch-plus">+</div><div class="mix moe">MoE</div></div>
+              <div class="layer"><div class="layer-i">L7</div><div class="mix light">Lightning Attn</div><div class="arch-plus">+</div><div class="mix moe">MoE</div></div>
+              <div class="layer"><div class="layer-i">L8</div><div class="mix soft">Softmax Attn<small>GQA + RoPE（半维）</small></div><div class="arch-plus">+</div><div class="mix moe">MoE</div></div>
+            </div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-io">输出 / 下一 token</div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="dot light"></i>Lightning Attention（线性，主力，占 7/8）</span>
+          <span><i class="dot soft"></i>Softmax Attention（补检索，占 1/8）</span>
+          <span><i class="dot moe"></i>MoE（32 专家 / top-2）</span>
+        </div>
+      </div>
+      <div class="fig-cap"><span class="fig-num">图 1（自制示意图，忠于原文 Figure 3）：</span>MiniMax-Text-01 的混合架构——每 7 层 Lightning Attention 后接 1 层 Softmax Attention，共 80 层；每层的 feature mixer 都是 MoE。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail">
+          <ul>
+            <li><strong>纵向 = 数据流：</strong>token 序列从顶部进入，自下而上穿过 80 层，每层先过 channel mixer（注意力，做 token 之间的混合），再过 feature mixer（MoE，做特征维度的混合），最后输出预测下一个 token。</li>
+            <li><strong>浅黄块 = Lightning Attention：</strong>架构主力，占每组 8 层中的前 7 层。负责线性复杂度的高效长序列建模，是速度与显存优势的来源。</li>
+            <li><strong>绿色块 = Softmax Attention：</strong>每组的第 8 层。配 Group Query Attention（组大小 8）和只施加在一半维度上的 RoPE，专门补回线性层欠缺的精确检索与长度外推能力。</li>
+            <li><strong>橙色块 = MoE feature mixer：</strong>每层都有，32 个专家、top-2 路由，每 token 只激活其中 2 个，使总参数可达 456B 但单 token 仅激活 45.9B。</li>
+            <li><strong>虚线框「×10 组」：</strong>这 8 层为一个重复单元，叠 10 次得到 80 层；7:1 的线性/softmax 配比是大量小规模实验扫出来的最佳混合比例。</li>
+          </ul>
+          <div class="end">一句话：用大量便宜的线性层扛长度，少量贵的 softmax 层守检索，再用 MoE 把容量堆上去——这就是 MiniMax-01 的骨架。</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>① Lightning Attention：用分块绕开 cumsum</h3>
+    <p>线性注意力在因果场景下慢，根源是那个串行的 cumsum。Lightning Attention 的关键 trick 是<strong>分块（tiling）</strong>：把注意力计算拆成「块内（intra-block）」和「块间（inter-block）」两部分，分别用<strong>左乘</strong>和<strong>右乘</strong>，从而既保持线性、又能在 GPU 上高效并行（I/O 感知，类比 FlashAttention）。</p>
+
+    <!-- FIG 2: lightning tiling -->
+    <div class="fig">
+      <div class="fig-stage">
+        <div class="tile-wrap">
+          <div style="text-align:center;">
+            <div class="tile-grid" id="tileGrid"></div>
+            <div style="font-size:.74rem;color:var(--muted);margin-top:8px;">Q·Kᵀ 的分块（按行切成多块）</div>
+          </div>
+          <div class="kv-flow">
+            <div class="kv-box">块内：<br>[(QₜKₜᵀ)⊙M]·Vₜ<br><span style="font-size:.66rem;">左乘 · 对角块</span></div>
+            <div class="kv-arrow">＋</div>
+            <div class="kv-box">块间：Qₜ·(KV)<br><span style="font-size:.66rem;">右乘 · 用累积状态</span></div>
+            <div class="kv-arrow">↓</div>
+            <div class="kv-box" style="background:#e7eee8;border-color:#bcd0c0;color:#4f6657;">更新状态<br>KV ← KV + KₜᵀVₜ</div>
+          </div>
+        </div>
+      </div>
+      <div class="fig-cap"><span class="fig-num">图 2（自制示意图，忠于原文 Algorithm 1 / Figure 5）：</span>Lightning Attention 的块内 + 块间分解——对角块用左乘，其余靠一个不断累积的 KV 状态做右乘。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail">
+          <ul>
+            <li><strong>左侧网格 = 注意力矩阵被切成块：</strong>Q、K、V 沿序列维度切成大小 <code>B×d</code> 的小块。橙色对角块是「块内」，绿色下三角块是「块间」，右上灰块因果掩码置零（当前 token 看不到未来）。</li>
+            <li><strong>橙色块内（左乘）：</strong>在每个对角块内部直接算 <code>[(QₜKₜᵀ)⊙M]Vₜ</code>。块很小，所以这部分平方开销可忽略，且能并行；掩码 M 保证因果性。</li>
+            <li><strong>绿色块间（右乘）：</strong>当前块与<strong>所有历史块</strong>的交互，不逐块重算，而是直接乘上一个累积好的 <code>KV</code> 状态：<code>Qₜ·(KV)</code>。这一步是线性复杂度的关键。</li>
+            <li><strong>底部 KV 状态（递推）：</strong>每处理完一块就更新 <code>KV ← KV + KₜᵀVₜ</code>，把历史信息压进一个固定大小的 <code>d×d</code> 状态里向后传递——这就替代了原来串行的 cumsum。</li>
+            <li><strong>I/O 感知：</strong>整个过程把 Q/K/V 分块从显存（HBM）搬到片上 SRAM 计算，减少访存，最终复杂度 <code>O(nd² + nBd)</code>，对长序列即线性。</li>
+          </ul>
+          <div class="end">一句话：对角块「精算」、块间用累积状态「估算」，把不可并行的前缀和换成可并行的分块矩阵乘，这才让线性注意力在 GPU 上真正快起来。</div>
+        </div>
+      </div>
+    </div>
+
+    <details>
+      <summary>Algorithm 1：Lightning Attention 前向伪代码 <span class="sum-hint">（按块循环：搬入 SRAM → 算块内 + 块间 → 更新 KV → 写回）</span></summary>
+      <div class="det-in">
+<div class="codeblock"><span class="cm"># 输入 Q, K, V ∈ R^(n×d)，块大小 B，分成 T = n/B 块</span>
+<span class="kw">初始化</span> 掩码 M ∈ R^(B×B)：M[t,s] = 1 若 t ≥ s 否则 0
+<span class="kw">初始化</span> KV = 0 ∈ R^(d×d)
+<span class="kw">for</span> t = 1 … T:
+    从 HBM 载入 Qₜ, Kₜ, Vₜ 到片上 SRAM
+    O_intra = [(Qₜ · Kₜᵀ) ⊙ M] · Vₜ      <span class="cm"># 块内 · 左乘</span>
+    O_inter = Qₜ · KV                      <span class="cm"># 块间 · 右乘</span>
+    KV = KV + Kₜᵀ · Vₜ                     <span class="cm"># 更新累积状态</span>
+    把 Oₜ = O_intra + O_inter 写回 HBM
+<span class="kw">return</span> O</div>
+      </div>
+    </details>
+
+    <h3>② 线性的本质：换个乘法顺序</h3>
+    <p>为什么线性注意力能省这么多？核心只是一个矩阵乘法结合律。下面对比同一个计算的两种算法。</p>
+
+    <div class="fig">
+      <div class="fig-stage">
+        <div class="rp">
+          <div class="rp-panel">
+            <div class="rp-tag bad">softmax / 左乘</div>
+            <div class="rp-eq">O = (Q·Kᵀ)·V</div>
+            <div class="rp-cost">先得 n×n 矩阵</div>
+            <div class="rp-cost" style="color:#a7603a;">O(n²·d)</div>
+            <div class="rp-note">随序列长度平方增长</div>
+          </div>
+          <div class="rp-panel good">
+            <div class="rp-tag ok">线性 / 右乘</div>
+            <div class="rp-eq">O = Q·(Kᵀ·V)</div>
+            <div class="rp-cost">先得 d×d 小状态</div>
+            <div class="rp-cost" style="color:#5d7a68;">O(n·d²)</div>
+            <div class="rp-note">d≪n 时即线性</div>
+          </div>
+        </div>
+      </div>
+      <div class="fig-cap"><span class="fig-num">图 3（自制示意图，忠于原文 Eq. 2–3 / Figure 5）：</span>线性注意力的「右乘核技巧」——先算 <code>KᵀV</code> 把维度压到 <code>d×d</code>，避开 <code>n×n</code> 注意力矩阵。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail">
+          <ul>
+            <li><strong>左面板（左乘，贵）：</strong>先算 <code>QKᵀ</code> 得到 <code>n×n</code> 的完整注意力矩阵，再乘 <code>V</code>。开销 <code>O(n²d)</code>，序列越长越吃不消，是 softmax 的固有形态。</li>
+            <li><strong>右面板（右乘，省）：</strong>去掉 softmax 后可改变乘法顺序：先算 <code>KᵀV</code>，得到与序列长度无关的 <code>d×d</code> 小矩阵，再左乘 <code>Q</code>。开销 <code>O(nd²)</code>，因 <code>d≪n</code> 故为线性。</li>
+            <li><strong>代价是什么：</strong>这个等价只在<strong>非因果</strong>下成立；因果建模下需要逐位置累积 <code>KᵀV</code>（即图 2 里的 KV 状态），Lightning Attention 的分块正是为高效完成这一步而生。</li>
+          </ul>
+          <div class="end">一句话：softmax 的非线性逼你显式构造 n×n 矩阵；去掉它，乘法结合律就能把成本从「平方」变「线性」。</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>③ MoE：用稀疏激活把容量堆上去</h3>
+    <p>feature mixer 用 <strong>Mixture of Experts</strong> 替换普通 FFN：每层 32 个专家，门控只把每个 token 路由给得分最高的 <strong>2 个专家</strong>（top-2）。于是总参数能堆到 456B，但单 token 实际只激活 45.9B，算力与显存可控。</p>
+    <ul class="body-list">
+      <li><strong>路由坍缩问题：</strong>规模变大时 token 容易扎堆涌向少数专家（routing collapse），导致负载失衡、训练不稳。</li>
+      <li><strong>Global Router：</strong>在 GShard 辅助损失基础上加一步跨 EP 组的 <code>allgather</code>，先全局同步各专家待处理 token 数再分发，显著降低 token drop 率、稳住训练。</li>
+      <li><strong>token-drop 策略：</strong>给每个专家设容量上限，超出即丢弃，换取训练效率。</li>
+    </ul>
+
+    <h3>④ 工程：让百万 token 真的跑得动</h3>
+    <p>现有分布式框架几乎都是为 softmax 注意力设计的。这套「Lightning + Softmax + MoE」的新架构，逼着作者把训练/推理框架<strong>整个重写</strong>。点击下方了解关键工程优化。</p>
+
+    <details>
+      <summary>四项核心工程优化 <span class="sum-hint">（MoE 通信重叠、Varlen Ring Attention、LASP+、Lightning 推理 kernel）</span></summary>
+      <div class="det-in">
+        <ul class="body-list">
+          <li><strong>EP / ETP 通信重叠：</strong>MoE 的 all-to-all 通信用 Expert Parallel + 新引入的 Expert Tensor Parallel 切分专家权重，并让通信与不同专家组的计算重叠，纯通信开销较优化前<strong>降低 50%</strong>。</li>
+          <li><strong>Varlen Ring Attention：</strong>针对「data-packing」（多个不等长样本首尾拼接）的 softmax 长序列场景，直接在整条拼接序列上做 ring attention，避免传统实现因要求长度整除而产生的大量 padding 浪费。</li>
+          <li><strong>LASP+（改进的线性注意力序列并行）：</strong>原版 LASP 各 CP rank 需串行 send-recv 交换 KV 块、互相依赖。LASP+ 先各自算局部前缀和、再 AllGather 同步，把<strong>串行变并行</strong>，速度最高提升到原来的 1/T（T 为节点数）。</li>
+          <li><strong>Lightning 推理 kernel：</strong>批量 kernel 融合、prefill 与 decode 分离执行、多级 padding（32/64/128/256）、StridedBatchedMatmul 扩展，端到端 MFU 在 H20 上 <strong>&gt;75%</strong>。</li>
+        </ul>
+        <p style="margin-bottom:0;">长上下文还用<strong>三阶段训练</strong>逐步把窗口扩到 1M：每阶段上采样不同长度区间的长文本、调高 RoPE base 频率，并在每阶段后 20% 混入 10% 高质量长文本问答数据，靠源权重线性插值平滑过渡、稳住训练。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- Why it works -->
+  <section id="why">
+    <div class="lead">为何有效</div>
+    <h2>反直觉：混合架构的检索甚至超过纯 softmax</h2>
+    <p>常识会觉得「掺了线性层，检索肯定打折」。但实验发现 hybrid-lightning 在检索（NIAH）和长度外推上<strong>不仅追平、还超过</strong>纯 softmax。作者给出的解释很漂亮——把两种注意力都写成线性递推来比「容量」。</p>
+    <blockquote>softmax attention 可被理解为一种线性 RNN：每个时间步都从头重算隐藏状态，像是「Going Through a Book」——反复重读全部历史来精确保留信息。
+    <span class="zh">而线性注意力没有这个重算过程，所以单看检索它更弱；但它的「记忆状态」更大。</span></blockquote>
+    <p>把 RNN 的<strong>容量</strong>定义为其循环状态的大小：</p>
+    <div class="twocol">
+      <div class="mini">
+        <h4>Softmax 注意力</h4>
+        <p>状态容量 ≈ <strong>O(d)</strong></p>
+        <p>逐步重算、检索精确，但单步可携带的「记忆」维度有限。</p>
+      </div>
+      <div class="mini">
+        <h4>Lightning 注意力</h4>
+        <p>状态容量 ≈ <strong>O(d²/h)</strong></p>
+        <p>那个 <code>d×d</code> 的 KV 状态本身就是一块大记忆；因 d &gt; h，容量比 softmax 更大。</p>
+      </div>
+    </div>
+    <p style="margin-bottom:0;">于是 hybrid 把两者长处叠加：softmax 层提供精确重读、lightning 层提供大容量记忆，<strong>合起来检索与外推都更强</strong>。这也解释了为什么纯线性模型不行、而混合模型行——少量 softmax 层是不可省的「检索锚点」。</p>
+  </section>
+
+  <!-- Interesting details -->
+  <section id="details">
+    <div class="lead">有意思的点</div>
+    <h2>几个值得记住的设计取舍</h2>
+    <ul class="body-list">
+      <li><strong>训练 1M，外推到 4M：</strong>得益于架构的长度外推能力，模型只在 ≤1M 上训练，却能在 400 万 token 的大海捞针（NIAH）压力测试中通过——成本可控地把推理窗口又拉长 4 倍。</li>
+      <li><strong>PostNorm（DeepNorm）打败 PreNorm：</strong>主流 LLM 多用 PreNorm 求稳，但它会因梯度走捷径而降低「有效深度」。在这个对深度敏感的深层混合架构里，配 DeepNorm 的 PostNorm 反而在所有指标上更好。</li>
+      <li><strong>推理时 softmax 才是大头：</strong>在 1,024,000 token 长度下，softmax 注意力占了约 <strong>95%</strong> 的注意力延迟，而 lightning 实现只占 <strong>不到 12%</strong>——直观印证了「把大多数层换成线性」的价值。</li>
+      <li><strong>单机可部署是硬约束：</strong>总参数特意压在 500B 以内，确保用 8×80G GPU + 8bit 量化能在单节点上跑 1M token 推理，省掉跨机通信。</li>
+      <li><strong>RoPE 只加一半维度：</strong>softmax 层只对一半注意力头维度施加 RoPE，就能实现长度外推而不掉点。</li>
+    </ul>
+  </section>
+
+  <!-- Experiments -->
+  <section id="exp">
+    <div class="lead">实验结论（轻量）</div>
+    <h2>性能对标顶级闭源，长上下文显著领先</h2>
+    <p>核心结论一句话：<strong>在标准学术 benchmark 上与 GPT-4o、Claude-3.5-Sonnet 同档；上下文越长、优势越明显；而窗口长 20–32 倍。</strong></p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">Top-3</div><div class="lab">MMLU / IFEval / Arena-Hard</div></div>
+      <div class="metric"><div class="num">第 1</div><div class="lab">C-SimpleQA（中文知识）</div></div>
+      <div class="metric"><div class="num">54.4</div><div class="lab">GPQA Diamond（超最新 GPT-4o）</div></div>
+      <div class="metric"><div class="num">&gt;128K</div><div class="lab">RULER 起开始全面领先</div></div>
+    </div>
+
+    <ul class="body-list">
+      <li><strong>文本（MiniMax-Text-01）：</strong>MATH pass@1 超过 GPT-4o、Claude-3.5-Sonnet 与 Llama-3.1-405B；HumanEval 与 Qwen2.5-72B 相当；综合处于第一梯队。</li>
+      <li><strong>长上下文（RULER / LongBench-V2）：</strong>64K 时与顶级模型基本持平，<strong>从 128K 起拉开差距</strong>，在 1M 这种超长场景保持领先；LongBench-V2 的 w/ CoT 设定下取得 SOTA。</li>
+      <li><strong>视觉语言（MiniMax-VL-01）：</strong>额外用 512B 视觉语言 token、四阶段训练 + 轻量 ViT 模块续训而成，常规多模态任务与 GPT-4o 相当，开源视觉模型中综合领先。</li>
+    </ul>
+
+    <h3>局限</h3>
+    <ul class="body-list">
+      <li><strong>纯线性不够用：</strong>纯 lightning 模型检索能力弱、不适合直接做 LLM——必须靠混合架构里的 softmax 层兜底。</li>
+      <li><strong>多模态长文档仍有差距：</strong>MiniMax-VL-01 在 MMLongBench-Doc 的单页（47.3%）/ 跨页（28.4%）子集上仍有明显短板，复杂规划类任务也偏弱。</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="frow"><strong>MiniMax-01: Scaling Foundation Models with Lightning Attention</strong></div>
+    <div class="frow">MiniMax 团队 · arXiv preprint 2025.01 · arXiv:2501.08313</div>
+    <div class="frow">阅读原文：<a href="https://arxiv.org/abs/2501.08313" target="_blank" rel="noopener">arxiv.org/abs/2501.08313 ↗</a> ｜ 开源代码与权重：<a href="https://github.com/MiniMax-AI/MiniMax-01" target="_blank" rel="noopener">github.com/MiniMax-AI/MiniMax-01 ↗</a></div>
+    <div class="frow" style="margin-top:12px;color:var(--muted2);font-size:.8rem;">本页为教学用途的中文可视化解读；架构图为依据原文描述（Figure 3 / Figure 5 / Algorithm 1）自制的示意图，数字与结论均对齐原论文。</div>
+  </div>
+</footer>
+
+<script>
+  function toggleCard(head){
+    head.parentElement.classList.toggle('open');
+  }
+  function toggleFigDetail(el){
+    var detail = el.nextElementSibling;
+    if(!detail) return;
+    var open = detail.classList.toggle('active');
+    el.textContent = open ? '收起说明 ▾' : '展开说明 ▸';
+  }
+  // 用小方块拼出 Lightning Attention 的分块矩阵（对角=块内, 下三角=块间, 上三角=因果置零）
+  (function buildTileGrid(){
+    var grid = document.getElementById('tileGrid');
+    if(!grid) return;
+    var n = 4;
+    for(var r=0;r<n;r++){
+      for(var c=0;c<n;c++){
+        var d = document.createElement('div');
+        if(c>r){ d.className='cell zero'; d.textContent='0'; }
+        else if(c===r){ d.className='cell intra'; d.textContent='内'; }
+        else { d.className='cell inter'; d.textContent='间'; }
+        grid.appendChild(d);
+      }
+    }
+  })();
+</script>
+
+</body>
+</html>

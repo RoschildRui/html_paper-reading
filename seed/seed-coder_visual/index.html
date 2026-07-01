@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Seed-Coder：让代码模型为自己筛选训练数据</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg-2:#f4ead7;
+    --bg-3:#e8dcc7;
+    --card:#fffdf8;
+    --line:#e3d6bf;
+    --ink:#33302a;
+    --ink-soft:#5e564a;
+    --ink-mute:#8c8170;
+    --accent:#b0622f;
+    --accent-soft:#f0e2cf;
+    --radius:14px;
+    --maxw:860px;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.78;font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+
+  /* ---------- nav ---------- */
+  .topnav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(251,246,234,.9);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .topnav-inner{
+    max-width:var(--maxw);margin:0 auto;padding:11px 24px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .topnav .brand{font-weight:700;font-size:15px;letter-spacing:.2px;}
+  .topnav .brand .dot{color:var(--accent);}
+  .topnav .links{display:flex;gap:18px;align-items:center;font-size:13.5px;}
+  .topnav .links a{color:var(--ink-soft);text-decoration:none;}
+  .topnav .links a:hover{color:var(--accent);}
+  .topnav .src{
+    color:var(--accent);font-weight:600;border:1px solid var(--accent);
+    padding:4px 11px;border-radius:999px;
+  }
+  .topnav .src:hover{background:var(--accent);color:#fff;}
+  @media(max-width:880px){.topnav .links .navlink{display:none;}}
+
+  /* ---------- layout ---------- */
+  main{max-width:var(--maxw);margin:0 auto;padding:0 24px 90px;}
+  section{padding-top:54px;}
+  h1,h2,h3{line-height:1.3;letter-spacing:.1px;}
+  h2{font-size:27px;margin:0 0 6px;}
+  h2 .num{color:var(--accent);font-family:var(--mono);font-size:18px;margin-right:10px;font-weight:500;}
+  h3{font-size:19px;margin:30px 0 8px;}
+  p{margin:14px 0;}
+  a{color:var(--accent);}
+  strong{font-weight:700;color:var(--ink);}
+  .lead{font-size:18.5px;color:var(--ink-soft);}
+  .eyebrow{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:8px;
+  }
+  .section-intro{color:var(--ink-soft);}
+
+  /* ---------- hero ---------- */
+  .hero{padding-top:54px;}
+  .hero h1{font-size:39px;margin:8px 0 14px;letter-spacing:-.5px;}
+  .hero .sub{font-size:19px;color:var(--ink-soft);max-width:690px;}
+  .meta-row{
+    display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 6px;
+    font-size:13px;font-family:var(--mono);
+  }
+  .chip{
+    background:var(--bg-2);border:1px solid var(--line);
+    padding:5px 12px;border-radius:999px;color:var(--ink-soft);text-decoration:none;
+  }
+  .chip.accent{background:var(--accent-soft);border-color:#e6cdac;color:var(--accent);}
+  a.chip:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ---------- tldr ---------- */
+  .tldr{
+    background:var(--card);border:1px solid var(--line);
+    border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:24px 26px;margin:30px 0 8px;
+  }
+  .tldr h2{font-size:17px;margin:0 0 10px;color:var(--accent);
+    font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
+  .tldr p{margin:10px 0;font-size:17px;}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0;}
+  .metric{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 16px;text-align:center;
+  }
+  .metric .big{font-size:29px;font-weight:700;color:var(--accent);font-family:var(--mono);letter-spacing:-1px;}
+  .metric .lbl{font-size:12.5px;color:var(--ink-mute);margin-top:6px;line-height:1.5;}
+  @media(max-width:880px){.metrics{grid-template-columns:repeat(2,1fr);}}
+
+  /* ---------- callout ---------- */
+  .callout{
+    background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px 22px;margin:22px 0;
+  }
+  .callout.quote{border-left:4px solid var(--accent);font-style:italic;color:var(--ink-soft);}
+  .callout .q-zh{font-style:normal;color:var(--ink);margin-top:8px;font-size:15px;}
+
+  ul.tidy{margin:14px 0;padding-left:0;list-style:none;}
+  ul.tidy li{position:relative;padding-left:22px;margin:9px 0;}
+  ul.tidy li::before{content:'';position:absolute;left:4px;top:11px;width:6px;height:6px;
+    border-radius:50%;background:var(--accent);}
+
+  /* ---------- figure ---------- */
+  figure{margin:26px 0;}
+  .fig-wrap{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;overflow:hidden;
+  }
+  .fig-wrap img{width:100%;display:block;border-radius:8px;cursor:zoom-in;}
+  .fig-cap{font-size:14px;color:var(--ink-soft);margin-top:12px;padding:0 4px;}
+  .fig-cap .fig-id{font-family:var(--mono);color:var(--accent);font-weight:600;margin-right:6px;}
+  .fig-toggle{
+    display:inline-block;margin:10px 4px 2px;cursor:pointer;user-select:none;
+    color:var(--accent);font-size:13.5px;font-weight:600;
+  }
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{
+    max-height:0;overflow:hidden;transition:max-height .4s ease;
+    background:var(--bg-2);border-radius:10px;margin-top:0;
+  }
+  .figure-detail.active{max-height:2200px;margin-top:10px;}
+  .figure-detail .inner{padding:16px 20px;font-size:14.5px;color:var(--ink-soft);}
+  .figure-detail .inner ul{margin:8px 0;padding-left:0;list-style:none;}
+  .figure-detail .inner li{position:relative;padding-left:20px;margin:8px 0;}
+  .figure-detail .inner li::before{content:'▸';position:absolute;left:0;color:var(--accent);}
+  .figure-detail .inner .sum{margin-top:12px;font-style:italic;color:var(--ink-mute);}
+
+  /* ---------- expandable cards ---------- */
+  .exp{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    margin:14px 0;overflow:hidden;
+  }
+  .exp-head{
+    padding:16px 20px;cursor:pointer;display:flex;gap:14px;align-items:flex-start;
+    user-select:none;
+  }
+  .exp-head:hover{background:var(--bg-2);}
+  .exp-head .tw{flex:1;}
+  .exp-head .t{font-weight:700;font-size:16px;}
+  .exp-head .tag{
+    font-family:var(--mono);font-size:11px;color:var(--accent);
+    background:var(--accent-soft);padding:2px 8px;border-radius:6px;margin-left:8px;
+    white-space:nowrap;font-weight:500;
+  }
+  .exp-head .s{font-size:13.5px;color:var(--ink-mute);margin-top:4px;line-height:1.55;}
+  .exp-head .chev{color:var(--accent);transition:transform .3s;font-size:14px;margin-top:3px;}
+  .exp.open .exp-head .chev{transform:rotate(90deg);}
+  .exp-body{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .exp.open .exp-body{max-height:1600px;}
+  .exp-body .inner{padding:2px 20px 20px;border-top:1px solid var(--line);}
+  .exp-body .inner p:first-child{margin-top:14px;}
+
+  /* ---------- criteria grid ---------- */
+  .cgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:22px 0;}
+  .ccard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+  .ccard .ch{font-weight:700;font-size:15.5px;margin-bottom:4px;}
+  .ccard .ch .ic{margin-right:7px;}
+  .ccard .cd{font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
+  @media(max-width:880px){.cgrid{grid-template-columns:1fr;}}
+
+  /* ---------- stepper ---------- */
+  .stepper{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;margin:24px 0;
+  }
+  .pipe{display:flex;align-items:stretch;gap:0;margin:6px 0 18px;flex-wrap:nowrap;}
+  .pnode{
+    flex:1;text-align:center;padding:14px 8px;border-radius:10px;
+    border:1px solid var(--line);background:var(--bg);transition:all .35s;
+    opacity:.45;position:relative;
+  }
+  .pnode.on{opacity:1;background:var(--accent-soft);border-color:#e6cdac;}
+  .pnode.done{opacity:.85;}
+  .pnode .ico{font-size:20px;}
+  .pnode .nm{font-size:12px;font-weight:600;margin-top:5px;line-height:1.35;}
+  .pnode .tk{font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:4px;font-weight:600;}
+  .parrow{display:flex;align-items:center;color:var(--ink-mute);font-size:16px;padding:0 4px;}
+  .step-info{
+    background:var(--bg-2);border-radius:10px;padding:16px 18px;min-height:104px;
+    font-size:15px;color:var(--ink-soft);
+  }
+  .step-info b{color:var(--ink);}
+  .step-ctrl{display:flex;gap:10px;align-items:center;margin-top:16px;}
+  .btn{
+    font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;
+    border:1px solid var(--accent);background:var(--accent);color:#fff;
+    padding:8px 18px;border-radius:9px;transition:all .2s;
+  }
+  .btn:hover{filter:brightness(1.06);}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn.ghost:hover{background:var(--accent-soft);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .step-dots{display:flex;gap:7px;margin-left:auto;}
+  .step-dots i{width:8px;height:8px;border-radius:50%;background:var(--bg-3);transition:background .2s;}
+  .step-dots i.on{background:var(--accent);}
+  @media(max-width:880px){
+    .pipe{flex-wrap:wrap;gap:8px;}
+    .pnode{flex:1 1 40%;}
+    .parrow{display:none;}
+  }
+
+  /* ---------- two-col compare ---------- */
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0;}
+  .cmp .col{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+  .cmp .col h4{margin:0 0 8px;font-size:15px;}
+  .cmp .col .ph{font-family:var(--mono);font-size:11.5px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;}
+  .cmp .col ul{margin:8px 0 0;padding-left:0;list-style:none;}
+  .cmp .col li{position:relative;padding-left:18px;margin:7px 0;font-size:14px;color:var(--ink-soft);}
+  .cmp .col li::before{content:'·';position:absolute;left:4px;color:var(--accent);font-weight:700;}
+  @media(max-width:880px){.cmp{grid-template-columns:1fr;}}
+
+  /* ---------- code block ---------- */
+  pre.code{
+    background:#2c2620;color:#e9e0d2;border-radius:12px;padding:18px 20px;
+    overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.62;margin:6px 0;
+  }
+  pre.code .cm{color:#9c8f7c;}
+  pre.code .kw{color:#e0a06a;}
+  pre.code .bug{color:#e98b7b;font-weight:600;}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    margin:14px 0;padding:0 18px;}
+  details summary{cursor:pointer;padding:15px 0;font-weight:600;list-style:none;
+    display:flex;align-items:center;gap:10px;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:'＋';color:var(--accent);font-family:var(--mono);}
+  details[open] summary::before{content:'－';}
+  details summary .ds{font-weight:400;color:var(--ink-mute);font-size:13.5px;}
+  details .dbody{padding:0 0 18px;}
+  details .dbody p:first-child{margin-top:4px;}
+
+  /* lightbox */
+  .lb{position:fixed;inset:0;background:rgba(40,34,26,.86);z-index:200;display:none;
+    align-items:center;justify-content:center;padding:30px;cursor:zoom-out;}
+  .lb.on{display:flex;}
+  .lb img{max-width:96%;max-height:94%;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.4);}
+
+  footer{
+    border-top:1px solid var(--line);margin-top:70px;padding:30px 24px 50px;
+    text-align:center;color:var(--ink-mute);font-size:13.5px;
+  }
+  footer a{color:var(--accent);text-decoration:none;}
+  footer .ft-src{margin-bottom:10px;font-size:14.5px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand">Seed-Coder<span class="dot"> · 让模型自筛数据</span></div>
+    <div class="links">
+      <a class="navlink" href="#problem">问题</a>
+      <a class="navlink" href="#prior">已有方案</a>
+      <a class="navlink" href="#method">数据管线</a>
+      <a class="navlink" href="#post">后训练</a>
+      <a class="navlink" href="#insights">有意思的点</a>
+      <a class="navlink" href="#results">实验</a>
+      <a class="src" href="https://arxiv.org/abs/2506.03524" target="_blank" rel="noopener">原文 ↗</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="eyebrow">ByteDance Seed 技术报告 · 代码大模型 / 数据筛选</div>
+    <h1>让代码模型，为自己挑训练数据</h1>
+    <p class="sub">现有开源代码模型的数据清洗，高度依赖人手写的过滤规则。Seed-Coder 反过来问：既然这些模型本身就是优秀的程序员，为什么不<strong>让模型来评判代码质量、为自己筛选训练数据</strong>？由此造出一个「以模型为中心」的数据管线，并训出 8B 的 base / instruct / reasoning 三件套。</p>
+    <div class="meta-row">
+      <span class="chip accent">2025.06</span>
+      <span class="chip">arXiv preprint · 2506.03524</span>
+      <span class="chip">ByteDance Seed</span>
+      <span class="chip">Code LLM / 数据 curation</span>
+    </div>
+    <div class="meta-row" style="margin-top:4px;">
+      <a class="chip" href="https://arxiv.org/abs/2506.03524" target="_blank" rel="noopener">📄 arXiv 摘要页 ↗</a>
+      <a class="chip" href="https://arxiv.org/html/2506.03524v1" target="_blank" rel="noopener">🌐 HTML 全文 ↗</a>
+      <a class="chip" href="https://github.com/ByteDance-Seed/Seed-Coder" target="_blank" rel="noopener">💻 GitHub 代码与权重 ↗</a>
+    </div>
+  </header>
+
+  <!-- ============ TL;DR ============ -->
+  <div class="tldr">
+    <h2>TL;DR</h2>
+    <p>代码数据不只帮模型写代码，还能提升通用智能。但开源界清洗代码数据时<strong>严重依赖人工</strong>——手写一堆按语言定制的过滤规则，或用人工标注去训质量分类器。这类做法<strong>难扩展、有主观偏见、跨语言维护成本高</strong>。</p>
+    <p>Seed-Coder 提出一条<strong>「以模型为中心」（model-centric）的数据管线</strong>：用 LLM 而不是手写规则来给代码<strong>打分与过滤</strong>，几乎不需要人介入。基于此清洗出的 <strong>6 万亿 token</strong> 语料，训练出 8B 的 <strong>base / instruct / reasoning</strong> 三个模型，在同量级开源模型里全面 SOTA，甚至超过一些大得多的模型。</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="big">6T</div><div class="lbl">预训练 token<br>几乎全靠模型筛选</div></div>
+    <div class="metric"><div class="big">8B</div><div class="lbl">base / instruct<br>/ reasoning 三件套</div></div>
+    <div class="metric"><div class="big">89</div><div class="lbl">GitHub 数据<br>覆盖的编程语言</div></div>
+    <div class="metric"><div class="big">~98%</div><div class="lbl">原始 GitHub 数据<br>在预处理阶段被裁掉</div></div>
+  </div>
+
+  <!-- ============ PROBLEM ============ -->
+  <section id="problem">
+    <div class="eyebrow">问题</div>
+    <h2><span class="num">01</span>清洗代码数据，为什么不能总靠人？</h2>
+    <p class="section-intro">顶尖闭源模型（Claude 3.7 Sonnet、OpenAI o3）几乎不公开训练数据；开源模型（DeepSeek-Coder、Qwen2.5-Coder）虽给了思路，但数据处理大多一笔带过。它们的共识是：<strong>靠人类专家手工 curate 数据</strong>是提升代码质量最直观有效的办法。</p>
+
+    <p>问题在于：手写规则<strong>彼此会打架</strong>，而且要在几十上百种语言间扩展、维护，成本极高；更糟的是，规则天然带着<strong>主观偏见</strong>、缺乏可扩展性。作者把这件事和那篇被反复引用的《The Bitter Lesson》联系起来——</p>
+
+    <div class="callout quote">
+      <p>"AI researchers often favor human-centric methods due to their short-term advantages, yet these approaches inevitably plateau ... the breakthrough progress eventually arrives by the opposing approach via scaling computation and data."</p>
+      <p class="q-zh">📌 苦涩的教训：以人为中心的方法短期省事，长期必然撞上天花板；真正的突破来自「放大算力与数据」的相反路线。代码领域尤其容易掉进这个坑——因为 AI 研究者大多自己就是熟练程序员，觉得「我看一眼就知道代码好不好」，于是更倾向手工定规则。</p>
+    </div>
+
+    <h3>一个反例：人类和规则都容易看走眼</h3>
+    <p>论文举了个具体例子（Figure 3）：下面这段 Python 结构工整、注释完整、命名规范——按启发式规则它该是「高质量」。但它藏着<strong>逻辑错误</strong>：第一个条件 <span class="mono">temp &lt; 0 and temp &gt; 1</span> 永远不可能成立。要发现它，必须真正读懂整段代码的语义，而这恰恰是规则和粗看难以胜任的。</p>
+
+    <pre class="code"><span class="kw">def</span> main(temp):
+    <span class="cm">"""根据温度区间打印对应描述（Freezing / Very Cold / ...）"""</span>
+    <span class="bug">if temp &lt; 0 and temp &gt; 1:        # 永远为假：逻辑 bug</span>
+        print(<span class="cm">"Freezing"</span>)
+    <span class="kw">if</span> temp &gt; 0 <span class="kw">and</span> temp &lt; 11:
+        print(<span class="cm">"Very Cold"</span>)
+    <span class="kw">if</span> temp &gt; 10 <span class="kw">and</span> temp &lt; 21:
+        print(<span class="cm">"Cold"</span>)
+    <span class="cm"># ... 其余区间类似 ...</span>
+    <span class="kw">return</span></pre>
+    <p style="font-size:13.5px;color:var(--ink-mute);margin-top:6px;">作者结论：要充分判断一份代码的好坏，需要理解它的<strong>完整上下文</strong>——这是一个「穷举且本质上不可扩展」的任务，不该交给人和规则，而应该交给会读代码的 LLM。</p>
+  </section>
+
+  <!-- ============ PRIOR ============ -->
+  <section id="prior">
+    <div class="eyebrow">已有方案</div>
+    <h2><span class="num">02</span>主流做法：手写规则 + 人工标注的质量过滤器</h2>
+    <p class="section-intro">在 Seed-Coder 之前，开源代码模型的数据清洗基本是「人类中心」（human-centric）的两条路线。它们都有效，但都把人力放在了瓶颈上。</p>
+
+    <div class="exp">
+      <div class="exp-head">
+        <div class="tw">
+          <div class="t">① 规则过滤器（StarCoder 谱系）<span class="tag">rule-based</span></div>
+          <div class="s">用专家定义的硬规则做第一道筛子——可控、可解释，但只能覆盖「能被精确定义」的情形。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="exp-body"><div class="inner">
+        <p><strong>怎么做</strong>：DeepSeek-Coder / DeepSeek-Coder-V2 沿用 StarCoder 的过滤规则作为数据处理第一步；Qwen2.5-Coder 用类似的一套规则法。</p>
+        <p><strong>卡在哪</strong>：规则只能表达「可被精确定义」的标准，难以纳入经验性的启发；调节过滤强度不灵活；更根本的是，规则的制定依赖<strong>专家共识</strong>，而共识常常并不存在。比如「带大量注释的类模板」——有人觉得帮助理解，有人觉得稀释了代码含量，两派都有道理，规则该信谁？</p>
+      </div></div>
+    </div>
+
+    <div class="exp">
+      <div class="exp-head">
+        <div class="tw">
+          <div class="t">② 海量手工规则（OpenCoder）<span class="tag">130+ rules</span></div>
+          <div class="s">把规则做到极致：130 多条手工规则，各自配定制权重，堆进数据管线。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="exp-body"><div class="inner">
+        <p><strong>怎么做</strong>：OpenCoder 在预训练数据管线里塞进了 <strong>130+ 条手工过滤规则</strong>，每条带自定义权重。</p>
+        <p><strong>卡在哪</strong>：规则越多越容易<strong>互相冲突</strong>，跨语言扩展和维护的成本随之爆炸。这正是「人类中心」路线的天花板——短期精细，长期失控。</p>
+      </div></div>
+    </div>
+
+    <div class="exp">
+      <div class="exp-head">
+        <div class="tw">
+          <div class="t">③ 人工标注训练的质量分类器<span class="tag">human-labeled</span></div>
+          <div class="s">用人标注的数据训一个质量过滤器——比纯规则灵活，但标注本身就贵、且带标注者偏见。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="exp-body"><div class="inner">
+        <p><strong>怎么做</strong>：用人工标注的「好/坏代码」数据训练一个分类器，再拿它去过滤大规模语料。</p>
+        <p><strong>卡在哪</strong>：人工标注难以覆盖数十亿样本，跨语言重复标注成本极高；标注的主观偏见会被分类器继承放大。归根结底还是把人力放在了无法 scale 的环节上。</p>
+      </div></div>
+    </div>
+
+    <p>三条路线的共同症结：<strong>把人当成质量判断的核心</strong>。Seed-Coder 的回答是——让 LLM 接管这件事。LLM 能捕捉「难以显式量化」的质量直觉，又能对数十亿样本做<strong>一致、可扩展、自包含</strong>的评估。</p>
+  </section>
+
+  <!-- ============ METHOD ============ -->
+  <section id="method">
+    <div class="eyebrow">本文方法 · 重头戏</div>
+    <h2><span class="num">03</span>以模型为中心的数据管线</h2>
+    <p class="section-intro">整条管线的输入是从 <strong>GitHub 和网页存档</strong>爬来的原始代码数据，输出是最终的预训练语料。核心思想贯穿始终：<strong>预处理只做最少的事，真正的质量判断交给 LLM 过滤器</strong>。下面这张是全文最重要的总览图。</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <img src="assets/fig2_pretrain_pipeline.png" alt="Seed-Coder 预训练数据处理管线总览" onclick="zoom(this)" />
+      </div>
+      <div class="fig-cap"><span class="fig-id">Figure 2</span>预训练数据处理管线：原始数据 → 预处理 → LLM 质量过滤 → 四类数据 → 两阶段预训练配方。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>左侧 · 预处理（Preprocessing）</b>：对 GitHub 数据与网页数据先做<b>去重</b>（精确去重 + 近似去重）和<b>最小规则</b>（语言识别、语法检查等），只剔除明显无关/非代码内容，不做激进清洗。GitHub 数据这一步就裁掉了约 <b>98%</b> 的原始体量。</li>
+          <li><b>中间 · 质量过滤（Quality Filtering）</b>：核心是那个画成「神经网络」图标的 <b>LLM Quality Filters</b>——用 LLM 给代码打分、筛掉低质内容。这是「让模型自筛数据」的心脏。</li>
+          <li><b>四类产出（中右）</b>：过滤后的数据分成四类，并用颜色标注——<b>文件级代码（黄）</b>、<b>仓库级代码（蓝）</b>、<b>GitHub Commits（红）</b>、<b>代码相关网页（绿）</b>。</li>
+          <li><b>右侧 · 两阶段配方</b>：上方「常规预训练」只用文件级代码 + 网页数据（图中黄+绿圆点）搭建基础能力；下方「继续预训练」扩展到全部四类，并额外加入<b>高质量数据</b>与<b>长上下文数据</b>做增强与对齐。</li>
+          <li><b>解耦设计</b>：所有预处理与过滤模块都被拆开，可<b>各自独立运行</b>，无需为增量数据重跑整条管线——这让管线既省算力又灵活。</li>
+        </ul>
+        <div class="sum">数据流：GitHub/网页原始数据 → 轻量预处理去重 → LLM 质量过滤 → 四类彩色数据 → 按「常规 / 继续」两阶段重新组合喂给模型。</div>
+      </div></div>
+    </figure>
+
+    <h3>跟着管线走一遍</h3>
+    <p>下面这个分步演示对应上图的主干，点「下一步」看一份原始代码如何被一路筛成预训练语料：</p>
+
+    <div class="stepper">
+      <div class="pipe">
+        <div class="pnode" id="n0"><div class="ico">🗂️</div><div class="nm">原始数据</div><div class="tk">GitHub+Web</div></div>
+        <div class="parrow">→</div>
+        <div class="pnode" id="n1"><div class="ico">🧹</div><div class="nm">预处理</div><div class="tk">-98%</div></div>
+        <div class="parrow">→</div>
+        <div class="pnode" id="n2"><div class="ico">🧠</div><div class="nm">LLM 质量过滤</div><div class="tk">打分筛选</div></div>
+        <div class="parrow">→</div>
+        <div class="pnode" id="n3"><div class="ico">🎨</div><div class="nm">四类数据</div><div class="tk">file/repo/commit/web</div></div>
+        <div class="parrow">→</div>
+        <div class="pnode" id="n4"><div class="ico">📚</div><div class="nm">两阶段配方</div><div class="tk">6T tokens</div></div>
+      </div>
+      <div class="step-info" id="stepInfo"></div>
+      <div class="step-ctrl">
+        <button class="btn ghost" id="prevBtn" onclick="step(-1)">上一步</button>
+        <button class="btn" id="nextBtn" onclick="step(1)">下一步 →</button>
+        <div class="step-dots" id="dots"></div>
+      </div>
+    </div>
+
+    <h3>核心机件：一个会打分的 LLM 质量过滤器</h3>
+    <p>怎么把「让模型评判质量」落地成能处理数十亿样本的工程？答案是训一个<strong>文件级打分模型</strong>，一次性筛掉低质代码，省去逐条编造复杂标准。下图是它的构造与使用流程。</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <img src="assets/fig5_quality_scorer.png" alt="数据质量打分器的训练-推理-过滤流程" onclick="zoom(this)" />
+      </div>
+      <div class="fig-cap"><span class="fig-id">Figure 5</span>质量打分器的三段流程：训练（Training）→ 推理（Inference）→ 过滤（Filtering）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>训练（Training，左）</b>：从常用语言里随机采样代码文件（Sampled File-Level Data），交给一个强 LLM「裁判」（oracle，实际用 <b>DeepSeek-V2-Chat</b>）打分，得到「Ground-Truth File Quality」。这些分数用来训练中间的 LLM Filter。</li>
+          <li><b>裁判模型（中）</b>：在一个<b>预训练 LLM backbone（1.3B，Llama 2 结构）</b>上接一个<b>回归头（Regression Head）</b>。选回归而非二分类，是为了给出<b>细粒度分数</b>、避免规则式「一刀切」的僵硬。</li>
+          <li><b>推理（Inference，中右）</b>：训好的打分器对全量 File-Level Data 逐个预测出「Predicted Quality」分数（已缩放到 0–1）。</li>
+          <li><b>过滤（Filtering，右）</b>：按阈值（Thresholding）筛掉分数最低的约 <b>10%</b> 文件，留下「High-Quality Data」。这样在<b>质量与多样性之间取得平衡</b>，最终得到约 1T unique token、覆盖 <b>89 种语言</b>的高质量代码。</li>
+          <li><b>顶部回路（Random Sampling）</b>：训练用的样本正是从全量 File-Level Data 随机采样而来——形成「采样 → 裁判打标 → 训练打分器 → 回头过滤全量」的闭环。</li>
+        </ul>
+        <div class="sum">一句话：用大模型当「裁判」造标签，蒸馏出一个小而快的回归打分器，再用它对全量数据做可扩展的质量过滤。</div>
+      </div></div>
+    </figure>
+
+    <p>裁判被要求从四个维度评估代码，给出 0–10 的总分（外加解释，但只取分数当标签）：</p>
+    <div class="cgrid">
+      <div class="ccard"><div class="ch"><span class="ic">📖</span>可读性 Readability</div><div class="cd">注释适量、命名一致、格式规范、结构清晰。</div></div>
+      <div class="ccard"><div class="ch"><span class="ic">🧩</span>模块化 Modularity</div><div class="cd">避免冗长复杂的函数，逻辑与功能清晰分离，每个模块职责单一。</div></div>
+      <div class="ccard"><div class="ch"><span class="ic">✨</span>清晰度 Clarity</div><div class="cd">少冗余（重复调用、成片注释掉的代码、调试 print），意图表达明确。</div></div>
+      <div class="ccard"><div class="ch"><span class="ic">♻️</span>可复用性 Reusability</div><div class="cd">无语法/逻辑错误、不堆硬编码数据、功能完整、易于被其他项目集成。</div></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--ink-mute);">此外还设了「<strong>零分政策</strong>」：纯配置/纯数据文件、几乎没有有效逻辑的代码、以及带「generated by Django」之类标记的<strong>自动生成代码</strong>，直接判 0 分剔除。完整 prompt 见原文附录 A.2.1。</p>
+
+    <h3>四类数据，各取所长</h3>
+    <p>经过 LLM 过滤后的数据被组织成四类，覆盖从单文件到整个项目、从代码演化到自然语言上下文：</p>
+    <ul class="tidy">
+      <li><strong>文件级代码</strong>：GitHub 上的单个代码文件，适合短上下文训练。</li>
+      <li><strong>仓库级代码</strong>：按仓库结构组织文件，保留项目结构，支持更连贯的长上下文学习（主流语言按文件依赖做<strong>拓扑拼接</strong>）。</li>
+      <li><strong>Commits 数据</strong>：GitHub 提交快照（提交信息、仓库元数据、相关文件、代码补丁），格式化为「<strong>代码变更预测</strong>」任务——给定提交信息与上下文，预测被改文件路径与代码改动。</li>
+      <li><strong>代码相关网页</strong>：从 Common Crawl 抽取含代码块或高度代码相关的文档，约 <strong>1.2 万亿 token</strong>。</li>
+    </ul>
+
+    <details>
+      <summary>网页 & Commits & 长上下文：更多数据来源细节 <span class="ds">· FastText 召回、类目去偏、32K 长上下文（点开看细节）</span></summary>
+      <div class="dbody">
+        <p><strong>代码相关网页（Common Crawl）</strong>：先做文本抽取，区分「显式 code 标签（如 <span class="mono">&lt;code&gt;</span>）」与「非显式」两类；后者量大难抽，于是用 10M 候选页训练一个 <strong>fastText 召回模型</strong>，在验证集上<strong>召回 99% / 精度 45%</strong>，从 Common Crawl 中识别出约 <strong>3%</strong> 为代码相关。再用 LLM 打分（0–10）过滤。作者发现打分有<strong>类目偏见</strong>——电商/文档站因格式规整得分偏高，论坛/社区讨论虽有价值却偏低；于是按<strong>类目分别设阈值与采样率</strong>，避免某类内容被过度代表。最终约 1.2T token。</p>
+        <p><strong>GitHub Commits</strong>：从高星、活跃维护的高质量仓库收集提交（按 stars / forks / commits / 维护天数等门槛筛选），每条含提交信息、补丁、合并状态、提交前快照；上下文取 README、目录结构与 BM25 召回的 top-5 相关文件，提供真实世界「代码如何演化」的密集监督。</p>
+        <p><strong>继续预训练的高质量数据</strong>：把质量分数与<strong>迭代训练的 fastText</strong> 结合。从多源各取约 100K 的高质量种子作正样本，再配上随机负样本与精心构造的<strong>难负样本</strong>（如分数高但没注释、或一轮召回但打分低的样本）；迭代 2–3 轮扩充种子，最终得到约 <strong>130 亿 token</strong> 高质量数据。</p>
+        <p><strong>长上下文数据</strong>：在继续预训练阶段把上下文从 8K 逐步扩到 <strong>32K</strong>，用约 <strong>1 万亿 token</strong>；仓库级数据按文件依赖做拓扑拼接，超大仓库（如 PyTorch）拆成多个子图避免序列过长。</p>
+        <p><strong>FIM（填空式训练）</strong>：在 next-token 之外加入 Fill-in-the-Middle。作者发现 <strong>SPM 模式略优于更常用的 PSM</strong>，推测与注意力的位置偏置有关：SPM 下「后缀开头」与「前缀结尾」分处序列两端，二者对预测中间内容都很关键。</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>预训练配置与配方 <span class="ds">· Llama 3 结构、8.2B、6T tokens 的训练曲线（点开看细节）</span></summary>
+      <div class="dbody">
+        <p><strong>架构</strong>：沿用 Llama 3 结构，<strong>8.2B 参数、36 层</strong>，采用分组查询注意力（GQA，32 个 query 头 / 8 个 KV 头），不绑定词嵌入。常规预训练上下文 8K，继续预训练扩到 32K。</p>
+        <p><strong>配方</strong>：总共消耗 <strong>6 万亿 token</strong>。先用代码相关 + 数学相关网页训练前 1T token；再用 curated 代码数据训练 4T token；继续预训练阶段切到高质量与长上下文数据，学习率先降一档训 400B token，再降一档训 600B token。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ POST-TRAINING ============ -->
+  <section id="post">
+    <div class="eyebrow">后训练</div>
+    <h2><span class="num">04</span>Instruct 与 Reasoning：同样让模型造数据</h2>
+    <p class="section-intro">「模型为中心」的思路一路延续到后训练：instruct 模型靠 <strong>SFT + DPO</strong>，其训练数据大量由 LLM 合成并过滤；reasoning 模型靠 <strong>LongCoT 强化学习</strong>提升多步代码推理。</p>
+
+    <h3>Instruct 模型：合成 → 过滤 → 自我纠错</h3>
+    <p>SFT 数据集约 <strong>300 万条</strong>指令-响应对，构建时盯住三件事：<strong>多样性、质量、难度</strong>。下图是这条 SFT 数据 curation 流水线。</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <img src="assets/fig8_instruct_pipeline.png" alt="Instruct 模型 SFT 数据合成与过滤流程" onclick="zoom(this)" />
+      </div>
+      <div class="fig-cap"><span class="fig-id">Figure 8</span>Instruct 模型的合成数据 curation 流程：种子 → 加风格 → LLM 合成 → 过滤 → 沙箱自纠 → SFT 数据集。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>种子来源（左）</b>：从 curated GitHub 数据与<b>代码-文本混合数据</b>（Markdown、Jupyter、StackExchange）里提取「High-Quality Snippet」，转成初始的「Instruction」。</li>
+          <li><b>风格增强（上）</b>：从公开指令数据收集多样风格构成「Meta-Style Set」，随机挑两种风格混合出新风格——因为合成指令往往太「规整」，真实用户的提问却随意多变。</li>
+          <li><b>LLM 合成（右）</b>：把指令重写成随机选中的风格（Styled Instruction），再由 <b>LLM</b> 生成对应「Response」。这样指令与回答都贴近真实开发者的写法与问法。</li>
+          <li><b>数据过滤（下右）</b>：用<b>规则（Tree-sitter 查语法错误）+ 模型（按正确性打分）</b>过滤低质回答；再按难度过滤——先打标签分类，再让模型评难度，<b>难度低于 3/10 的直接丢弃</b>。</li>
+          <li><b>沙箱自我纠错（下中）</b>：难题往往出错率高、容易被质量过滤误杀。于是让模型<b>自己生成解法 + 单元测试</b>，在沙箱里跑，失败就<b>迭代修正</b>直到通过——把更多高难度样本「救」回 SFT 集。</li>
+        </ul>
+        <div class="sum">数据流：高质量种子 → 风格增强 → LLM 合成指令/回答 → 规则+模型过滤 → 沙箱自纠 → 最终 SFT 数据集。最后再用 DPO（基于沙箱单测构造的偏好对）强化代码生成与推理。</div>
+      </div></div>
+    </figure>
+
+    <p>SFT 训练 3 个 epoch，并用<strong>难度感知采样</strong>优先喂难题；之后用 <strong>DPO</strong>：对挑选出的任务采样大量候选回答，在沙箱里用单测评判，构造偏好对进一步打磨代码生成与推理能力。</p>
+
+    <h3>Reasoning 模型：从 base 起步的 LongCoT 强化学习</h3>
+    <p>为探索 8B 模型的上限，作者做了 LongCoT 强化学习：先 <strong>warmup</strong>（少量蒸馏的长思维链），再 <strong>GRPO</strong> 强化学习。一个反直觉的关键选择——</p>
+    <div class="cmp">
+      <div class="col">
+        <div class="ph">为什么从 base 而非 instruct 起步</div>
+        <h4>保留模型自己的探索空间</h4>
+        <ul>
+          <li>instruct 模型 warmup 后分数虽更高，但 RL 中容易<strong>塌缩回 SFT 训练数据的套路</strong>，反而拖垮 RL 后表现。</li>
+          <li>warmup 只用<strong>少量</strong>蒸馏数据（来自 DeepSeek-R1 在 CodeContests/ICPC 上、经沙箱拒绝采样保留的正确解），鼓励学到多样思维模式，把自我提升留给 RL。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="ph">RL 训练技巧</div>
+        <h4>课程学习 + 渐进式探索</h4>
+        <ul>
+          <li>用 verl 框架做 GRPO，借鉴 DAPO 的优化技巧：batch 128、温度 0.6、去掉 KL loss、clip 比设到 0.28、token 级 loss。</li>
+          <li>过滤过于简单的问题（正确率过高的），逼模型更高效地用思维 token。</li>
+          <li><strong>渐进式</strong>：先 90 步用 16K 序列 / 每题 16 个采样，再 160 步用 32K / 32 个采样，共 250 步——显著提升早期训练效率。</li>
+        </ul>
+      </div>
+    </div>
+
+    <details>
+      <summary>去污染（Decontamination） <span class="ds">· 10-gram 过滤，防止测试集泄漏（点开看细节）</span></summary>
+      <div class="dbody">
+        <p>为确保训练数据没被测试集污染，作者对<strong>全部预训练与后训练数据</strong>做了去污染：采用广泛使用的 <strong>10-gram 过滤</strong>，移除与 HumanEval、MBPP、MHPP、BigCodeBench、LiveCodeBench、Aider、FullStack Bench 等关键基准有任意 10-gram 词重叠的数据。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ INSIGHTS ============ -->
+  <section id="insights">
+    <div class="eyebrow">有意思的点</div>
+    <h2><span class="num">05</span>几个值得记住的设计取舍</h2>
+
+    <h3>① 把「苦涩的教训」用在数据清洗上</h3>
+    <p>大多数 scaling 讨论针对模型与算力，Seed-Coder 把同一哲学搬到了<strong>数据 curation</strong>：与其让程序员专家手工定规则（短期有效、长期撞墙），不如让 LLM 来做可扩展的质量判断。这是整篇论文的「北极星」。</p>
+
+    <h3>② 回归打分器，而不是二分类</h3>
+    <p>质量过滤器特意做成<strong>回归</strong>（0–1 连续分）而非「通过/淘汰」的二分类——这样可以灵活选阈值、在不同分数区间都给出可信预测，避免规则式一刀切的僵硬。附录里作者还比较了三个 oracle（GPT-4 Turbo、DeepSeek-Coder-33B、DeepSeek-V2-Chat），发现打分高度一致，最终选了效率与准确性平衡的 DeepSeek-V2-Chat。</p>
+
+    <h3>③ 网页打分的「类目偏见」要主动纠</h3>
+    <p>一个容易被忽视的细节：LLM 给网页代码打分时，<strong>格式规整的电商/文档站天然占便宜，论坛/社区讨论吃亏</strong>——但后者常含真知灼见。作者没有放任分数，而是按类目分别调阈值与采样率，保住数据的代表性与多样性。让模型筛数据，也要警惕模型自己的偏见。</p>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="results">
+    <div class="eyebrow">实验结论</div>
+    <h2><span class="num">06</span>小模型，硬实力</h2>
+    <p class="section-intro">一句话概括：<strong>用「模型自筛」的 6T token 语料，8B 的 Seed-Coder 在同量级开源模型里全面领先，并多次越级击败更大的模型</strong>。下面挑几个代表性结果。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="big">36.2%</div><div class="lbl">MHPP pass@1（instruct）<br>越级胜 236B 的 DS-Coder-V2</div></div>
+      <div class="metric"><div class="big">55.8%</div><div class="lbl">FullStack Bench pass@1<br>超 Qwen2.5-Coder-14B</div></div>
+      <div class="metric"><div class="big">53.6%</div><div class="lbl">LiveCodeBench（reasoning）<br>略胜 Claude-3.7-Sonnet-Thinking</div></div>
+      <div class="metric"><div class="big">100%</div><div class="lbl">Needle in the Code<br>32K 上下文压力测试</div></div>
+    </div>
+
+    <h3>三个模型，各自的成绩单</h3>
+    <ul class="tidy">
+      <li><strong>Base</strong>：在 HumanEval(+)、MBPP(+)、MultiPL-E（8 种语言中 7 种领先）、CRUXEval 等基准上，同量级开源模型里 SOTA，部分指标超过 13B+ 的更大模型；「Needle in the Code」32K 长上下文压力测试达 <strong>100% 准确率</strong>。</li>
+      <li><strong>Instruct</strong>：MHPP 拿下 <strong>36.2%</strong>（大幅超所有 ~8B，甚至超 236B 的 DeepSeek-Coder-V2-Instruct）；BigCodeBench 完整集 <strong>53.3%</strong>/难集 26.4%；LiveCodeBench <strong>24.7%</strong>（超 Qwen2.5-Coder-14B）；MBXP 多语言平均 <strong>75.3%</strong>；NaturalCodeBench 总分 <strong>49.6%</strong>（高于 14B 的 46.4%）；SWE-bench Verified / Multi-SWE-bench 在 ~8B 中最强。</li>
+      <li><strong>Reasoning</strong>：仅用 warmup 蒸馏的版本在 LiveCodeBench 已达 <strong>39.0%</strong>；经 RL 后再提升 <strong>+14.6 分到 53.6%</strong>，超过 14B 的 DeepSeek-R1-Distill-Qwen-14B，略胜 Claude-3.7-Sonnet-Thinking；Codeforces <strong>1553 分</strong>（接近 o1-mini），IOI 上高于 QwQ-32B 与 671B 的 DeepSeek-R1。</li>
+    </ul>
+
+    <div class="callout quote">
+      <p>"with minimal human effort, LLMs can effectively curate training data by themselves to significantly enhance code intelligence and reasoning capabilities."</p>
+      <p class="q-zh">只需极少人力，LLM 就能有效地为自己 curate 训练数据，从而显著增强代码智能与推理能力——这正是 Seed-Coder 想证明的核心命题。</p>
+    </div>
+
+    <h3>局限与展望（作者自述）</h3>
+    <ul class="tidy">
+      <li><strong>通用能力受限</strong>：训练几乎只用代码，刻意排除了通用网页数据，因此自然语言理解与处理更广任务的能力有限。</li>
+      <li><strong>token 量差距</strong>：仅用 6T token 预训练（对比 Qwen3 的 36T），通用知识与数学数据不足，带来固有的理解约束。</li>
+      <li><strong>仍是起点</strong>：作者把这次发布视为一个模型家族的开端，后续会在更多尺寸上继续提升代码能力。</li>
+    </ul>
+
+    <div class="callout">
+      <p style="margin:0;"><strong>一句话总结</strong>：Seed-Coder 把「数据清洗」从人力密集的手工活，重构成<strong>由模型驱动、可扩展的自动化流程</strong>——让会读代码的 LLM 给代码打分、为自己筛数据。结果证明：一个被「好数据」喂养的 8B 小模型，足以在代码生成、补全、编辑、推理与软件工程任务上越级而战。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="ft-src">原文：<a href="https://arxiv.org/abs/2506.03524" target="_blank" rel="noopener">Seed-Coder: Let the Code Model Curate Data for Itself</a> · arXiv:2506.03524 · ByteDance Seed（2025.06）</div>
+  <div>代码与权重：<a href="https://github.com/ByteDance-Seed/Seed-Coder" target="_blank" rel="noopener">github.com/ByteDance-Seed/Seed-Coder</a> ·
+  HTML 全文：<a href="https://arxiv.org/html/2506.03524v1" target="_blank" rel="noopener">arxiv.org/html/2506.03524v1</a></div>
+  <div style="margin-top:12px;color:var(--ink-mute);">本页为教学性可视化解读，图片均取自论文 arXiv HTML 版（已验证 HTTP 200）。</div>
+</footer>
+
+<div class="lb" id="lb" onclick="this.classList.remove('on')"><img id="lbimg" src="" alt="放大图" /></div>
+
+<script>
+  // figure caption toggle
+  function toggleFig(el){
+    var d = el.nextElementSibling;
+    d.classList.toggle('active');
+    el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+  }
+  // expandable card toggle (bind on head only)
+  document.querySelectorAll('.exp-head').forEach(function(h){
+    h.addEventListener('click', function(){ h.parentElement.classList.toggle('open'); });
+  });
+  // lightbox
+  function zoom(img){
+    var lb = document.getElementById('lb');
+    document.getElementById('lbimg').src = img.src;
+    lb.classList.add('on');
+  }
+
+  // ---- data pipeline stepper ----
+  var steps = [
+    {on:[0], info:'<b>原始数据：</b>从 GitHub（以仓库形式收集）和网页存档（Common Crawl）爬取的原始代码与代码相关内容。它们噪声大、质量参差，是整条管线的起点。'},
+    {on:[1], done:[0], info:'<b>预处理（轻量）：</b>做精确去重（SHA256）+ 近似去重（MinHash），再用最小规则（语言识别、Tree-sitter 语法检查）剔除非代码/语法错误内容。仅 GitHub 一项，这一步就裁掉约 <b>98%</b> 的原始体量，留下可控规模供下游打分。'},
+    {on:[2], done:[0,1], info:'<b>LLM 质量过滤（核心）：</b>用「裁判 LLM 造标签 + 1.3B 回归打分器」给每份代码打 0–1 连续分，筛掉最低约 <b>10%</b>。这一步取代了手写规则，是「让模型为自己筛数据」的心脏，最终得到约 1T unique token、覆盖 89 种语言的高质量代码。'},
+    {on:[3], done:[0,1,2], info:'<b>四类数据：</b>过滤后的数据按用途分成四类并用颜色标注——文件级代码（黄）、仓库级代码（蓝）、GitHub Commits（红）、代码相关网页（绿，约 1.2T token）。'},
+    {on:[4], done:[0,1,2,3], info:'<b>两阶段配方：</b>常规预训练用「文件级 + 网页」搭基础；继续预训练扩展到全部四类，并加入高质量数据（约 130B token）与长上下文数据（32K，约 1T token）。全程共消耗 <b>6 万亿 token</b>。'}
+  ];
+  var cur = 0;
+  var dotsWrap = document.getElementById('dots');
+  steps.forEach(function(_,i){ var d=document.createElement('i'); if(i===0)d.className='on'; dotsWrap.appendChild(d); });
+  function render(){
+    for(var i=0;i<5;i++){
+      var n = document.getElementById('n'+i);
+      n.classList.remove('on','done');
+    }
+    var s = steps[cur];
+    (s.done||[]).forEach(function(i){ document.getElementById('n'+i).classList.add('done'); });
+    s.on.forEach(function(i){ document.getElementById('n'+i).classList.add('on'); });
+    document.getElementById('stepInfo').innerHTML = s.info;
+    document.getElementById('prevBtn').disabled = (cur===0);
+    document.getElementById('nextBtn').disabled = (cur===steps.length-1);
+    document.querySelectorAll('#dots i').forEach(function(d,i){ d.className = (i===cur)?'on':''; });
+  }
+  function step(dir){
+    cur = Math.max(0, Math.min(steps.length-1, cur+dir));
+    render();
+  }
+  render();
+</script>
+</body>
+</html>

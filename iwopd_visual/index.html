@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPD 的位置偏差：让在线策略蒸馏把劲使在刀刃上</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --bg-2:#f4ead7;
+  --bg-3:#ece0c8;
+  --line:#e2d4ba;
+  --line-strong:#d2bf9c;
+  --ink:#33291d;
+  --ink-soft:#6a5c47;
+  --ink-faint:#94886f;
+  --accent:#b86b3f;
+  --accent-soft:#e7c9b2;
+  --good:#4f7a4d;
+  --good-soft:#dbe7d6;
+  --card-shadow:0 1px 2px rgba(90,70,40,.06),0 8px 24px rgba(120,95,55,.06);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.85;
+  font-size:17px;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"JetBrains Mono",monospace}
+
+/* ---- top nav ---- */
+.topnav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,246,234,.86);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.topnav .inner{
+  max-width:1080px;margin:0 auto;padding:10px 24px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.topnav .brand{font-weight:800;font-size:15px;letter-spacing:.2px;color:var(--ink);white-space:nowrap}
+.topnav .links{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.topnav a.navlink{
+  color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;
+  padding:5px 10px;border-radius:8px;white-space:nowrap;
+}
+.topnav a.navlink:hover{background:var(--bg-3);color:var(--ink)}
+.topnav a.src{
+  color:#fff;background:var(--accent);text-decoration:none;font-size:13px;font-weight:600;
+  padding:6px 12px;border-radius:8px;white-space:nowrap;
+}
+.topnav a.src:hover{background:#a25c34}
+
+/* ---- layout ---- */
+main{max-width:880px;margin:0 auto;padding:0 24px 80px}
+section{padding:46px 0 8px;border-top:1px solid transparent}
+.sec-label{
+  font-size:12.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--accent);margin-bottom:10px;
+}
+h1{font-size:38px;line-height:1.25;font-weight:800;letter-spacing:-.3px;margin:.2em 0 .35em}
+h2{font-size:27px;line-height:1.3;font-weight:800;letter-spacing:-.2px;margin:.2em 0 .5em}
+h3{font-size:19.5px;font-weight:700;margin:1.6em 0 .5em;color:var(--ink)}
+p{margin:.7em 0}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent)}
+ul{margin:.6em 0;padding-left:1.3em}
+li{margin:.35em 0}
+.lede{font-size:18.5px;color:var(--ink-soft)}
+
+/* ---- hero ---- */
+.hero{padding-top:50px}
+.meta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0 22px}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--bg-2);border:1px solid var(--line);
+  padding:5px 12px;border-radius:999px;font-size:13px;color:var(--ink-soft);font-weight:500;
+}
+.pill.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.authors{font-size:14.5px;color:var(--ink-soft);margin:2px 0 0}
+.authors b{color:var(--ink)}
+
+/* ---- cards / callouts ---- */
+.callout{
+  background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px 24px;margin:22px 0;box-shadow:var(--card-shadow);
+}
+.callout.accent{border-left:4px solid var(--accent)}
+.callout .k{font-weight:700;color:var(--accent);font-size:13px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.metric{
+  background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 16px;text-align:center;box-shadow:var(--card-shadow);
+}
+.metric .num{font-size:30px;font-weight:800;color:var(--accent);line-height:1.1;font-family:"Inter",sans-serif}
+.metric .num.good{color:var(--good)}
+.metric .lab{font-size:12.5px;color:var(--ink-soft);margin-top:7px;line-height:1.45}
+
+/* ---- figure ---- */
+figure{margin:26px 0;}
+.fig-frame{
+  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px;box-shadow:var(--card-shadow);text-align:center;
+}
+.fig-frame img{max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto}
+.fig-cap{font-size:14px;color:var(--ink-soft);margin-top:12px;padding:0 4px;text-align:left}
+.fig-cap .fnum{font-weight:700;color:var(--ink)}
+.fig-toggle{
+  display:inline-block;margin-top:10px;cursor:pointer;user-select:none;
+  font-size:13px;font-weight:600;color:var(--accent);
+}
+.fig-toggle:hover{text-decoration:underline}
+.figure-detail{
+  max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0;
+}
+.figure-detail.active{max-height:1600px;opacity:1;margin-top:10px}
+.figure-detail .inner{
+  background:var(--bg);border:1px dashed var(--line-strong);border-radius:10px;
+  padding:14px 18px;font-size:14px;color:var(--ink-soft);text-align:left;
+}
+.figure-detail .inner ul{margin:.3em 0}
+.figure-detail .inner li{margin:.3em 0}
+.fig-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:880px){.fig-grid{grid-template-columns:1fr}}
+
+/* ---- formula ---- */
+.formula{
+  background:#fdfaf2;border:1px solid var(--line);border-left:3px solid var(--accent-soft);
+  border-radius:10px;padding:14px 18px;margin:16px 0;
+  font-family:"JetBrains Mono",monospace;font-size:14.5px;line-height:1.9;
+  color:var(--ink);overflow-x:auto;white-space:nowrap;
+}
+.formula .c{color:var(--accent);font-weight:600}
+.formula .g{color:var(--good);font-weight:600}
+.formula .muted{color:var(--ink-faint)}
+.eqtag{float:right;color:var(--ink-faint);font-size:12px}
+
+/* ---- compare panel ---- */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+@media(max-width:880px){.compare{grid-template-columns:1fr}}
+.panel{
+  border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;background:var(--bg-2);
+}
+.panel h4{margin:0 0 6px;font-size:16px;font-weight:700}
+.panel .tag{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+.panel.dim{background:var(--bg)}
+.panel p{font-size:14.5px;color:var(--ink-soft);margin:.5em 0}
+
+/* ---- token strip ---- */
+.tokstrip{display:flex;gap:2px;margin:14px 0;flex-wrap:wrap}
+.tok{height:26px;flex:1;min-width:6px;border-radius:3px;background:var(--bg-3)}
+
+/* ---- trajectory chips ---- */
+.traj{display:flex;gap:8px;margin:6px 0 16px;flex-wrap:wrap}
+.tchip{flex:1;min-width:88px;border:1px solid var(--line);border-radius:10px;padding:8px 6px 7px;text-align:center}
+.tchip .tlab{font-size:11.5px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace}
+.tchip .ttxt{font-size:14px;font-weight:700;margin-top:2px;color:var(--ink)}
+.tchip .tnote{font-size:11px;color:var(--ink-soft);margin-top:3px}
+@media(max-width:880px){.tchip{min-width:30%}}
+
+/* ---- interactive widget ---- */
+.widget{
+  background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px 24px;margin:26px 0;box-shadow:var(--card-shadow);
+}
+.widget h4{margin:0 0 4px;font-size:17px;font-weight:700}
+.widget .sub{font-size:13.5px;color:var(--ink-soft);margin:0 0 16px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.sbtn{
+  border:1px solid var(--line-strong);background:var(--bg);color:var(--ink-soft);
+  padding:7px 13px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:all .15s;
+}
+.sbtn:hover{border-color:var(--accent);color:var(--accent)}
+.sbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stagedesc{
+  font-size:14px;color:var(--ink-soft);background:var(--bg);border:1px dashed var(--line-strong);
+  border-radius:10px;padding:12px 16px;margin-top:14px;min-height:48px;
+}
+.stagedesc b{color:var(--ink)}
+.chartwrap{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+.slider-row{display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13.5px;color:var(--ink-soft)}
+.slider-row input[type=range]{flex:1;accent-color:var(--accent)}
+
+/* ---- pipeline ---- */
+.pipe{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:22px 0}
+.pstep{
+  flex:1;min-width:130px;background:var(--bg-2);border:1px solid var(--line);
+  border-radius:12px;padding:14px 14px;text-align:center;position:relative;
+}
+.pstep .pn{
+  width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 8px
+}
+.pstep .pt{font-size:13.5px;font-weight:700;margin-bottom:3px}
+.pstep .pd{font-size:12px;color:var(--ink-soft);line-height:1.5}
+.parrow{display:flex;align-items:center;justify-content:center;color:var(--line-strong);font-size:22px;padding:0 4px}
+@media(max-width:880px){.parrow{transform:rotate(90deg);padding:6px 0}}
+
+/* ---- table ---- */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--bg-2)}
+th,td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--line)}
+th{background:var(--bg-3);font-weight:700;color:var(--ink);font-size:13px}
+td.lab{text-align:left;font-weight:600}
+tr:last-child td{border-bottom:none}
+.gain{color:var(--good);font-weight:700;font-size:12px}
+.rowhi{background:#fbf3e9}
+
+/* ---- expandable deep card (details) ---- */
+details.deep{
+  background:var(--bg-2);border:1px solid var(--line);border-radius:12px;
+  margin:14px 0;padding:0;overflow:hidden;
+}
+details.deep>summary{
+  list-style:none;cursor:pointer;padding:14px 18px;font-size:15px;font-weight:600;
+  display:flex;align-items:center;gap:10px;
+}
+details.deep>summary::-webkit-details-marker{display:none}
+details.deep>summary .arr{color:var(--accent);transition:transform .2s;font-size:12px}
+details.deep[open]>summary .arr{transform:rotate(90deg)}
+details.deep>summary .smry{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.deep .body{padding:0 18px 16px;font-size:14.5px;color:var(--ink-soft)}
+details.deep .body .formula{font-size:13.5px}
+
+/* ---- footer ---- */
+footer{
+  border-top:1px solid var(--line);margin-top:60px;padding:30px 0 10px;
+  font-size:13.5px;color:var(--ink-soft);
+}
+footer a{font-weight:600}
+.quote{
+  border-left:3px solid var(--accent);background:var(--bg-2);
+  padding:14px 20px;border-radius:0 10px 10px 0;margin:22px 0;
+  font-size:16px;color:var(--ink);
+}
+.note{font-size:13px;color:var(--ink-faint);margin-top:6px}
+.kbd{font-family:"JetBrains Mono",monospace;background:var(--bg-3);padding:1px 6px;border-radius:5px;font-size:13px}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="inner">
+    <span class="brand">IW-OPD · 位置偏差</span>
+    <span class="links">
+      <a class="navlink" href="#tldr">概览</a>
+      <a class="navlink" href="#bg">背景</a>
+      <a class="navlink" href="#bias">位置偏差</a>
+      <a class="navlink" href="#theory">理论解释</a>
+      <a class="navlink" href="#method">IW-OPD</a>
+      <a class="navlink" href="#stable">稳定权重</a>
+      <a class="navlink" href="#exp">实验</a>
+      <a class="navlink" href="#disc">讨论</a>
+    </span>
+    <a class="src" href="https://arxiv.org/abs/2606.22600" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="sec-label">On-Policy Distillation · 在线策略蒸馏</div>
+  <h1>不是每个 token 都值得学：<br>OPD 的「位置偏差」与 IW-OPD</h1>
+  <div class="meta-row">
+    <span class="pill solid">arXiv preprint</span>
+    <span class="pill">2026.06（v3：2026-06-26）</span>
+    <span class="pill">cs.LG / cs.AI</span>
+    <span class="pill">arXiv:2606.22600</span>
+  </div>
+  <p class="authors"><b>Yan Xie, Sijie Zhu, Tiansheng Wen, Bo Chen, Yifei Wang</b> · 西安电子科技大学 / Georgia Tech / Amazon AGI SF Lab</p>
+
+  <p class="lede" style="margin-top:22px">
+    在线策略蒸馏（OPD）让小学生模型在<strong>自己生成的轨迹</strong>上，接受更强教师的<strong>逐 token 监督</strong>，比稀疏的轨迹级奖励学得更快。但标准 OPD 把每个 token 的损失「一视同仁」地平均——本文发现这恰恰是它的低效之处。
+  </p>
+</section>
+
+<!-- ============ TL;DR ============ -->
+<section id="tldr">
+  <div class="callout accent">
+    <div class="k">TL;DR · 30 秒抓住核心</div>
+    <p style="margin-top:4px">
+      学生越往后生成，轨迹越偏离教师的「推理偏好路径」，<strong>后段 token 上的教师监督越不可信</strong>。这导致 OPD 存在一个明显的 <strong>位置偏差（Position Bias）</strong>：
+      只用前 30% 的 token 训练，效果≈用全部 token；只用后 30% 的 token，几乎学不到东西。
+    </p>
+    <p>
+      作者用「<strong>有限预算分配 / 信赖域受限优化</strong>」的视角解释了这个现象：在每步只能小步更新的约束下，最优策略会按<strong>教师/学生的似然比</strong>给 token 重新加权，自然地<strong>上调早期 token、下调漂移后的晚期 token</strong>。
+      据此提出 <strong>IW-OPD（重要性加权在线策略蒸馏）</strong>：用一个稳定的「累计前缀差异」权重，把梯度预算重新分配给教师兼容的前缀，同时保留标准 OPD 作为稠密监督的底座。
+    </p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="num good">+6.9</div>
+      <div class="lab">AIME25 提升（step 10，<br>30B→4B 跨尺度蒸馏）</div>
+    </div>
+    <div class="metric">
+      <div class="num">30% ≈ 100%</div>
+      <div class="lab">只用前 30% token<br>≈ 用全部 token 的 OPD</div>
+    </div>
+    <div class="metric">
+      <div class="num good">+14.9%</div>
+      <div class="lab">相对提升随压缩比变大：<br>6.7× 压缩时优势最明显</div>
+    </div>
+    <div class="metric">
+      <div class="num good">+1.9</div>
+      <div class="lab">数学均分提升<br>（235B 超大教师蒸馏）</div>
+    </div>
+  </div>
+  <p class="note">说明：以上数字均来自原文 Table 1–3 与 Figure 2；本页所有图表为原论文图（arXiv HTML 版）配中文解读。</p>
+</section>
+
+<!-- ============ BACKGROUND ============ -->
+<section id="bg">
+  <div class="sec-label">背景</div>
+  <h2>OPD 是什么，为什么需要它</h2>
+  <p>
+    后训练（post-training）阶段，大模型常用 <strong>RLVR</strong>（带可验证奖励的强化学习，如 GRPO）来提升推理能力。但 RLVR 的奖励是<strong>稀疏</strong>的：一整条几千 token 的推理轨迹，最后只得到一个「对/错」的标量奖励，每个 token 分到的信用都一样，学习信号非常弱。
+  </p>
+  <p>
+    <strong>在线策略蒸馏（OPD）</strong>换了一种监督来源：让学生在自己生成的轨迹上跑，由一个更强的<strong>教师模型</strong>在学生走过的每一个前缀上，给出<strong>逐 token 的稠密监督</strong>（最小化学生与教师的逐 token KL 散度）。信号从「一条一个奖励」变成「每个 token 一个目标」，学习效率大幅提升。
+  </p>
+
+  <div class="compare">
+    <div class="panel dim">
+      <div class="tag">RLVR / 稀疏奖励</div>
+      <h4>一条轨迹，一个标量</h4>
+      <div class="tokstrip" id="strip-rl"></div>
+      <p>整条轨迹结束后只有一个 reward <span class="mono">r(x,y)</span>，优势 <span class="mono">A_t</span> 对每个 token 都相同 → 信用分配粗糙、样本效率低。</p>
+    </div>
+    <div class="panel">
+      <div class="tag">OPD / 稠密监督</div>
+      <h4>每个 token，一个教师目标</h4>
+      <div class="tokstrip" id="strip-opd"></div>
+      <p>教师在每个前缀上给出分布，逐 token 计算 KL；优势来自<strong>教师–学生分布差</strong>，监督密集得多。</p>
+    </div>
+  </div>
+
+  <p>标准 OPD 的目标，本质是在学生采样的轨迹上最小化逐 token 的反向 KL：</p>
+  <div class="formula">
+    J<sub>OPD</sub>(θ) = max<sub>θ</sub> &nbsp;−D<sub>KL</sub>(π<sub>θ</sub> ‖ π<sub>T</sub>) = −E<sub>y∼π<sub>θ</sub></sub> ∑<sub>t=1..T</sub> log( π<sub>θ</sub>(y<sub>t</sub>|y<sub>&lt;t</sub>) / π<sub>T</sub>(y<sub>t</sub>|y<sub>&lt;t</sub>) )
+    <span class="eqtag">Eq.4</span>
+  </div>
+  <p>实践中它写成策略梯度形式，每个 token 的「优势」就是教师与学生的对数概率差：</p>
+  <div class="formula">
+    A<sub>t</sub><sup>OPD</sup> = −( log π<sub>θ</sub>(y<sub>t</sub>|y<sub>&lt;t</sub>) − log π<sub>T</sub>(y<sub>t</sub>|y<sub>&lt;t</sub>) ) = <span class="c">log π<sub>T</sub> − log π<sub>θ</sub></span>
+    <span class="eqtag">Eq.6</span>
+  </div>
+  <p>
+    <strong>问题就藏在 Eq.4 的那个求和里</strong>：它把所有位置的 token 损失<strong>均匀平均</strong>，默认每个 token 都同样可靠。但 OPD 的样本是<strong>弱学生</strong>生成的，经常产出对教师而言「分布外（OOD）」的内容——这个假设站不住脚。
+  </p>
+</section>
+
+<!-- ============ POSITION BIAS ============ -->
+<section id="bias">
+  <div class="sec-label">核心发现</div>
+  <h2>OPD 的位置偏差现象</h2>
+  <p>作者用两个干净的对照实验，揭示了「不是每个 token 都平等」。</p>
+
+  <h3>现象一：OPD 的收益主要来自早期 token</h3>
+  <p>
+    固定监督预算（都只用 30% 的 token），只改变「监督哪一段」：<strong>Prefix-30</strong> 监督每条回答的前 30%，<strong>Suffix-30</strong> 监督后 30%，Standard OPD 用全部 token。结果是强烈的<strong>不对称</strong>：
+  </p>
+
+  <figure>
+    <div class="fig-frame">
+      <img src="https://arxiv.org/html/2606.22600v3/x1.png" alt="Figure 1(a): OPD training reward for prefix-30, suffix-30, standard OPD">
+    </div>
+    <div class="fig-cap">
+      <span class="fnum">图 1(a)：</span>相同 30% token 预算下，监督<strong>前缀</strong>（绿色）≈ 甚至略超 用全部 token 的 Standard OPD（蓝色），而监督<strong>后缀</strong>（粉色）始终学不动。学生 Qwen3-0.6B，教师 Qwen3-4B-Instruct-2507。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>横轴</b>：训练步数（0–50）；<b>纵轴</b>：reward（验证集准确率代理）。</li>
+          <li><b>绿线（Prefix 30%）</b>：只对每条回答的前 30% token 施加 OPD 监督。曲线几乎与蓝线重合，甚至在中后段略高——说明前缀监督已经承载了几乎全部学习信号。</li>
+          <li><b>蓝线（Standard OPD）</b>：用全部有效 token。它用了 3 倍多的监督预算，却没比只用前缀好。</li>
+          <li><b>粉线（Suffix 30%）</b>：只监督后 30%，reward 长期被压在 0.30 附近，明显学不动。</li>
+          <li><b>一句话</b>：在等量预算下，前缀 token 的「单位监督价值」远高于后缀 token。</li>
+        </ul>
+      </div></div>
+    </div>
+  </figure>
+
+  <p>下面这个小演示直接对应图 1(a) 的设定——选择把同样的 30% 预算花在哪一段，看「有效监督」落在哪里：</p>
+
+  <div class="widget">
+    <h4>预算分配小演示：同样 30% token，花在哪？</h4>
+    <p class="sub">一条学生轨迹（左=开头，右=结尾）。颜色越深代表该位置的教师监督越可信。</p>
+    <div class="btnrow">
+      <button class="sbtn on" data-mode="prefix" onclick="setBudget('prefix',this)">Prefix-30（前缀）</button>
+      <button class="sbtn" data-mode="suffix" onclick="setBudget('suffix',this)">Suffix-30（后缀）</button>
+      <button class="sbtn" data-mode="full" onclick="setBudget('full',this)">Full（全部）</button>
+    </div>
+    <div class="tokstrip" id="budget-strip"></div>
+    <div class="stagedesc" id="budget-desc"></div>
+  </div>
+
+  <p>为什么后缀监督会失效？因为<strong>教师自己</strong>在长的学生前缀上也变得不可靠了：</p>
+  <figure>
+    <div class="fig-frame" style="max-width:560px;margin:0 auto">
+      <img src="https://arxiv.org/html/2606.22600v3/x2.png" alt="Figure 1(b): teacher vs student partial-rollout accuracy vs prefix ratio">
+    </div>
+    <div class="fig-cap">
+      <span class="fnum">图 1(b)：</span>从一段学生生成的前缀「续写」到正确答案的概率。随前缀变长，<strong>教师（粉）的准确率快速下滑、逼近学生水平</strong>，师生差距迅速收窄——后段前缀已经漂出了教师能帮上忙的区域。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>横轴</b>：前缀比例（0%=只给提示，100%=给完整学生回答）；<b>纵轴</b>：从该前缀出发最终答对的概率（mean@32）。</li>
+          <li><b>粉线（教师 Qwen3-30B-A3B）</b>：在短前缀上准确率高达 ~45%，但随前缀变长<b>急速下滑</b>到 ~19%——它接到的「烂摊子」越来越难救。</li>
+          <li><b>蓝线（学生 Qwen3-1.7B）</b>：始终在 ~10% 的低位。</li>
+          <li><b>师生差距（两线之间）</b>：在开头最大、在结尾几乎消失。这正是位置偏差的根因——<b>后段 token 上教师能提供的「增量价值」趋近于零</b>。</li>
+        </ul>
+      </div></div>
+    </div>
+  </figure>
+
+  <h3>现象二：训练后教师–学生差距大体仍在</h3>
+  <p>
+    即便 OPD 的目标就是缩小师生 KL，<strong>实际 KL 只下降了约 20%</strong> 就停住了，即使学生性能已经饱和。这说明 OPD 只能在一个<strong>很小的局部范围</strong>内移动学生分布——这类「在自己样本上做 RL」的训练，本来就以权重更新极小著称。
+  </p>
+  <div class="fig-grid">
+    <figure style="margin:0">
+      <div class="fig-frame">
+        <img src="https://arxiv.org/html/2606.22600v3/x5.png" alt="Figure 3(a): mean token KL plateaus">
+      </div>
+      <div class="fig-cap">
+        <span class="fnum">图 3(a)：</span>平均 token KL 随训练下降，但<strong>停在一个非零的残差</strong>（≈0.46）上，不再继续降。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>蓝线</b>：每步训练的平均 token 级反向 KL，从 ~0.77 快速降到 ~0.5 后<b>plateau（停滞）</b>。</li>
+            <li><b>灰色虚线 + 箭头</b>：标出收敛后的残差水平——KL 远未归零。</li>
+            <li><b>含义</b>：学生没能真正「贴近」教师，只是在局部小步挪动，印证了「有限预算」的视角。</li>
+          </ul>
+        </div></div>
+      </div>
+    </figure>
+    <figure style="margin:0">
+      <div class="fig-frame">
+        <img src="https://arxiv.org/html/2606.22600v3/x6.png" alt="Figure 3(b): token-level KL before/after vs position">
+      </div>
+      <div class="fig-cap">
+        <span class="fnum">图 3(b)：</span>按相对位置看 token 级 KL，训练前（蓝）整体高于训练后（橙），但下降幅度有限。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>横轴</b>：相对回答位置 t/T（0=开头，1=结尾）。</li>
+            <li><b>蓝（Initialization）vs 橙（Convergence）</b>：训练把 KL 整体压低了一点，但两条曲线在各个位置都仍有不小的残差。</li>
+            <li><b>含义</b>：与图 3(a) 一致——OPD 只做了「局部」优化。</li>
+          </ul>
+        </div></div>
+      </div>
+    </figure>
+  </div>
+
+  <div class="callout">
+    <div class="k">两个现象合起来意味着什么</div>
+    <p style="margin-top:4px">OPD 的学习地形是：<strong>只在局部小步移动</strong>，而<strong>大部分收益来自早期前缀 token</strong>。于是问题变成——既然每步预算有限，就该把它花在「教师监督还可信」的前缀上。下一节给出为什么会这样的理论解释。</p>
+  </div>
+</section>
+
+<!-- ============ THEORY ============ -->
+<section id="theory">
+  <div class="sec-label">理论解释</div>
+  <h2>有限预算分配视角：信赖域受限优化</h2>
+  <p>
+    既然实验表明 OPD 只能把学生分布挪动一小段，作者就把真实的 OPD 训练建模成一个<strong>受限优化</strong>问题：在「离原学生分布不超过 ρ」的信赖域内，尽量靠近教师。
+  </p>
+  <div class="formula">
+    min<sub>q</sub> &nbsp;D<sub>KL</sub>(q ‖ π<sub>T</sub>) &nbsp;&nbsp; s.t. &nbsp;&nbsp; D<sub>KL</sub>(q ‖ π<sub>θ</sub>) ≤ <span class="c">ρ</span>
+    <span class="eqtag">Eq.7</span>
+  </div>
+  <p>这里 <span class="mono">ρ</span> 是「有效局部更新预算」（信赖域半径）。这个问题有<strong>闭式解</strong>（命题 1）：</p>
+  <div class="formula">
+    q<sup>★</sup>(y) = ( π<sub>θ</sub>(y) / Z<sub>α</sub> ) · <span class="c">( π<sub>T</sub>(y) / π<sub>θ</sub>(y) )<sup>α</sup></span> &nbsp;&nbsp; <span class="muted">α ∈ (0,1)</span>
+    <span class="eqtag">Eq.8</span>
+  </div>
+  <p>
+    最优策略 = 在学生策略上，按<strong>似然比 r(y)=π<sub>T</sub>(y)/π<sub>θ</sub>(y) 重新加权</strong>。这一步是全文的「钥匙」：它直接解释了位置偏差为什么会出现。
+  </p>
+
+  <div class="callout accent">
+    <div class="k">为什么似然比会随位置下降</div>
+    <p style="margin-top:4px">
+      沿着学生的 rollout 往后走：前缀在<strong>学生</strong>下的概率 π<sub>θ</sub>(y<sub>&lt;t</sub>) 平滑下降（毕竟样本就是学生采的）；但同一前缀在<strong>教师</strong>下的概率 π<sub>T</sub>(y<sub>&lt;t</sub>) 一旦早期决策偏离教师偏好的推理路径，就会<strong>掉得快得多</strong>。
+      于是前缀比值 r<sub>t</sub><sup>α</sup> 在后段越来越小 → 最优策略自然给后段、低比值的前缀及其 token 分配<strong>更小的权重</strong>。位置偏差，正是这个「比值加权结构」的体现。
+    </p>
+  </div>
+
+  <figure>
+    <div class="fig-frame" style="max-width:560px;margin:0 auto">
+      <img src="https://arxiv.org/html/2606.22600v3/x7.png" alt="Figure 3(c): prefix log-likelihood under teacher vs student vs ratio">
+    </div>
+    <div class="fig-cap">
+      <span class="fnum">图 3(c)：</span>学生采样前缀的对数似然随 token 位置变化。<strong>教师（蓝）掉得最快</strong>，学生（红）掉得慢，两者之比（绿，= 教师−学生）持续走低——这正是似然比在后段变小的直接证据。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>横轴</b>：token 位置（0 → 1100+）；<b>纵轴</b>：前缀累计对数似然（越往下越小）。</li>
+          <li><b>红线 log π<sub>θ</sub>(y<sub>&lt;t</sub>)</b>：学生下的前缀概率，下降相对平缓（因为序列就是学生采的，对学生而言「顺手」）。</li>
+          <li><b>蓝线 log π<sub>T</sub>(y<sub>&lt;t</sub>)</b>：教师下的同一前缀概率，下降<b>明显更陡</b>——学生的推理路径越走越偏离教师偏好区。</li>
+          <li><b>绿线 log( π<sub>T</sub>/π<sub>θ</sub> )</b>：两者之差（对数似然比），单调走低 → 后段 token 的「重要性权重」应当更小。</li>
+          <li><b>一句话</b>：这张图把抽象的「似然比随位置衰减」变成了肉眼可见的三条曲线。</li>
+        </ul>
+      </div></div>
+    </div>
+  </figure>
+
+  <details class="deep">
+    <summary><span class="arr">▸</span> <span>命题 1 的推导骨架（信赖域 → 闭式最优策略）</span><span class="smry"> · 拉格朗日 + KKT，得到学生与教师的几何插值</span></summary>
+    <div class="body">
+      <p>把信赖域约束写进拉格朗日量，对 q(y) 求变分并置零，整理可得：</p>
+      <div class="formula">(1+λ) log q(y) = log π<sub>T</sub>(y) + λ log π<sub>θ</sub>(y) + const</div>
+      <p>令 α = 1/(1+λ) ∈ (0,1)，指数化并归一化，得到学生与教师的<strong>几何插值</strong>：</p>
+      <div class="formula">q<sub>α</sub>(y) = π<sub>θ</sub>(y)<sup>1−α</sup> π<sub>T</sub>(y)<sup>α</sup> / Z<sub>α</sub> = π<sub>θ</sub>(y) · r<sub>θ</sub>(y)<sup>α</sup> / Z<sub>α</sub></div>
+      <p>α 由半径 ρ 隐式决定：ρ 越大 → α 越大 → 越靠近教师；当预算足够大到教师可行时 α=1，q<sup>★</sup>=π<sub>T</sub>，退化回普通蒸馏。（完整证明见原文 Appendix A.1）</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ METHOD ============ -->
+<section id="method">
+  <div class="sec-label">本文方法</div>
+  <h2>IW-OPD：把梯度预算花在刀刃上</h2>
+  <p>
+    既然 OPD 能达到的最优只是 q<sup>★</sup>（按似然比重加权的学生），那不如<strong>直接优化 q<sup>★</sup> 与教师的散度</strong>，让目标天然偏向高概率（教师兼容）的样本：
+  </p>
+  <div class="formula">J<sub>q<sup>★</sup></sub> = max<sub>θ</sub> &nbsp;−D<sub>KL</sub>(q<sup>★</sup><sub>θ</sub> ‖ π<sub>T</sub>) <span class="eqtag">Eq.9</span></div>
+  <p>
+    由于 q<sup>★</sup> 是学生与教师诱导出的重参数化分布，可以用「换测度」把它改写成<strong>仍从学生 π<sub>θ</sub> 采样</strong>的形式（命题 2）。结果非常优雅：它就是<strong>每个 token 的 KL 项乘上一个前缀重要性权重</strong>的 OPD：
+  </p>
+  <div class="formula">
+    J<sup>★</sup><sub>IW</sub>(θ) = max<sub>θ</sub> &nbsp;−E<sub>y∼π<sub>θ</sub></sub> ∑<sub>t</sub> <span class="c">sg[ r̃<sub>t</sub> ]</span> · log( π<sub>θ</sub>(y<sub>t</sub>|y<sub>&lt;t</sub>) / π<sub>T</sub>(y<sub>t</sub>|y<sub>&lt;t</sub>) ) <span class="eqtag">Eq.11</span>
+  </div>
+  <div class="formula">
+    其中 &nbsp; r̃<sub>t</sub> = r<sub>t</sub> / Z<sub>α,t</sub> , &nbsp; r<sub>t</sub> = π<sub>T</sub>(y<sub>&lt;t</sub>) / π<sub>θ</sub>(y<sub>&lt;t</sub>) &nbsp; <span class="muted">（前缀似然比，sg=stop-gradient）</span>
+  </div>
+  <p>
+    写成策略梯度，就是在标准 OPD 的优势上乘一个<strong>脱离梯度的乘法权重</strong>：
+  </p>
+  <div class="formula">
+    A<sub>t</sub><sup>IW-OPD</sup> = <span class="c">sg[ r̃<sub>t</sub> ]</span> · A<sub>t</sub><sup>OPD</sup> <span class="eqtag">Eq.13</span>
+  </div>
+
+  <div class="callout">
+    <div class="k">两个关键性质</div>
+    <ul style="margin:6px 0 0">
+      <li><strong>零额外成本</strong>：权重只用到 OPD 本来就要算的师生对数概率，不需要任何额外的教师调用。</li>
+      <li><strong>OPD 的超集</strong>：去掉权重（r̃<sub>t</sub>≡1）就退化回标准 OPD。它只是「重新分配」已有的监督信号。</li>
+    </ul>
+  </div>
+
+  <h3>IW-OPD 的计算流程</h3>
+  <div class="pipe">
+    <div class="pstep"><div class="pn">1</div><div class="pt">学生 rollout</div><div class="pd">从 π<sub>0</sub> 采样轨迹 y=(y<sub>1</sub>…y<sub>T</sub>)</div></div>
+    <div class="parrow">→</div>
+    <div class="pstep"><div class="pn">2</div><div class="pt">缓存对数概率</div><div class="pd">算 log π<sub>0</sub> 与 log π<sub>T</sub>（教师）</div></div>
+    <div class="parrow">→</div>
+    <div class="pstep"><div class="pn">3</div><div class="pt">token 优势</div><div class="pd">A<sub>t</sub><sup>OPD</sup> = log π<sub>T</sub> − log π<sub>0</sub></div></div>
+    <div class="parrow">→</div>
+    <div class="pstep"><div class="pn">4</div><div class="pt">前缀权重</div><div class="pd">累计 |A| → 归一 → 与 OPD 插值得 r̃<sub>t</sub></div></div>
+    <div class="parrow">→</div>
+    <div class="pstep"><div class="pn">5</div><div class="pt">加权更新</div><div class="pd">A<sup>IW</sup>=r̃<sub>t</sub>·A<sup>OPD</sup>，按 PPO 更新 θ</div></div>
+  </div>
+  <p class="note">注：流程与标准 OPD 完全一致，唯一新增的是第 4 步——一个只依赖前缀、可脱离梯度计算的标量权重。</p>
+
+  <h3>举个具体例子：同一条轨迹，两种「学法」</h3>
+  <p>
+    假设学生解一道题，生成了一条 6-token 的短推理：开头还在正轨上，到第 4 个 token 算错、之后越走越偏。教师在每个位置给出的 OPD 优势
+    <span class="mono">A<sup>OPD</sup> = log π<sub>T</sub> − log π<sub>θ</sub></span>（多为负）如下——<strong>注意从第 4 个 token 起，师生分歧 |A| 明显变大</strong>，正是「漂移」开始的地方。
+  </p>
+
+  <div class="widget">
+    <h4>标准 OPD vs IW-OPD：唯一的差别就是那个乘法权重</h4>
+    <p class="sub">同一条轨迹、同一组 A<sup>OPD</sup>。标准 OPD 给每个 token 的权重恒为 1；IW-OPD 按「前缀累计分歧」给一个递减权重（γ=0.5）。</p>
+    <div class="traj" id="ex-traj"></div>
+    <div class="btnrow">
+      <button class="sbtn on" data-ex="weight" onclick="setExample('weight',this)">看每个 token 的权重</button>
+      <button class="sbtn" data-ex="adv" onclick="setExample('adv',this)">看最终用于更新的信号</button>
+    </div>
+    <div class="chartwrap">
+      <svg id="exchart" viewBox="0 0 720 270" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="standard OPD vs IW-OPD per-token comparison"></svg>
+    </div>
+    <div class="stagedesc" id="ex-desc"></div>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>token</th><th>t1</th><th>t2</th><th>t3 ✅</th><th>t4 ❌</th><th>t5</th><th>t6</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="lab">A<sup>OPD</sup>（师生分歧，两法相同）</td><td>−0.2</td><td>−0.5</td><td>−0.3</td><td>−1.0</td><td>−0.8</td><td>−1.2</td></tr>
+        <tr><td class="lab">此 token 之前累计 |A|</td><td>0</td><td>0.2</td><td>0.7</td><td>1.0</td><td>2.0</td><td>2.8</td></tr>
+        <tr><td class="lab">标准 OPD 权重</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+        <tr class="rowhi"><td class="lab">IW-OPD 权重 r̃<sub>t</sub> = 1+0.5·(1−累计占比)</td><td>1.50</td><td>1.48</td><td>1.41</td><td>1.38</td><td>1.25</td><td>1.15</td></tr>
+        <tr><td class="lab">最终优势 |A<sup>IW</sup>| = r̃·|A|</td><td>0.30</td><td>0.74</td><td>0.42</td><td>1.38</td><td>1.00</td><td>1.38</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    看「权重」那两行就够了：<strong>标准 OPD 是一条水平线（处处 = 1）</strong>，对开头和结尾一视同仁；<strong>IW-OPD 是一条下坡线（1.50 → 1.15）</strong>——开头的 token 在这次更新里被放大约 50%，而轨迹已经「吵翻天、漂走了」的结尾几乎不放大。一句话：IW-OPD 把有限的梯度预算，悄悄从跑偏的尾巴挪向了教师还靠得住的开头，而<strong>这套权重完全由 OPD 本来就要算的 A<sup>OPD</sup> 累计而来，没有任何额外成本</strong>。
+  </p>
+</section>
+
+<!-- ============ STABILIZATION ============ -->
+<section id="stable">
+  <div class="sec-label">让方法真正能用</div>
+  <h2>稳定权重：从「理想比值」到「可训练权重」</h2>
+  <p>
+    理想权重 r̃<sub>t</sub> ∝ π<sub>T</sub>(y<sub>&lt;t</sub>)/π<sub>θ</sub>(y<sub>&lt;t</sub>) 是<strong>连乘</strong>，随序列变长会剧烈波动，直接用会让训练崩掉。作者用四个递进的技巧把它「驯服」成一个稳定、单调、可控的权重。下面的交互直接用一段固定的 token 优势序列，演示每一步如何改变每个 token 的权重。
+  </p>
+
+  <div class="widget">
+    <h4>交互：四步把「理想比值」变成 IW-OPD 权重</h4>
+    <p class="sub">柱子 = 每个 token 位置（左→右）拿到的权重。点不同阶段，看权重形状如何被一步步「稳定化」。</p>
+    <div class="btnrow" id="stage-btns">
+      <button class="sbtn on" data-stage="0" onclick="setStage(0,this)">① 原始似然比 r<sub>t</sub><sup>α</sup></button>
+      <button class="sbtn" data-stage="1" onclick="setStage(1,this)">② 对数缩放（带符号）</button>
+      <button class="sbtn" data-stage="2" onclick="setStage(2,this)">③ 取绝对值（单调）</button>
+      <button class="sbtn" data-stage="3" onclick="setStage(3,this)">④ 归一化 [0,1]</button>
+      <button class="sbtn" data-stage="4" onclick="setStage(4,this)">⑤ 与 OPD 插值</button>
+    </div>
+    <div class="chartwrap">
+      <svg id="weightchart" viewBox="0 0 720 260" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="per-token weight chart"></svg>
+    </div>
+    <div class="slider-row" id="gamma-row" style="display:none">
+      <span>插值强度 γ =&nbsp;<b id="gamma-val">0.5</b></span>
+      <input type="range" id="gamma-slider" min="0" max="1.5" step="0.1" value="0.5" oninput="onGamma(this.value)">
+      <span class="note" style="margin:0">γ 越大，越偏向教师权重；论文默认 0.5</span>
+    </div>
+    <div class="stagedesc" id="stage-desc"></div>
+  </div>
+
+  <h3>四个稳定化技巧（对应 Eq.14–17）</h3>
+  <div class="compare">
+    <div class="panel">
+      <div class="tag">技巧 I · 对数缩放</div>
+      <h4>把连乘变成累加</h4>
+      <p>在对数空间处理比值，保序的同时缓解指数累积的爆炸。它恰好等于<strong>逐 token OPD 优势的累计和</strong>：</p>
+      <div class="formula" style="font-size:13px">r̃<sup>log</sup><sub>t</sub> = α ∑<sub>k&lt;t</sub> A<sub>k</sub><sup>OPD</sup></div>
+    </div>
+    <div class="panel">
+      <div class="tag">技巧 II · 取绝对值</div>
+      <h4>消除「符号抵消」</h4>
+      <p>个别 token 教师概率高于学生（A 为正），会抵消累计的负差，让漂移的前缀「看起来仍兼容」。改用<strong>非负差异</strong>，每次分歧都计入：</p>
+      <div class="formula" style="font-size:13px">r̃<sup>abs</sup><sub>t</sub> = −∑<sub>k&lt;t</sub> |A<sub>k</sub><sup>OPD</sup>|</div>
+    </div>
+    <div class="panel">
+      <div class="tag">技巧 III · 归一化</div>
+      <h4>跨样本对齐尺度</h4>
+      <p>不同样本的绝对尺度差异大，做<strong>样本内标准化</strong>，把权重映射到 [0,1]（开头=1，结尾=0）：</p>
+      <div class="formula" style="font-size:13px">r̃<sup>norm</sup><sub>t</sub> = 1 − ( ∑<sub>k&lt;t</sub>|A<sub>k</sub>| / ∑<sub>k&lt;T</sub>|A<sub>k</sub>| )</div>
+    </div>
+    <div class="panel">
+      <div class="tag">技巧 IV · 与 OPD 插值</div>
+      <h4>额外预算，而非取代</h4>
+      <p>归一化后结尾权重过低，与原始 OPD 插值，保留稠密监督作底座，只<strong>额外</strong>给兼容前缀加预算：</p>
+      <div class="formula" style="font-size:13px">r̃<sup>IW-OPD</sup><sub>t</sub> = 1 + <span class="c">γ</span>( 1 − ∑<sub>k&lt;t</sub>|A<sub>k</sub>| / ∑<sub>k&lt;T</sub>|A<sub>k</sub>| )</div>
+    </div>
+  </div>
+
+  <div class="fig-grid">
+    <figure style="margin:6px 0">
+      <div class="fig-frame"><img src="https://arxiv.org/html/2606.22600v3/x8.png" alt="Figure 4(a): alpha sensitivity"></div>
+      <div class="fig-cap">
+        <span class="fnum">图 4(a)：</span>直接用理想比值对 α <strong>极其敏感</strong>：α=1、0.1 显著拖垮训练，只有 α=0.01、0.001 勉强追平 OPD。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>蓝（Standard OPD）</b>为参照。<b>粉（α=1）</b>和<b>绿（α=0.1）</b>权重过于集中，reward 崩到 0.1–0.3。</li>
+            <li><b>黄（α=0.01）</b>、<b>紫（α=0.001）</b>权重接近平坦，才勉强追平 OPD。</li>
+            <li><b>结论</b>：原始比值权重不稳定、难调参 → 需要后续稳定化技巧。</li>
+          </ul>
+        </div></div>
+      </div>
+    </figure>
+    <figure style="margin:6px 0">
+      <div class="fig-frame"><img src="https://arxiv.org/html/2606.22600v3/x9.png" alt="Figure 4(b): ideal weight visualization"></div>
+      <div class="fig-cap">
+        <span class="fnum">图 4(b)：</span>α 直接控制权重的尺度与陡峭度——要么过度集中（α 大，早早归零），要么近乎平坦（α 小）。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>横轴</b>：token 位置；<b>纵轴</b>：理想权重。</li>
+            <li><b>蓝（α=1）</b>在前 ~50 token 飙到 1.75 又骤降到 0；<b>橙（α=0.1）</b>也很快塌到 0。</li>
+            <li><b>红（α=0.001）</b>几乎不衰减。可见原始权重要么太尖、要么太平，且带「局部回弹」（符号抵消所致）。</li>
+          </ul>
+        </div></div>
+      </div>
+    </figure>
+  </div>
+  <figure>
+    <div class="fig-frame" style="max-width:520px;margin:0 auto"><img src="https://arxiv.org/html/2606.22600v3/x10.png" alt="Figure 4(c): signed vs unsigned"></div>
+    <div class="fig-cap">
+      <span class="fnum">图 4(c)：</span>把「带符号累计」换成「<strong>非负累计</strong>」，权重信号更稳——Unsigned（绿）整体高于 Signed（粉）。
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>粉（Signed）</b>用 ∑A<sub>k</sub>，正负相互抵消，曲线起伏、收益较低。</li>
+          <li><b>绿（Unsigned）</b>用 ∑|A<sub>k</sub>|，单调下降、reward 更高更稳。</li>
+          <li>这对应交互中从「② 对数缩放」到「③ 取绝对值」那一步带来的形状改变。</li>
+        </ul>
+      </div></div>
+    </div>
+  </figure>
+</section>
+
+<!-- ============ EXPERIMENTS ============ -->
+<section id="exp">
+  <div class="sec-label">实验结论</div>
+  <h2>更快收敛 + 更强终点，跨尺度尤甚</h2>
+  <p>
+    设置：学生 Qwen3-4B / 1.7B / 0.6B，教师 Qwen3-4B-Instruct（大重叠）与 Qwen3-30B-A3B-Instruct（小重叠）。数学用 DeepMath 训练、在 AIME24/25、HMMT25 评测；代码用 Eurus-RL-Code，在 HumanEval+/MBPP+ 评测。基线为学生 base 与标准 OPD，三个随机种子平均。
+  </p>
+
+  <div class="fig-grid">
+    <figure style="margin:6px 0">
+      <div class="fig-frame"><img src="https://arxiv.org/html/2606.22600v3/x3.png" alt="Figure 2(a): AIME25 during training"></div>
+      <div class="fig-cap">
+        <span class="fnum">图 2(a)：</span>训练中 AIME25 准确率——IW-OPD（粉）<strong>收敛更快、终点更高</strong>，且更稳定（OPD 中后期出现明显回落）。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>粉（IW-OPD）</b>在前 10 步就大幅领先，并在整段训练保持在蓝线之上。</li>
+            <li><b>蓝（Standard OPD）</b>上升慢，且 ~step 32 后出现回落（不稳定）。</li>
+            <li>教师 Qwen3-4B，学生 Qwen3-1.7B。</li>
+          </ul>
+        </div></div>
+      </div>
+    </figure>
+    <figure style="margin:6px 0">
+      <div class="fig-frame"><img src="https://arxiv.org/html/2606.22600v3/x4.png" alt="Figure 2(b): final accuracy vs compression ratio"></div>
+      <div class="fig-cap">
+        <span class="fnum">图 2(b)：</span>同一教师、不同学生规模——IW-OPD 的相对优势<strong>随压缩比变大</strong>：1.0× 时 +4.0%，到 6.7× 时 +14.9%。
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="inner">
+          <ul>
+            <li><b>横轴</b>：压缩比（教师参数/学生参数）；<b>纵轴</b>：性能分；虚线=教师水平。</li>
+            <li>每组蓝（OPD）vs 粉（IW-OPD），橙色箭头标相对提升：<b>1.0×→+4.0%，2.4×→+5.1%，6.7×→+14.9%</b>。</li>
+            <li><b>含义</b>：学生越小越容易偏离教师兼容区，IW-OPD 的「重新分配」就越有价值。</li>
+          </ul>
+        </div></div>
+      </div>
+    </figure>
+  </div>
+
+  <h3>主表（节选）：IW-OPD 全面优于 OPD</h3>
+  <p>下表节选 Qwen3-30B-A3B 教师（小重叠）下的数学/代码均分，重点看 <strong>step 10 的样本效率</strong> 与最终性能（完整见原文 Table 1–3）。</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>学生</th><th>方法</th><th>AIME24</th><th>AIME25</th><th>HMMT25</th><th>均分 Avg</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="lab">Qwen3-4B</td><td>OPD<sub>10</sub></td><td>51.2</td><td>42.4</td><td>23.5</td><td>52.0</td></tr>
+        <tr class="rowhi"><td class="lab"></td><td>IW-OPD<sub>10</sub></td><td>56.2 <span class="gain">+5.0</span></td><td>49.3 <span class="gain">+6.9</span></td><td>27.3 <span class="gain">+3.8</span></td><td>55.5 <span class="gain">+3.5</span></td></tr>
+        <tr><td class="lab"></td><td>OPD</td><td>55.3</td><td>48.0</td><td>27.1</td><td>55.3</td></tr>
+        <tr class="rowhi"><td class="lab"></td><td>IW-OPD</td><td>57.5 <span class="gain">+2.2</span></td><td>49.7 <span class="gain">+1.7</span></td><td>28.7 <span class="gain">+1.6</span></td><td>57.1 <span class="gain">+1.8</span></td></tr>
+        <tr><td class="lab">Qwen3-0.6B</td><td>OPD</td><td>11.0</td><td>17.8</td><td>7.1</td><td>18.8</td></tr>
+        <tr class="rowhi"><td class="lab"></td><td>IW-OPD</td><td>11.5 <span class="gain">+0.5</span></td><td>19.3 <span class="gain">+1.5</span></td><td>8.0 <span class="gain">+0.9</span></td><td>20.2 <span class="gain">+1.4</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    几个亮点：① <strong>样本效率</strong>——30B→4B 设定下，IW-OPD 的 step-10 检查点（均分 55.5）<strong>已经追平 OPD 的最终检查点</strong>；② <strong>更强教师更省样本</strong>——IW-OPD 让 30B 教师在早期反超 4B 教师；③ <strong>学生越小收益越大</strong>——固定 4B 教师，相对提升从 4B 学生的 +1.8% 增到 0.6B 学生的 +9.5%。
+  </p>
+
+  <h3>有意思的点：消融告诉我们到底是什么在起作用</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>消融维度</th><th>变体</th><th>AIME25</th><th>Δ vs OPD</th></tr></thead>
+      <tbody>
+        <tr><td class="lab" rowspan="3">权重形状<br>（前缀选择）</td><td>放大固定前缀</td><td>43.7</td><td>+0.4</td></tr>
+        <tr><td>线性衰减</td><td>44.1</td><td>+0.7</td></tr>
+        <tr class="rowhi"><td>累计份额（本文）</td><td>48.9</td><td><span class="gain">+5.6</span></td></tr>
+        <tr><td class="lab" rowspan="2">差异度量</td><td>带符号 ∑A<sub>k</sub></td><td>45.9</td><td>+2.6</td></tr>
+        <tr class="rowhi"><td>非负 ∑|A<sub>k</sub>|（本文）</td><td>48.9</td><td><span class="gain">+5.6</span></td></tr>
+        <tr><td class="lab" rowspan="2">权重来源</td><td>仅理想权重</td><td>42.1</td><td style="color:#a05a4a">−1.2</td></tr>
+        <tr class="rowhi"><td>与 OPD 插值（本文）</td><td>48.9</td><td><span class="gain">+5.6</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><strong>自适应比「固定形状」更重要</strong>：线性衰减只 +0.7，而跟随每条轨迹自身差异轨迹的「累计份额」给到 +5.6。可靠/不可靠前缀的边界<strong>随 rollout 变化</strong>，权重必须跟着走。</li>
+    <li><strong>非负差异是更好的兼容性代理</strong>：带符号会因抵消而把漂移前缀误判为「兼容」（+2.6 vs +5.6）。</li>
+    <li><strong>该「加预算」而非「替代」OPD</strong>：只用理想权重反而 −1.2（崩溃），与 OPD 插值才是正解。</li>
+  </ul>
+</section>
+
+<!-- ============ DISCUSSION ============ -->
+<section id="disc">
+  <div class="sec-label">讨论 &amp; 局限</div>
+  <h2>位置偏差不只属于 OPD</h2>
+  <div class="quote">
+    「有效的在线监督，不仅要看 token 级的分歧，还要看这个分歧<strong>发生在哪段前缀</strong>。」
+  </div>
+  <p>
+    本文的核心洞见是：沿着学生生成的轨迹，教师监督<strong>并非处处可靠</strong>，开头往往比结尾更有用。这种偏差不是 OPD 独有——任何涉及「从当前策略采样、却朝新策略更新」的两个自回归序列模型的方法（如 on-policy RL）都可能存在。OPD 尤其明显，因为师生分布差<strong>事先未知</strong>，无法预先划定哪段轨迹仍兼容。
+  </p>
+  <div class="callout">
+    <div class="k">局限（原文 Appendix E）</div>
+    <ul style="margin:6px 0 0">
+      <li>收敛时 r̃<sub>t</sub> 趋近 <span class="mono">1 − t/T</span>，而非完全均匀——存在轻微的残余非均匀性。</li>
+      <li>累计前缀差异是一个<strong>保守的</strong>兼容性代理，并非精确的密度比修正。</li>
+      <li>实验主要在 4B 学生规模，更大规模的验证留待未来。</li>
+    </ul>
+  </div>
+  <p>
+    与相关工作的关系：IW-OPD 延续「token 选择式蒸馏」（按频率/难度/教师置信度/学生状态加权）的思路，但用<strong>在线前缀兼容性</strong>作为加权信号；其受限投影视角也连接到信赖域/近端策略更新、GSPO 等序列级重要性修正。它还与奖励设计<strong>正交</strong>——叠加在 ExOPD 上得到 IW-ExOPD 仍有提升。
+  </p>
+</section>
+
+<footer>
+  <p>
+    本页为论文 <strong>《On the Position Bias of On-Policy Distillation》</strong> 的中文可视化解读，所有图表均来自原论文 arXiv HTML 版（x1–x10.png），数字对齐原文 Table 1–7 与 Figure 1–4。
+  </p>
+  <p>
+    原文：<a href="https://arxiv.org/abs/2606.22600" target="_blank" rel="noopener">arXiv:2606.22600 · On the Position Bias of On-Policy Distillation</a>（Yan Xie 等，2026）
+    &nbsp;·&nbsp; <a href="https://arxiv.org/pdf/2606.22600v3" target="_blank" rel="noopener">PDF</a>
+    &nbsp;·&nbsp; <a href="https://arxiv.org/html/2606.22600v3" target="_blank" rel="noopener">HTML</a>
+  </p>
+  <p class="note">解读内容仅供学习参考，如有出入请以原文为准。</p>
+</footer>
+
+</main>
+
+<script>
+/* ---------- figure detail toggle ---------- */
+function toggleFigDetail(el){
+  var d = el.nextElementSibling;
+  if(!d) return;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起说明 ▴' : '展开说明 ▸';
+}
+
+/* ---------- background token strips ---------- */
+function buildStrip(id, mode){
+  var wrap = document.getElementById(id);
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  var n = 28;
+  for(var i=0;i<n;i++){
+    var t = document.createElement('div');
+    t.className = 'tok';
+    if(mode === 'rl'){
+      // sparse: only last token carries signal
+      t.style.background = (i === n-1) ? 'var(--accent)' : 'var(--bg-3)';
+    } else {
+      // dense: every token, gradient by reliability (early stronger)
+      var frac = 1 - i/(n-1);
+      var alpha = 0.30 + 0.65*frac;
+      t.style.background = 'rgba(184,107,63,'+alpha.toFixed(2)+')';
+    }
+    wrap.appendChild(t);
+  }
+}
+buildStrip('strip-rl','rl');
+buildStrip('strip-opd','opd');
+
+/* ---------- budget allocation demo ---------- */
+function setBudget(mode, btn){
+  document.querySelectorAll('#bias .widget .btnrow .sbtn').forEach(function(b){b.classList.remove('on');});
+  if(btn) btn.classList.add('on');
+  var wrap = document.getElementById('budget-strip');
+  wrap.innerHTML='';
+  var n = 40;
+  var cut = Math.round(n*0.3);
+  for(var i=0;i<n;i++){
+    var t=document.createElement('div'); t.className='tok';
+    // reliability decreases with position
+    var frac = 1 - i/(n-1);
+    var reliable = 0.25 + 0.7*frac;
+    var on = false;
+    if(mode==='prefix') on = (i < cut);
+    else if(mode==='suffix') on = (i >= n-cut);
+    else on = true;
+    if(on){
+      t.style.background = 'rgba(79,122,77,'+reliable.toFixed(2)+')'; // green = supervised
+    } else {
+      t.style.background = 'var(--bg-3)';
+      t.style.opacity = '0.55';
+    }
+    wrap.appendChild(t);
+  }
+  var desc = document.getElementById('budget-desc');
+  if(mode==='prefix'){
+    desc.innerHTML = '<b>Prefix-30：</b>监督落在<b>开头</b>——这里教师监督最可信（深绿）。结果 reward ≈ 0.42，<b>追平甚至略超用全部 token 的 OPD</b>。';
+  } else if(mode==='suffix'){
+    desc.innerHTML = '<b>Suffix-30：</b>监督落在<b>结尾</b>——此处学生早已漂移、教师监督不可信（浅绿）。结果 reward ≈ 0.30，<b>几乎学不动</b>。';
+  } else {
+    desc.innerHTML = '<b>Full：</b>监督所有 token，用了 3 倍多预算，但 reward ≈ 0.42——<b>并不比只用前缀更好</b>。多花在后段的预算被浪费了。';
+  }
+}
+setBudget('prefix', null);
+
+/* ---------- weight transformer interactive ---------- */
+// fixed token-level OPD advantages (mostly negative = student-preferred drift; a few positive)
+var A = [-0.30,-0.62,-0.41,0.22,-0.70,-0.52,-0.33,-0.81,0.14,-0.60,
+         -0.44,-0.92,-0.55,-0.21,-0.74,-0.63,0.30,-0.85,-0.50,-0.42,
+         -0.95,-0.61,-0.72,-0.53];
+var N = A.length;
+var ALPHA = 0.5;
+var gamma = 0.5;
+var stage = 0;
+
+function cumAbsArr(){
+  var out=[], s=0;
+  for(var t=0;t<N;t++){ out.push(s); s += Math.abs(A[t]); }
+  return {pre:out, total:s};
+}
+function cumSignedArr(){
+  var out=[], s=0;
+  for(var t=0;t<N;t++){ out.push(s); s += A[t]; }
+  return out;
+}
+
+function computeWeights(stg){
+  var w=[];
+  if(stg===0){
+    // raw prefix ratio r_t^alpha = exp(alpha * cumulative signed A)
+    var cs = cumSignedArr();
+    for(var t=0;t<N;t++) w.push(Math.exp(ALPHA*cs[t]));
+  } else if(stg===1){
+    // log scaling (signed cumulative) -> shift to positive for display
+    var cs1 = cumSignedArr();
+    for(var t=0;t<N;t++) w.push(ALPHA*cs1[t]);
+  } else if(stg===2){
+    // unsigned cumulative: -sum|A|
+    var ca = cumAbsArr();
+    for(var t=0;t<N;t++) w.push(-ca.pre[t]);
+  } else if(stg===3){
+    // normalized [0,1]
+    var ca3 = cumAbsArr();
+    for(var t=0;t<N;t++) w.push(1 - ca3.pre[t]/ca3.total);
+  } else {
+    // interpolate with OPD: 1 + gamma*(norm)
+    var ca4 = cumAbsArr();
+    for(var t=0;t<N;t++) w.push(1 + gamma*(1 - ca4.pre[t]/ca4.total));
+  }
+  return w;
+}
+
+var STAGE_INFO = [
+  {t:'① 原始似然比 r<sub>t</sub><sup>α</sup>',
+   d:'直接用前缀似然比的 α 次幂。因为是<b>连乘</b>，权重<b>指数级衰减</b>——开头≈1，几十个 token 后就塌到接近 0，后段几乎没有权重。动态范围巨大、对 α 极敏感，<b>无法稳定训练</b>。',
+   neg:false},
+  {t:'② 对数缩放（带符号累计）',
+   d:'转到对数空间 → 等于<b>累计 OPD 优势</b> α∑A<sub>k</sub>。整体随位置下降（A 多为负），但遇到正的 A 会出现<b>局部回弹</b>（符号抵消），形状不够干净。',
+   neg:true},
+  {t:'③ 取绝对值（单调下降）',
+   d:'改用 −∑|A<sub>k</sub>|，每次师生分歧都计入。权重变成<b>严格单调递减</b>，漂移前缀不会再被「抵消」成兼容。这一步对应图 4(c) 的 Unsigned 提升。',
+   neg:true},
+  {t:'④ 归一化到 [0,1]',
+   d:'样本内标准化：开头=1，结尾=0。消除不同样本间的尺度差异，得到可跨样本比较的权重形状。',
+   neg:false},
+  {t:'⑤ 与 OPD 插值 → 最终权重',
+   d:'r̃<sup>IW-OPD</sup> = 1 + γ·(归一化权重)，范围 [1, 1+γ]。保留标准 OPD 作<b>底座</b>（权重≥1），只给教师兼容的前缀<b>额外</b>加预算。这就是 IW-OPD 实际用的权重。',
+   neg:false}
+];
+
+function renderChart(){
+  var svg = document.getElementById('weightchart');
+  var W=720,H=260, padL=52, padR=16, padT=22, padB=34;
+  var w = computeWeights(stage);
+  var info = STAGE_INFO[stage];
+  // adaptive domain with padding so each stage's shape is legible (bars grow from plot bottom)
+  var mn=Math.min.apply(null,w), mx=Math.max.apply(null,w);
+  var span = (mx-mn) || Math.abs(mx) || 1;
+  var lo = mn - span*0.08, hi = mx + span*0.08;
+  if(hi===lo){ hi = lo+1; }
+  var plotW = W-padL-padR, plotH = H-padT-padB;
+  function x(i){ return padL + (i+0.5)*(plotW/N); }
+  function y(v){ return padT + plotH*(1-(v-lo)/(hi-lo)); }
+  var yBot = padT+plotH;
+  var bw = (plotW/N)*0.72;
+  var html='';
+  // axes
+  html += '<line x1="'+padL+'" y1="'+yBot+'" x2="'+(W-padR)+'" y2="'+yBot+'" stroke="#d2bf9c" stroke-width="1"/>';
+  html += '<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+yBot+'" stroke="#e2d4ba" stroke-width="1"/>';
+  // y labels
+  html += '<text x="'+(padL-8)+'" y="'+(y(hi)+8)+'" text-anchor="end" font-size="11" fill="#94886f" font-family="JetBrains Mono,monospace">'+hi.toFixed(2)+'</text>';
+  html += '<text x="'+(padL-8)+'" y="'+(yBot)+'" text-anchor="end" font-size="11" fill="#94886f" font-family="JetBrains Mono,monospace">'+lo.toFixed(2)+'</text>';
+  // reference lines
+  if(lo<0 && hi>0){
+    var y0=y(0);
+    html += '<line x1="'+padL+'" y1="'+y0+'" x2="'+(W-padR)+'" y2="'+y0+'" stroke="#cbb791" stroke-width="1" stroke-dasharray="3,3"/>';
+    html += '<text x="'+(W-padR)+'" y="'+(y0-4)+'" text-anchor="end" font-size="10.5" fill="#94886f">0</text>';
+  }
+  if(stage===4 && lo<1 && hi>1){
+    var y1=y(1);
+    html += '<line x1="'+padL+'" y1="'+y1+'" x2="'+(W-padR)+'" y2="'+y1+'" stroke="#9bb29a" stroke-width="1" stroke-dasharray="4,3"/>';
+    html += '<text x="'+(W-padR)+'" y="'+(y1-4)+'" text-anchor="end" font-size="10.5" fill="#4f7a4d" font-weight="600">OPD 底座 = 1</text>';
+  }
+  // bars (grow from plot bottom)
+  for(var i=0;i<N;i++){
+    var vy=y(w[i]);
+    var hgt=Math.max(yBot-vy,1);
+    var frac = (w[i]-mn)/((mx-mn)||1);
+    var op = (0.45+0.45*frac).toFixed(2);
+    html += '<rect x="'+(x(i)-bw/2)+'" y="'+vy+'" width="'+bw+'" height="'+hgt+'" rx="2" fill="rgba(184,107,63,'+op+')"/>';
+  }
+  // axis titles
+  html += '<text x="'+(padL+plotW/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="12" fill="#6a5c47" font-weight="600">token 位置（开头 → 结尾）</text>';
+  html += '<text x="'+(padL-44)+'" y="'+(padT-7)+'" font-size="11.5" fill="#b86b3f" font-weight="700">权重</text>';
+  svg.innerHTML = html;
+  document.getElementById('stage-desc').innerHTML = '<b>'+info.t+'</b> — '+info.d;
+  document.getElementById('gamma-row').style.display = (stage===4)?'flex':'none';
+}
+function setStage(s, btn){
+  stage = s;
+  document.querySelectorAll('#stage-btns .sbtn').forEach(function(b){b.classList.remove('on');});
+  if(btn) btn.classList.add('on');
+  renderChart();
+}
+function onGamma(v){
+  gamma = parseFloat(v);
+  document.getElementById('gamma-val').textContent = gamma.toFixed(1);
+  if(stage===4) renderChart();
+}
+renderChart();
+
+/* ---------- worked example: standard OPD vs IW-OPD ---------- */
+var EX_LBL=['t1','t2','t3','t4','t5','t6'];
+var EX_A=[-0.2,-0.5,-0.3,-1.0,-0.8,-1.2];
+var EX_ABS=EX_A.map(function(v){return Math.abs(v);});
+var EX_TOTAL=0; EX_ABS.forEach(function(v){EX_TOTAL+=v;}); // 4.0
+var EX_TXT=['设 x','12 × 3','= 36','+ 5 = 41','≈ 40','答 40'];
+var EX_TAG=['铺垫','计算','✅ 在正轨','❌ 算错了','已偏离','沿错走'];
+function exWeights(){
+  var cum=0,w=[];
+  for(var i=0;i<EX_A.length;i++){ w.push(1+0.5*(1-cum/EX_TOTAL)); cum+=EX_ABS[i]; }
+  return w;
+}
+function buildExTraj(){
+  var wrap=document.getElementById('ex-traj'); if(!wrap) return;
+  var w=exWeights(); wrap.innerHTML='';
+  for(var i=0;i<EX_LBL.length;i++){
+    var frac=(w[i]-1)/0.5; // early high (~1) -> late low (~0.3)
+    var alpha=(0.10+0.5*frac).toFixed(2);
+    var c=document.createElement('div'); c.className='tchip';
+    c.style.background='rgba(79,122,77,'+alpha+')';
+    c.innerHTML='<div class="tlab">'+EX_LBL[i]+'</div><div class="ttxt">'+EX_TXT[i]+'</div><div class="tnote">'+EX_TAG[i]+'</div>';
+    wrap.appendChild(c);
+  }
+}
+function renderExample(mode){
+  var svg=document.getElementById('exchart'); if(!svg) return;
+  var W=720,H=270,padL=48,padR=18,padT=28,padB=44;
+  var n=EX_A.length, w=exWeights();
+  var plotW=W-padL-padR, plotH=H-padT-padB, yBot=padT+plotH;
+  var group=plotW/n;
+  var hi=1.75;
+  function y(v){ return padT+plotH*(1-v/hi); }
+  function gx(i){ return padL+i*group; }
+  var html='';
+  // grid + y ticks
+  [0,0.5,1.0,1.5].forEach(function(tk){
+    var yy=y(tk);
+    html+='<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#efe6d2"/>';
+    html+='<text x="'+(padL-7)+'" y="'+(yy+4)+'" text-anchor="end" font-size="10.5" fill="#94886f" font-family="JetBrains Mono,monospace">'+tk.toFixed(1)+'</text>';
+  });
+  html+='<line x1="'+padL+'" y1="'+yBot+'" x2="'+(W-padR)+'" y2="'+yBot+'" stroke="#d2bf9c"/>';
+  if(mode==='weight'){
+    var bw=group*0.46;
+    for(var i=0;i<n;i++){
+      var cx=gx(i)+group/2, vy=y(w[i]);
+      html+='<rect x="'+(cx-bw/2)+'" y="'+vy+'" width="'+bw+'" height="'+(yBot-vy)+'" rx="2" fill="rgba(184,107,63,0.85)"/>';
+      html+='<text x="'+cx+'" y="'+(vy-6)+'" text-anchor="middle" font-size="10.5" fill="#b86b3f" font-weight="700">'+w[i].toFixed(2)+'</text>';
+    }
+    var yb=y(1);
+    html+='<line x1="'+padL+'" y1="'+yb+'" x2="'+(W-padR)+'" y2="'+yb+'" stroke="#5b7d59" stroke-width="2" stroke-dasharray="6,4"/>';
+    html+='<text x="'+(padL+6)+'" y="'+(yb-7)+'" font-size="11" fill="#4f7a4d" font-weight="700">标准 OPD：所有 token 权重恒 = 1</text>';
+  } else {
+    var bw2=group*0.30;
+    for(var j=0;j<n;j++){
+      var cx2=gx(j)+group/2, g=EX_ABS[j], o=w[j]*EX_ABS[j];
+      var gy=y(g), oy=y(o);
+      html+='<rect x="'+(cx2-bw2-2)+'" y="'+gy+'" width="'+bw2+'" height="'+(yBot-gy)+'" rx="2" fill="rgba(150,120,90,0.5)"/>';
+      html+='<rect x="'+(cx2+2)+'" y="'+oy+'" width="'+bw2+'" height="'+(yBot-oy)+'" rx="2" fill="rgba(184,107,63,0.85)"/>';
+    }
+    html+='<rect x="'+(padL+8)+'" y="'+(padT-4)+'" width="11" height="11" rx="2" fill="rgba(150,120,90,0.5)"/><text x="'+(padL+24)+'" y="'+(padT+6)+'" font-size="11" fill="#6a5c47">标准 OPD |A|</text>';
+    html+='<rect x="'+(padL+140)+'" y="'+(padT-4)+'" width="11" height="11" rx="2" fill="rgba(184,107,63,0.85)"/><text x="'+(padL+156)+'" y="'+(padT+6)+'" font-size="11" fill="#6a5c47">IW-OPD |r̃·A|</text>';
+  }
+  for(var k=0;k<n;k++){
+    var cx3=gx(k)+group/2;
+    html+='<text x="'+cx3+'" y="'+(yBot+16)+'" text-anchor="middle" font-size="11" fill="#6a5c47" font-weight="600">'+EX_LBL[k]+'</text>';
+  }
+  html+='<text x="'+(padL+plotW/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11.5" fill="#94886f">开头 ←  token 位置  → 结尾</text>';
+  svg.innerHTML=html;
+  var d=document.getElementById('ex-desc');
+  if(mode==='weight'){
+    d.innerHTML='<b>权重视角：</b>标准 OPD 是一条水平绿线（处处 = 1，<b>一视同仁</b>）；IW-OPD 是一排<b>下坡的橙柱</b>（1.50 → 1.15）。开头的 token 被放大约 50%，已经漂走的结尾几乎不放大——这是两者<b>唯一</b>的区别。';
+  } else {
+    d.innerHTML='<b>信号视角：</b>灰柱 = 标准 OPD 实际用于更新的 |A|；橙柱 = IW-OPD 的 |r̃·A|。两者用的是<b>同一组 A</b>，IW-OPD 只是按位置重新缩放——相对而言开头 token 的信号被抬得更高，把梯度预算挪向了教师还靠得住的前缀。';
+  }
+}
+function setExample(mode,btn){
+  document.querySelectorAll('[data-ex]').forEach(function(b){b.classList.remove('on');});
+  if(btn) btn.classList.add('on');
+  renderExample(mode);
+}
+buildExTraj();
+renderExample('weight');
+
+/* ---------- active nav highlight ---------- */
+var navLinks = Array.prototype.slice.call(document.querySelectorAll('.topnav a.navlink'));
+var secs = navLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+function onScroll(){
+  var pos = window.scrollY + 120;
+  var idx = 0;
+  for(var i=0;i<secs.length;i++){ if(secs[i] && secs[i].offsetTop <= pos) idx = i; }
+  navLinks.forEach(function(a,i){ a.style.background = (i===idx)?'var(--bg-3)':''; a.style.color = (i===idx)?'var(--ink)':''; });
+}
+window.addEventListener('scroll', onScroll);
+onScroll();
+</script>
+</body>
+</html>

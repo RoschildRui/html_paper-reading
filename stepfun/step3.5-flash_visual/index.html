@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Step 3.5 Flash · 11B 激活的开源前沿智能 | 论文可视化精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --bg2:#f4ead7;
+  --bg3:#efe1c8;
+  --border:#e3d6bd;
+  --border-strong:#d6c4a2;
+  --ink:#2c2620;
+  --ink-soft:#6b6250;
+  --ink-faint:#9a8f78;
+  --accent:#b06a2c;
+  --accent-ink:#8a5320;
+  --accent-soft:#f1e2c8;
+  --accent-line:#dcb985;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --sans:'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:17px;line-height:1.78;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--accent-ink);text-decoration:underline}
+
+/* ---------- top nav ---------- */
+.nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,246,234,0.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:6px;
+  padding:8px 22px;overflow-x:auto;scrollbar-width:none}
+.nav-inner::-webkit-scrollbar{display:none}
+.nav-brand{font-weight:700;font-size:14px;white-space:nowrap;margin-right:6px;color:var(--ink)}
+.nav a.navlink{
+  font-size:13.5px;color:var(--ink-soft);padding:5px 10px;border-radius:7px;
+  white-space:nowrap;transition:background .15s,color .15s}
+.nav a.navlink:hover{background:var(--bg2);text-decoration:none;color:var(--ink)}
+.nav a.navlink.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.nav-src{margin-left:auto;font-size:13px;white-space:nowrap;font-weight:600}
+
+/* ---------- layout ---------- */
+.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+section{padding:30px 0;border-top:1px solid var(--border)}
+section:first-of-type{border-top:none}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);font-weight:500;margin-bottom:8px}
+h1{font-size:38px;line-height:1.2;font-weight:700;margin:0 0 12px}
+h2{font-size:27px;line-height:1.3;font-weight:700;margin:4px 0 14px;letter-spacing:-.01em}
+h3{font-size:19.5px;font-weight:700;margin:26px 0 8px}
+p{margin:0 0 14px}
+strong{font-weight:700;color:var(--ink)}
+.lead{font-size:18.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.small{font-size:14px}
+ul.clean{margin:6px 0 16px;padding-left:22px}
+ul.clean li{margin:7px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--bg3);
+  padding:1px 6px;border-radius:5px;color:var(--accent-ink)}
+
+/* ---------- header / hero ---------- */
+.hero{padding:46px 0 26px}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 18px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:999px;
+  padding:4px 12px;color:var(--ink-soft);font-weight:500}
+.tag.accent{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink)}
+.hero-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;
+  border:1px solid var(--border-strong);background:var(--bg2);
+  padding:7px 14px;border-radius:9px;color:var(--ink)}
+.btn:hover{background:var(--bg3);text-decoration:none;border-color:var(--accent-line)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff7ec}
+.btn.primary:hover{background:var(--accent-ink);color:#fff}
+
+/* ---------- TL;DR ---------- */
+.tldr{background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:24px 26px;margin:8px 0 6px}
+.tldr h2{margin-top:0;font-size:21px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0 4px}
+.metric{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 14px}
+.metric .num{font-family:var(--mono);font-size:25px;font-weight:600;color:var(--accent-ink);line-height:1.1}
+.metric .lbl{font-size:13px;color:var(--ink-soft);margin-top:6px}
+
+/* ---------- figures ---------- */
+figure{margin:22px 0;background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:16px 16px 6px;overflow:hidden}
+figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff}
+.figcap{font-size:14px;color:var(--ink-soft);margin:12px 2px 6px;line-height:1.6}
+.figcap b{color:var(--ink)}
+.fig-toggle{display:inline-block;margin:4px 2px 8px;font-size:13.5px;font-weight:600;
+  color:var(--accent);cursor:pointer;user-select:none}
+.fig-toggle:hover{color:var(--accent-ink)}
+.figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+.figure-detail.active{max-height:1600px}
+.figure-detail-inner{border-top:1px dashed var(--border-strong);margin-top:2px;padding-top:12px}
+.figure-detail ul{margin:4px 0 10px;padding-left:20px}
+.figure-detail li{font-size:14.5px;color:var(--ink-soft);margin:7px 0;line-height:1.62}
+.figure-detail li b{color:var(--ink)}
+.fd-sum{font-size:14.5px;color:var(--ink);background:var(--accent-soft);
+  border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 8px 8px 0;margin:6px 0 4px}
+
+/* ---------- pillar grid ---------- */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0}
+.pillar{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px}
+.pillar .pi{font-size:22px}
+.pillar h3{margin:8px 0 6px;font-size:17.5px}
+.pillar p{font-size:14.5px;color:var(--ink-soft);margin:0}
+.pillar .goal{font-size:12.5px;font-family:var(--mono);color:var(--accent);text-transform:uppercase;letter-spacing:.08em}
+
+/* ---------- expandable deep card ---------- */
+.dc{background:var(--bg2);border:1px solid var(--border);border-radius:13px;margin:14px 0;overflow:hidden}
+.dc-head{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;cursor:pointer;user-select:none}
+.dc-head:hover{background:var(--bg3)}
+.dc-ico{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:var(--accent-soft);
+  color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;margin-top:1px}
+.dc-htext{flex:1;min-width:0}
+.dc-title{font-size:17px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dc-badge{font-size:11.5px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border);
+  color:var(--ink-soft);border-radius:6px;padding:1px 7px;font-weight:500}
+.dc-sum{font-size:13.5px;color:var(--ink-faint);margin:4px 0 0;line-height:1.55}
+.dc-arrow{flex:0 0 auto;color:var(--ink-faint);transition:transform .3s;margin-top:4px;font-size:13px}
+.dc.open .dc-arrow{transform:rotate(90deg)}
+.dc-body{max-height:0;overflow:hidden;transition:max-height .5s ease}
+.dc.open .dc-body{max-height:2400px}
+.dc-body-inner{padding:2px 18px 16px 60px}
+.dc-body-inner p{font-size:15px;color:var(--ink-soft);margin:0 0 12px}
+.dc-body-inner p b{color:var(--ink)}
+.dc-body-inner ul{padding-left:20px;margin:6px 0 12px}
+.dc-body-inner li{font-size:14.5px;color:var(--ink-soft);margin:6px 0}
+@media(max-width:880px){.dc-body-inner{padding-left:18px}}
+
+/* ---------- callout / quote ---------- */
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);
+  border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0;font-size:15.5px;color:var(--ink)}
+.callout .ct{font-weight:700;color:var(--accent-ink);display:block;margin-bottom:3px;font-size:13px;
+  font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.quote{border-left:3px solid var(--border-strong);padding:6px 18px;margin:18px 0;
+  font-size:16px;color:var(--ink-soft);font-style:italic}
+
+/* ---------- compare two-col ---------- */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+.cmp .col{border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:var(--bg2)}
+.cmp .col.win{border-color:var(--accent-line);background:var(--accent-soft)}
+.cmp .col h4{margin:0 0 8px;font-size:15.5px;display:flex;align-items:center;gap:8px}
+.cmp .col p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.cmp .pill{font-size:11px;font-family:var(--mono);padding:1px 7px;border-radius:5px;
+  background:var(--bg3);border:1px solid var(--border);color:var(--ink-soft)}
+.cmp .col.win .pill{background:#fff;border-color:var(--accent-line);color:var(--accent-ink)}
+
+/* ---------- architecture layer strip ---------- */
+.layerviz{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;margin:18px 0}
+.lv-flow{display:flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap;margin:4px 0 14px}
+.lv-cell{width:15px;height:30px;border-radius:3px;position:relative}
+.lv-cell.swa{background:var(--accent-soft);border:1px solid var(--accent-line)}
+.lv-cell.full{background:var(--accent);border:1px solid var(--accent-ink)}
+.lv-block{display:flex;gap:3px;padding:4px;border:1px dashed var(--border-strong);border-radius:6px}
+.lv-lead{display:flex;gap:3px;padding:4px;border:1px dashed var(--accent-line);border-radius:6px;background:rgba(176,106,44,.05)}
+.lv-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft);justify-content:center}
+.lv-legend span{display:inline-flex;align-items:center;gap:6px}
+.lv-key{width:14px;height:14px;border-radius:3px;display:inline-block}
+.lv-note{font-size:13px;color:var(--ink-faint);text-align:center;margin-top:10px}
+
+/* ---------- step animation (MIS-PO) ---------- */
+.stepbox{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin:18px 0}
+.step-ctrl{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.step-btn{font-family:var(--sans);font-size:14px;font-weight:600;border:1px solid var(--border-strong);
+  background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 14px;cursor:pointer;transition:.15s}
+.step-btn:hover{background:var(--bg3)}
+.step-btn:disabled{opacity:.4;cursor:not-allowed}
+.step-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff7ec}
+.step-btn.primary:hover{background:var(--accent-ink)}
+.step-count{font-family:var(--mono);font-size:13px;color:var(--ink-soft);margin-left:auto}
+.step-stage{display:flex;gap:6px;margin:12px 0 14px;flex-wrap:wrap}
+.step-dot{flex:1;min-width:120px;text-align:center;font-size:12.5px;padding:7px 6px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);color:var(--ink-faint);transition:.25s}
+.step-dot.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:600}
+.step-dot.done{color:var(--ink-soft)}
+.mis-grid{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+.mis-row{display:flex;align-items:center;gap:8px;transition:opacity .4s,filter .4s}
+.mis-rl{font-family:var(--mono);font-size:12px;color:var(--ink-soft);width:30px;flex:0 0 auto}
+.mis-toks{display:flex;gap:5px;flex-wrap:wrap}
+.tok{width:26px;height:26px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);
+  transition:.35s;position:relative}
+.mis-tag{font-size:11.5px;font-family:var(--mono);color:var(--ink-faint);margin-left:6px;opacity:0;transition:.35s}
+/* progressive states driven by data-step */
+.stepbox[data-step="1"] .tok.td,.stepbox[data-step="2"] .tok.td,.stepbox[data-step="3"] .tok.td{
+  background:repeating-linear-gradient(45deg,var(--bg3),var(--bg3) 3px,#e7d2b6 3px,#e7d2b6 6px);
+  opacity:.45;border-style:dashed}
+.stepbox[data-step="2"] .mis-row.trd,.stepbox[data-step="3"] .mis-row.trd{opacity:.3;filter:grayscale(.6)}
+.stepbox[data-step="2"] .mis-row.trd .mis-tag,.stepbox[data-step="3"] .mis-row.trd .mis-tag{opacity:1;color:var(--ink-faint)}
+.stepbox[data-step="3"] .mis-row:not(.trd) .tok:not(.td){background:var(--accent-soft);border-color:var(--accent-line)}
+.stepbox[data-step="3"] .mis-row:not(.trd) .mis-tag{opacity:1;color:var(--accent-ink)}
+.mis-desc{display:none;font-size:14.5px;color:var(--ink-soft);background:var(--bg);
+  border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:12px;min-height:54px}
+.mis-desc.active{display:block}
+.mis-desc b{color:var(--ink)}
+.mis-desc code{font-size:13px}
+
+/* ---------- result mini table ---------- */
+.tbl-wrap{overflow-x:auto;margin:18px 0;border:1px solid var(--border);border-radius:12px}
+table.cmp-tbl{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+table.cmp-tbl th,table.cmp-tbl td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--border)}
+table.cmp-tbl th{background:var(--bg2);font-weight:600;color:var(--ink-soft);font-size:13px}
+table.cmp-tbl td:first-child,table.cmp-tbl th:first-child{text-align:left;font-weight:500;color:var(--ink)}
+table.cmp-tbl tr:last-child td{border-bottom:none}
+table.cmp-tbl .hl{font-weight:700;color:var(--accent-ink);background:var(--accent-soft)}
+table.cmp-tbl .me{background:rgba(176,106,44,.06)}
+.tbl-note{font-size:12.5px;color:var(--ink-faint);margin:6px 2px}
+
+/* ---------- timeline ---------- */
+.tl{margin:18px 0;position:relative;padding-left:26px}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--border-strong)}
+.tl-item{position:relative;margin-bottom:18px}
+.tl-item::before{content:"";position:absolute;left:-23px;top:5px;width:11px;height:11px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--bg)}
+.tl-item h4{margin:0 0 3px;font-size:15.5px}
+.tl-item .meta{font-family:var(--mono);font-size:12px;color:var(--accent);margin-bottom:3px}
+.tl-item p{font-size:14px;color:var(--ink-soft);margin:0}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--border);margin-top:10px;padding:30px 0 60px;color:var(--ink-soft);font-size:14px}
+footer a{font-weight:600}
+.fnote{font-size:12.5px;color:var(--ink-faint);margin-top:10px}
+
+details.more{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:0 16px;margin:16px 0}
+details.more>summary{cursor:pointer;padding:13px 2px;font-weight:600;font-size:15px;list-style:none;
+  display:flex;align-items:center;gap:8px;color:var(--ink)}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::before{content:"▸";color:var(--accent);transition:transform .25s}
+details.more[open]>summary::before{transform:rotate(90deg)}
+details.more .more-sum{font-size:13px;color:var(--ink-faint);font-weight:400}
+details.more .more-body{padding:2px 0 14px}
+details.more .more-body p{font-size:14.5px;color:var(--ink-soft)}
+
+@media(max-width:880px){
+  body{font-size:16px}
+  h1{font-size:30px}
+  h2{font-size:23px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .grid3{grid-template-columns:1fr}
+  .cmp{grid-template-columns:1fr}
+  .wrap{padding:0 18px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Step 3.5 Flash</span>
+    <a class="navlink" href="#tldr">速览</a>
+    <a class="navlink" href="#problem">为什么需要它</a>
+    <a class="navlink" href="#design">三轴设计</a>
+    <a class="navlink" href="#arch">架构详解</a>
+    <a class="navlink" href="#stability">训练稳定性</a>
+    <a class="navlink" href="#curriculum">训练流程</a>
+    <a class="navlink" href="#post">后训练与 RL</a>
+    <a class="navlink" href="#results">实验结论</a>
+    <a class="navlink" href="#limits">局限</a>
+    <a class="nav-src" href="https://arxiv.org/abs/2602.10604" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="kicker">StepFun / 阶跃星辰 · 大模型技术报告</div>
+  <h1>Step 3.5 Flash：用 11B 激活参数<br>做开源的「前沿级智能」</h1>
+  <p class="lead muted">一个 196B 总参 / 每 token 仅激活 11B 的稀疏 MoE。它把「前沿智能」和「推理延迟」当成必须同时满足的硬约束——因为在 Agent 时代，模型要被反复调用成百上千轮，<strong>慢，就等于不可用</strong>。</p>
+  <div class="meta-row">
+    <span class="tag accent">📅 2026.02 · arXiv preprint</span>
+    <span class="tag">🏢 StepFun Team（阶跃星辰）</span>
+    <span class="tag">🧠 196B 总参 / 11B 激活</span>
+    <span class="tag">📄 arXiv:2602.10604</span>
+  </div>
+  <div class="hero-links">
+    <a class="btn primary" href="https://arxiv.org/abs/2602.10604" target="_blank" rel="noopener">阅读原文 (arXiv abs)</a>
+    <a class="btn" href="https://arxiv.org/html/2602.10604v2" target="_blank" rel="noopener">arXiv HTML 全文</a>
+    <a class="btn" href="https://huggingface.co/stepfun-ai" target="_blank" rel="noopener">HuggingFace</a>
+    <a class="btn" href="https://github.com/stepfun-ai" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</header>
+
+<!-- ================= TL;DR ================= -->
+<section id="tldr" style="border-top:none">
+  <div class="tldr">
+    <h2>30 秒速览：这篇报告在讲什么</h2>
+    <p>Step 3.5 Flash 的核心命题是<strong>「效率前沿」</strong>：在激活参数只有同类开源模型 1/3 左右的前提下，把数学、代码、工具调用（Agent）三类能力做到与 GPT-5.2 xHigh、Gemini 3.0 Pro 等闭源前沿模型同一梯队。它靠四件事达成：</p>
+    <ul class="clean">
+      <li><strong>低延迟架构</strong>：3:1 的滑窗注意力(SWA) : 全注意力 + 增强 SWA query head + head-wise gated attention + MTP-3 投机解码，专为 Agent 的「长 prefill、多轮 decode」负载设计。</li>
+      <li><strong>把稳定性当一等公民</strong>：用微批级监控诊断并根治三类超大规模 MoE 失稳，17.6T tokens 全程<strong>只有一次 loss spike</strong>。</li>
+      <li><strong>统一后训练配方</strong>：统一 SFT → 领域专家 RL → 自蒸馏回单一通才，兼顾「专精」与「通用」。</li>
+      <li><strong>可规模化的 RL：MIS-PO</strong>：用「离散过滤」替代「连续重要性采样」，压住长程 off-policy RL 在 MoE 上的高方差，让 RL 稳定放大。</li>
+    </ul>
+    <div class="metrics">
+      <div class="metric"><div class="num">11B / 196B</div><div class="lbl">激活 / 总参数（top-8 专家）</div></div>
+      <div class="metric"><div class="num">~170 tok/s</div><div class="lbl">Hopper GPU 在线解码吞吐</div></div>
+      <div class="metric"><div class="num">17.6T</div><div class="lbl">预训练 tokens · 仅 1 次 loss spike</div></div>
+      <div class="metric"><div class="num">85.4 / 88.2</div><div class="lbl">IMO-AnswerBench / τ²-Bench</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HEADLINE RESULT FIGURE ================= -->
+<section style="border-top:none;padding-top:6px">
+  <figure>
+    <img src="assets/fig1_benchmark.png" alt="Step 3.5 Flash 与前沿模型的基准对比柱状图">
+    <div class="figcap"><b>图 1：</b>Step 3.5 Flash（斜纹蓝，仅 11B 激活）在「推理」与「Agentic」两大类基准上，与 DeepSeek V3.2、Gemini 3.0 Pro、Claude Opus 4.5、GPT-5.2 xHigh 同台竞技。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail"><div class="figure-detail-inner">
+      <div class="fd-sum">用约 1/3 的激活/总参数，换到与闭源前沿模型相当的智能——这是全文的「结果锚点」。</div>
+      <ul>
+        <li><b>左半「Reasoning Capabilities」</b>：AIME 2025（Step 3.5 Flash 97.3）、IMO-AnswerBench（85.4）、LiveCodeBench v6（86.4）——纯推理 / 竞赛数学 / 编程能力。</li>
+        <li><b>右半「Agentic Capabilities」</b>：τ²-Bench（88.2）、SWE-Bench Verified（74.4）、BrowseComp w. Ctx Manage（69.0）、Terminal-Bench 2.0（51.0）——多轮工具调用、软件工程、网页检索、终端操作。</li>
+        <li><b>每组 5 根柱子</b>从左到右依次是 Step 3.5 Flash、DeepSeek V3.2、Gemini 3.0 Pro、Claude Opus 4.5、GPT-5.2 xHigh；柱顶数字为对应分数。</li>
+        <li><b>关键对照</b>：对比的开源模型激活 15B–37B、总参 309B–1T，而 Step 3.5 Flash 仅 11B / 196B，却普遍落在第一梯队——体现「每激活参数的能力密度」优势。</li>
+      </ul>
+      <p class="small muted" style="margin:0">一句话总结：在「同等智能」这条线上，Step 3.5 Flash 把所需的算力成本显著拉低。</p>
+    </div></div>
+  </figure>
+</section>
+
+<!-- ================= PROBLEM ================= -->
+<section id="problem">
+  <div class="kicker">问题定义</div>
+  <h2>Agent 时代，给模型加了第三个硬约束：延迟</h2>
+  <p>过去衡量大模型，主要看两件事：<strong>智能</strong>和<strong>成本</strong>。但当模型被用作自主 Agent——写代码、查资料、调工具、跑终端——它会在一个任务里被<strong>反复调用几十到上百轮</strong>。这时第三个约束浮出水面：<strong>推理延迟（wall-clock latency）</strong>。延迟低，意味着任务完成更快；或者在固定时间预算内，可以通过 test-time scaling 塞进更多思考。</p>
+  <p>作者观察到 Agent 负载有一个鲜明的剖面：<strong>先是超长上下文的 prefill，然后是漫长的多轮交互式 decode</strong>。而当前开源模型有两个痛点：</p>
+  <ul class="clean">
+    <li><strong>智能仍落后闭源前沿</strong>：尤其在复杂推理上，开源模型与 GPT-5.2 / Gemini 3.0 / Claude 这类系统仍有差距。</li>
+    <li><strong>效率瓶颈卡住落地</strong>：长上下文 Agent 任务里，注意力的二次复杂度、MoE 的专家负载不均（straggler）、自回归逐 token 解码，都会把延迟推高，更别说在边缘 / 资源受限场景部署。</li>
+  </ul>
+  <div class="callout">
+    <span class="ct">本文的赌注</span>
+    与其堆更多激活参数去追智能，不如做<strong>模型 × 系统协同设计</strong>：把架构、训练、推理三层一起为「低延迟 + 高密度智能」优化，用 11B 激活逼近前沿。
+  </div>
+</section>
+
+<!-- ================= DESIGN PHILOSOPHY ================= -->
+<section id="design">
+  <div class="kicker">设计哲学</div>
+  <h2>沿三条耦合的轴，把延迟压到最低</h2>
+  <p>Step 3.5 Flash 不是「先有架构再凑指标」，而是先确定 Agent 负载的延迟瓶颈在哪，再反推架构。作者把低延迟拆成三条相互耦合的轴，每条都对应一个具体的瓶颈：</p>
+  <div class="grid3">
+    <div class="pillar">
+      <div class="pi">🪟</div>
+      <div class="goal">轴 1 · Attention</div>
+      <h3>加速长上下文 prefill</h3>
+      <p>用混合注意力（SWA 为主、Full 为辅）化解二次复杂度；选 SWA 而非线性注意力，是为了和投机解码天然兼容。</p>
+    </div>
+    <div class="pillar">
+      <div class="pi">🧩</div>
+      <div class="goal">轴 2 · Sparse MoE</div>
+      <h3>消除分布式部署的 straggler</h3>
+      <p>细粒度 MoE 降低平均 FFN 算力；但专家并行(EP)下路由不均会拖慢同步——用 EP-group 负载均衡防止个别 GPU 成为木桶短板。</p>
+    </div>
+    <div class="pillar">
+      <div class="pi">⚡</div>
+      <div class="goal">轴 3 · MTP</div>
+      <h3>降低自回归逐 token 延迟</h3>
+      <p>挂 3 个轻量 MTP 头，配合投机解码一次验证多个草稿 token；GQA-8 留出的算力余量正好吸收投机的开销。</p>
+    </div>
+  </div>
+  <div class="cmp">
+    <div class="col win">
+      <h4>✅ 选 SWA（滑动窗口注意力）<span class="pill">采用</span></h4>
+      <p>和线性注意力同为线性复杂度，但 SWA 保留标准注意力语义，可通过 KV masking 做<strong>并行树验证</strong>，天然适配投机解码。窗口 <code>W=512</code> 在 kernel 效率与捕捉局部依赖间取得平衡。</p>
+    </div>
+    <div class="col">
+      <h4>❌ 不选线性注意力<span class="pill">放弃</span></h4>
+      <p>线性注意力的状态更新机制让「草稿树生成 + 并行验证」变复杂；且没有过硬证据表明它在 Agent 长上下文上更强。投机解码的<strong>验证效率</strong>才是带宽受限硬件上的关键杠杆。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section id="arch">
+  <div class="kicker">本文方法 · 重头戏</div>
+  <h2>架构详解：一套「便宜的长上下文 + 不丢的全局 + 快的解码」</h2>
+  <p>下面这张图是全文最重要的结构图。先整体看一遍，再逐个模块拆解。</p>
+
+  <figure>
+    <img src="assets/fig2_architecture.png" alt="Step 3.5 Flash 整体架构示意图">
+    <div class="figcap"><b>图 2：</b>Step 3.5 Flash 的整体结构——主干（Main Stream）+ 3 个 MTP 模块；注意力统一用 head-wise gated attention，按 3:1 交织 SWA 与 Full Attention。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail"><div class="figure-detail-inner">
+      <div class="fd-sum">读懂这张图 = 读懂整个模型：左边主干负责「想」，右边 MTP 头负责「快」。</div>
+      <ul>
+        <li><b>主干（左列）</b>：底部 <code>Embedding</code> → 由「Gated SWA Block ×3 + 1 个 Gated FullAttn Block」组成的 Hybrid Block（图中 <code>L×</code> 表示重复 L=11 次，再加最前面一层 Full Attention，共 45 层）→ 顶部 <code>LM Head</code> 输出主 token x<sub>t</sub>。</li>
+        <li><b>注意力交织（S3F1）</b>：每个 Hybrid Block 内是「3 层 SWA（窗口 512）后接 1 层 Full（GQA-8）」。SWA 用线性复杂度扛长上下文，稀疏的 Full 层负责保留全局连通性。</li>
+        <li><b>FFN 安排</b>：前 3 层用 dense FFN，其余 42 层用稀疏 MoE FFN（288 路由专家 + 1 共享专家，每 token top-8 激活）。</li>
+        <li><b>MTP 模块（中、右列）</b>：每个 MTP 头 = 「H-Norm + E-Norm 拼接 → Linear → Gated SWA Block → MTP head」，与主干<strong>共享 Embedding</strong>，分别预测 x<sub>t+1</sub>、x<sub>t+2</sub>……</li>
+        <li><b>数据流（图中折线）</b>：主干的 hidden state 横向喂给 MTP 模块，让 MTP 头基于主干表示生成投机草稿。图中蓝色虚线注记「仅在最终后训练阶段启用」——只有 MTP module 1 在主训练中训练，模块 2–3 由它克隆后在最后阶段轻量联合微调。</li>
+      </ul>
+      <p class="small muted" style="margin:0">一句话总结：低延迟 Agent 架构 = SWA（长上下文便宜）+ Full（全局不丢）+ MTP（解码靠投机加速）。</p>
+    </div></div>
+  </figure>
+
+  <h3>注意力布局：S3F1 + 两个「几乎免费」的增强</h3>
+  <p>朴素地把 SWA 和 Full 按 3:1 交织（记作 <code>S3F1</code>）虽然便宜，但作者发现它<strong>一开始打不过全注意力基线</strong>。于是加了两个开销极小的增强来补回质量。下面四张展开卡逐个讲清这套注意力设计。</p>
+
+  <!-- layer strip viz -->
+  <div class="layerviz">
+    <div style="font-size:13px;color:var(--ink-soft);text-align:center;margin-bottom:10px">45 层注意力布局：1 层引导 Full Attention &nbsp;+&nbsp; 11 个 Hybrid Block（每块 = SWA·SWA·SWA·Full）</div>
+    <div class="lv-flow" id="layerstrip"></div>
+    <div class="lv-legend">
+      <span><i class="lv-key" style="background:var(--accent-soft);border:1px solid var(--accent-line)"></i> SWA 滑窗注意力（W=512）</span>
+      <span><i class="lv-key" style="background:var(--accent);border:1px solid var(--accent-ink)"></i> Full 全注意力（GQA-8）</span>
+    </div>
+    <div class="lv-note">FFN 维度：前 3 层用 dense，后 42 层用稀疏 MoE（与注意力布局正交）。</div>
+  </div>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">1</div>
+      <div class="dc-htext">
+        <div class="dc-title">混合注意力布局 S3F1 <span class="dc-badge">3 SWA : 1 Full</span></div>
+        <div class="dc-sum">3:1 交织把注意力侧算力压到全注意力的约 1/2.7；代价是质量略降，需后续两招补回。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>四层一组的 motif：<strong>三层 SWA（W=512）后接一层 GQA-8 全注意力</strong>。在 30B-A3B 的端到端消融里（见下表），<code>S3F1</code> 的注意力侧 prefill/decode FLOPs 归一化为 1.00，而全注意力 <code>FFFF</code> 要贵约 <strong>2.68× / 2.90×</strong>。</p>
+      <p>但 <code>S3F1</code> 有稳定的质量退化（如 LongCtx 从 28.8 掉到 27.5）。所以作者没有止步于此，而是用「增强 query head + head-wise 门控」把质量补回来——这正是下面两张卡的内容。</p>
+    </div></div>
+  </div>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">2</div>
+      <div class="dc-htext">
+        <div class="dc-title">增强 SWA 的 query head 数 <span class="dc-badge">64 → 96 · "free lunch"</span></div>
+        <div class="dc-sum">只给 SWA 层加 query head 就几乎补平 S3F1 的质量损失，而长上下文下延迟代价极小。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>从全注意力切到 <code>S3F1</code> 会掉点，作者把 SWA 层的 query head 数从 <strong>64 提到 96</strong>（消融中的小模型是 32→48）就能基本补平。为什么算「免费午餐」？因为 SWA 的 query-to-kv 比高达 12，长文本下 SWA 处于 <strong>IO-bound 区间</strong>，即便大幅加 query head，理论 FLOPs 略增、实际延迟几乎不变。</p>
+      <p>效果：<code>S3F1+Head</code> 在预训练上甚至<strong>超过全注意力基线</strong>（55.7 vs 54.1），后训练后 LongCtx 从 27.5 回升到 28.2、Sci 从 42.4 回到 44.0，几乎抹平差距。</p>
+    </div></div>
+  </div>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">3</div>
+      <div class="dc-htext">
+        <div class="dc-title">Head-wise Gated Attention（数据相关的 sink token）<span class="dc-badge">vs sink token</span></div>
+        <div class="dc-sum">给每个注意力头加一个 sigmoid 门，让它在窗口内没有有用信息时主动「关掉」自己。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>朴素 SWA 的一个毛病：当窗口里没有有用信息时，它无法把多余的注意力权重「吸收」掉。已有工作往窗口里塞<strong>可学习但与数据无关</strong>的 sink token 来缓解。作者换了一条路：在每个头上加一个参数极少的 <strong>head-wise 门控</strong> <code>g = σ(w·x)</code>，可视为<strong>数据相关的 sink token</strong>——门由当前输入决定，能针对性地泄掉无用权重。</p>
+      <p>在 100B-A10B 的受控预训练里，head-wise 门控全面优于固定 sink token，平均分从 <strong>62.5 提到 64.4（+1.9）</strong>。而且它对理论 FLOPs 和实际延迟都几乎无感。</p>
+      <div class="cmp" style="margin-top:6px">
+        <div class="col win"><h4>Head-wise Gate</h4><p>平均 <b>64.4</b>（BBH 73.7 / MMLU 67.0 / CMMLU 77.1）。数据相关、参数高效、延迟无感。</p></div>
+        <div class="col"><h4>Sink Token</h4><p>平均 62.5（BBH 70.6 / MMLU 65.1 / CMMLU 74.6）。数据无关，表达力受限。</p></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">4</div>
+      <div class="dc-htext">
+        <div class="dc-title">MoE 与 EP-group 负载均衡 <span class="dc-badge">288+1 专家 · top-8</span></div>
+        <div class="dc-sum">loss-free 均衡保证全局均匀，但管不住每个 EP rank；再加一个 EP-group 均衡 loss 防 straggler。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>每个 MoE 层有 <strong>288 个路由专家 + 1 个共享专家</strong>，top-k 路由每 token 激活 8 个。这让总知识容量达 196B，而每 token 激活仅 11B。</p>
+      <p>问题：专家并行(EP)把专家分到不同 GPU 上，若 token 分配偏斜，少数专家（及其 GPU）被打爆，同步点就被它们拖慢。loss-free 负载均衡只能保证<strong>全局</strong>均匀，不保证<strong>每个微批、每个 EP rank</strong>均匀。作者于是显式加了一个 <strong>EP-group 均衡 loss</strong>（L<sub>EP</sub> = G·Σ f<sub>g</sub>·p<sub>g</sub>），直接促使各 rank 利用率均匀，消除 straggler。</p>
+    </div></div>
+  </div>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">5</div>
+      <div class="dc-htext">
+        <div class="dc-title">MTP-3：三个轻量多 token 预测头 <span class="dc-badge">+0.81B 参数 · ~0.41%</span></div>
+        <div class="dc-sum">用 SWA + dense FFN 的极轻 MTP 头做投机草稿，渐进式训练只先训 MTP-1。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>挂 3 个 MTP 头，每个仅由「一层 SWA + 一个 dense FFN」构成，总共只加 <strong>0.81B 参数（约 0.41%）</strong>。MTP-h 基于位置 t 的主干隐状态预测 x<sub>t+1+h</sub>，供投机解码一次提交多个 token。</p>
+      <ul>
+        <li><b>渐进式训练</b>：多数阶段只激活并优化 MTP-1；主干训好后，再用 MTP-1 初始化 MTP-2/3，在轻量后训练阶段联合训练所有 MTP 头。</li>
+        <li><b>位置相关 loss 重加权</b>（借鉴 Fast-MTP）：避免过度优化「更远的 token」预测。</li>
+        <li><b>整模控制在 200B 参数内</b>：让高端工作站的 128GB 显存预算也能跑高性能推理。</li>
+      </ul>
+    </div></div>
+  </div>
+
+  <h3>架构消融：成本—质量的清晰权衡</h3>
+  <p>下表是 30B-A3B 上四种注意力布局的端到端对比（预训练 → 长上下文扩展 → SFT）。重点看最后两行：<code>S3F1+Head</code> 用约 1/2.7 的注意力成本，拿到与全注意力相当甚至更好的质量。</p>
+  <div class="tbl-wrap">
+    <table class="cmp-tbl">
+      <thead><tr><th>注意力布局</th><th>相对 FLOPs<br>(decode/prefill)</th><th>预训练均分</th><th>SFT 均分</th><th>长上下文</th></tr></thead>
+      <tbody>
+        <tr><td>FFFF（全注意力）</td><td>~2.68 / 2.90</td><td>54.1</td><td>33.2</td><td>28.8</td></tr>
+        <tr><td>S1F1（1:1 交织）</td><td>~1.58 / 1.65</td><td>54.6</td><td class="hl">34.1</td><td class="hl">29.6</td></tr>
+        <tr><td>S3F1（3:1，朴素）</td><td>~1.00 / 1.00</td><td>—</td><td>—</td><td>27.5</td></tr>
+        <tr class="me"><td><b>S3F1+Head（最终采用）</b></td><td><b>~1.01 / 1.02</b></td><td class="hl">55.7</td><td>32.9</td><td>28.2</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-note">S1F1 质量最好但贵约 60%；S3F1+Head 以最低成本拿到强而稳的长上下文表现，故被选为默认配置。FLOPs 归一化到 S3F1。</p>
+</section>
+
+<!-- ================= TRAINING STABILITY ================= -->
+<section id="stability">
+  <div class="kicker">有意思的点 · 把稳定性当一等公民</div>
+  <h2>17.6T tokens，只有一次 loss spike</h2>
+  <p>超大规模稀疏 MoE 最容易翻车的地方不是「不收敛」，而是<strong>悄悄失稳</strong>——loss 看着平滑，底层数值早已爆掉。作者的做法是：先建一套<strong>微批级、异步的监控诊断栈</strong>（每轮 4096 GPU 产生近 600 万条指标消息，用异步 Metrics Server 把开销压到约 100ms/轮），再用它精准定位并根治三类失稳。</p>
+
+  <figure>
+    <img src="assets/fig3_loss.png" alt="Step 3.5 Flash 全程逐步训练 loss 曲线">
+    <div class="figcap"><b>图 3：</b>逐 step 训练 loss（未平滑、未下采样）。整段训练只出现一次孤立的 loss spike。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail"><div class="figure-detail-inner">
+      <div class="fd-sum">稳定性诊断奏效后，超大规模训练几乎就是「一条平滑下降的曲线」。</div>
+      <ul>
+        <li><b>横轴</b>是训练 token 数（0→14T，此为学习率冷却前的主段），<b>纵轴</b>是逐 step loss，未做任何平滑，所以毛刺都是真实的。</li>
+        <li><b>右上放大框</b>展示前 0.5T 的细节，标记 <b>①②③</b> = batch size 依次提升到 8,192 / 12,288 / 16,384。</li>
+        <li><b>标记 ④</b> = 对 meta token（前置的元数据串）启用 loss mask 的时刻，此后只对正文 token 计 loss（见下方「Meta Token」）。</li>
+        <li><b>"The only loss spike" 标注</b>：全程仅一次瞬时尖峰且很快恢复，说明三项缓解（Muon float16、专家侧监控、activation clipping）确实生效。</li>
+      </ul>
+      <p class="small muted" style="margin:0">一句话总结：可观测性 + 针对性缓解 = 把「超大 MoE 训练」从玄学变成工程。</p>
+    </div></div>
+  </figure>
+
+  <p>三类失稳，逐个拆解：</p>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">⚠</div>
+      <div class="dc-htext">
+        <div class="dc-title">① Muon 的数值敏感 <span class="dc-badge">bf16 → fp16 修复</span></div>
+        <div class="dc-sum">Muon 的 Newton–Schulz 迭代在 bf16 下偶发极端离群值，引发不可恢复的尖峰。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>Muon 用 Newton–Schulz 迭代近似半正交更新方向。作者采用收敛更快的 <strong>Polar Express</strong> 迭代（固定 T=6 步）。但即便用了官方推荐的 safety scaling，仍偶发尖锐且不可恢复的 loss spike——且<strong>非确定性</strong>（从邻近 checkpoint 重启常能绕过），指向数值病理。</p>
+      <p>仿真发现：<strong>bf16 下的 Polar Express 在特定更新统计下，会因加法的累积误差罕见地产生极端中间离群值</strong>。修复方案干净利落：只把 Polar Express 迭代（状态与中间量）转成 <strong>float16</strong>，其余保持混合精度。改完后尖峰不再复现。</p>
+    </div></div>
+  </div>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">⚠</div>
+      <div class="dc-htext">
+        <div class="dc-title">② Expert Collapse：超出「路由坍缩」 <span class="dc-badge">监控专家侧信号</span></div>
+        <div class="dc-sum">即使路由派发统计看着健康，专家也可能「死掉」——激活趋零、参数范数停滞。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>常说的「dead expert」指专家长期收不到 token、没有梯度。但作者发现一种更隐蔽的形态：<strong>路由派发明明稳定，专家侧却出现激活消失、参数范数停滞或衰减</strong>。两个关键诱因：</p>
+      <ul>
+        <li><b>路由专家聚合需要显式缩放</b>：引入共享专家时，必须用显式缩放因子校准「共享专家 vs 路由专家」的相对贡献。小模型能隐式学到平衡，大模型不可靠——失配会压制路由专家的有效贡献。</li>
+        <li><b>微批级均衡在细粒度稀疏下过严</b>：Switch 式的微批 LBL 会引发过度的跨专家竞争、阻碍专精。作者偏好<strong>更大范围的均衡</strong>（全局批统计）或基于实测负载的 loss-free 偏置调整。</li>
+      </ul>
+      <p>实操建议：<strong>别只盯路由统计</strong>（它不敏感），要监控专家侧的<strong>每专家激活范数与参数范数</strong>；当一部分专家的 min-to-median 比值持续下降，就是专家「濒死」的早期预警。</p>
+    </div></div>
+  </div>
+
+  <div class="dc">
+    <div class="dc-head" onclick="toggleCard(this)">
+      <div class="dc-ico">⚠</div>
+      <div class="dc-htext">
+        <div class="dc-title">③ 局部 Activation Blow-up <span class="dc-badge">activation clipping 根治</span></div>
+        <div class="dc-sum">深层 MoE 里一两个专家的激活范数指数级爆炸，却被平滑的 loss 完全掩盖。</div>
+      </div>
+      <div class="dc-arrow">▶</div>
+    </div>
+    <div class="dc-body"><div class="dc-body-inner">
+      <p>随着专家专精成熟，深层 MoE 出现局部失稳：<strong>少数专家（常常每层一两个）的激活范数迅速增长，其余专家照常</strong>，形成重尾分布——median 稳，max 爆炸，逼近数值溢出。要命的是这<strong>完全被训练 loss 掩盖</strong>。</p>
+      <p>作者据此把「<strong>每专家激活范数的 max/median 比值</strong>」立为可靠的失稳监控指标，并对比两种干预（见下图）：</p>
+      <ul>
+        <li><b>Weight clipping</b>（离线缩放专家投影矩阵）：只能<strong>延缓</strong>爆炸，离群专家最终复发。</li>
+        <li><b>Activation clipping</b>（对专家中间激活逐元素截断）：能<strong>真正压住</strong> max 范数，各层都稳。</li>
+      </ul>
+      <p>成因分析：高频 bi-gram 触发专家专精；pre-norm 下单个专家可无界放大输出；SwiGLU 的门控/上投影强对齐产生极端稀疏激活；Muon 进一步放大持续的低秩更新——多因素叠加导致爆炸。</p>
+    </div></div>
+  </div>
+
+  <figure>
+    <img src="assets/fig4_activation.png" alt="专家激活稳定性与缓解策略分析">
+    <div class="figcap"><b>图 4：</b>专家激活稳定性分析。三种策略的训练 loss 几乎无差异，但深层（Layer 45）的最大范数在不加 clipping 时灾难性爆炸。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail"><div class="figure-detail-inner">
+      <div class="fd-sum">用 max/median 比值看穿被 loss 掩盖的局部爆炸，再用 activation clipping 根治。</div>
+      <ul>
+        <li><b>Panel (a) Loss vs Steps</b>：No clipping / Weight clipping / Activation clipping 三者的训练 loss 几乎重合——loss 完全掩盖了底层失稳。</li>
+        <li><b>Panel (b) Layer 38（中间层）</b>：max（实线）与 median（虚线）的专家输出范数都平稳，中间层没事。</li>
+        <li><b>Panel (c) Layer 45（最后层）</b>：No clipping 的 max 范数指数级爆炸（纵轴 log，冲到 10⁴–10⁵），median 仍平稳——能量危险地集中在一两个「失控专家」。</li>
+        <li><b>对比结论</b>：Activation clipping 把 max 范数稳稳压住；Weight clipping 只能延缓，最终复发。</li>
+      </ul>
+      <p class="small muted" style="margin:0">一句话总结：监控对了指标（max/median），干预选对了位置（激活而非权重），失稳就可控。</p>
+    </div></div>
+  </figure>
+
+  <details class="more">
+    <summary>有意思的细节：Meta Token（前置元数据 + 中途 mask）<span class="more-sum">—— 图 3 中标记 ④ 的来源</span></summary>
+    <div class="more-body">
+      <p>作者给每条训练样本前置一段<strong>人类可读的元数据串 M</strong>（内容类型如 Code/Book/Paper/Web、语言 EN/ZH、领域、来源），拼成 <code>s = [M ; x]</code> 一起训练。元数据提供「全局线索」，降低对后续内容的不确定性，加速收敛、提升数据效率。</p>
+      <p>关键 trick：训练约 3.8T tokens 后，<strong>保留 M 在上下文里但把它从 loss 中 mask 掉</strong>，只继续预测正文 token。此时模型已学会把元数据当作条件信号，于是把全部优化压力分配给正文——这就是图 3 标记 ④ 对应的时刻。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ================= CURRICULUM ================= -->
+<section id="curriculum">
+  <div class="kicker">训练流程</div>
+  <h2>从广覆盖到 Agent 专精，再扩到 128k</h2>
+  <p>整个训练沿着「广 → 专 → 长」推进：先在 4k 上下文上做宽泛开域预训练打底，再退火到更高质量的知识与软件开发数据并把窗口扩到 32k，最后用专门的中训练把上下文拉到 128k、强化长程推理与 Agent 能力。</p>
+  <div class="tl">
+    <div class="tl-item">
+      <h4>预训练 Stage 1 · 开域打底</h4>
+      <div class="meta">14.6T tokens · 4k 上下文</div>
+      <p>宽泛开域训练，最大化覆盖与基础能力。batch size 在前 400B tokens 内从 4096 渐增到 16384。</p>
+    </div>
+    <div class="tl-item">
+      <h4>预训练 Stage 2 · 退火 + 长上下文初始化</h4>
+      <div class="meta">3T tokens · 4k → 32k</div>
+      <p>数据混合退火，偏向代码与 PR/Issue/Commit，提升高质量知识与推理密度样本占比；先 2T@4k，再 1T@32k。</p>
+    </div>
+    <div class="tl-item">
+      <h4>中训练 Stage 1 · 32k 专精</h4>
+      <div class="meta">386B tokens · 32k</div>
+      <p>侧重软件工程与工具使用混合；回放 81B（21%）预训练 token 缓解分布漂移。冻结 MoE 路由权重。</p>
+    </div>
+    <div class="tl-item">
+      <h4>中训练 Stage 2 · 长上下文专精</h4>
+      <div class="meta">364B tokens · 128k</div>
+      <p>用合成长程推理 + 自然长文档专精长上下文，叠加 code/search/tool agent 领域数据，为后训练提供强初始化。</p>
+    </div>
+  </div>
+  <p class="small muted">数据侧：自建 <strong>StepCrawl</strong> 采集与清洗万亿级高质量网页/书籍 token；代码用改进版 OpenCoder 管线并放宽过滤（允许 0–6 处启发式违规）；专门构建 <strong>PR/Issue/Commit</strong> 数据集（来自 10+ star 仓库）以贴近真实软件工程工作流。</p>
+</section>
+
+<!-- ================= POST-TRAINING ================= -->
+<section id="post">
+  <div class="kicker">本文方法 · 后训练与 RL</div>
+  <h2>统一配方：在「专精」与「通才」之间来回横跳</h2>
+  <p>后训练面临一对相互纠缠的难题：(1) 给自蒸馏迭代领域专家成本高昂——训单一通才会牺牲专精，养一堆专家又会碎片化、迭代不可持续；(2) RL 难以规模化到 MoE 的长程推理——off-policy rollout 里微小的 token 级偏差会累积成高方差梯度，而 MoE 的专家路由带来更大的分布漂移，让优化更不稳。</p>
+  <p>作者的解法是一套<strong>建立在统一 SFT 基础上的后训练配方</strong>，在「领域专精」与「全局综合」之间交替：</p>
+
+  <div class="tl">
+    <div class="tl-item">
+      <h4>① 统一 SFT 打底</h4>
+      <div class="meta">两阶段 · 871k 样本 / 7.23B tokens</div>
+      <p>第一阶段跨域 SFT（数学/代码/STEM/逻辑/通用 QA/Code Agent/工具/搜索/长上下文）；第二阶段注入 OOD 信号最大化推理密度（约 30k 专家级化学轨迹 + 合成算术，3 个 epoch 解锁潜能）。</p>
+    </div>
+    <div class="tl-item">
+      <h4>② 领域专家 RL（专精）</h4>
+      <div class="meta">Math · Code · STEM · Tool-use · Long-Ctx · Preference · Agentic</div>
+      <p>在统一 SFT 基线上，对各领域分别做 RL，得到一批领域专家模型。</p>
+    </div>
+    <div class="tl-item">
+      <h4>③ 自蒸馏回单一通才（综合）</h4>
+      <div class="meta">rejection sampling · 共享 prompt 分布</div>
+      <p>让专家们生成高质量轨迹，用拒绝采样剔除语言混杂、过度思考等坏模式，把专家知识集中蒸馏进一个学生模型——比直接 RL 整合更稳更省。</p>
+    </div>
+    <div class="tl-item">
+      <h4>④ 可规模化 RL（MIS-PO）</h4>
+      <div class="meta">verifiable + preference 反馈</div>
+      <p>在高质量自蒸馏基础上做大规模 RL，让最终通才在各任务上保持与专精基线相当的水平。</p>
+    </div>
+  </div>
+
+  <h3>核心 RL 创新：MIS-PO —— 用「过滤」代替「重要性加权」</h3>
+  <p>长程 RL 的高方差，主要来自<strong>推理引擎与训练框架的不一致</strong>，以及迭代更新带来的 off-policy 失配。传统重要性采样(IS)把梯度按概率比缩放，微小的 token 级偏移会被放大成噪声梯度。MIS-PO 受 <strong>Metropolis Independence Sampling</strong> 启发，换了个思路：</p>
+  <div class="callout">
+    <span class="ct">一句话抓住 MIS-PO</span>
+    把推理策略当「提议分布」、训练策略当「目标分布」，用一个<strong>二值指示函数</strong> 𝕀(x)=𝟙[ρ<sub>min</sub> ≤ x ≤ ρ<sub>max</sub>] 在 <strong>token 级</strong>和<strong>轨迹级</strong>同时过滤：落在信任域内的样本直接<strong>当作 on-policy</strong> 来更新，落在外面的直接丢弃。不缩放、只过滤，方差因此大幅下降。
+  </div>
+
+  <!-- ===== MIS-PO step animation ===== -->
+  <div class="stepbox" id="mispo" data-step="0">
+    <div class="step-ctrl">
+      <button class="step-btn" id="misPrev" onclick="misStep(-1)">◀ 上一步</button>
+      <button class="step-btn primary" id="misNext" onclick="misStep(1)">下一步 ▶</button>
+      <button class="step-btn" onclick="misReset()">↺ 重置</button>
+      <span class="step-count" id="misCount">第 1 / 4 步</span>
+    </div>
+    <div class="step-stage">
+      <div class="step-dot on" data-s="0">① Rollout 采样</div>
+      <div class="step-dot" data-s="1">② Token 级过滤</div>
+      <div class="step-dot" data-s="2">③ 轨迹级过滤</div>
+      <div class="step-dot" data-s="3">④ 信任域内更新</div>
+    </div>
+
+    <div class="mis-grid" id="misGrid">
+      <!-- rows built; td = token dropped (token-level), trd = trajectory dropped -->
+      <div class="mis-row"><span class="mis-rl">τ₁</span><span class="mis-toks"><i class="tok"></i><i class="tok"></i><i class="tok td"></i><i class="tok"></i><i class="tok"></i><i class="tok"></i><i class="tok"></i><i class="tok"></i></span><span class="mis-tag">保留</span></div>
+      <div class="mis-row trd"><span class="mis-rl">τ₂</span><span class="mis-toks"><i class="tok"></i><i class="tok td"></i><i class="tok"></i><i class="tok td"></i><i class="tok td"></i><i class="tok"></i><i class="tok td"></i><i class="tok"></i></span><span class="mis-tag">整条丢弃</span></div>
+      <div class="mis-row"><span class="mis-rl">τ₃</span><span class="mis-toks"><i class="tok"></i><i class="tok"></i><i class="tok"></i><i class="tok"></i><i class="tok td"></i><i class="tok"></i><i class="tok"></i><i class="tok"></i></span><span class="mis-tag">保留</span></div>
+      <div class="mis-row"><span class="mis-rl">τ₄</span><span class="mis-toks"><i class="tok"></i><i class="tok"></i><i class="tok"></i><i class="tok"></i><i class="tok"></i><i class="tok td"></i><i class="tok"></i><i class="tok"></i></span><span class="mis-tag">保留</span></div>
+      <div class="mis-row trd"><span class="mis-rl">τ₅</span><span class="mis-toks"><i class="tok td"></i><i class="tok td"></i><i class="tok"></i><i class="tok td"></i><i class="tok"></i><i class="tok td"></i><i class="tok td"></i><i class="tok td"></i></span><span class="mis-tag">整条丢弃</span></div>
+    </div>
+
+    <div class="mis-desc active" data-s="0"><b>① Rollout：</b>推理策略 π<sub>vllm</sub> 采样出一批轨迹 τ₁…τ₅，每个方块是一个 token。此刻还没有任何过滤，所有样本一视同仁。</div>
+    <div class="mis-desc" data-s="1"><b>② Token 级过滤：</b>对每个 token 算概率比 <code>x_t = π_old / π_vllm</code>，落在 <code>[0.5, 2]</code> 之外的（斜纹方块）被 mask 掉——压制训练与推理之间的<strong>局部</strong>失配。</div>
+    <div class="mis-desc" data-s="2"><b>③ 轨迹级过滤：</b>对整条轨迹算几何平均比 <code>ρ̄(τ)=(∏ x_t)^(1/T)</code>，落在 <code>[0.996, 1.001]</code> 之外的整条丢弃（τ₂、τ₅ 变灰）——剔除已<strong>整体漂移</strong>的轨迹。</div>
+    <div class="mis-desc" data-s="3"><b>④ 信任域内更新：</b>剩下的有效 token（高亮）被<strong>当作 on-policy</strong>，用普通的对数似然 × 优势直接更新。没有连续 IS 权重，梯度方差因此大幅降低，长程 RL 得以稳定放大。</div>
+  </div>
+  <p class="small muted">公式：𝓛<sub>actor</sub> = −𝔼<sub>τ∼π_vllm</sub> [ 𝕀(x<sub>t</sub>) · 𝕀(ρ̄(τ)) · log π<sub>θ</sub>(a<sub>t</sub>|s<sub>t</sub>) · Â<sub>t</sub> ]。两个二值掩码（token 级 + 轨迹级）替代了连续重要性权重。</p>
+
+  <figure>
+    <img src="assets/fig5_mispo_ppo.png" alt="MIS-PO 与 PPO 的可扩展性对比">
+    <div class="figcap"><b>图 5：</b>内部模型上 MIS-PO 与 PPO 的对比——MIS-PO 收敛更快、梯度噪声更小、探索更持久。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail"><div class="figure-detail-inner">
+      <div class="fd-sum">把「按比例缩放梯度」换成「按分布过滤样本」，长程 off-policy RL 才能稳定放大。</div>
+      <ul>
+        <li><b>左（Reward）</b>：MIS-PO（蓝）比 PPO（灰）更快爬升、达到更高的 reward 平台——样本效率更高。</li>
+        <li><b>中（Actor Grad Norm）</b>：PPO 出现大量高耸的梯度尖峰，MIS-PO 把策略梯度范数的噪声与尖峰几乎压平——训练更稳。</li>
+        <li><b>右（Entropy）</b>：PPO 的熵迅速塌缩（过早失去探索），MIS-PO 熵衰减更慢，保持更好的探索—利用平衡。</li>
+        <li><b>机制原因</b>：信任域内样本当作 on-policy，从源头削掉了高方差梯度，约 5,000 步消融里优势稳定。</li>
+      </ul>
+      <p class="small muted" style="margin:0">一句话总结：稳定，是 MIS-PO 能把 RL 推到长程、推到 MoE 的前提。</p>
+    </div></div>
+  </figure>
+
+  <p>除了 MIS-PO 主体，还有两个稳定性配件：<strong>Truncation-Aware Value Bootstrapping</strong>——对被上下文截断的轨迹不再粗暴给 0 奖励，而是用末状态的价值估计 V<sub>φ</sub>(s<sub>T</sub>) 替代，把「截断」当成「视界中断」而非「任务失败」，即便 20% 截断率也能稳；<strong>Routing Confidence Σ<sub>k</sub></strong>（激活专家的平均概率质量）作为 MoE 专属的稳定性代理——高路由置信度的模型更鲁棒，能在不依赖复杂干预（如 Router Replay、严格 on-policy）的情况下做 off-policy 训练。</p>
+
+  <figure>
+    <img src="assets/fig6_rl_gains.png" alt="RL 训练动态与跨域提升">
+    <div class="figcap"><b>图 6：</b>RLVR 阶段 reward 稳步上升（左），并在多个基准上带来一致提升（右）。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail"><div class="figure-detail-inner">
+      <div class="fd-sum">稳定的大规模 RL，把基础模型的潜力转成跨域一致的实测提升。</div>
+      <ul>
+        <li><b>左图</b>：RL 训练 reward 随 step 稳步、近乎单调地上升，说明学习过程稳定有效。</li>
+        <li><b>右图（RL Model vs Init Model）</b>：IMO-AnswerBench <b>+3.2</b>、CF-Div2-Stepfun-cpp <b>+6.1</b>、ARC-AGI-1 <b>+10.6</b>、HLE<sub>text</sub> <b>+3.4</b>。</li>
+        <li>ARC-AGI-1 提升最大（+10.6），表明 RL 对抽象推理类任务收益尤其显著。</li>
+        <li>这些增益建立在 MIS-PO 的方差控制之上——没有它，长程 RL 很难在 MoE 上稳定收敛到一致提升。</li>
+      </ul>
+      <p class="small muted" style="margin:0">一句话总结：reward 稳步涨 + 多基准齐涨 = RL 配方真的在「持续自我改进」。</p>
+    </div></div>
+  </figure>
+
+  <details class="more">
+    <summary>奖励系统：可验证 / 不可验证 / Agent 三类奖励<span class="more-sum">—— RLVR + GenRM + MetaRM</span></summary>
+    <div class="more-body">
+      <p><b>可验证奖励（RLVR）</b>：逻辑/指令遵循/代码用规则检查器，STEM 用模型验证器（消融中模型验证器比直接 math-verify 平均高 <b>2.0%</b>）。</p>
+      <p><b>不可验证奖励（RLHF）</b>：用成对生成式奖励模型 <b>GenRM</b>（输出胜率置信度 → Bradley-Terry 胜率作为奖励）；长度控制建模为置信度惩罚，抑制 RL 中的长度膨胀；对编造引用、过度自信、语言不一致的回答给 0 奖励。</p>
+      <p><b>MetaRM</b>：额外验证器，惩罚「结论对但推理错」的伪推理，比 vanilla GenRM 在每个基准上高 <b>0.5%–3%</b>。<b>Agent 奖励</b>：搜索用实体匹配打分，报告生成用 rubric 评审（三元判断映射成非对称二值奖励，收敛更快）。</p>
+    </div>
+  </details>
+
+  <details class="more">
+    <summary>更多 RL 消融：MIS-PO vs GSPO（在 MoE 上）<span class="more-sum">—— 谁能锁住训练–推理偏移，谁就能稳定放大</span></summary>
+    <div class="more-body">
+      <figure style="margin:6px 0 4px">
+        <img src="assets/fig7_mispo_gspo_moe.png" alt="MIS-PO 与 GSPO 在 MoE 模型上的对比">
+        <div class="figcap"><b>图 7（MoE）：</b>MIS-PO 与 GSPO 在 MoE 模型上的对比。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <div class="fd-sum">对 MoE 这种路由带来更大漂移的结构，MIS-PO 的信任域过滤是稳定大规模 off-policy RL 的关键。</div>
+          <ul>
+            <li><b>左（Reward）</b>：MIS-PO 持续上升，GSPO 在约 200 步后停滞。</li>
+            <li><b>中（All Accept Ratio）</b>：MIS-PO 的样本接受率更高且持续走高，更多 rollout 落在信任域内被有效利用。</li>
+            <li><b>右（π_old / π_vllm）</b>：GSPO 的训练–推理密度比逐渐偏离 1（越走越低），暴露失配；MIS-PO 几乎贴着 1 平稳。</li>
+          </ul>
+          <p class="small muted" style="margin:0">一句话总结：MoE 上「锁住训练–推理偏移」= 把 RL 稳定放大的前提。</p>
+        </div></div>
+      </figure>
+      <p>作者还做了 MIS-PO 在 MoE 上的<strong>超长训练</strong>验证：reward 持续上升、actor 梯度范数稳定、熵受控，证明 MIS-PO 对大规模 MoE off-policy RL 是可靠的。Agent 训练侧采用 <strong>FullyAsync</strong> 全异步范式 + sticky 调度（同 session 固定派发到同节点最大化 KV-cache 复用），整体效率提升约 <strong>10×</strong>。</p>
+    </div>
+  </details>
+
+  <details class="more">
+    <summary>Agent 工程：reasoning 模板与代码 Agent 基建<span class="more-sum">—— 选择性保留推理历史 + XML 优于 JSON</span></summary>
+    <div class="more-body">
+      <p><b>推理模板</b>：每轮都丢弃推理历史会让长程任务（如 100+ 轮编码会话）失败；全保留又爆上下文。折中方案是<strong>选择性保留</strong>——只为「最近一次用户指令触发的工具调用轨迹」保留推理痕迹。</p>
+      <p><b>工具模板</b>：JSON 的严格语法（转义、分隔符）常让小模型解析出错；<strong>XML</strong> 允许扁平字符串输出、语法负担小，故被选为默认。</p>
+      <p><b>代码 Agent 基建</b>：自建 Session-Router 用 Kubernetes 编排容器、Tmux 保证交互一致性，支撑数千并发环境。共策划 <b>50k 个可验证环境</b>，覆盖 <b>15k+ 仓库、20+ 编程语言</b>，环境构建成功率约 40%；并训练模型适配 OpenHands、SWE-agent、Terminus-2、ClaudeCode 等多种交互框架以防过拟合。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results">
+  <div class="kicker">实验结论 · 轻量</div>
+  <h2>11B 激活，对标 GPT-5.2 xHigh / Gemini 3.0 Pro</h2>
+  <p>结论一句话：<strong>在推理与 Agent 两条线上，Step 3.5 Flash 都进入了闭源前沿模型的同一梯队</strong>，而激活参数只有它们对标开源模型的 1/3 左右。基座（Base）层面，它在 <strong>SimpleQA 上拿到 31.6，反超 DeepSeek-V3.2-Exp Base（27.0）</strong>，而总参仅为后者的约 1/3.4——能力密度优势明显。</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="num">97.3</div><div class="lbl">AIME 2025（PaCoRe 99.9）</div></div>
+    <div class="metric"><div class="num">86.4</div><div class="lbl">LiveCodeBench-v6</div></div>
+    <div class="metric"><div class="num">74.4</div><div class="lbl">SWE-Bench Verified</div></div>
+    <div class="metric"><div class="num">88.2</div><div class="lbl">τ²-Bench（工具调用）</div></div>
+  </div>
+
+  <p>挑几条最能说明问题的基准，和闭源前沿放一起看（Step 3.5 Flash 为 Vanilla 标准推理；PaCoRe 为其 test-time scaling 配置）：</p>
+  <div class="tbl-wrap">
+    <table class="cmp-tbl">
+      <thead><tr><th>基准</th><th>Step 3.5 Flash</th><th>Gemini 3.0 Pro</th><th>Claude Opus 4.5</th><th>GPT-5.2 xHigh</th></tr></thead>
+      <tbody>
+        <tr><td>AIME 2025</td><td class="me">97.3</td><td>95.0</td><td>92.8</td><td>100.0</td></tr>
+        <tr><td>IMO-AnswerBench</td><td class="me">85.4</td><td>83.3</td><td>84.0</td><td>86.3</td></tr>
+        <tr><td>LiveCodeBench-v6</td><td class="me">86.4</td><td>90.7</td><td>84.8</td><td>87.7</td></tr>
+        <tr><td>τ²-Bench</td><td class="me">88.2</td><td>90.7</td><td>92.5</td><td>85.5</td></tr>
+        <tr><td>SWE-Bench Verified</td><td class="me">74.4</td><td>76.2</td><td>80.9</td><td>80.0</td></tr>
+        <tr><td>Terminal-Bench 2.0</td><td class="me">51.0</td><td>56.9</td><td>59.3</td><td>54.0</td></tr>
+        <tr><td>BrowseComp (w. Ctx Manage)</td><td class="me">69.0</td><td>59.2</td><td>57.8</td><td>65.8</td></tr>
+        <tr><td>GAIA</td><td class="me">84.5</td><td>76.6</td><td>76.1</td><td>83.5</td></tr>
+        <tr><td>激活 / 总参数</td><td class="me"><b>11B / 196B</b></td><td>—</td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-note">表中数字取自论文 Table 5（Step 3.5 Flash Vanilla 列）。部分对比模型分数为论文复现或来自非官方来源，详见原文表注。Step 3.5 Flash 在多数 Agent 基准上与前沿模型互有胜负，整体进入同一梯队。</p>
+
+  <div class="callout">
+    <span class="ct">test-time scaling 进一步加成</span>
+    借助极高的推理效率，Step 3.5 Flash 用 <strong>PaCoRe</strong>（并行协同推理，K⃗=[4,4,4,4]）把推理密集型任务再往上推：AIME 2025 97.3→<strong>99.9</strong>、IMO-AnswerBench 85.4→<strong>88.8</strong>、LiveCodeBench-v6 86.4→<strong>88.9</strong>。
+  </div>
+</section>
+
+<!-- ================= LIMITATIONS ================= -->
+<section id="limits">
+  <div class="kicker">局限 · 作者自陈</div>
+  <h2>仍未解决的四件事</h2>
+  <div class="grid3">
+    <div class="pillar">
+      <div class="pi">📉</div>
+      <h3>Token 效率</h3>
+      <p>达到同等质量时，生成轨迹比 Gemini 3.0 Pro 更长。下一步要剪枝/压缩思考，在不掉点的前提下提速。</p>
+    </div>
+    <div class="pillar">
+      <div class="pi">🎯</div>
+      <h3>高效的全能掌握</h3>
+      <p>想把「通才versatility」与「深度专精」统一起来，正在推进 on-policy 蒸馏的变体以更高样本效率内化专家行为。</p>
+    </div>
+    <div class="pillar">
+      <div class="pi">🌍</div>
+      <h3>开放世界 Agent 的 RL</h3>
+      <p>学术 Agent 基准之外，专业工作、高级工程、科研级任务才是真自主的前提，需把 RL 推向这些复杂场景。</p>
+    </div>
+    <div class="pillar">
+      <div class="pi">🔧</div>
+      <h3>适用范围与约束</h3>
+      <p>面向编码与工作场景；分布漂移时（高度专业领域、超长多轮对话）可能出现重复推理、语言混杂、时间/身份不一致。</p>
+    </div>
+  </div>
+</section>
+
+</div><!-- /.wrap -->
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <p style="margin:0 0 6px"><strong>原文：</strong>《Step 3.5 Flash: Open Frontier-Level Intelligence with 11B Active Parameters》 · StepFun Team（阶跃星辰）· 2026.02 · arXiv preprint</p>
+    <p style="margin:0">
+      <a href="https://arxiv.org/abs/2602.10604" target="_blank" rel="noopener">arXiv:2602.10604 (abs)</a> ·
+      <a href="https://arxiv.org/html/2602.10604v2" target="_blank" rel="noopener">HTML 全文</a> ·
+      <a href="https://huggingface.co/stepfun-ai" target="_blank" rel="noopener">HuggingFace</a> ·
+      <a href="https://github.com/stepfun-ai" target="_blank" rel="noopener">GitHub</a>
+    </p>
+    <p class="fnote">本页为教学向中文可视化精读，所有数字与结论均出自上述原文（Table 1–5、图 1–8 及正文）。图片直接取自 arXiv HTML 版（arxiv.org/html/2602.10604v2），版权归原作者所有；如有理解偏差请以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+function toggleFigDetail(el){
+  var d = el.nextElementSibling;
+  if(!d) return;
+  var on = d.classList.toggle('active');
+  el.textContent = on ? '收起说明 ▴' : '展开说明 ▸';
+}
+function toggleCard(head){
+  var card = head.closest('.dc');
+  if(card) card.classList.toggle('open');
+}
+
+/* ---- architecture layer strip (1 lead Full + 11 hybrid blocks of SSSF) ---- */
+(function(){
+  var strip = document.getElementById('layerstrip');
+  if(!strip) return;
+  var lead = document.createElement('div');
+  lead.className = 'lv-lead';
+  lead.title = '引导层：Full Attention';
+  var c = document.createElement('i');
+  c.className = 'lv-cell full';
+  lead.appendChild(c);
+  strip.appendChild(lead);
+  for(var b=0;b<11;b++){
+    var blk = document.createElement('div');
+    blk.className = 'lv-block';
+    blk.title = 'Hybrid Block ' + (b+1) + '：SWA·SWA·SWA·Full';
+    for(var i=0;i<3;i++){
+      var s = document.createElement('i');
+      s.className = 'lv-cell swa';
+      blk.appendChild(s);
+    }
+    var f = document.createElement('i');
+    f.className = 'lv-cell full';
+    blk.appendChild(f);
+    strip.appendChild(blk);
+  }
+})();
+
+/* ---- MIS-PO step controller ---- */
+var misCur = 0;
+var MIS_MAX = 3;
+function misRender(){
+  var box = document.getElementById('mispo');
+  box.dataset.step = misCur;
+  document.getElementById('misCount').textContent = '第 ' + (misCur+1) + ' / 4 步';
+  document.getElementById('misPrev').disabled = (misCur === 0);
+  document.getElementById('misNext').disabled = (misCur === MIS_MAX);
+  var dots = box.querySelectorAll('.step-dot');
+  dots.forEach(function(d){
+    var s = parseInt(d.dataset.s, 10);
+    d.classList.toggle('on', s === misCur);
+    d.classList.toggle('done', s < misCur);
+  });
+  var descs = box.querySelectorAll('.mis-desc');
+  descs.forEach(function(p){
+    p.classList.toggle('active', parseInt(p.dataset.s,10) === misCur);
+  });
+}
+function misStep(dir){
+  misCur = Math.min(MIS_MAX, Math.max(0, misCur + dir));
+  misRender();
+}
+function misReset(){ misCur = 0; misRender(); }
+misRender();
+
+/* ---- scrollspy nav highlight ---- */
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.nav a.navlink'));
+  var map = {};
+  links.forEach(function(a){
+    var id = a.getAttribute('href').slice(1);
+    var sec = document.getElementById(id);
+    if(sec) map[id] = a;
+  });
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if(a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+  Object.keys(map).forEach(function(id){
+    obs.observe(document.getElementById(id));
+  });
+})();
+</script>
+
+</body>
+</html>
+
+
+

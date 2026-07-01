@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>mHC：流形约束的超连接 · 论文精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea; --bg2:#f4ead7; --bg3:#efe2cb; --panel:#fdfaf2;
+    --border:#e6d7bd; --border-soft:#ece0c9;
+    --ink:#36302a; --ink-soft:#665b4c; --ink-faint:#978a76;
+    --accent:#b1672f; --accent-deep:#8f4f20; --accent-soft:#f1ddc2;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Inter','Noto Sans SC',system-ui,-apple-system,sans-serif;
+    --maxw:860px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:17px; line-height:1.78;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+
+  /* ---------- top nav ---------- */
+  .topnav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(251,246,234,.9); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  .topnav .inner{
+    max-width:var(--maxw); margin:0 auto; padding:10px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .topnav .brand{font-weight:700; letter-spacing:.02em; font-size:15px; color:var(--ink);}
+  .topnav .brand em{font-style:italic; color:var(--accent);}
+  .topnav nav{display:flex; gap:16px; flex-wrap:wrap; margin-left:auto;}
+  .topnav nav a{
+    color:var(--ink-soft); text-decoration:none; font-size:13.5px; font-weight:500;
+    padding:3px 2px; border-bottom:2px solid transparent; transition:.2s;
+  }
+  .topnav nav a:hover{color:var(--accent); border-color:var(--accent);}
+  .topnav .src{
+    color:var(--accent); text-decoration:none; font-size:13px; font-weight:600;
+    border:1px solid var(--accent-soft); border-radius:999px; padding:3px 12px; transition:.2s;
+  }
+  .topnav .src:hover{background:var(--accent-soft);}
+
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px;}
+
+  /* ---------- header ---------- */
+  header.hero{padding:54px 0 30px;}
+  .eyebrow{
+    display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap;
+    font-size:12.5px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:600; margin-bottom:18px;
+  }
+  .eyebrow .pill{
+    background:var(--bg2); border:1px solid var(--border); border-radius:999px;
+    padding:3px 11px; text-transform:none; letter-spacing:.01em; color:var(--ink-soft);
+  }
+  .eyebrow .pill.accent{background:var(--accent-soft); border-color:#e8c9a4; color:var(--accent-deep);}
+  h1.title{
+    font-size:40px; line-height:1.18; margin:0 0 14px; font-weight:700; letter-spacing:-.01em;
+  }
+  h1.title em{font-style:italic; color:var(--accent);}
+  .subtitle{font-size:18px; color:var(--ink-soft); margin:0 0 22px; max-width:62ch;}
+  .meta-row{
+    display:flex; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--ink-faint);
+    border-top:1px solid var(--border); padding-top:16px;
+  }
+  .meta-row b{color:var(--ink-soft); font-weight:600;}
+
+  /* ---------- tldr ---------- */
+  .tldr{
+    background:linear-gradient(180deg,var(--bg2),var(--panel));
+    border:1px solid var(--border); border-radius:16px;
+    padding:26px 28px; margin:14px 0 8px;
+  }
+  .tldr h2{margin:0 0 12px; font-size:15px; letter-spacing:.04em; text-transform:uppercase; color:var(--accent-deep);}
+  .tldr p{margin:0 0 12px;}
+  .tldr p:last-child{margin-bottom:0;}
+  .tldr strong{color:var(--ink); font-weight:600; border-bottom:2px solid var(--accent-soft);}
+
+  /* ---------- sections ---------- */
+  section.block{padding:40px 0 6px; border-top:1px solid var(--border-soft); margin-top:34px;}
+  section.block:first-of-type{border-top:none;}
+  .sec-tag{font-family:var(--mono); font-size:12.5px; color:var(--accent); letter-spacing:.08em; font-weight:500;}
+  h2.sec{font-size:27px; margin:6px 0 6px; font-weight:700; letter-spacing:-.01em;}
+  h3.sub{font-size:20px; margin:30px 0 8px; font-weight:600;}
+  p{margin:0 0 16px;}
+  .lead{font-size:18px; color:var(--ink-soft);}
+  strong{font-weight:600;}
+  .hl{color:var(--accent-deep); font-weight:600;}
+  a.inline{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft);}
+  a.inline:hover{border-color:var(--accent);}
+
+  ul.pts{margin:4px 0 18px; padding-left:0; list-style:none;}
+  ul.pts li{position:relative; padding-left:22px; margin:0 0 10px;}
+  ul.pts li::before{
+    content:""; position:absolute; left:4px; top:.72em; width:6px; height:6px;
+    background:var(--accent); border-radius:50%;
+  }
+
+  /* ---------- figure ---------- */
+  figure.paper{
+    margin:26px 0; background:var(--panel); border:1px solid var(--border);
+    border-radius:14px; padding:16px 16px 6px; overflow:hidden;
+  }
+  figure.paper img{
+    width:100%; height:auto; display:block; border-radius:8px; background:#fff;
+    border:1px solid var(--border-soft);
+  }
+  .figcap{font-size:13.5px; color:var(--ink-faint); margin:11px 4px 4px; line-height:1.5;}
+  .figcap b{color:var(--ink-soft);}
+  .fig-toggle{
+    display:inline-block; cursor:pointer; user-select:none; margin:6px 4px 10px;
+    font-size:13px; font-weight:600; color:var(--accent);
+  }
+  .fig-toggle:hover{color:var(--accent-deep);}
+  .figure-detail{
+    max-height:0; overflow:hidden; transition:max-height .4s ease, opacity .3s ease;
+    opacity:0;
+  }
+  .figure-detail.open{max-height:1400px; opacity:1;}
+  .figure-detail .inner{
+    background:var(--bg2); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px 18px; margin:0 2px 12px; font-size:14.5px; line-height:1.66;
+  }
+  .figure-detail ul{margin:6px 0 4px; padding-left:18px;}
+  .figure-detail li{margin:0 0 7px;}
+  .figure-detail li b{color:var(--accent-deep);}
+  .figure-detail .sumup{margin-top:10px; padding-top:9px; border-top:1px dashed var(--border); color:var(--ink-soft); font-style:italic;}
+
+  /* ---------- formula ---------- */
+  .formula{
+    background:var(--bg2); border:1px solid var(--border); border-left:3px solid var(--accent);
+    border-radius:8px; padding:13px 18px; margin:18px 0; overflow-x:auto;
+    font-family:var(--mono); font-size:15px; line-height:1.9; color:var(--ink);
+  }
+  .formula .lbl{float:right; color:var(--ink-faint); font-size:12px;}
+  .formula sub,.formula sup{font-size:.72em;}
+  .formula .cmt{display:block; font-family:var(--sans); font-size:13px; color:var(--ink-faint); margin-top:6px;}
+
+  /* ---------- expandable deep card ---------- */
+  .deck{display:flex; flex-direction:column; gap:14px; margin:20px 0;}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:13px; overflow:hidden;
+    transition:border-color .2s;
+  }
+  .card.open{border-color:#e0bf95;}
+  .card > .head{
+    cursor:pointer; user-select:none; padding:16px 20px; display:flex; gap:14px; align-items:flex-start;
+  }
+  .card .ico{
+    flex:0 0 auto; width:30px; height:30px; border-radius:8px; background:var(--accent-soft);
+    display:flex; align-items:center; justify-content:center; font-size:16px; margin-top:1px;
+  }
+  .card .htext{flex:1;}
+  .card .htitle{font-weight:600; font-size:16.5px; display:flex; gap:9px; align-items:baseline; flex-wrap:wrap;}
+  .card .tag{font-family:var(--mono); font-size:11px; font-weight:500; color:var(--accent-deep); background:var(--accent-soft); padding:2px 8px; border-radius:999px;}
+  .card .hsum{font-size:13.5px; color:var(--ink-faint); margin-top:3px;}
+  .card .chev{flex:0 0 auto; color:var(--ink-faint); transition:transform .3s; margin-top:5px; font-size:13px;}
+  .card.open .chev{transform:rotate(90deg);}
+  .card .body{max-height:0; overflow:hidden; transition:max-height .45s ease;}
+  .card.open .body{max-height:2600px;}
+  .card .body .inner{padding:2px 22px 20px; border-top:1px solid var(--border-soft);}
+  .card .body .inner > *:first-child{margin-top:14px;}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:24px 0;}
+  .metric{
+    background:var(--panel); border:1px solid var(--border); border-radius:13px; padding:18px 16px; text-align:center;
+  }
+  .metric .num{font-size:30px; font-weight:700; color:var(--accent-deep); line-height:1.1; letter-spacing:-.02em;}
+  .metric .num small{font-size:16px; font-weight:600;}
+  .metric .lab{font-size:12.5px; color:var(--ink-faint); margin-top:7px; line-height:1.45;}
+
+  /* ---------- before/after compare ---------- */
+  .cmp{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:22px 0;}
+  .cmp .col{background:var(--panel); border:1px solid var(--border); border-radius:13px; padding:16px 18px;}
+  .cmp .col.bad{background:var(--bg2);}
+  .cmp .col.good{border-color:#e0bf95;}
+  .cmp .col h4{margin:0 0 10px; font-size:14px; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-faint);}
+  .cmp .col.good h4{color:var(--accent-deep);}
+  .cmp .col p{font-size:14.5px; margin:0 0 9px;}
+  .cmp .col p:last-child{margin-bottom:0;}
+
+  /* ---------- result table ---------- */
+  .tablewrap{overflow-x:auto; margin:20px 0; border:1px solid var(--border); border-radius:12px;}
+  table.bench{border-collapse:collapse; width:100%; font-size:14px; min-width:560px;}
+  table.bench th,table.bench td{padding:9px 12px; text-align:center; border-bottom:1px solid var(--border-soft);}
+  table.bench thead th{background:var(--bg2); color:var(--ink-soft); font-weight:600; font-size:12.5px;}
+  table.bench td:first-child,table.bench th:first-child{text-align:left; font-weight:600;}
+  table.bench tr.mhc{background:var(--accent-soft);}
+  table.bench tr.mhc td{color:var(--accent-deep); font-weight:600;}
+  table.bench .win{font-weight:700;}
+
+  details.note{
+    background:var(--bg2); border:1px solid var(--border-soft); border-radius:10px;
+    padding:0 16px; margin:18px 0;
+  }
+  details.note summary{
+    cursor:pointer; padding:13px 2px; font-weight:600; font-size:15px; color:var(--ink);
+    list-style:none; display:flex; gap:9px; align-items:center;
+  }
+  details.note summary::-webkit-details-marker{display:none;}
+  details.note summary::before{content:"▸"; color:var(--accent); transition:transform .25s;}
+  details.note[open] summary::before{transform:rotate(90deg);}
+  details.note .dbody{padding:2px 2px 16px; font-size:14.5px; color:var(--ink-soft); border-top:1px solid var(--border-soft);}
+  details.note .dbody > *:first-child{margin-top:12px;}
+
+  .callout{
+    background:var(--accent-soft); border:1px solid #e8c9a4; border-radius:12px;
+    padding:16px 20px; margin:22px 0; font-size:15px;
+  }
+  .callout b{color:var(--accent-deep);}
+
+  /* ---------- footer ---------- */
+  footer{margin-top:50px; border-top:1px solid var(--border); background:var(--bg2);}
+  footer .inner{max-width:var(--maxw); margin:0 auto; padding:30px 22px 48px; font-size:13.5px; color:var(--ink-faint);}
+  footer a{color:var(--accent); text-decoration:none;}
+  footer a:hover{text-decoration:underline;}
+  footer .src-line{font-size:14.5px; color:var(--ink-soft); margin-bottom:8px;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    h1.title{font-size:31px;}
+    h2.sec{font-size:23px;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .cmp{grid-template-columns:1fr;}
+    .topnav nav{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="inner">
+    <span class="brand"><em>m</em>HC · 论文精读</span>
+    <nav>
+      <a href="#overview">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#method">做法</a>
+      <a href="#infra">工程</a>
+      <a href="#insight">亮点</a>
+      <a href="#results">结论</a>
+    </nav>
+    <a class="src" href="https://arxiv.org/abs/2512.24880" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero" id="top">
+    <div class="eyebrow">
+      <span>架构基础组件</span>
+      <span class="pill accent">arXiv preprint · 2025.12</span>
+      <span class="pill">DeepSeek-AI</span>
+      <span class="pill">残差连接的推广</span>
+    </div>
+    <h1 class="title"><em>m</em>HC：给「超连接」套上一层流形约束</h1>
+    <p class="subtitle">
+      Hyper-Connections 把残差流加宽、让连接更复杂，性能更好，但也牺牲了残差连接最珍贵的「恒等映射」性质，导致大规模训练不稳定、显存与访存开销暴涨。<em>m</em>HC 用一个朴素的几何约束把这一切重新拉回稳定区间。
+    </p>
+    <div class="meta-row">
+      <span><b>标题</b>：mHC: Manifold-Constrained Hyper-Connections</span>
+      <span><b>arXiv</b>：2512.24880v1</span>
+      <span><b>提交</b>：2025-12-31</span>
+      <span><b>机构</b>：DeepSeek-AI</span>
+    </div>
+  </header>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section class="block" id="overview">
+    <div class="tldr">
+      <h2>TL;DR · 30 秒抓住核心</h2>
+      <p>
+        残差连接 <code>x = x + F(x)</code> 之所以能稳定训练超深网络，靠的是那条「原样直通」的<strong>恒等映射</strong>——它像一条守恒定律，保证信号和梯度跨层传播时既不爆炸也不消失。
+      </p>
+      <p>
+        <strong>Hyper-Connections（HC）</strong> 把单条残差流拓宽成 <em>n</em> 条，并引入可学习矩阵在流之间混合特征，表达力更强、还不增加 FLOPs。但这些矩阵<strong>没有任何约束</strong>，多层连乘后会严重偏离恒等映射，信号增益一度飙到约 3000 倍，27B 模型在 1.2 万步左右 loss 突然崩盘。
+      </p>
+      <p>
+        <strong><em>m</em>HC 的做法只有一句话</strong>：把残差混合矩阵 ℋ<sup>res</sup> <strong>投影到「双随机矩阵」流形（Birkhoff 多面体）</strong>上——行和、列和都等于 1、元素非负。这样每次混合都是输入特征的<strong>凸组合</strong>，谱范数 ≤ 1，连乘后依然双随机，恒等映射的守恒性被完整恢复。配合一整套工程优化，<em>m</em>HC 在 n=4 时只增加 <strong>6.7%</strong> 训练时间。
+      </p>
+    </div>
+    <p class="lead" style="margin-top:22px;">
+      下面顺着论文的思路走一遍：<span class="hl">残差连接为什么稳 → HC 在哪里出问题 → mHC 怎么用流形约束修好它 → 怎么让它真的跑得快 → 实验结论</span>。
+    </p>
+  </section>
+
+  <!-- ===================== PROBLEM ===================== -->
+  <section class="block" id="problem">
+    <div class="sec-tag">// 01 — 问题</div>
+    <h2 class="sec">从残差连接到 Hyper-Connections：稳定性是怎么丢的</h2>
+
+    <p>
+      自 ResNet 以来，残差连接十年未变，至今仍是大模型的基础构件。单层写出来很简单：
+    </p>
+    <div class="formula">
+      x<sub>l+1</sub> = x<sub>l</sub> + ℱ(x<sub>l</sub>, 𝒲<sub>l</sub>)
+      <span class="lbl">Eq.1</span>
+    </div>
+    <p>
+      把它递归展开到第 <em>L</em> 层，深层的输出等于浅层信号 <strong>原封不动</strong>地加上中间所有残差函数之和：
+    </p>
+    <div class="formula">
+      x<sub>L</sub> = x<sub>l</sub> + Σ<sub>i=l</sub><sup>L−1</sup> ℱ(x<sub>i</sub>, 𝒲<sub>i</sub>)
+      <span class="lbl">Eq.2</span>
+      <span class="cmt">那个原样保留的 x<sub>l</sub> 就是「恒等映射」：浅层信号直达深层、不被任何变换扭曲——这正是大规模训练稳定与高效的根源。</span>
+    </div>
+
+    <h3 class="sub">已有方案：Hyper-Connections 把残差流「加宽」</h3>
+    <p>
+      近年宏观架构设计的焦点，转向了<strong>拓宽残差流的宽度</strong>（DenseNet、DLA，以及更近的 RMT、MUDDFormer 等）。其中最具代表性、也正是本文的直接前序工作，是 <strong>Hyper-Connections</strong>。下面这张卡片把它讲清楚——理解了 HC，才能理解 mHC 在修什么。
+    </p>
+
+    <div class="deck">
+      <div class="card" onclick="toggleCard(this)">
+        <div class="head">
+          <div class="ico">🔗</div>
+          <div class="htext">
+            <div class="htitle">Hyper-Connections (HC) <span class="tag">arXiv 2409.19606 · 2024</span></div>
+            <div class="hsum">把 1 条残差流扩成 n 条，用三个可学习映射读入 / 写出 / 混合特征；表达力更强、FLOPs 不变，但矩阵无约束。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body"><div class="inner">
+          <p>
+            HC 把第 <em>l</em> 层输入从一条 <em>C</em> 维向量扩展成 <strong>n 条流</strong>（n×C），并引入三个可学习线性映射来管理这条加宽的残差流：
+          </p>
+          <ul class="pts">
+            <li><strong>ℋ<sup>pre</sup>（读入，1×n）</strong>：把 n 条流聚合成一条 C 维向量，喂给本层的 ℱ（注意力或 FFN）。</li>
+            <li><strong>ℋ<sup>post</sup>（写出，1×n）</strong>：把 ℱ 的输出再分发回 n 条流上。</li>
+            <li><strong>ℋ<sup>res</sup>（混合，n×n）</strong>：在 n 条流之间相互混合特征——消融实验显示它带来的增益最大，是表达力的关键。</li>
+          </ul>
+          <div class="formula">
+            x<sub>l+1</sub> = ℋ<sup>res</sup><sub>l</sub> x<sub>l</sub> + (ℋ<sup>post</sup><sub>l</sub>)<sup>⊤</sup> ℱ(ℋ<sup>pre</sup><sub>l</sub> x<sub>l</sub>, 𝒲<sub>l</sub>)
+            <span class="lbl">Eq.3</span>
+          </div>
+          <p>
+            每个映射又分成<strong>动态部分</strong>（依赖输入，经 RMSNorm 后线性投影得到）和<strong>静态部分</strong>（与输入无关的可学习偏置）。因为 n（如 4）远小于 C，这些矩阵几乎不增加计算量，却把「残差流的信息容量」从「层的输入维度」中解耦出来——相当于在 FLOPs 和数据量之外，开辟了<strong>第三条 scaling 维度</strong>。
+          </p>
+          <p style="margin-bottom:0;">
+            <strong>它在本文叙事中的角色</strong>：mHC 完全沿用 HC 的这套结构（三个映射、n 条流），只在 ℋ<sup>res</sup>、ℋ<sup>pre</sup>、ℋ<sup>post</sup> 上加几何约束。所以理解 HC = 理解了 mHC 的 90%。
+          </p>
+        </div></div>
+      </div>
+    </div>
+
+    <h3 class="sub">隐患一：无约束 → 恒等映射失守 → 信号爆炸</h3>
+    <p>
+      把 HC 同样递归展开到第 <em>L</em> 层，浅层信号前面会多出一个<strong>残差矩阵的连乘</strong>：
+    </p>
+    <div class="formula">
+      x<sub>L</sub> = ( ∏<sub>i=1</sub><sup>L−l</sup> ℋ<sup>res</sup><sub>L−i</sub> ) x<sub>l</sub> + Σ ( ∏ ℋ<sup>res</sup> ) (ℋ<sup>post</sup>)<sup>⊤</sup> ℱ(·)
+      <span class="lbl">Eq.4</span>
+      <span class="cmt">对比 Eq.2，那个干净的恒等项 x<sub>l</sub> 现在被复合映射 ∏ℋ<sup>res</sup> 取代。由于 ℋ<sup>res</sup> 无约束，这个连乘几乎必然偏离单位阵，信号和梯度便随深度不受控地放大或衰减。</span>
+    </div>
+    <p>
+      论文用「Amax 增益幅度」（复合矩阵行和 / 列和的最大绝对值，分别对应前向信号与反向梯度）来量化这种偏离。理想情况下它应恒为 1，但实测在 27B 模型上，复合映射的增益<strong>峰值高达约 3000</strong>——这正是 1.2 万步 loss 崩盘的机制性原因。
+    </p>
+
+    <figure class="paper">
+      <img src="assets/x3.png" alt="HC 的传播不稳定性：单层映射与复合映射的 Amax 增益幅度" />
+      <div class="figcap"><b>图 3（原论文）</b>：HC 的传播不稳定性——单层映射尚且温和，但跨层复合后增益幅度在中深层飙到约 10³（对数纵轴）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>纵轴 / 横轴</b>：纵轴是 Amax 增益幅度（对数刻度），横轴是层索引 <em>l</em>（每个 Transformer block 拆成 Attention 与 FFN 两层，共约 60 层）。</li>
+          <li><b>颜色</b>：灰线为前向信号增益（矩阵行和的最大绝对值），蓝线为反向梯度增益（列和的最大绝对值）。</li>
+          <li><b>(a) 单层映射 ℋ<sup>res</sup></b>：大部分层增益在 1 附近波动，看似无害——但末尾几层已经翘起到 10~20。</li>
+          <li><b>(b) 复合映射 ∏ℋ<sup>res</sup></b>：把单层的偏差逐层连乘后，反向梯度增益在中深层一路爬升到约 <b>3000</b>，与理想值 1 相差三个数量级，证实了「残差流爆炸」。</li>
+          <li><b>因果链</b>：单层的小偏差 → 连乘放大 → 复合增益爆炸 → 梯度范数失稳 → loss 突然崩。</li>
+        </ul>
+        <div class="sumup">一句话：HC 单看每层都「还好」，但深度方向上的连乘把微小偏差指数级放大，恒等映射的守恒性彻底失守。</div>
+      </div></div>
+    </figure>
+
+    <h3 class="sub">隐患二：访存与显存开销，被架构设计忽视的「内存墙」</h3>
+    <p>
+      HC 的计算量（FLOPs）确实没怎么涨，但 <strong>n 条流意味着访存（I/O）开销近似翻 n 倍</strong>。论文逐项核算后给出单层每 token 的总 I/O：
+    </p>
+    <div class="formula">
+      普通残差： 读 2C，写 C &nbsp;&nbsp;→&nbsp;&nbsp; HC： 读 (5n+1)C + n²+2n，写 (3n+1)C + n²+2n
+      <span class="cmt">此外，三个映射都含可学习参数，其中间激活要为反向传播保留 → 显存暴涨、常需梯度检查点；流水线并行下还要多 n 倍通信，bubble 更大。这些系统开销直接拖垮训练吞吐。</span>
+    </div>
+    <div class="callout">
+      <b>小结：</b>HC 同时踩中两个坑——<b>数值不稳定</b>（恒等映射失守，信号/梯度爆炸）和 <b>系统开销</b>（访存 ∝ n、显存翻倍、通信 n 倍）。mHC 要在<b>不丢掉 HC 表达力</b>的前提下，把这两个坑都填上。
+    </div>
+  </section>
+
+  <!-- ===================== METHOD ===================== -->
+  <section class="block" id="method">
+    <div class="sec-tag">// 02 — 本文做法</div>
+    <h2 class="sec">mHC：把残差映射约束到「双随机矩阵」流形上</h2>
+
+    <p class="lead">
+      核心洞察来自恒等映射本身：恒等阵 <strong>ℋ<sup>res</sup>=I</strong> 当然稳定，但它<strong>禁止任何跨流混合</strong>，等于浪费了多流架构。mHC 想要一个「比单位阵更灵活、又和单位阵一样守恒」的集合——这就是<strong>双随机矩阵</strong>。
+    </p>
+
+    <figure class="paper">
+      <img src="assets/x1.png" alt="三种残差连接范式对比：标准残差、HC、mHC" />
+      <div class="figcap"><b>图 1（原论文）</b>：三种残差连接范式对比——(a) 标准残差、(b) HC、(c) mHC。三者结构一致，区别只在映射有没有被约束。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>(a) 标准残差连接</b>：单条流。输入 x<sub>l</sub> 经 Layer ℱ 后与自身相加（⊕）得到 x<sub>l+1</sub>，那条绕过 ℱ 的旁路就是恒等映射。</li>
+          <li><b>(b) Hyper-Connections（橙色 = 无约束）</b>：x<sub>l</sub> 变成 4 条流的堆叠。Pre Mapping ℋ<sup>pre</sup> 聚合出 h<sup>in</sup> 喂给 ℱ；Res Mapping ℋ<sup>res</sup> 在流间混合；Post Mapping ℋ<sup>post</sup> 把层输出 h<sup>out</sup> 写回；最后 ⊕ 汇总。三个橙色框都是自由学习、毫无约束的。</li>
+          <li><b>(c) mHC（绿色 = 流形投影）</b>：结构与 HC 完全相同，但三个映射全部换成绿色——ℋ<sup>res</sup> 投影到双随机流形 𝒫<sub>ℳ<sup>res</sup></sub>，ℋ<sup>pre</sup>/ℋ<sup>post</sup> 投影到非负流形。这是 HC 与 mHC 唯一的差别。</li>
+          <li><b>数据流</b>：自下而上——读入（pre）→ 本层计算（ℱ）→ 写出（post）+ 流间混合（res）→ 相加进入下一层；箭头方向标明了每条流如何被读取与写回。</li>
+        </ul>
+        <div class="sumup">一句话：mHC 不改 HC 的拓扑，只把三个「自由矩阵」换成「投影到特定流形的矩阵」——颜色从橙变绿，稳定性从失控变守恒。</div>
+      </div></div>
+    </figure>
+
+    <h3 class="sub">约束的形式：行和、列和都为 1，元素非负</h3>
+    <p>
+      mHC 把 ℋ<sup>res</sup> 限制在<strong>双随机矩阵流形 ℳ<sup>res</sup></strong>（即 Birkhoff 多面体）上：
+    </p>
+    <div class="formula">
+      𝒫<sub>ℳ<sup>res</sup></sub>(ℋ<sup>res</sup>) := { ℋ<sup>res</sup> ∈ ℝ<sup>n×n</sup> &nbsp;|&nbsp; ℋ<sup>res</sup>·𝟏 = 𝟏, &nbsp; 𝟏<sup>⊤</sup>·ℋ<sup>res</sup> = 𝟏<sup>⊤</sup>, &nbsp; ℋ<sup>res</sup> ≥ 0 }
+      <span class="lbl">Eq.6</span>
+      <span class="cmt">当 n=1 时，双随机条件退化为标量 1，正好回到原始恒等映射——所以 mHC 是恒等映射的严格推广。</span>
+    </div>
+    <p>因为行和、列和都为 1，<strong>ℋ<sup>res</sup>x 就成了输入特征的凸组合</strong>：特征均值守恒、信号范数被严格约束。这把三个对大规模训练至关重要的性质一并带来：</p>
+
+    <div class="deck">
+      <div class="card" onclick="toggleCard(this)">
+        <div class="head">
+          <div class="ico">📐</div>
+          <div class="htext">
+            <div class="htitle">性质一：范数保持 <span class="tag">非扩张</span></div>
+            <div class="hsum">双随机矩阵谱范数 ≤ 1，映射不会放大信号，从根上抑制梯度爆炸。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body"><div class="inner">
+          <p style="margin-bottom:0;">双随机矩阵的谱范数满足 ‖ℋ<sup>res</sup>‖₂ ≤ 1，即它是一个<strong>非扩张映射</strong>。无论怎么学，它都不会把信号放大——这直接堵住了 HC 那条「越乘越大」的路径。</p>
+        </div></div>
+      </div>
+      <div class="card" onclick="toggleCard(this)">
+        <div class="head">
+          <div class="ico">🧩</div>
+          <div class="htext">
+            <div class="htitle">性质二：复合封闭 <span class="tag">跨任意深度守恒</span></div>
+            <div class="hsum">双随机矩阵在乘法下封闭——连乘 ∏ℋ<sup>res</sup> 仍是双随机，整条深度方向都稳定。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body"><div class="inner">
+          <p style="margin-bottom:0;">双随机矩阵集合<strong>对矩阵乘法封闭</strong>：任意多个相乘，结果仍然双随机。于是 Eq.4 里那个曾经爆炸到 3000 的复合映射 ∏ℋ<sup>res</sup>，现在<strong>无论跨多少层都保持双随机</strong>，恒等映射的守恒性在任意两层之间都成立。这是 mHC 稳定性的数学核心。</p>
+        </div></div>
+      </div>
+      <div class="card" onclick="toggleCard(this)">
+        <div class="head">
+          <div class="ico">🎲</div>
+          <div class="htext">
+            <div class="htitle">性质三：Birkhoff 多面体的几何解释 <span class="tag">凸组合 = 特征融合</span></div>
+            <div class="hsum">双随机矩阵 = 置换矩阵的凸组合；反复作用单调增强跨流混合，是一种鲁棒的特征融合。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body"><div class="inner">
+          <p style="margin-bottom:0;">ℳ<sup>res</sup> 在几何上是 <strong>Birkhoff 多面体</strong>——所有置换矩阵的凸包。所以残差映射本质上是「若干种流重排的凸组合」。这类矩阵反复作用会<strong>单调地增强跨流信息混合</strong>，既保留了 HC 的表达力（流之间确实在交换信息），又不破坏守恒——稳定性与可塑性在这里达成平衡。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <p>
+      此外，mHC 还给读入 / 写出映射 ℋ<sup>pre</sup>、ℋ<sup>post</sup> 加上<strong>非负约束</strong>（视作另一种简单流形投影），避免正负系数相互抵消造成信号湮灭。
+    </p>
+
+    <details class="note">
+      <summary>实现细节：用 Sinkhorn-Knopp 算法做流形投影（含公式）</summary>
+      <div class="dbody">
+        <p>mHC 先按 HC 原方式算出未约束的中间映射 ℋ̃，再做投影得到最终映射：</p>
+        <div class="formula">
+          ℋ<sup>pre</sup> = σ(ℋ̃<sup>pre</sup>) &nbsp;&nbsp;|&nbsp;&nbsp; ℋ<sup>post</sup> = 2·σ(ℋ̃<sup>post</sup>) &nbsp;&nbsp;|&nbsp;&nbsp; ℋ<sup>res</sup> = Sinkhorn-Knopp(ℋ̃<sup>res</sup>)
+          <span class="lbl">Eq.8</span>
+        </div>
+        <p>其中 σ 是 Sigmoid（保证非负）。Sinkhorn-Knopp 先用 exp 把矩阵变正，再<strong>交替地对行、列归一化</strong>，迭代收敛到双随机矩阵：</p>
+        <div class="formula">
+          M<sup>(0)</sup> = exp(ℋ̃<sup>res</sup>), &nbsp;&nbsp; M<sup>(t)</sup> = 𝒯<sub>r</sub>( 𝒯<sub>c</sub>( M<sup>(t−1)</sup> ) )
+          <span class="lbl">Eq.9</span>
+        </div>
+        <p style="margin-bottom:0;">𝒯<sub>r</sub>、𝒯<sub>c</sub> 分别是行、列归一化。理论上 t→∞ 才严格双随机，实践中取 <strong>t<sub>max</sub> = 20</strong> 次迭代作为近似——这也是后面 mHC 复合增益略微偏离 1（约 1.6）的来源。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== INFRA ===================== -->
+  <section class="block" id="infra">
+    <div class="sec-tag">// 03 — 工程优化</div>
+    <h2 class="sec">让 mHC 真的跑得快：6.7% 开销背后的三招</h2>
+    <p>
+      数学上优雅还不够——n 条流和 Sinkhorn 迭代都会带来真实的访存、显存与通信成本。mHC 用三项基础设施优化把 n=4 时的额外训练时间压到只有 <span class="hl">6.7%</span>。
+    </p>
+
+    <div class="deck">
+      <div class="card" onclick="toggleCard(this)">
+        <div class="head">
+          <div class="ico">⚙️</div>
+          <div class="htext">
+            <div class="htitle">① 算子融合（Kernel Fusion）<span class="tag">TileLang</span></div>
+            <div class="hsum">把 RMSNorm 的除法挪到矩阵乘之后，用混合精度 + 融合 kernel 打满访存带宽。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body"><div class="inner">
+          <p>高维隐状态上的 RMSNorm 延迟很高。mHC 在保持数学等价的前提下，<strong>把「除以范数」重排到矩阵乘法之后</strong>，并用混合精度（φ 用 tfloat32、x 用 bfloat16）配合共享内存把多个算子融合成统一 kernel。</p>
+          <p style="margin-bottom:0;">论文用 <strong>TileLang</strong> 实现了计算 ℋ<sup>pre/post/res</sup> 的三类 kernel，以及 Sinkhorn 迭代的前/反向 kernel（反向时片上重算中间结果）。融合后把每 token 读取量从 (3n+1)C 降到 (n+1)C、写入量从 3nC 降到 nC。</p>
+        </div></div>
+      </div>
+      <div class="card" onclick="toggleCard(this)">
+        <div class="head">
+          <div class="ico">💾</div>
+          <div class="htext">
+            <div class="htitle">② 选择性重算（Recomputing）<span class="tag">省显存</span></div>
+            <div class="hsum">前向丢弃 mHC 中间激活，反向时不带重型 ℱ 地重算；按最优块大小切分。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body"><div class="inner">
+          <p>n 条流让显存吃紧。mHC <strong>在前向丢弃 mHC kernel 的中间激活，反向时再重新执行（但不含重型的层函数 ℱ）</strong>。对一段连续 L<sub>r</sub> 层，只需保存第一层的输入 x<sub>l₀</sub>。</p>
+          <p style="margin-bottom:0;">在「常驻显存」与「瞬时重算显存」之间求最优块大小，得到 L<sub>r</sub>* ≈ √( nL / (n+2) )，并让重算边界与流水线 stage 对齐。</p>
+        </div></div>
+      </div>
+      <div class="card" onclick="toggleCard(this)">
+        <div class="head">
+          <div class="ico">🔀</div>
+          <div class="htext">
+            <div class="htitle">③ DualPipe 通信重叠 <span class="tag">隐藏 PP 延迟</span></div>
+            <div class="hsum">扩展 DualPipe 调度，把 n 条流的跨 stage 通信与重算和计算重叠起来。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body"><div class="inner">
+          <p>n 条流在流水线并行下会带来明显的跨 stage 通信延迟，stage 边界的重算也有额外开销。mHC 扩展 DeepSeek-V3 的 <strong>DualPipe</strong> 调度（见下图）来重叠通信与计算。</p>
+          <p style="margin-bottom:0;">关键技巧：把 MLP 层的 ℱ<sub>post,res</sub> kernel 放到<strong>专用高优先级计算流</strong>上，避免阻塞通信流；注意力层不用持久 kernel 以便抢占；重算因初始激活本地已缓存而与通信解耦。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <figure class="paper">
+      <img src="assets/x4.png" alt="mHC 的通信-计算重叠 DualPipe 调度" />
+      <div class="figcap"><b>图 4（原论文）</b>：为 mHC 扩展的 DualPipe 调度，把跨 stage 通信、重算与前/反向计算交错重叠（各块长度仅示意）。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>三条泳道</b>：上为「普通计算流」、中为「通信流」、下为「高优先级计算流」，时间从左向右推进。</li>
+          <li><b>标记含义</b>：(F)=前向、(B)=反向、(W)=权重梯度计算；ℱ<sup>A</sup>、ℱ<sup>M</sup> 分别是注意力与 MLP 对应的 kernel。</li>
+          <li><b>普通计算流</b>：依次排布 MLP(B/W/F)、ATTN(B/W/F)，中间还插入了「Whole Stage Recompute」整段重算。</li>
+          <li><b>通信流</b>：DISPATCH / COMBINE（专家并行）与 PP Send/Recv（流水线并行）连续排布，被计算掩盖。</li>
+          <li><b>高优先级流</b>：单独承载 MLP 的 ℱ<sup>M</sup><sub>post,res</sub>（前向与反向），不阻塞通信流，从而把 mHC 引入的额外通信延迟「藏」进计算空隙。</li>
+        </ul>
+        <div class="sumup">一句话：通过把 mHC 的额外通信/重算精心塞进计算的空档，6.7% 的开销才得以实现，而不是直接乘以 n 倍。</div>
+      </div></div>
+    </figure>
+  </section>
+
+  <!-- ===================== INSIGHT ===================== -->
+  <section class="block" id="insight">
+    <div class="sec-tag">// 04 — 有意思的点</div>
+    <h2 class="sec">从「失控的大数」到「整齐的概率」</h2>
+    <p>
+      mHC 最直观的魅力，是把学习到的混合矩阵从一堆失控的大数，变成一张张行列和都约等于 1 的「概率表」。下面这张图把 HC 与 mHC 的真实矩阵并排可视化，对比非常震撼。
+    </p>
+
+    <figure class="paper">
+      <img src="assets/x8.png" alt="HC 与 mHC 的可学习映射矩阵可视化对比" />
+      <div class="figcap"><b>图 8（原论文）</b>：HC（上排）vs mHC（下排）的代表性映射矩阵热力图，含单层与不同深度的复合映射；行/列旁标注了前向信号增益与反向梯度增益。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>布局</b>：每行 6 个矩阵——左三个是单层映射（第 1、30、60 层），右三个是逐渐变深的复合映射 ∏。上排是 HC，下排是 mHC。</li>
+          <li><b>标注</b>：y 轴旁数字是各行之和（前向信号增益），x 轴下方数字是各列之和（反向梯度增益）；理想守恒时都应为 1。</li>
+          <li><b>HC（上排）</b>：矩阵元素出现大正大负（如 5.43、−4.07），行和动辄 18.7、−15.3，复合后更是冲到 142、−498——数值毫无约束，到处都不稳。</li>
+          <li><b>mHC（下排）</b>：所有元素落在 [0,1]，每行每列之和都约等于 1.0（如 0.67+0.09+0.03+0.22≈1），复合后也只在 1.0~1.11 间小幅浮动。</li>
+          <li><b>结论</b>：HC 一旦某条路径增益很大、其它路径也跟着大（普遍失稳）；mHC 则始终是一张「整齐的概率表」。</li>
+        </ul>
+        <div class="sumup">一句话：双随机约束让矩阵从「失控的实数」变成「守恒的概率分配」——这就是稳定性肉眼可见的样子。</div>
+      </div></div>
+    </figure>
+
+    <div class="cmp">
+      <div class="col bad">
+        <h4>HC：复合增益</h4>
+        <p>跨层连乘后，最大增益幅度峰值约 <strong>3000</strong>，与理想值 1 相差三个数量级，训练中后段崩盘。</p>
+      </div>
+      <div class="col good">
+        <h4>mHC：复合增益</h4>
+        <p>因复合封闭，复合增益始终有界，最大也只到约 <strong>1.6</strong>——相比 HC 降低了约<strong>三个数量级</strong>。</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>一个值得玩味的取舍：</b>理论上 Sinkhorn 迭代要 t→∞ 才严格双随机，但为了效率只跑 20 步。于是 mHC 的反向梯度增益会<b>略微偏离 1</b>（复合时升到约 1.6），但仍被牢牢限制在有界区间内——「近似的守恒」已经足够换来稳定。这也是论文留给后续工作的口子：<b>双随机只是众多可选流形之一</b>，换用其它几何约束或许能在「可塑性 vs 稳定性」上取得更好的平衡。
+    </div>
+  </section>
+
+  <!-- ===================== RESULTS ===================== -->
+  <section class="block" id="results">
+    <div class="sec-tag">// 05 — 实验结论</div>
+    <h2 class="sec">一句话结论：又稳又强，几乎不加成本</h2>
+    <p>
+      实验基于 DeepSeek-V3 风格的 MoE 架构，训练了 3B / 9B / 27B 三档模型（外加一个固定 1T tokens 的 3B），HC 与 mHC 的扩展率 <strong>n=4</strong>。核心数字如下：
+    </p>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="num">−0.021</div>
+        <div class="lab">27B 上 mHC 相比 baseline 的最终 loss 降低</div>
+      </div>
+      <div class="metric">
+        <div class="num">3000<small> → </small>1.6</div>
+        <div class="lab">复合映射增益幅度，降低约 3 个数量级</div>
+      </div>
+      <div class="metric">
+        <div class="num">6.7<small>%</small></div>
+        <div class="lab">n=4 时仅增加的训练时间开销</div>
+      </div>
+      <div class="metric">
+        <div class="num">+2.1<small> / </small>+2.3</div>
+        <div class="lab">相比 HC，BBH / DROP 的提升（百分点）</div>
+      </div>
+    </div>
+
+    <p>
+      在 8 个下游基准上，mHC <strong>全面超过 baseline，并在多数任务上优于 HC</strong>，尤其在推理类任务（BBH、DROP）上提升明显：
+    </p>
+
+    <div class="tablewrap">
+      <table class="bench">
+        <thead>
+          <tr>
+            <th>27B 模型</th><th>BBH</th><th>DROP</th><th>GSM8K</th><th>HellaSwag</th><th>MATH</th><th>MMLU</th><th>PIQA</th><th>TriviaQA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Baseline</td><td>43.8</td><td>47.0</td><td>46.7</td><td>73.7</td><td>22.0</td><td>59.0</td><td>78.5</td><td>54.3</td></tr>
+          <tr><td>w/ HC</td><td>48.9</td><td>51.6</td><td>53.2</td><td>74.3</td><td class="win">26.4</td><td>63.0</td><td>79.9</td><td>56.3</td></tr>
+          <tr class="mhc"><td>w/ <em>m</em>HC</td><td class="win">51.0</td><td class="win">53.9</td><td class="win">53.8</td><td class="win">74.7</td><td>26.0</td><td class="win">63.4</td><td class="win">80.5</td><td class="win">57.6</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px; color:var(--ink-faint); margin-top:-6px;">
+      指标 / shot 数：BBH EM 3-shot、DROP F1 3-shot、GSM8K EM 8-shot、HellaSwag 10-shot、MATH EM 4-shot、MMLU 5-shot、PIQA 0-shot、TriviaQA EM 5-shot。粗体为该列最佳；mHC 仅在 MATH 上略低于 HC。
+    </p>
+
+    <h3 class="sub">稳定性与可扩展性</h3>
+    <ul class="pts">
+      <li><strong>训练稳定</strong>：27B 上 mHC 既消除了 HC 的 loss 突增，梯度范数也保持得和 baseline 一样平稳。</li>
+      <li><strong>Compute scaling</strong>：从 3B、9B 到 27B，mHC 对 baseline 的优势在更大算力下仅有轻微衰减，基本稳定保持。</li>
+      <li><strong>Token scaling</strong>：固定 1T tokens 的 3B 训练全程，优势贯穿始终。</li>
+      <li><strong>真实大规模训练</strong>：作者的内部大规模训练进一步验证了 mHC 可在规模化场景稳定可用。</li>
+    </ul>
+
+    <div class="callout">
+      <b>它适合谁、留了什么口子：</b>mHC 面向<b>大规模预训练</b>——只有在深度 / 规模足够大、HC 的不稳定真正暴露时，它的价值才最突出。当前用的双随机约束是一个稳健默认，但论文明确把「探索其它流形约束」「重新激活宏观架构设计」列为未来方向。作为 DeepSeek 核心方法学的一块基础组件（与 V4 路线相关），它的意义在于<b>给「加宽残差流」这条 scaling 路径补上了稳定性这块短板</b>。
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="inner">
+    <div class="src-line">
+      原文：<a href="https://arxiv.org/abs/2512.24880" target="_blank" rel="noopener"><b>mHC: Manifold-Constrained Hyper-Connections</b></a> · DeepSeek-AI · arXiv:2512.24880（2025-12，preprint）
+    </div>
+    <div>
+      前序工作：<a href="https://arxiv.org/abs/2409.19606" target="_blank" rel="noopener">Hyper-Connections (arXiv:2409.19606, 2024)</a>　·　
+      HTML 全文：<a href="https://arxiv.org/html/2512.24880v1" target="_blank" rel="noopener">arxiv.org/html/2512.24880v1</a>
+    </div>
+    <div style="margin-top:14px; color:var(--ink-faint);">
+      本页为教学性可视化精读，所有图表均取自原论文 arXiv HTML 版（图 1 / 3 / 4 / 8）。核心数字与公式对齐原文；如有歧义请以原文为准。
+    </div>
+  </div>
+</footer>
+
+<script>
+  function toggleFig(el){
+    el.classList.toggle('open');
+    var d = el.nextElementSibling;
+    if(d){ d.classList.toggle('open'); }
+    el.textContent = d && d.classList.contains('open') ? '收起 ▴' : '展开说明 ▸';
+  }
+  function toggleCard(card){
+    card.classList.toggle('open');
+  }
+</script>
+</body>
+</html>

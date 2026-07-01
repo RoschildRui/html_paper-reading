@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>LongCat-Flash-Thinking 图解 · 美团 LongCat 推理增强技术报告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#faf5ec;
+  --bg-2:#f5ecdb;
+  --surface:#fcf8f0;
+  --surface-2:#f4ead7;
+  --surface-3:#ece0c9;
+  --border:#e4d7c0;
+  --border-strong:#d6c4a3;
+  --ink:#2a2620;
+  --ink-2:#5f574a;
+  --ink-3:#897f70;
+  --accent:#b3611f;
+  --accent-deep:#8f4d18;
+  --accent-weak:#f0e2cb;
+  --ok:#5b7a4f;
+  --shadow:0 1px 2px rgba(67,52,28,.06), 0 6px 18px rgba(67,52,28,.05);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:17px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .15s}
+a:hover{border-bottom-color:var(--accent)}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em}
+strong{font-weight:700;color:var(--ink)}
+h2,h3,h4{font-family:"Inter","Noto Sans SC",sans-serif;line-height:1.3;color:var(--ink)}
+
+/* ---------- header ---------- */
+header.hero{
+  background:linear-gradient(0deg,var(--bg) 0%, var(--bg-2) 100%);
+  border-bottom:1px solid var(--border);
+  padding:54px 0 40px;
+}
+.kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);font-weight:600}
+.hero h1{
+  font-size:38px;font-weight:800;margin:14px 0 6px;letter-spacing:-.01em;line-height:1.15;
+}
+.hero .ensub{font-family:"JetBrains Mono",monospace;font-size:14px;color:var(--ink-3);margin-bottom:18px}
+.hero p.lead{font-size:18px;color:var(--ink-2);margin:0 0 22px;max-width:660px}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.tag{
+  display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;
+  background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 13px;color:var(--ink-2);
+}
+.tag.solid{background:var(--accent);border-color:var(--accent);color:#fff7ec;font-weight:600}
+.src-link{
+  display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:14.5px;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:9px 15px;color:var(--accent-deep);
+}
+.src-link:hover{background:var(--accent-weak);border-bottom:1px solid var(--border-strong)}
+
+/* ---------- stat band ---------- */
+.statband{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:26px}
+.statband .s{background:var(--surface);padding:16px 14px;text-align:center}
+.statband .num{font-size:25px;font-weight:800;color:var(--accent-deep);letter-spacing:-.02em;font-family:"Inter",sans-serif}
+.statband .lab{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+
+/* ---------- sections ---------- */
+section{padding:42px 0 8px}
+.sec-no{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--accent);font-weight:600}
+section h2{font-size:27px;font-weight:800;margin:6px 0 4px;letter-spacing:-.01em}
+.sec-sub{color:var(--ink-3);font-size:15px;margin:0 0 20px}
+p{margin:0 0 16px}
+ul.clean{margin:0 0 18px;padding-left:0;list-style:none}
+ul.clean li{position:relative;padding-left:24px;margin-bottom:10px}
+ul.clean li::before{content:"";position:absolute;left:6px;top:.72em;width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.8}
+
+/* ---------- TL;DR ---------- */
+.tldr{
+  background:var(--surface);border:1px solid var(--border-strong);border-left:4px solid var(--accent);
+  border-radius:var(--radius);padding:24px 26px;box-shadow:var(--shadow);margin-top:8px;
+}
+.tldr h2{font-size:20px;margin:0 0 10px;display:flex;align-items:center;gap:9px}
+.tldr p{margin:0 0 12px;font-size:16.5px}
+.tldr p:last-child{margin-bottom:0}
+
+/* ---------- figure ---------- */
+figure.paper-fig{margin:26px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+figure.paper-fig img{width:100%;height:auto;display:block;border-radius:8px;background:#fff}
+.figcap{font-size:13.5px;color:var(--ink-3);margin-top:11px;line-height:1.6}
+.figcap b{color:var(--ink-2);font-weight:600}
+.fig-toggle{display:inline-block;margin-top:10px;cursor:pointer;color:var(--accent-deep);font-weight:600;font-size:14px;user-select:none;border-bottom:1px dashed var(--border-strong)}
+.fig-toggle:hover{color:var(--accent)}
+.figure-detail{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+.figure-detail.active{max-height:1400px}
+.figure-detail .inner{padding:16px 16px 6px;margin-top:12px;border-top:1px dashed var(--border);font-size:14.5px;color:var(--ink-2)}
+.figure-detail .inner ul{margin:0;padding-left:0;list-style:none}
+.figure-detail .inner li{position:relative;padding-left:22px;margin-bottom:9px;line-height:1.62}
+.figure-detail .inner li::before{content:"";position:absolute;left:4px;top:.62em;width:7px;height:7px;border-radius:2px;background:var(--accent);opacity:.7}
+.figure-detail .inner li b{color:var(--ink)}
+.figure-detail .sumline{font-size:13.5px;color:var(--ink-2);margin-top:6px;font-style:italic;border-left:2px solid var(--accent-weak);padding-left:10px}
+
+/* ---------- expandable card ---------- */
+.cardgrid{display:flex;flex-direction:column;gap:14px;margin:18px 0 6px}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.xcard.open{border-color:var(--border-strong);box-shadow:var(--shadow)}
+.xcard .xhead{padding:16px 20px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;user-select:none}
+.xcard .xnum{flex:0 0 auto;width:26px;height:26px;border-radius:7px;background:var(--surface-3);color:var(--accent-deep);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:2px;font-family:"JetBrains Mono",monospace}
+.xcard .xtitle{flex:1}
+.xcard .xtitle .t{font-weight:700;font-size:16.5px}
+.xcard .xtitle .d{font-size:13.5px;color:var(--ink-3);margin-top:2px}
+.xcard .chev{flex:0 0 auto;color:var(--ink-3);transition:transform .3s;margin-top:4px;font-size:13px}
+.xcard.open .chev{transform:rotate(90deg)}
+.xbody{max-height:0;overflow:hidden;transition:max-height .45s ease}
+.xcard.open .xbody{max-height:1200px}
+.xbody .xinner{padding:2px 20px 20px;font-size:15px;color:var(--ink-2)}
+.xbody .xinner p{margin:0 0 12px}
+.xbody .xinner p:last-child{margin-bottom:0}
+
+/* mini schematic */
+.mini{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:13px 14px;margin:4px 0 14px;font-size:12.5px}
+.mini .box{background:var(--surface);border:1px solid var(--border-strong);border-radius:7px;padding:6px 10px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.mini .box.bad{border-color:#cdab8f;color:var(--accent-deep);background:var(--accent-weak)}
+.mini .arr{color:var(--ink-3);font-weight:700}
+.mini .lbl{color:var(--ink-3);font-style:italic}
+
+/* ---------- stepper ---------- */
+.stepper{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin:20px 0}
+.steptabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.steptab{
+  text-align:center;border:1px solid var(--border);background:var(--bg-2);border-radius:10px;padding:11px 8px;cursor:pointer;transition:all .2s;
+}
+.steptab .sn{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-3)}
+.steptab .st{font-weight:700;font-size:14px;margin-top:2px;color:var(--ink-2)}
+.steptab.active{background:var(--accent);border-color:var(--accent)}
+.steptab.active .sn,.steptab.active .st{color:#fff7ec}
+.stepview{min-height:120px}
+.stepview .panel{display:none;animation:fade .35s ease}
+.stepview .panel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepview h4{margin:0 0 8px;font-size:18px}
+.stepview p{font-size:15px;color:var(--ink-2);margin:0 0 10px}
+.stepflow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 6px;font-size:12.5px}
+.stepflow .node{background:var(--surface-2);border:1px solid var(--border-strong);border-radius:8px;padding:7px 11px;font-weight:600;color:var(--ink-2)}
+.stepflow .node.hot{background:var(--accent-weak);border-color:#cdab8f;color:var(--accent-deep)}
+.stepflow .a{color:var(--ink-3)}
+.stepnav{display:flex;justify-content:space-between;margin-top:18px;gap:10px}
+.btn{font:inherit;font-size:14px;font-weight:600;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink-2);border-radius:9px;padding:9px 18px;cursor:pointer;transition:all .15s}
+.btn:hover{background:var(--accent-weak);color:var(--accent-deep)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---------- metric cards ---------- */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 14px;box-shadow:var(--shadow)}
+.metric .m{font-size:26px;font-weight:800;color:var(--accent-deep);letter-spacing:-.02em}
+.metric .k{font-size:13px;font-weight:600;color:var(--ink);margin-top:3px}
+.metric .x{font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.45}
+
+/* ---------- table ---------- */
+details.tbl{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:18px 0;overflow:hidden}
+details.tbl summary{padding:15px 20px;cursor:pointer;font-weight:600;color:var(--ink);list-style:none;display:flex;align-items:center;gap:10px}
+details.tbl summary::-webkit-details-marker{display:none}
+details.tbl summary .sm{font-size:13px;color:var(--ink-3);font-weight:400}
+details.tbl summary .ic{color:var(--accent);transition:transform .3s}
+details.tbl[open] summary .ic{transform:rotate(90deg)}
+.tblscroll{overflow-x:auto;border-top:1px solid var(--border)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--border)}
+th:first-child,td:first-child{text-align:left;font-weight:500}
+thead th{background:var(--surface-2);font-weight:700;color:var(--ink-2);position:sticky;top:0}
+tbody tr:hover{background:var(--bg-2)}
+td.win{color:var(--accent-deep);font-weight:800;background:var(--accent-weak)}
+.grp td{background:var(--surface-3);font-weight:700;color:var(--ink-2);text-align:left;font-size:12.5px;letter-spacing:.03em}
+
+/* ---------- callout ---------- */
+.callout{background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:18px 22px;margin:20px 0}
+.callout .ct{font-weight:700;color:var(--accent-deep);font-size:15px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.callout p{margin:0;font-size:15px;color:var(--ink-2)}
+
+/* ---------- quote ---------- */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:14px 20px;margin:18px 0;border-radius:0 10px 10px 0;font-size:15.5px;color:var(--ink-2)}
+.quote .en{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--ink-3);margin-top:6px;display:block}
+
+/* ---------- footer ---------- */
+footer{margin-top:48px;background:var(--bg-2);border-top:1px solid var(--border);padding:34px 0 44px}
+footer .wrap{font-size:14px;color:var(--ink-3)}
+footer .ft-title{font-weight:700;color:var(--ink-2);font-size:15px;margin-bottom:6px}
+footer a{font-weight:600}
+.ftlinks{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0}
+
+.divline{height:1px;background:var(--border);margin:8px 0 0}
+
+@media (max-width:880px){
+  .hero h1{font-size:29px}
+  .statband{grid-template-columns:repeat(2,1fr)}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .steptabs{grid-template-columns:1fr}
+  body{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">美团 LongCat · 推理增强技术报告 图解</div>
+    <h1>LongCat-Flash-Thinking：把 560B MoE 训成会「深度思考」的开源推理模型</h1>
+    <div class="ensub">LongCat-Flash-Thinking Technical Report · Meituan LongCat Team</div>
+    <p class="lead">一篇关于<strong>如何训练推理能力</strong>的工程报告：从长思维链冷启动，到工业级异步强化学习，再到「分领域并行训练 + 专家融合」的核心配方。</p>
+    <div class="meta-row">
+      <span class="tag solid">arXiv preprint</span>
+      <span class="tag">发表时间：2025-09（v2: 2025-11）</span>
+      <span class="tag">560B MoE · 27B 激活</span>
+      <span class="tag">开源权重</span>
+    </div>
+    <a class="src-link" href="https://arxiv.org/abs/2509.18883" target="_blank" rel="noopener">📄 阅读原文 / Source — arXiv:2509.18883</a>
+
+    <div class="statband">
+      <div class="s"><div class="num">560B</div><div class="lab">总参数（MoE）</div></div>
+      <div class="s"><div class="num">27B</div><div class="lab">平均激活参数</div></div>
+      <div class="s"><div class="num">&gt;3×</div><div class="lab">异步 RL 加速比（DORA）</div></div>
+      <div class="s"><div class="num">64.5%</div><div class="lab">Agentic 推理省 token</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- TL;DR -->
+  <section id="tldr">
+    <div class="tldr">
+      <h2>⚡ TL;DR（30 秒看懂）</h2>
+      <p>LongCat-Flash-Thinking 在<strong>已有的 560B MoE 基座（LongCat-Flash-Base）</strong>上，用一条「<strong>长 CoT 冷启动 → 大规模 RL</strong>」流水线把它训成顶尖<strong>开源推理模型</strong>，擅长数学、代码、逻辑与 Agentic 工具使用。</p>
+      <p>三个核心创新：① <strong>分领域并行 RL + 专家融合</strong>——分别训练 STEM / Code / Agentic 专家，再合并成一个近 Pareto 最优的模型，避开混合训练的负迁移；② <strong>DORA 异步 RL 系统</strong>——流式异步 rollout + 弹性同机部署，比同步训练快 3 倍以上，可在数万张加速卡上稳定训练；③ <strong>面向工具使用的高效推理</strong>——在 AIME-25 上把平均 token 从 19,653 砍到 6,965（省 64.5%）而精度不掉。</p>
+      <p>结果：在开源模型里取得多项 SOTA，形式化证明（MiniF2F pass@1 67.6%）与 Agentic 推理尤其领先。</p>
+    </div>
+  </section>
+
+  <!-- 1. 问题 -->
+  <section id="problem">
+    <div class="sec-no">01 · 问题</div>
+    <h2>为什么还要再做一个推理模型？</h2>
+    <p class="sec-sub">从「会答题」到「会思考」，前沿模型的竞争已经转向推理能力本身。</p>
+    <p>近两年大模型的前沿明显往<strong>推理能力</strong>偏移：OpenAI o1/o3、Gemini 2.5、DeepSeek-R1、Qwen3、GLM-4.5 都在比谁能在数学、代码、复杂逻辑和 Agentic 任务上想得更深。背后的范式很统一——用<strong>大规模强化学习（RL）</strong>训练，让模型在推理时主动拉长<strong>思维链（Chain-of-Thought）</strong>，把更多算力花在「想」上。</p>
+    <p>但要把这套范式做到<strong>工业规模、且开源可用</strong>，要同时啃下三块硬骨头：</p>
+    <ul class="clean">
+      <li><strong>能力起点</strong>：基座模型的预训练语料里，长 CoT 这种「方法化推理」的样式天然稀缺，直接 RL 容易陷在<strong>同质化的推理套路</strong>里，遇到难题不会反思。</li>
+      <li><strong>训练稳定性</strong>：把数学、代码、Agentic 几个领域<strong>混在一起做 RL</strong>，不同领域的回答长度、分布差异巨大，异步训练时会互相拖累（负迁移）。</li>
+      <li><strong>系统效率</strong>：长推理 / 多轮工具调用让单条输出极长，<strong>同步 RL 的整个 batch 会被最长的那条卡住</strong>，数万卡的算力大量空转。</li>
+    </ul>
+    <p>LongCat-Flash-Thinking 的目标，就是用一套<strong>数据、环境、算法、基础设施端到端协同设计</strong>的方案，把这三块一起解决。</p>
+  </section>
+
+  <!-- 2. 已有方案卡在哪 -->
+  <section id="gaps">
+    <div class="sec-no">02 · 已有方案卡在哪</div>
+    <h2>三个「看起来能用、实际卡住」的做法</h2>
+    <p class="sec-sub">本文的三大贡献，几乎是逐一回应下面三个痛点。点击展开查看每种做法的瓶颈。</p>
+
+    <div class="cardgrid">
+      <div class="xcard">
+        <div class="xhead" onclick="toggleCard(this)">
+          <div class="xnum">A</div>
+          <div class="xtitle">
+            <div class="t">「SFT 之后直接 RL」→ 同质化推理</div>
+            <div class="d">基座没补够长 CoT，模型遇难题不会深度反思</div>
+          </div>
+          <div class="chev">▶</div>
+        </div>
+        <div class="xbody"><div class="xinner">
+          <div class="mini">
+            <span class="box">通用基座</span><span class="arr">→</span><span class="box">SFT</span><span class="arr">→</span><span class="box">RL</span><span class="arr">→</span><span class="box bad">推理套路单一</span>
+          </div>
+          <p>通用预训练语料里 STEM / 代码这类<strong>推理密集数据本就偏少</strong>，而显式的长 CoT 结构（一步步推演、回溯、自检）即便在这些数据里也很罕见。</p>
+          <p>结果是：哪怕后面再 SFT + RL，模型也容易产出<strong>同质化的推理模式</strong>，在真正难的题上无法深入反思、拿不到正解，<strong>推理边界（pass@k）</strong>被卡死。</p>
+          <p>本文的回应：先加一个<strong>mid-training「中期训练」</strong>阶段做课程式冷启动，专门拓宽推理边界（详见第 03 节）。</p>
+        </div></div>
+      </div>
+
+      <div class="xcard">
+        <div class="xhead" onclick="toggleCard(this)">
+          <div class="xnum">B</div>
+          <div class="xtitle">
+            <div class="t">混合领域一起做 RL → 负迁移</div>
+            <div class="d">不同领域回答分布差异大，异步训练互相拖累</div>
+          </div>
+          <div class="chev">▶</div>
+        </div>
+        <div class="xbody"><div class="xinner">
+          <div class="mini">
+            <span class="box">STEM</span><span class="box">Code</span><span class="box">Agentic</span><span class="arr">→ 混在一个 batch →</span><span class="box bad">分布漂移 / 负迁移</span>
+          </div>
+          <p>把多个领域的数据<strong>混进同一批 RL</strong>，由于各领域<strong>回答长度与分布差异巨大</strong>（论文 Figure 7 显示不同领域的回答长度分布明显不同），相邻训练 batch 之间会出现剧烈的分布漂移，在异步训练里表现为<strong>负迁移</strong>：学了一个领域反而拖累另一个。</p>
+          <p>退而求其次的<strong>顺序训练</strong>（一个领域训完再训下一个）虽能缓解，但效率低、不灵活，且一旦进入后期阶段就<strong>很难再回头打磨早期能力</strong>。</p>
+          <p>本文的回应：<strong>分领域并行训练 + 专家融合</strong>（详见第 03 节核心配方）。</p>
+        </div></div>
+      </div>
+
+      <div class="xcard">
+        <div class="xhead" onclick="toggleCard(this)">
+          <div class="xnum">C</div>
+          <div class="xtitle">
+            <div class="t">同步 RL / 朴素部分 rollout → 算力空转</div>
+            <div class="d">长尾生成阻塞批次；分段 rollout 又有重复 prefill 开销</div>
+          </div>
+          <div class="chev">▶</div>
+        </div>
+        <div class="xbody"><div class="xinner">
+          <div class="mini">
+            <span class="box">batch 内多条 rollout</span><span class="arr">→</span><span class="box bad">被最长那条阻塞</span><span class="lbl">（其余卡空转）</span>
+          </div>
+          <p><strong>同步训练</strong>下，整个 batch 必须等最长的那条输出生成完才能开训。推理 / Agentic 多轮调用让输出长度长尾严重，于是出现<strong>「偏斜生成（skewed generation）」</strong>——少数超长样本拖垮整批吞吐。</p>
+          <p>已有的<strong>部分 rollout（partial rollout）</strong>异步方案把长回答切段、用最新模型逐段续写，但实践中有两个问题：① 被打断样本需要<strong>重复 prefill</strong>，开销大；② 同一条回答的不同段来自<strong>不同策略版本</strong>，理论上会损害收敛。</p>
+          <p>本文的回应：<strong>DORA 系统</strong>——流式异步 + 多版本一致性 + KV-cache 复用 + 弹性同机部署（详见第 03 节）。</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 本文方法 -->
+  <section id="method">
+    <div class="sec-no">03 · 本文方法（重头戏）</div>
+    <h2>一条流水线：长 CoT 冷启动 → 大规模 RL</h2>
+    <p class="sec-sub">先把「会推理的潜力」打底（冷启动），再用 RL 把潜力放大到极致——而 RL 的核心配方是「分领域并行 + 融合」。</p>
+    <p>整体训练分两大阶段。第一阶段<strong>长 CoT 冷启动</strong>（mid-training + SFT）为基座注入扎实的推理底子与形式化、Agentic 等专项技能；第二阶段<strong>大规模 RL</strong>则把潜力放大，并通过分领域并行训练得到多个领域专家、再融合。下图是全文最重要的一张总览图。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/training_pipeline.png" alt="LongCat-Flash-Thinking 训练总览：长 CoT 冷启动 + 大规模 RL（分领域并行训练 + 专家融合 + 通用 RL）"/>
+      <div class="figcap"><b>图 1（原文 Figure 2）：LongCat-Flash-Thinking 训练总览。</b> 左半「长 CoT 冷启动」：Base Model 经 Mid-training 与 Reasoning-Oriented SFT 得到 SFT Model；右半「大规模 RL」：分领域并行训练出 STEM / Code / Agentic 三个专家，融合为 Fused Model，再经 General RL 得到最终模型。下方四条曲线是各阶段的训练 reward 与回答长度。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开逐模块说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>① Mid-training（中期训练）：</b>把 Mid-Training Data 喂给 Base Model 做课程式冷启动，重点补充 STEM / 代码等<strong>推理密集且含长 CoT 结构</strong>的数据，拓宽推理潜力，又不损伤通用能力。</li>
+          <li><b>② Reasoning-Oriented SFT：</b>在中期训练后的模型上，用专门构造的<strong>通用推理 / 形式化推理 / Agentic 推理</strong>三类数据做监督微调，得到 SFT Model——这是 RL 的起点。</li>
+          <li><b>③ Domain-Parallel Training（分领域并行）：</b>实线分叉箭头表示用同一份 Reasoning-Oriented RL Data，<strong>并行</strong>训练出 STEM Expert、Code Expert、Agentic Expert 三个领域专家（各自配置不同的上下文长度与课程）。</li>
+          <li><b>④ Model Fusion（专家融合）：</b>把三个专家的参数<strong>合并成一个 Fused Model</strong>，在数学、代码、Agentic 上同时接近 Pareto 最优，避免混合 RL 的负迁移。</li>
+          <li><b>⑤ General RL（通用 RL 收尾）：</b>用 General Data 对融合模型做最后一轮通用 RL，强化创意写作、指令遵循、安全对齐，得到最终的 LongCat-Flash-Thinking。</li>
+          <li><b>底部曲线：</b>STEM / Code / Agentic / General 四个阶段各自的<strong>Reward（蓝）与回答长度（红）随训练步</strong>的变化，直观说明不同领域的训练动态差异很大——这正是要「分领域并行」的原因。</li>
+        </ul>
+        <div class="sumline">一句话：左边把「会推理」教进模型，右边用「分头训练 + 合并 + 通用收尾」把推理能力放大到全领域，且互不拖累。</div>
+      </div></div>
+    </figure>
+
+    <!-- 3.1 冷启动 -->
+    <h3 style="font-size:21px;margin:34px 0 6px">3.1 第一阶段：长 CoT 冷启动</h3>
+    <p>冷启动的目标是<strong>把「会深度推理」的底子打好</strong>，分两步走：</p>
+    <ul class="clean">
+      <li><strong>Mid-training（中期训练）</strong>：把标准中期训练改造成一条<strong>平衡的课程</strong>，按比例注入推理密集数据。原文在小规模同架构模型上的对照实验显示，提高推理数据占比能稳定提升 <code>pass@1</code>～<code>pass@128</code>：AIME-24 的 pass@1 提升 <strong>27.7%</strong>、BeyondAIME <strong>9.3%</strong>、LiveCodeBench <strong>6.5%</strong>，且高 k 值提升更大——说明<strong>推理边界被真正拓宽</strong>了。</li>
+      <li><strong>Reasoning-Oriented SFT</strong>：在三类数据上做监督微调（AdamW、lr=3e-5、2 epoch、48K 上下文），分别强化通用推理、<strong>形式化推理</strong>、<strong>Agentic 推理</strong>。</li>
+    </ul>
+    <p>这三类 SFT 数据的合成尤其讲究——下图是冷启动的数据策展全景，其中左下、右下两个子流程是两个亮点。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/coldstart_data_pipeline.png" alt="冷启动数据策展流水线：文档/查询/回答策展 + 数据混合，以及形式化推理与 Agentic 推理两条长 CoT 合成子流程"/>
+      <div class="figcap"><b>图 2（原文 Figure 3）：冷启动数据策展流水线。</b> 上半是从原始语料到 Mid-Training Data 与 SFT Data 的总流程；左下是<strong>形式化推理（ATP）</strong>的长 CoT 合成子流程，右下是<strong>Agentic 推理</strong>的长 CoT 合成子流程。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开逐模块说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>文档策展（Document Curation）：</b>对 Webs / Docs / 内部语料做清洗、去重、去污染，产出 Pre-trained Data Collection。</li>
+          <li><b>查询策展（Query Curation）：</b>对 STEM / Code / Logic / Agent / General 等推理相关语料做清洗、领域分类、去重、<strong>难度采样</strong>、去污染，挑出高质量问题。</li>
+          <li><b>回答策展 + 数据混合：</b>通用推理走 Non-CoT 收集；<strong>形式化 / Agentic 推理走「长 CoT 合成流水线」</strong>。最终混合成 Mid-Training Data 与 Reasoning-Oriented SFT Data（绿色高亮）。</li>
+          <li><b>左下·形式化推理（ATP）：</b>自然语言问题 (x,y) 经 <strong>Formalizer（8B 自动形式化模型）</strong>转成 Lean4 形式化命题 → 通过 <strong>Lean4 语法检查 + 语义一致性过滤</strong> → Prover 生成证明 → 用 <strong>专家迭代（Expert Iteration）</strong>循环：新证明经 Lean4 验证后回灌训练，自我增强。</li>
+          <li><b>右下·Agentic 推理：</b><strong>双路推理（Dual-Path）</strong>——同一问题分别在「有工具 / 无工具」下生成，由 LRMs 评分得到<strong>工具必要性 v<sub>x</sub> = 用工具的通过率 − 不用工具的通过率</strong>，只保留「真正离不开工具」的 query；再接入 MCP/API 真实+模拟工具空间，用拒绝采样合成高质量轨迹。</li>
+        </ul>
+        <div class="sumline">一句话：箭头方向 = 数据流；绿色块是最终训练数据；两条「长 CoT 合成子流程」专门把形式化证明与工具使用这两种稀缺能力「造」出来。</div>
+      </div></div>
+    </figure>
+
+    <div class="callout">
+      <div class="ct">🔍 形式化推理为何亮眼</div>
+      <p>大多数 LLM 几乎不会写形式化证明。本文用「自动形式化 + Lean4 验证 + 专家迭代」造出大量<strong>(命题, 思考过程, 已验证证明)</strong>三元组，把这种稀缺能力系统性地灌进模型——这也是它在 MiniF2F 上大幅领先的根源。</p>
+    </div>
+
+    <!-- 3.2 大规模 RL -->
+    <h3 style="font-size:21px;margin:34px 0 6px">3.2 第二阶段：大规模 RL（系统 + 算法 + 奖励 三管齐下）</h3>
+    <p>RL 是把推理能力放大的关键，但出了名的不稳定、对超参敏感、系统开销大。本文从三个层面同时下手：</p>
+
+    <h4 style="margin:22px 0 4px;font-size:17px">① 系统层：DORA 异步 RL 框架</h4>
+    <p>DORA（<span class="mono">Dynamic ORchestration for Asynchronous rollout</span>）的核心思路：用<strong>流式 rollout</strong> + 保留 Actor 的<strong>多个旧版本</strong>来消化长尾生成，同时让 RL 的各种角色<strong>弹性同机部署</strong>，把设备空转压到接近零。集群被切成两组：专职生成的 <strong>Standalone Generator Group</strong>，以及可在生成 / 训练角色间动态切换的 <strong>Elastic Role Group</strong>。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/dora_async_rl.png" alt="DORA 系统的流式异步时间线：不同颜色代表不同策略版本，prefill/KV-cache transfer/EOS/丢弃样本，以及生成中断、Experience-Maker 与 Train 阶段"/>
+      <div class="figcap"><b>图 3（原文 Figure 5）：DORA 的流式异步时间线（图中 staleness=2，最多允许 3 个策略版本并存）。</b> 每行是一个设备上的若干 prompt rollout；不同颜色 = 不同策略版本 π<sub>θ</sub>；先完成的样本立刻流向下游，凑满一个 batch 即触发训练，过期样本被丢弃重生成。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开逐模块说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>两组设备：</b>上方 <strong>Standalone Group</strong> 专职生成；下方 <strong>Elastic Group</strong> 可在生成与训练角色间弹性切换，保证既不空转又灵活。</li>
+          <li><b>颜色 = 策略版本：</b>图例中 π<sub>θ<sub>n-2</sub></sub>、π<sub>θ<sub>n-1</sub></sub>、π<sub>θ<sub>n</sub></sub>、π<sub>θ<sub>n+1</sub></sub> 四种颜色代表不同代的策略权重。关键约束：<strong>同一条回答从头到尾由同一个 Actor 版本生成</strong>，杜绝「分段来自不同版本」的不一致。</li>
+          <li><b>色块语义：</b>黄色=Prefill 预填充，橙色=KV-Cache 迁移，灰条=EOS 结束，<strong>×=被丢弃样本</strong>（staleness 超限的 prompt，调度去重新生成）。</li>
+          <li><b>流式触发训练：</b>在 Step n，prompt 按完成先后陆续就绪，<strong>一旦凑满一个 batch 立即进入训练</strong>，无需等最慢那条——这就是消除偏斜生成的关键。</li>
+          <li><b>三阶段切换：</b>Generation（流式生成）→ <strong>Experience-Maker Phase</strong>（弹性组缩减生成、激活 Reference/Actor/Reward 等角色，重算 log-prob 对齐推理与训练引擎）→ <strong>Train Phase</strong>（训练 Actor/Critic，同时 Standalone 组继续不阻塞地生成）。</li>
+          <li><b>KV-cache 复用 / 迁移：</b>被打断的样本通过 KV-cache 复用或迁移继续 rollout，省掉重复 prefill 的大头开销。</li>
+        </ul>
+        <div class="sumline">一句话：横轴是时间，颜色是策略版本——「先完成先流走、凑满即训练、同一条回答版本一致」三点合起来，让数万卡几乎不空转，比同步训练快 3 倍以上。</div>
+      </div></div>
+    </figure>
+
+    <p>配合 DORA，工程上还有两个放大器：把控制面的 <code>TCPStore</code> 通信复杂度从 <code>O(N²)</code> 降到 <code>O(N)</code> 的<strong>大规模流式 RPC</strong>；以及用图级编译减少 kernel 分发、带来 <strong>1.5× rollout 提速</strong>的<strong>大规模 MoE 并行</strong>。整套系统让 RL 投入达到约<strong>预训练算力的 20%</strong>仍然可行。</p>
+
+    <h4 style="margin:22px 0 4px;font-size:17px">② 算法层：为异步训练改造的 GRPO</h4>
+    <p>异步训练会带来<strong>分布漂移</strong>，主要来自两处：<strong>推理引擎与训练引擎的数值差异</strong>（如 vLLM 的 kernel fusion 不保证逐位一致），以及<strong>策略陈旧（staleness）</strong>（样本来自多个旧版本策略）。本文在 GRPO 基础上做了四处关键修改：</p>
+    <ul class="clean">
+      <li><strong>去掉 KL 损失项</strong>：默认 k₃ 估计器的梯度有偏，移除后更利于大幅度策略更新。</li>
+      <li><strong>token 级损失 + 全局常数最大长度做分母</strong>：缓解长度偏置，稳住训练。</li>
+      <li><strong>三元裁剪（triplet clipping）</strong>：对负优势用 <code>ε_neg_low / ε_neg_high</code> 限幅、对正优势用 <code>ε_pos_high</code> 限幅——尤其在稀疏 MoE 里防止 importance ratio 爆炸导致崩溃。</li>
+      <li><strong>截断重要性采样</strong>：抑制推理/训练引擎数值差累积带来的失稳。</li>
+    </ul>
+    <p>此外还有<strong>带放回的在线过滤</strong>（剔除全对/全错样本，保留有梯度信号的难样本）、<strong>陈旧度控制 + 回放缓冲</strong>、<strong>不完整信号掩码</strong>（屏蔽沙箱报错、超长截断等坏信号）等效率与稳定性技巧。</p>
+
+    <h4 style="margin:22px 0 4px;font-size:17px">③ 奖励层：可验证 + 不可验证都覆盖</h4>
+    <ul class="clean">
+      <li><strong>不可验证任务</strong>（创意写作、知识问答）：用判别式奖励模型，只评估答案部分、不看推理过程。</li>
+      <li><strong>STEM 等可验证任务</strong>：用<strong>带推理过程的生成式奖励模型（Reasoning GenRM）</strong>，能识别 <code>a²−b²</code> 与 <code>(a+b)(a−b)</code> 这类等价表达。其判定准确率 <strong>98.8%</strong>，远高于规则奖励的 80.9% 和无推理 GenRM 的 94.0%。</li>
+      <li><strong>代码任务</strong>：分布式代码沙箱集群，支持 20+ 语言、百万级并发执行，异步接口 + 一次编译多次运行。</li>
+    </ul>
+
+    <!-- 3.3 核心配方 stepper -->
+    <h3 style="font-size:21px;margin:34px 0 6px">3.3 核心配方：分领域并行 → 专家融合 → 通用 RL</h3>
+    <p>这是全文真正的「招牌动作」。RL 训练按三步走，点击下面的标签或「下一步」逐阶段查看每一步在做什么、为什么这么做。</p>
+
+    <div class="stepper">
+      <div class="steptabs">
+        <div class="steptab active" id="tab0" onclick="setStage(0)"><div class="sn">STEP 1</div><div class="st">分领域并行训练</div></div>
+        <div class="steptab" id="tab1" onclick="setStage(1)"><div class="sn">STEP 2</div><div class="st">专家融合</div></div>
+        <div class="steptab" id="tab2" onclick="setStage(2)"><div class="sn">STEP 3</div><div class="st">通用 RL 收尾</div></div>
+      </div>
+      <div class="stepview">
+        <div class="panel active" id="panel0">
+          <h4>STEP 1 · 分领域并行训练（Domain-Parallel Training）</h4>
+          <div class="stepflow">
+            <span class="node hot">STEM RL</span><span class="node hot">Code RL</span><span class="node hot">Agentic RL</span>
+            <span class="a">→ 各自得到一个领域专家</span>
+          </div>
+          <p>从同一个 SFT 模型出发，<strong>并行</strong>训练三个领域专家，且每个领域用最适配自己的配置：</p>
+          <ul class="clean">
+            <li><strong>STEM RL</strong>：固定 64K 上下文；按通过率门槛<strong>逐步加难（课程学习）</strong>，并动态调整 PPO 上裁剪界保持稳定。</li>
+            <li><strong>Code RL</strong>：上下文做<strong>多阶段课程</strong>，48K → 56K → 64K，当 90 分位输出长度逼近上限就扩窗。</li>
+            <li><strong>Agentic RL</strong>：固定 48K；用 <code>&lt;longcat_think&gt;</code> / <code>&lt;longcat_tool_call&gt;</code> 结构化模板 + 工具调用格式奖励，保证多轮轨迹可解析。</li>
+          </ul>
+          <p><strong>为什么这么做：</strong>各领域回答长度/分布差异太大，混在一起会负迁移；并行 + 定制配置既高效又互不干扰。</p>
+        </div>
+        <div class="panel" id="panel1">
+          <h4>STEP 2 · 专家融合（Model Fusion）</h4>
+          <div class="stepflow">
+            <span class="node">STEM 专家</span><span class="node">Code 专家</span><span class="node">Agentic 专家</span>
+            <span class="a">→ 参数合并 →</span><span class="node hot">单一融合模型</span>
+          </div>
+          <p>把三个专家的参数<strong>合并成一个模型</strong>，难点是化解专家之间的<strong>参数干扰</strong>。本文用三招组合：</p>
+          <ul class="clean">
+            <li><strong>归一化（Normalization）</strong>：对各领域的任务向量 <code>τ_i = θ_RL_i − θ_SFT</code> 做幅度归一，平衡各方贡献。</li>
+            <li><strong>Dropout（仿 DARE）</strong>：裁掉冗余的 delta 参数。</li>
+            <li><strong>Erase（仿 SCE）</strong>：抹去方向上属于少数派的更新元素。</li>
+          </ul>
+          <p><strong>为什么这么做：</strong>已有研究表明，合并领域模型能得到整体更强的单一模型；这一步让模型在数学、代码、Agentic 上同时<strong>接近 Pareto 最优</strong>，而不是顾此失彼。</p>
+        </div>
+        <div class="panel" id="panel2">
+          <h4>STEP 3 · 通用 RL 收尾（Final General RL）</h4>
+          <div class="stepflow">
+            <span class="node">融合模型</span><span class="a">+ 通用/合成数据 → PPO →</span><span class="node hot">LongCat-Flash-Thinking</span>
+          </div>
+          <p>最后一轮通用 RL，目标是<strong>提升广义场景能力并防止融合后核心能力回退</strong>：</p>
+          <ul class="clean">
+            <li>汇集开源 + 合成 query，用<strong>聚类去重</strong>过滤出高质量、有挑战性的数据。</li>
+            <li>做一轮 <strong>PPO 训练</strong>，强化创意写作、指令遵循等通用能力。</li>
+            <li>巩固<strong>安全与人类对齐</strong>，确保真实应用下稳健可用。</li>
+          </ul>
+          <p><strong>为什么这么做：</strong>融合可能让通用 / 安全等能力略有漂移，通用 RL 把整体能力「捏合」到位，得到最终交付模型。</p>
+        </div>
+      </div>
+      <div class="stepnav">
+        <button class="btn" id="prevBtn" onclick="stageDelta(-1)">← 上一步</button>
+        <button class="btn" id="nextBtn" onclick="stageDelta(1)">下一步 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 有意思的点 -->
+  <section id="nuggets">
+    <div class="sec-no">04 · 有意思的点</div>
+    <h2>几个反直觉或巧妙的设计</h2>
+    <div class="callout">
+      <div class="ct">💡 让模型「学会偷懒」反而更强</div>
+      <p>在 Agentic 设置下，模型可以把部分推理步骤<strong>外包给外部工具</strong>而不是死磕纯文本长推理。结果在 AIME-25 上平均 token 从 <strong>19,653 降到 6,965（省 64.5%）</strong>，而精度几乎不变——说明「靠工具高效推理」可以逼近「靠超长 CoT 暴力推理」的效果。</p>
+    </div>
+    <ul class="clean">
+      <li><strong>用 v<sub>x</sub> 量化「工具必要性」</strong>：通过有/无工具两路的通过率之差，精准筛出「真正离不开工具」的训练题，避免模型不用工具也能蒙对的无效数据。</li>
+      <li><strong>奖励模型也要「会推理」</strong>：带推理过程的 GenRM 把 STEM 判定准确率从 80.9%（规则）拉到 98.8%，还能解释判定理由、便于持续改进。</li>
+      <li><strong>多版本一致性 > 分段最新</strong>：DORA 坚持「一条回答由同一策略版本生成」，宁可保留旧版本，也不让一条回答跨版本拼接——稳定性优先。</li>
+    </ul>
+  </section>
+
+  <!-- 5. 实验结论 -->
+  <section id="results">
+    <div class="sec-no">05 · 实验结论</div>
+    <h2>开源推理模型里的多项 SOTA</h2>
+    <p class="sec-sub">和 DeepSeek-V3.1-Thinking、Qwen3-235B-Thinking、GLM-4.5 等开源模型，以及 o3 / Gemini 2.5 Pro / GPT-5-Thinking 等闭源模型对比，用更少激活参数取得有竞争力的成绩。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="m">99.2</div><div class="k">MATH-500</div><div class="x">与 GPT-5 并列顶尖</div></div>
+      <div class="metric"><div class="m">90.6</div><div class="k">AIME-25 (Mean@32)</div><div class="x">奥赛级数学</div></div>
+      <div class="metric"><div class="m">79.4</div><div class="k">LiveCodeBench</div><div class="x">逼近 GPT-5 的 80.6</div></div>
+      <div class="metric"><div class="m">50.3</div><div class="k">ARC-AGI</div><div class="x">超过 o3 / Gemini 2.5 Pro</div></div>
+      <div class="metric"><div class="m">67.6</div><div class="k">MiniF2F pass@1</div><div class="x">形式化证明，领先次名 ~18%</div></div>
+      <div class="metric"><div class="m">67.5</div><div class="k">τ²-Bench-Airline</div><div class="x">Agentic 工具使用 SOTA</div></div>
+      <div class="metric"><div class="m">81.5</div><div class="k">GPQA-Diamond</div><div class="x">研究生级科学推理</div></div>
+      <div class="metric"><div class="m">93.7</div><div class="k">Safety · Harmful</div><div class="x">安全整体最佳</div></div>
+    </div>
+
+    <p>用一句话概括：<strong>LongCat-Flash-Thinking 以 27B 平均激活参数，在数学、代码、逻辑、Agentic 工具使用、形式化证明、安全等维度全面达到开源 SOTA</strong>，并在多项指标上与顶级闭源模型掰手腕——尤其形式化证明与 Agentic 推理是它相对开源同行的明显优势。</p>
+
+    <details class="tbl">
+      <summary><span class="ic">▶</span> 展开核心 benchmark 对照表 <span class="sm">（节选自原文 Table 2，高亮=该行最佳；†=外部报告）</span></summary>
+      <div class="tblscroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Benchmark</th>
+              <th>DeepSeek-V3.1-T</th>
+              <th>Qwen3-235B-T</th>
+              <th>GLM-4.5</th>
+              <th>OpenAI-o3</th>
+              <th>Gemini2.5-Pro</th>
+              <th>GPT-5-T</th>
+              <th>LongCat-F-T</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="grp"><td colspan="8">规模（总参数 / 平均激活参数）</td></tr>
+            <tr><td># Total Params</td><td>671B</td><td>235B</td><td>355B</td><td>—</td><td>—</td><td>—</td><td>560B</td></tr>
+            <tr><td># Activated</td><td>37B</td><td>22B</td><td>32B</td><td>—</td><td>—</td><td>—</td><td>27B</td></tr>
+            <tr class="grp"><td colspan="8">数学推理</td></tr>
+            <tr><td>MATH-500</td><td>98.8</td><td>99.6</td><td>95.4</td><td>98.4</td><td>98.0</td><td class="win">99.2</td><td class="win">99.2</td></tr>
+            <tr><td>AIME-24 (Mean@32)</td><td class="win">93.9</td><td class="win">93.9</td><td>89.3</td><td>91.6†</td><td>90.7</td><td>92.0</td><td>93.3</td></tr>
+            <tr><td>AIME-25 (Mean@32)</td><td>87.9</td><td>92.5</td><td>85.5</td><td>88.9†</td><td>89.2</td><td class="win">94.6†</td><td>90.6</td></tr>
+            <tr><td>HMMT-25 (Mean@32)</td><td>80.4</td><td>83.8</td><td>76.3</td><td>71.9</td><td>79.3</td><td class="win">84.8</td><td>83.7</td></tr>
+            <tr class="grp"><td colspan="8">通用 / 逻辑推理</td></tr>
+            <tr><td>GPQA-Diamond (Mean@16)</td><td>84.2</td><td>80.4</td><td>78.3</td><td>81.9</td><td>84.0</td><td class="win">84.4</td><td>81.5</td></tr>
+            <tr><td>ARC-AGI (Mean@1)</td><td>37.5</td><td>45.3</td><td>21.4</td><td>47.3</td><td>46.8</td><td class="win">59.0</td><td>50.3</td></tr>
+            <tr><td>ZebraLogic (Mean@1)</td><td>96.1</td><td class="win">97.5</td><td>90.9</td><td>94.3</td><td>92.4</td><td>92.7</td><td>95.5</td></tr>
+            <tr class="grp"><td colspan="8">代码</td></tr>
+            <tr><td>LCB 24.08–25.05 (Mean@4)</td><td>73.5</td><td>75.4</td><td>61.1</td><td>76.2</td><td>74.2</td><td class="win">80.6</td><td>79.4</td></tr>
+            <tr><td>OJBench (Mean@1)</td><td>33.6</td><td>32.1</td><td>19.0</td><td>38.4</td><td class="win">41.6</td><td>34.1</td><td>40.7</td></tr>
+            <tr class="grp"><td colspan="8">Agentic 工具使用</td></tr>
+            <tr><td>τ²-Bench-Airline (Mean@4)</td><td>44.0</td><td>58.0</td><td>66.0</td><td>62.5</td><td>58.0</td><td>62.6†</td><td class="win">67.5</td></tr>
+            <tr><td>τ²-Bench-Telecom (Mean@4)</td><td>23.7</td><td>47.3</td><td>56.1</td><td>67.5</td><td>38.3</td><td class="win">96.7†</td><td>83.1</td></tr>
+            <tr><td>BFCL V3 (full)</td><td>55.4</td><td>75.7</td><td class="win">79.1</td><td>72.4†</td><td>63.2</td><td>60.1</td><td>74.4</td></tr>
+            <tr class="grp"><td colspan="8">形式化证明</td></tr>
+            <tr><td>MiniF2F-Test (pass@1)</td><td>49.6</td><td>11.9</td><td>10.9</td><td>15.2</td><td>13.9</td><td>21.4</td><td class="win">67.6</td></tr>
+            <tr><td>MiniF2F-Test (pass@32)</td><td>79.5</td><td>26.6</td><td>27.0</td><td>37.7</td><td>41.8</td><td>51.2</td><td class="win">81.6</td></tr>
+            <tr class="grp"><td colspan="8">安全</td></tr>
+            <tr><td>Harmful</td><td>79.2</td><td>84.3</td><td>70.4</td><td>64.8</td><td>44.3</td><td>56.8</td><td class="win">93.7</td></tr>
+            <tr><td>Criminal</td><td>89.7</td><td>92.7</td><td>88.8</td><td>85.7</td><td>77.4</td><td>87.3</td><td class="win">97.1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <p style="font-size:14px;color:var(--ink-3)">注：数字均取自原文 Table 2；列名缩写 T = Thinking。同列对比仅供参考，部分闭源模型分数为外部报告（†），评测配置见原文。</p>
+  </section>
+
+  <!-- 结语 -->
+  <section id="closing">
+    <div class="sec-no">06 · 一句话总结</div>
+    <h2>把「会思考」做成可工业化的工程问题</h2>
+    <p>LongCat-Flash-Thinking 的价值不只在分数，而在于它把「训练推理能力」拆成了<strong>数据合成、RL 算法、奖励系统、训练基础设施</strong>四个可以分别攻克、又端到端协同的工程模块，并给出了一套<strong>「分领域并行 + 专家融合 + 异步 RL」</strong>的可复制配方。对想做大规模推理 RL 的团队，DORA 的异步设计与领域并行的思路尤其值得借鉴。</p>
+    <div class="quote">
+      模型在 Agentic 推理上把平均 token 砍掉约 64.5% 仍保持精度，说明「更强的推理」不一定等于「更长的思考」，也可以是「更聪明地调用工具」。
+      <span class="en">"...reducing average token consumption by 64.5% on AIME-25, without degrading task accuracy."</span>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="ft-title">LongCat-Flash-Thinking Technical Report</div>
+    <div>Meituan LongCat Team · <span class="mono">longcat-team@meituan.com</span> · arXiv:2509.18883（arXiv preprint, 2025-09；v2 2025-11）</div>
+    <div class="ftlinks">
+      <a href="https://arxiv.org/abs/2509.18883" target="_blank" rel="noopener">📄 阅读原文 / Source (arXiv)</a>
+      <a href="https://huggingface.co/meituan-longcat/LongCat-Flash-Thinking" target="_blank" rel="noopener">🤗 Hugging Face</a>
+      <a href="https://github.com/meituan-longcat/LongCat-Flash-Thinking" target="_blank" rel="noopener">💻 GitHub</a>
+      <a href="https://longcat.ai" target="_blank" rel="noopener">💬 LongCat Chat</a>
+    </div>
+    <div class="divline"></div>
+    <p style="margin-top:14px;font-size:13px">本页为面向中文读者的教学可视化解读，图片均取自原论文 arXiv HTML 版（assets/ 内），内容与数字以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+function toggleFigDetail(el){
+  var d = el.nextElementSibling;
+  if(!d) return;
+  var on = d.classList.toggle("active");
+  el.textContent = on ? "收起说明 ▾" : "展开逐模块说明 ▸";
+}
+function toggleCard(headEl){
+  var card = headEl.parentElement;
+  card.classList.toggle("open");
+}
+var stage = 0;
+var TOTAL = 3;
+function renderStage(){
+  for(var i=0;i<TOTAL;i++){
+    var tab = document.getElementById("tab"+i);
+    var panel = document.getElementById("panel"+i);
+    if(tab) tab.classList.toggle("active", i===stage);
+    if(panel) panel.classList.toggle("active", i===stage);
+  }
+  var prev = document.getElementById("prevBtn");
+  var next = document.getElementById("nextBtn");
+  if(prev) prev.disabled = (stage===0);
+  if(next) next.disabled = (stage===TOTAL-1);
+}
+function setStage(n){
+  stage = Math.max(0, Math.min(TOTAL-1, n));
+  renderStage();
+}
+function stageDelta(d){ setStage(stage + d); }
+renderStage();
+</script>
+
+</body>
+</html>

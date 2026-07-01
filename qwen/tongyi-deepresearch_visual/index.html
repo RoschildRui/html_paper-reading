@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tongyi DeepResearch 技术报告 · 图解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fbf6ea;
+    --bg-soft: #f7efde;
+    --card: #f4ead7;
+    --card-deep: #e8dcc7;
+    --line: #ddcdb1;
+    --ink: #3a322a;
+    --ink-soft: #6a5f50;
+    --ink-faint: #948876;
+    --accent: #bd6a38;
+    --accent-soft: #f0e0cf;
+    --accent-deep: #9a5024;
+    --radius: 14px;
+    --maxw: 940px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+    line-height: 1.78;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+  /* ---------- top nav ---------- */
+  .topnav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(251, 246, 234, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topnav-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 11px 24px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .topnav .brand { font-weight: 800; letter-spacing: -0.01em; font-size: 15px; }
+  .topnav .links { margin-left: auto; display: flex; gap: 18px; flex-wrap: wrap; }
+  .topnav .links a { color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .topnav .links a:hover { color: var(--accent); }
+  .topnav .src { color: var(--accent); font-weight: 600; }
+
+  /* ---------- layout ---------- */
+  main { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 96px; }
+  section { padding-top: 56px; }
+  h1, h2, h3 { letter-spacing: -0.01em; line-height: 1.3; }
+  h2 {
+    font-size: 27px; font-weight: 800; margin: 0 0 6px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  h2 .num {
+    font-family: "JetBrains Mono", monospace; font-size: 15px;
+    color: var(--accent); font-weight: 600; flex: none;
+  }
+  .sec-lead { color: var(--ink-soft); font-size: 16px; margin: 0 0 26px; max-width: 70ch; }
+  h3 { font-size: 20px; font-weight: 700; margin: 34px 0 10px; }
+  h4.blk { font-size: 16.5px; font-weight: 700; margin: 24px 0 6px; color: var(--ink); }
+  p { margin: 14px 0; }
+  strong { font-weight: 700; color: var(--ink); }
+  a { color: var(--accent); }
+  ul { margin: 14px 0; padding-left: 22px; }
+  li { margin: 7px 0; }
+
+  /* ---------- hero ---------- */
+  .hero { padding-top: 52px; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .tag {
+    font-size: 12.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px;
+    background: var(--card-deep); color: var(--ink-soft); border: 1px solid var(--line);
+  }
+  .tag.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .hero h1 { font-size: 40px; font-weight: 800; margin: 0 0 14px; line-height: 1.18; }
+  .hero h1 .sub { display: block; font-size: 19px; font-weight: 600; color: var(--ink-soft); margin-top: 8px; }
+  .hero-meta { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 28px; }
+  .hero-meta b { color: var(--ink); }
+
+  .tldr {
+    background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: var(--radius); padding: 22px 26px; margin: 8px 0 0;
+  }
+  .tldr h4 { margin: 0 0 8px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .tldr p { margin: 10px 0; }
+  .tldr p:first-of-type { margin-top: 0; }
+
+  /* ---------- metric cards ---------- */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 26px 0; }
+  .metric {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 16px; text-align: center;
+  }
+  .metric .big { font-size: 29px; font-weight: 800; color: var(--accent); font-family: "JetBrains Mono", monospace; letter-spacing: -0.02em; }
+  .metric .lab { font-size: 13px; color: var(--ink-soft); margin-top: 4px; line-height: 1.45; }
+
+  /* ---------- figure ---------- */
+  figure {
+    margin: 26px 0; background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  figure .imgwrap { background: #fff; padding: 22px; text-align: center; }
+  figure img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+  figure figcaption { padding: 14px 20px 4px; }
+  .fig-label { font-size: 12.5px; font-weight: 700; color: var(--accent); letter-spacing: 0.03em; }
+  .fig-cap { font-size: 14.5px; color: var(--ink-soft); margin: 4px 0 0; }
+  .fig-toggle {
+    display: inline-block; margin: 10px 20px 16px; cursor: pointer; user-select: none;
+    font-size: 13.5px; font-weight: 600; color: var(--accent);
+    padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-soft);
+  }
+  .fig-toggle:hover { background: var(--accent-soft); }
+  .figure-detail {
+    max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+    margin: 0 20px; border-top: 0 solid var(--line);
+  }
+  .figure-detail.active { max-height: 2200px; border-top: 1px solid var(--line); margin-bottom: 8px; }
+  .figure-detail .inner { padding: 14px 0 8px; }
+  .figure-detail ul { margin: 6px 0; }
+  .figure-detail li { font-size: 14.5px; }
+  .figure-detail .sumline { font-size: 14px; color: var(--ink); font-style: italic; margin-top: 8px; }
+
+  /* ---------- expandable deep card ---------- */
+  .deck { display: grid; gap: 14px; margin: 22px 0; }
+  .deep {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  }
+  .deep .head {
+    padding: 16px 20px; cursor: pointer; user-select: none; display: flex; align-items: flex-start; gap: 12px;
+  }
+  .deep .head:hover { background: var(--bg-soft); }
+  .deep .chev { flex: none; color: var(--accent); font-size: 14px; margin-top: 4px; transition: transform 0.3s; }
+  .deep.open .chev { transform: rotate(90deg); }
+  .deep .htext { flex: 1; }
+  .deep .title { font-weight: 700; font-size: 16.5px; }
+  .deep .ptag {
+    display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px;
+    background: var(--card-deep); color: var(--ink-soft); border: 1px solid var(--line); margin-left: 8px; vertical-align: middle;
+  }
+  .deep .summary { font-size: 13.8px; color: var(--ink-faint); margin-top: 3px; }
+  .deep .body {
+    max-height: 0; overflow: hidden; transition: max-height 0.45s ease; padding: 0 20px;
+  }
+  .deep.open .body { max-height: 1600px; }
+  .deep .body .inner { padding: 4px 0 20px; border-top: 1px solid var(--line); }
+  .deep .body p { font-size: 15px; }
+  .deep .body li { font-size: 14.8px; }
+
+  /* ---------- table ---------- */
+  .table-wrap { overflow-x: auto; margin: 22px 0; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--card); }
+  th, td { padding: 9px 12px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  thead th { background: var(--card-deep); font-weight: 700; color: var(--ink); font-size: 13px; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.name { text-align: left; color: var(--ink-soft); font-weight: 600; }
+  tr.hl td { background: var(--accent-soft); }
+  tr.hl td.name { color: var(--accent-deep); font-weight: 800; }
+  tr.hl td { font-weight: 700; color: var(--accent-deep); }
+
+  /* ---------- callout / quote ---------- */
+  .quote {
+    border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 14px 20px; border-radius: 0 var(--radius) var(--radius) 0; margin: 22px 0; font-size: 15px;
+  }
+  .quote .who { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+
+  .note {
+    background: var(--bg-soft); border: 1px dashed var(--line); border-radius: var(--radius);
+    padding: 16px 20px; margin: 22px 0; font-size: 14.5px; color: var(--ink-soft);
+  }
+  .note b { color: var(--ink); }
+
+  /* ---------- two col compare ---------- */
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 22px 0; }
+  .two .col { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+  .two .col h4 { margin: 0 0 4px; font-size: 16px; }
+  .two .col .role { font-size: 12.5px; color: var(--accent); font-weight: 600; margin-bottom: 10px; }
+  .two .col ul { padding-left: 18px; }
+  .two .col li { font-size: 14px; }
+
+  /* ---------- chips ---------- */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+  .chip {
+    font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px;
+    background: var(--card); color: var(--ink); border: 1px solid var(--line);
+  }
+  .chip b { color: var(--accent); }
+
+  /* ---------- step-through pipeline ---------- */
+  .stepper { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin: 22px 0; }
+  .rail { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .rail-node {
+    flex: 1; min-width: 92px; text-align: center; cursor: pointer; position: relative;
+    padding: 8px 4px; border-radius: 10px; transition: background 0.2s;
+  }
+  .rail-node:hover { background: var(--bg-soft); }
+  .rail-node .dot {
+    width: 26px; height: 26px; line-height: 24px; margin: 0 auto 6px; border-radius: 50%;
+    border: 2px solid var(--line); background: #fff; color: var(--ink-faint);
+    font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 700; transition: all 0.25s;
+  }
+  .rail-node .nlab { font-size: 12px; color: var(--ink-soft); font-weight: 600; line-height: 1.35; }
+  .rail-node .ngrp { font-size: 10.5px; color: var(--ink-faint); margin-top: 2px; }
+  .rail-node.on .dot { border-color: var(--accent); color: var(--accent); }
+  .rail-node.cur .dot { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .rail-node.cur .nlab { color: var(--accent-deep); }
+  .stage-box { margin-top: 8px; }
+  .stage-panel {
+    max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.35s ease;
+  }
+  .stage-panel.active { max-height: 520px; opacity: 1; margin-top: 14px; }
+  .stage-panel .stitle { font-weight: 800; font-size: 17px; }
+  .stage-panel .stitle .en { font-weight: 600; color: var(--ink-faint); font-size: 13.5px; margin-left: 8px; }
+  .stage-panel .srow { display: grid; grid-template-columns: 86px 1fr; gap: 6px 14px; margin-top: 10px; font-size: 14.5px; }
+  .stage-panel .srow .k { color: var(--accent); font-weight: 700; }
+  .stage-ctrl { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .stage-ctrl button {
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    padding: 7px 16px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--bg-soft); color: var(--ink);
+  }
+  .stage-ctrl button:hover { background: var(--accent-soft); }
+  .stage-ctrl button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .stage-ctrl .prog { margin-left: auto; font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--ink-soft); }
+
+  footer {
+    border-top: 1px solid var(--line); margin-top: 60px; padding: 30px 24px 50px;
+    color: var(--ink-soft); font-size: 14px;
+  }
+  footer .fin { max-width: var(--maxw); margin: 0 auto; }
+  footer a { color: var(--accent); }
+  footer .ref { margin-top: 10px; font-size: 13px; }
+
+  .anchor-pad { scroll-margin-top: 70px; }
+
+  @media (max-width: 880px) {
+    body { font-size: 16px; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .two { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 30px; }
+    h2 { font-size: 23px; }
+    .topnav .links { display: none; }
+    .rail-node { min-width: 33%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Tongyi DeepResearch · 图解</span>
+    <nav class="links">
+      <a href="#problem">问题</a>
+      <a href="#design">设计原则</a>
+      <a href="#recipe">训练总览</a>
+      <a href="#midtrain">中期训练</a>
+      <a href="#posttrain">后期训练</a>
+      <a href="#infer">推理范式</a>
+      <a href="#eval">实验</a>
+      <a class="src" href="https://arxiv.org/abs/2510.24701" target="_blank" rel="noopener">原文 ↗</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="tag-row">
+      <span class="tag accent">技术报告 · 2025.10</span>
+      <span class="tag">Tongyi Lab · 阿里巴巴</span>
+      <span class="tag">arXiv preprint</span>
+      <span class="tag">开源 · 30B-A3B MoE</span>
+    </div>
+    <h1>Tongyi DeepResearch：用合成数据养出的开源「深度研究」智能体
+      <span class="sub">Tongyi DeepResearch Technical Report · 一个 3.3B 激活参数却比肩大模型的 agentic LLM</span>
+    </h1>
+    <p class="hero-meta">
+      发表：<b>2025 年 10 月（arXiv preprint）</b> · 团队：<b>Tongyi DeepResearch Team / Tongyi Lab, Alibaba Group</b> ·
+      基座：<b>Qwen3-30B-A3B-Base（30.5B 总参 / 3.3B 激活）</b> ·
+      <a href="https://arxiv.org/abs/2510.24701" target="_blank" rel="noopener">阅读原文 ↗</a> ·
+      <a href="https://github.com/Alibaba-NLP/DeepResearch" target="_blank" rel="noopener">开源仓库 ↗</a>
+    </p>
+
+    <div class="tldr">
+      <h4>TL;DR · 一句话抓住核心</h4>
+      <p>「深度研究」（Deep Research）指让模型像人类研究员一样，<strong>自主地多步规划、上网搜索、跨源推理并综合成报告</strong>——本来要人花几小时，agent 几十分钟搞定。难点不在模型不够聪明，而在<strong>这类 agentic 训练数据极度稀缺、贵且难标注</strong>。</p>
+      <p>Tongyi DeepResearch 的答案是：<strong>① 一条全自动、零人工标注的合成数据管线</strong>贯穿所有训练阶段；<strong>② 把训练拆成「中期训练（Agentic CPT）+ 后期训练（SFT 冷启动 + 强化学习）」的端到端范式</strong>；<strong>③ 把环境当成可设计的系统</strong>（先验世界 / 模拟 / 真实），用定制版 GRPO 做严格 on-policy 的稳定 RL。结果：仅 <strong>3.3B 激活参数</strong>就在 Humanity's Last Exam、BrowseComp 等深度研究基准上达到 SOTA，超过 OpenAI o3、DeepSeek-V3.1 等更大的系统。</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="big">3.3B</div><div class="lab">每 token 激活参数<br/>（总参 30.5B 的 MoE）</div></div>
+      <div class="metric"><div class="big">32.9</div><div class="lab">Humanity's Last Exam<br/>（超 OpenAI o3 的 24.9）</div></div>
+      <div class="metric"><div class="big">43.4</div><div class="lab">BrowseComp<br/>（Heavy 模式 58.3）</div></div>
+      <div class="metric"><div class="big">90.6</div><div class="lab">FRAMES<br/>（多项基准登顶）</div></div>
+    </div>
+  </header>
+
+  <!-- ============ PROBLEM ============ -->
+  <section id="problem" class="anchor-pad">
+    <h2><span class="num">01</span> 问题：为什么「深度研究智能体」这么难造</h2>
+    <p class="sec-lead">不是缺一个更大的模型，而是缺「教会模型怎么当研究员」的数据与训练范式。</p>
+
+    <p>随着我们向 AGI 迈进，<strong>深度研究 agent</strong> 成为一种很有前景的范式：它能自主完成多步推理与互联网信息检索，去解决复杂的研究型任务。但今天能力强的深度研究系统（OpenAI / Claude / Gemini / Grok 的 DeepResearch）<strong>几乎都是闭源的，中间的研究过程也不可见</strong>，社区缺少一套系统化、可完全开源复现的方法论与模型。</p>
+
+    <p>真正的瓶颈在数据。深度研究要求 agent 能<strong>串联信息、跨源推理、验证结论</strong>，而这类「研究级问题 + agent 轨迹」的数据有两个先天困难：</p>
+    <ul>
+      <li><strong>自然语料里几乎没有</strong>：研究级难题不会现成地躺在网页文本里，不像预训练语料那样天然海量。</li>
+      <li><strong>人工标注极贵极慢</strong>：让标注员理解并写出复杂问题的结构、再补全完整 agent 轨迹，成本高到无法规模化。</li>
+    </ul>
+
+    <p>于是本文的整体思路就被这个约束逼了出来：<strong>既然真实数据无法扩展，就转向用大模型「全自动合成」agentic 数据</strong>，并围绕它重新设计训练管线和训练环境。下面三节就是这套答案的三块基石。</p>
+
+    <div class="note">
+      <b>阅读路径：</b>先看清楚<strong>三条设计原则</strong>（训练管线 / 合成数据 / 环境交互），再顺着<strong>训练总览</strong>把「预训练→中期训练→后期训练」走一遍，然后分别深入<strong>中期训练（CPT）</strong>与<strong>后期训练（SFT + RL）</strong>，接着看<strong>推理时的两种范式（ReAct 与 Heavy 模式）</strong>，最后用一组数字看效果。
+    </div>
+  </section>
+
+  <!-- ============ DESIGN PRINCIPLES ============ -->
+  <section id="design" class="anchor-pad">
+    <h2><span class="num">02</span> 三条设计原则：和「常见做法」的对照</h2>
+    <p class="sec-lead">论文不是综述，这里只挑出本文与主流做法形成对比的三处关键取舍。点开每张卡看「常见做法卡在哪 → 本文怎么改」。</p>
+
+    <div class="deck">
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">① 训练管线：把「中期训练」补进来<span class="ptag">Agentic Mid-training</span></span>
+            <span class="summary">常见做法只做后训练；本文在预训练与后训练之间插入 agentic 中期训练做桥接。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p><strong>常见做法卡在哪：</strong>通用基座只在网页纯文本上预训练、再用指令数据做后训练，本身<strong>缺乏 agentic 归纳偏置</strong>。直接在这种基座上做 agentic 后训练，会让模型<strong>同时学习「agent 能力」和「对齐」</strong>，两个目标互相冲突，结果次优。</p>
+          <p><strong>本文怎么改：</strong>新增 <strong>agentic 中期训练（mid-training）</strong>，用大规模高质量 agentic 数据先给基座注入 agent 先验，作为「预训练→后训练」的渐进过渡。后训练阶段再用 <strong>SFT 冷启动 + 强化学习</strong>：SFT 学会模仿优质示范、建立稳定行为基线，RL 则与环境闭环、用奖励信号把规划与执行能力内化、推到极限。</p>
+        </div></div>
+      </div>
+
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">② 数据：以合成数据为中心做规模化<span class="ptag">Synthetic-Data-Centric</span></span>
+            <span class="summary">人工标注无法扩展；本文用 LLM 全自动合成 agentic 数据并形成数据飞轮。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p><strong>常见做法卡在哪：</strong>研究级问题难以从自然文本获取，人工标注问题与 agent 轨迹又极其耗时昂贵——靠自然数据根本无法把深度研究能力 scale 起来。</p>
+          <p><strong>本文怎么改：</strong>系统性转向 <strong>LLM 合成数据</strong>，并指出它相对人工标注的几大优势：</p>
+          <ul>
+            <li><strong>易扩展</strong>：用 LLM 批量合成问答对，远快于人工。</li>
+            <li><strong>易泛化模式与多样性</strong>：LLM 能理解难题结构、覆盖多样模式。</li>
+            <li><strong>可定向强化元能力</strong>：把复杂任务拆成规划、信息综合、记忆管理等元能力，针对性造数据。</li>
+            <li><strong>易验证</strong>：验证答案比从头解题容易得多。</li>
+            <li><strong>能形成数据飞轮</strong>：训练一轮后更强的模型能合成更优数据，模型迭代进化。</li>
+          </ul>
+        </div></div>
+      </div>
+
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">③ 环境：把环境当作「可设计的系统」<span class="ptag">三种环境</span></span>
+            <span class="summary">只用真实环境会非平稳又昂贵；本文按阶段在先验世界 / 模拟 / 真实之间取舍。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p><strong>常见做法卡在哪：</strong>全程只用真实世界环境训练有两大难题——<strong>非平稳性</strong>（环境动态变化导致数据分布持续漂移、训练不稳）与<strong>交互成本</strong>（每次 API 调用都要花钱，大规模探索代价高到不可承受）。</p>
+          <p><strong>本文怎么改：</strong>不把环境当成被动的外部现实，而是<strong>主动设计成与训练深度耦合的系统</strong>，建模为三种形态：</p>
+          <ul>
+            <li><strong>先验世界环境</strong>：只给任务要素/工具/状态定义，agent 凭预训练知识自主挖掘轨迹——完美稳定、零成本、无限可扩，但没有真实反馈。</li>
+            <li><strong>模拟环境</strong>：在本地构建可复现的真实交互副本——稳定、快、便宜，便于因果归因，但覆盖有限、存在 sim-to-real 差距。</li>
+            <li><strong>真实环境</strong>：分布最真实、反馈最权威，是能力的终极考场，代价是昂贵、非平稳、有探索风险。</li>
+          </ul>
+          <p><strong>分阶段策略：</strong>中期训练主用<strong>先验世界 + 模拟环境</strong>低成本造大规模数据；后期训练先在<strong>模拟环境</strong>验证算法与策略，再把验证过的最优策略部署到<strong>真实环境</strong>做最终训练。</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRAINING RECIPE ============ -->
+  <section id="recipe" class="anchor-pad">
+    <h2><span class="num">03</span> 训练总览：一条从基座到智能体的流水线</h2>
+    <p class="sec-lead">整套配方从 Qwen3-30B-A3B-Base 出发，端到端地把 agentic 能力逐级注入。先看论文原图的骨架，再用下面的步进演示跟着每个阶段走一遍。</p>
+
+    <figure>
+      <div class="imgwrap"><img src="assets/x2.png" alt="Tongyi DeepResearch 训练总览管线" loading="lazy" /></div>
+      <figcaption>
+        <span class="fig-label">图 2 · 原论文</span>
+        <p class="fig-cap">Tongyi DeepResearch 的端到端训练管线：预训练基座 → 中期训练（两阶段 Agentic CPT，32K→128K）→ 后期训练（Agentic SFT → Agentic RL）。</p>
+      </figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>Pre-training（预训练）</strong>：起点是 Qwen 系列基座（Qwen3-30B-A3B-Base，30.5B 总参 / 3.3B 激活），通用语言能力强，但缺乏 agentic 归纳偏置。</li>
+          <li><strong>Mid-training（中期训练）</strong>：两阶段 Agentic 持续预训练（CPT）。阶段一上下文 <strong>32K</strong>，阶段二扩到 <strong>128K</strong>，用大规模合成的 agent 行为数据建立「规划-推理-决策」先验。</li>
+          <li><strong>Post-training（后期训练）</strong>：先 <strong>Agentic SFT</strong> 冷启动给出稳定初始策略，再用 <strong>Agentic RL</strong> 在与环境交互中把能力推到上限。</li>
+          <li><strong>箭头与配色</strong>：从左到右是单向、逐级递进的能力流水线；色块由浅到深直观表示 agentic 程度递增。</li>
+          <li><strong>设计意图</strong>：相对「只做后训练」的主流做法，本文前移出一个中期训练桥接层，避免基座在后训练时同时学 agent 能力与对齐而产生优化冲突。</li>
+        </ul>
+        <p class="sumline">一句话总结：这条「预训练→中训练→后训练」主轴，是理解全文其余所有模块的骨架。</p>
+      </div></div>
+    </figure>
+
+    <div class="stepper">
+      <div class="rail" id="rail">
+        <div class="rail-node" onclick="showStage(0)"><div class="dot">0</div><div class="nlab">基座</div><div class="ngrp">预训练</div></div>
+        <div class="rail-node" onclick="showStage(1)"><div class="dot">1</div><div class="nlab">CPT 阶段一</div><div class="ngrp">中期训练</div></div>
+        <div class="rail-node" onclick="showStage(2)"><div class="dot">2</div><div class="nlab">CPT 阶段二</div><div class="ngrp">中期训练</div></div>
+        <div class="rail-node" onclick="showStage(3)"><div class="dot">3</div><div class="nlab">SFT 冷启动</div><div class="ngrp">后期训练</div></div>
+        <div class="rail-node" onclick="showStage(4)"><div class="dot">4</div><div class="nlab">Agentic RL</div><div class="ngrp">后期训练</div></div>
+        <div class="rail-node" onclick="showStage(5)"><div class="dot">5</div><div class="nlab">模型合并</div><div class="ngrp">后期训练</div></div>
+      </div>
+
+      <div class="stage-box">
+        <div class="stage-panel" data-stage="0">
+          <div class="stitle">通用基座模型<span class="en">Qwen3-30B-A3B-Base</span></div>
+          <div class="srow"><span class="k">起点</span><span>30.5B 总参 / 3.3B 激活的 MoE 通用基座，语言能力强。</span></div>
+          <div class="srow"><span class="k">缺口</span><span>没有 agentic 归纳偏置，不会主动规划 / 调工具 / 多步检索。</span></div>
+          <div class="srow"><span class="k">环境</span><span>—</span></div>
+        </div>
+        <div class="stage-panel" data-stage="1">
+          <div class="stitle">Agentic CPT 阶段一<span class="en">持续预训练 · 32K</span></div>
+          <div class="srow"><span class="k">目标</span><span>用海量合成 agent 行为数据注入「规划-推理-决策」先验。</span></div>
+          <div class="srow"><span class="k">数据</span><span>大规模、多样的 agent 轨迹（问题合成 + 三类动作）。</span></div>
+          <div class="srow"><span class="k">上下文</span><span>32K；损失为标准 Next-Token Prediction。</span></div>
+          <div class="srow"><span class="k">环境</span><span>先验世界 + 模拟环境（低成本、可大规模）。</span></div>
+        </div>
+        <div class="stage-panel" data-stage="2">
+          <div class="stitle">Agentic CPT 阶段二<span class="en">持续预训练 · 128K</span></div>
+          <div class="srow"><span class="k">目标</span><span>把上下文扩到 128K，训练长程、连贯的推理与行动。</span></div>
+          <div class="srow"><span class="k">数据</span><span>引入 64K–128K 长序列 agent 数据；穿插少量通用预训练数据防遗忘。</span></div>
+          <div class="srow"><span class="k">上下文</span><span>128K。</span></div>
+          <div class="srow"><span class="k">产出</span><span>一个具备强 agentic 先验的「中训练基座」，为后训练打底。</span></div>
+        </div>
+        <div class="stage-panel" data-stage="3">
+          <div class="stitle">Agentic SFT 冷启动<span class="en">监督微调</span></div>
+          <div class="srow"><span class="k">目标</span><span>给 RL 一个稳定的初始策略，先学会可靠地模仿优质示范。</span></div>
+          <div class="srow"><span class="k">数据</span><span>合成高质量 QA 的轨迹，经严格拒绝采样；含 ReAct 与「上下文管理」两种格式。</span></div>
+          <div class="srow"><span class="k">上下文</span><span>两段式：先 40K，再扩到 128K。</span></div>
+        </div>
+        <div class="stage-panel" data-stage="4">
+          <div class="stitle">Agentic 强化学习<span class="en">定制 GRPO · 严格 on-policy</span></div>
+          <div class="srow"><span class="k">目标</span><span>与环境闭环交互，用奖励把规划/执行能力推到极限。</span></div>
+          <div class="srow"><span class="k">奖励</span><span>纯 0/1 答案正确性（RLVR），不加格式奖励。</span></div>
+          <div class="srow"><span class="k">机制</span><span>自动数据治理 + 异步 rollout；数据飞轮越训越强。</span></div>
+          <div class="srow"><span class="k">环境</span><span>先在模拟环境验证，再部署到真实环境。</span></div>
+        </div>
+        <div class="stage-panel" data-stage="5">
+          <div class="stitle">模型合并<span class="en">Model Merging</span></div>
+          <div class="srow"><span class="k">目标</span><span>融合多个同源、能力侧重不同的变体，增强泛化。</span></div>
+          <div class="srow"><span class="k">做法</span><span>对同一基座衍生的变体参数做加权平均（插值）。</span></div>
+          <div class="srow"><span class="k">收益</span><span>保留各自强项、零额外优化成本，得到最终模型。</span></div>
+        </div>
+      </div>
+
+      <div class="stage-ctrl">
+        <button onclick="stagePrev()">◂ 上一步</button>
+        <button class="primary" onclick="stageNext()">下一步 ▸</button>
+        <button onclick="stageReset()">重置</button>
+        <span class="prog" id="stageProg">1 / 6</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MID-TRAINING ============ -->
+  <section id="midtrain" class="anchor-pad">
+    <h2><span class="num">04</span> 中期训练：合成「agent 行为」喂给基座</h2>
+    <p class="sec-lead">中期训练（Agentic CPT）是连接预训练与后训练的桥梁。它的目标不是塞更多文本，而是让基座先长出「会当 agent」的直觉，同时保住通用语言能力。</p>
+
+    <p>Tongyi DeepResearch 采用<strong>两阶段 Agentic 持续预训练</strong>作为核心中期训练：阶段一以 32K 上下文起步，阶段二扩到 128K 并引入 64K–128K 的长序列 agentic 数据，专门强化长程连贯的推理与行动；两阶段都穿插少量通用预训练数据以防遗忘，优化目标用标准的下一词预测损失。</p>
+
+    <p>关键在于<strong>怎么造这批 agent 行为数据</strong>。作者把一次完整的 agent 工作流（接到问题 → 反复反思与行动 → 收敛到答案）拆成四类可合成的关键步骤：</p>
+
+    <figure>
+      <div class="imgwrap"><img src="assets/x3.png" alt="面向 Agentic CPT 的大规模 agent 行为数据合成" loading="lazy" /></div>
+      <figcaption>
+        <span class="fig-label">图 3 · 原论文</span>
+        <p class="fig-cap">面向 Agentic CPT 的大规模 agent 行为数据合成：把一条 agent 轨迹（Task→Planning→…→Answer）拆成问题合成、规划、决策、推理四类动作分别合成。</p>
+      </figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>Question Synthesis（问题合成）</strong>：基于不断更新的开放世界知识，构建「实体锚定的开放世界记忆」，采样实体及其关联知识，生成带特定行为要求的问题（如多跳推理、数值计算）。</li>
+          <li><strong>Planning（规划动作）</strong>：对问题做分解并预测第一步动作。规划准确率与任务成败高度相关，用问题构建时的实体知识做拒绝采样以保证质量。</li>
+          <li><strong>Decision-Making（决策动作）</strong>：图中「Potential Pathways / Hidden Process」表示每个决策点都有多条潜在路径；作者把这一通常隐式的择优过程<strong>显式建模</strong>为一种独立动作类型。</li>
+          <li><strong>Reasoning（推理动作）</strong>：当工具返回海量含噪信息时，能否从噪声中蒸馏关键知识、构建连贯推理链直接决定成败；用两阶段生成 + 长度与答案一致性的双重过滤保证质量。</li>
+          <li><strong>整条链路</strong>：Task→Planning→Response→（多路径决策）→Reasoning→…→Answer 覆盖 agent 从接题到给答案的完整生命周期，灰/紫节点标示不同动作在轨迹上的位置。</li>
+        </ul>
+        <p class="sumline">一句话总结：中期训练喂的是「成体系的 agent 行为轨迹」，而不是更多纯文本。</p>
+      </div></div>
+    </figure>
+
+    <h4 class="blk">通过「环境扩展」合成通用函数调用数据</h4>
+    <p>为增强通用 agentic 能力，作者还<strong>系统性地扩展函数调用（function-calling）数据</strong>：函数调用能力的广度，与 agent 训练时所处环境的多样性紧密相关。他们遵循「agent 的核心在于与环境交互」的原则，把每个环境实例化为一个<strong>可读写数据库</strong>，并设计一个可扩展框架来<strong>自动构造大量完全模拟的异构环境</strong>，从而系统地拓宽函数调用场景的空间。产出的数据被并入中期训练。</p>
+  </section>
+
+  <!-- ============ POST-TRAINING ============ -->
+  <section id="posttrain" class="anchor-pad">
+    <h2><span class="num">05</span> 后期训练：合成高质量数据 → SFT 冷启动 → 强化学习</h2>
+    <p class="sec-lead">后期训练分三步：先合成高质量、可验证的数据，再用 SFT 给模型一个稳定起点，最后用强化学习在与环境交互中把能力推到极限；末尾再做一次模型合并。</p>
+
+    <h3>5.1　高质量数据合成：可控地「制造难度」</h3>
+    <p>作者构建了一条<strong>端到端、全自动、零人工</strong>的合成管线，专门产出复杂、高不确定性的「超人类级」问答对，用来逼出 agent 的能力上限。</p>
+
+    <figure>
+      <div class="imgwrap"><img src="assets/x4.png" alt="高质量数据合成管线" loading="lazy" /></div>
+      <figcaption>
+        <span class="fig-label">图 4 · 原论文</span>
+        <p class="fig-cap">高质量数据合成管线：(1) 构建知识图谱 → (2) 采样子图生成种子 QA → (3) 注入不确定性以可控地提升难度。</p>
+      </figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>(1) Graph Construction（图构建）</strong>：通过随机游走构建高度互联的知识图谱，用网页搜索补充相关知识，并融合真实网站的同构表格，保证信息结构贴近现实。</li>
+          <li><strong>(2) Subgraph Sampling（子图采样）</strong>：从图与表中采样子图/子表，生成初始的问答对作为种子。</li>
+          <li><strong>(3) Uncertainty Injection（不确定性注入）</strong>：关键一步——把 QA 难度形式化为对实体关系的一系列可控「原子操作」（如合并属性相似的实体），从而系统性地提升复杂度。</li>
+          <li><strong>基于集合论的形式化</strong>：进一步对齐「信息结构」与「推理结构」，减少推理捷径与结构冗余，让难度可控扩展，并使 QA 正确性可被高效验证。</li>
+          <li><strong>PhD 级问题引擎</strong>：另有一套自动引擎从多学科知识库出发造种子 QA，再由「问题构造 agent」配合工具迭代式升级难度，系统、可控地拔高任务难度。</li>
+        </ul>
+        <p class="sumline">一句话总结：难度不是碰运气，而是被「可控地制造」出来——这是合成数据能替代人工标注的关键。</p>
+      </div></div>
+    </figure>
+
+    <h3>5.2　SFT 冷启动：两种格式的混合训练</h3>
+    <p>SFT 阶段从合成的高质量 QA 出发，用高水平开源模型生成覆盖完整思考过程与工具响应的训练轨迹，再经<strong>严格拒绝采样</strong>，只保留高质量、模式多样的轨迹。训练采用两种格式混合以增强鲁棒性：</p>
+    <div class="two">
+      <div class="col">
+        <h4>ReAct 格式</h4>
+        <div class="role">基础形态</div>
+        <ul>
+          <li>输入历史状态，输出当前步的<strong>思考 + 工具调用</strong>。</li>
+          <li>保持「推理与行动交织」的原汁原味形态。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>上下文管理格式</h4>
+        <div class="role">Context Management</div>
+        <ul>
+          <li>输入上一步的<strong>轨迹摘要 + 工具调用 + 工具响应</strong>，输出新的轨迹摘要、思考与工具调用。</li>
+          <li>强化「把复杂观测综合成连贯摘要、并保持任务聚焦」的状态分析与决策能力。</li>
+        </ul>
+      </div>
+    </div>
+    <p>训练按上下文长度分两段：第一段 <strong>40K</strong>（含全部短于 40K 的 ReAct 样本与全部上下文管理样本）；第二段扩到 <strong>128K</strong>（含 40K–128K 的 ReAct 样本，并保留少量 40K 数据以维持稳定）。</p>
+
+    <h3>5.3　Agentic 强化学习：稳定压倒一切</h3>
+    <p>RL 阶段让模型生成完整的任务尝试（rollout），答案与标准答案匹配才得到奖励（RLVR）。模型在与环境（模拟或真实）的持续交互中迭代优化策略，并用更强的策略去筛选出更高质量的训练数据——形成闭环。</p>
+
+    <figure>
+      <div class="imgwrap"><img src="assets/x5.png" alt="Agentic 强化学习框架" loading="lazy" /></div>
+      <figcaption>
+        <span class="fig-label">图 5 · 原论文</span>
+        <p class="fig-cap">Agentic 强化学习框架：异步 rollout 服务 + 真实/模拟环境与工具沙箱 + 奖励服务 + 自动合成数据飞轮，构成稳定的训练闭环。</p>
+      </figcaption>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><strong>Async Rollout Service → Rollout Worker</strong>：异步调用让多个 agent 实例<strong>并行</strong>与环境交互、各自独立完成 rollout，缓解 agentic rollout 的速度瓶颈（基于 rLLM 的 step 级异步，推理与工具调用分别用两个异步在线服务）。</li>
+          <li><strong>Action / Observation 与环境</strong>：Rollout Worker 在「模拟环境」或「真实环境」中执行动作、接收观测；环境背后接一套工具：Search、Visit、File Parser、Python Interpreter、Google Scholar。</li>
+          <li><strong>Collect → Trajectory → Reward → Update</strong>：收集轨迹后由奖励服务给出 0/1 正确性奖励，再回传更新策略（定制版 GRPO，严格 on-policy）。</li>
+          <li><strong>Preservation → Automatic Synthetic Data → Utilization</strong>：奖励与轨迹沉淀为自动合成数据池，再被复用回 rollout，形成「越训越强」的数据飞轮。</li>
+          <li><strong>工具沙箱（图右下工具区）</strong>：统一调度 + 限流（QPS）、结果缓存、超时重试、非关键失败优雅降级、故障切换到备份源，把不稳定的外部 API 抽象成确定性接口，避免环境抖动污染训练轨迹。</li>
+        </ul>
+        <p class="sumline">一句话总结：这张图说明 agentic RL 的稳定，是「环境工程 + 数据飞轮 + 异步架构」共同撑起来的。</p>
+      </div></div>
+    </figure>
+
+    <h4 class="blk">RL 算法：在 GRPO 上做的几处「为稳定」改动</h4>
+    <p>算法是 <strong>GRPO 的定制版</strong>，作者强调改动「不为创新，只为更高效、更稳定」：</p>
+    <ul>
+      <li><strong>严格 on-policy</strong>：始终用最新策略采样轨迹，保证学习信号与当前能力相关（重要性采样比恒为 1.0）。</li>
+      <li><strong>纯结果奖励</strong>：答案对=1、错=0，<strong>不加格式奖励</strong>（冷启动已让模型熟悉输出格式）。</li>
+      <li><strong>token 级策略梯度 + clip-higher</strong>（沿用 DAPO）：鼓励更多探索。</li>
+      <li><strong>leave-one-out 优势估计</strong>：进一步降低优势估计的方差。</li>
+      <li><strong>负样本过滤</strong>：剔除会引发策略崩溃的负 rollout（如「超长度而没给出最终答案」的样本）。</li>
+      <li><strong>自动数据治理</strong>：动态剔除已被掌握的简单题、从后台备份池补入「中等难度」新题；该流程独立运行，不打断主训练循环。</li>
+    </ul>
+    <div class="quote">
+      我们得到一个关键洞察：<strong>agentic RL 的成败，更多取决于数据质量与训练环境的稳定性，而非所用的具体算法</strong>。因此我们把精力集中在设计稳定环境与策展高质量数据上，只对算法做少量必要修改、主要用于稳定训练过程。
+      <span class="who">—— 摘自原论文 §3.4.3</span>
+    </div>
+
+    <h4 class="blk">5.4　模型合并</h4>
+    <p>管线最后一步做<strong>模型合并</strong>：当多个模型变体源自同一基座时，其参数可通过加权平均/插值有效组合。作者挑选若干同源、但能力侧重不同的变体做加权平均，得到的最终模型既保留各自强项、又获得稳健泛化，且<strong>不产生额外优化成本</strong>。</p>
+  </section>
+
+  <!-- ============ INFERENCE ============ -->
+  <section id="infer" class="anchor-pad">
+    <h2><span class="num">06</span> 推理范式：ReAct、上下文管理与 Heavy 模式</h2>
+    <p class="sec-lead">同一个模型，推理时有两套玩法：朴素而可扩展的 ReAct（含上下文管理），以及做测试时扩展的 Heavy 模式。</p>
+
+    <p>每一步 rollout 由三个基本组件定义：<strong>Thought（思考）</strong>——分析上下文、回忆记忆、规划与自我反思；<strong>Action（动作）</strong>——执行工具调用或给出最终报告；<strong>Observation（观测）</strong>——环境对动作的反馈。动作空间由一组工具构成：</p>
+    <div class="chips">
+      <span class="chip"><b>Search</b> 网页搜索</span>
+      <span class="chip"><b>Visit</b> 访问网页</span>
+      <span class="chip"><b>Python</b> 解释器</span>
+      <span class="chip"><b>Google Scholar</b> 学术检索</span>
+      <span class="chip"><b>File Parser</b> 文件解析</span>
+    </div>
+
+    <div class="deck">
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">ReAct：刻意选择的「简单」<span class="ptag">基础范式</span></span>
+            <span class="summary">思考-动作-观测交织成轨迹；选它是因为「The Bitter Lesson」——可扩展的通用方法终将胜出。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p>架构基于朴素的 ReAct：agent 以交织方式生成推理轨迹（思考）与后续动作，形成「思考-动作-观测」三元组序列，最后一步动作即为给用户的最终报告。</p>
+          <p>选择 ReAct 是<strong>刻意为之</strong>：依据「The Bitter Lesson」，依赖大量人工设计、复杂 prompt 工程或僵化结构的方法，会随模型本身能力 scale 而过时；而利用可扩展算力的通用方法终将胜出。用朴素 ReAct，正是为了把赌注押在模型与算力的规模化上。</p>
+        </div></div>
+      </div>
+
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">上下文管理：基于马尔可夫的状态重构<span class="ptag">长程关键</span></span>
+            <span class="summary">不喂完整历史，每步只保留问题、滚动报告（压缩记忆）和上一步交互，避免上下文窒息。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p>长程任务受限于有限的上下文窗口。上下文管理范式采用<strong>基于马尔可夫状态重构</strong>的动态机制：每一步 agent 不以完整历史为条件，而是只在一个被策略性重构的工作区上推理，工作区只含必要元素——<strong>问题 q、作为压缩记忆的滚动报告 S_t、以及上一步的动作与观测</strong>。</p>
+          <p>这种马尔可夫结构让 agent 在任意探索深度下都保持稳定的推理容量，规避了上下文膨胀导致的退化；同时通过要求每步都显式综合与排序信息，强制形成结构化推理——这与人类研究中「周期性综合与反思」的模式天然契合。</p>
+        </div></div>
+      </div>
+
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">Heavy 模式：并行探索 + 综合的测试时扩展<span class="ptag">Test-time Scaling</span></span>
+            <span class="summary">部署 n 个并行 agent 各自探索，再由综合模型聚合「压缩报告」给出最终答案。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p>Heavy 模式基于上下文管理范式做<strong>测试时扩展</strong>，采用「Research-Synthesis」框架，分两阶段：</p>
+          <ul>
+            <li><strong>并行研究阶段</strong>：部署 n 个并行 agent，各自遵循上下文管理范式，但用不同的工具使用与推理策略探索多样解法，分别产出最终报告与答案。</li>
+            <li><strong>综合阶段</strong>：一个综合模型整合所有并行发现，给出最终答案。</li>
+          </ul>
+          <p>关键优势在于上下文管理报告 S_t 的<strong>压缩性</strong>：直接聚合完整轨迹通常 2–3 个 agent 就会爆上下文，而压缩报告让综合模型能在可控窗口内评估 n 条多样解法，从而真正实现有效的测试时扩展。</p>
+          <p><strong>效果：</strong>Heavy 模式在 Humanity's Last Exam 上达 <strong>38.3%</strong>、BrowseComp-ZH 达 <strong>58.1%</strong>，BrowseComp 达 <strong>58.3%</strong>，相对单次推理有显著提升。</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ EVAL ============ -->
+  <section id="eval" class="anchor-pad">
+    <h2><span class="num">07</span> 实验结论：小模型，大成绩</h2>
+    <p class="sec-lead">仅 3.3B 激活参数，却在几乎所有深度研究基准上登顶，并超过 OpenAI o3、DeepSeek-V3.1、Gemini DeepResearch 等更大的开源与闭源系统。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="big">32.9</div><div class="lab">Humanity's Last Exam<br/>（Pass@3 达 45.9）</div></div>
+      <div class="metric"><div class="big">46.7</div><div class="lab">BrowseComp-ZH<br/>（Heavy 模式 58.1）</div></div>
+      <div class="metric"><div class="big">75.0</div><div class="lab">xbench-DeepSearch</div></div>
+      <div class="metric"><div class="big">70.9</div><div class="lab">GAIA</div></div>
+    </div>
+
+    <p>下表节选自原文 Table 1（Avg@3，越高越好）。Tongyi DeepResearch 仅激活 3.3B 参数，便在多数基准上取得最高分，「–」表示原文未报告该项。</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="name">系统</th>
+            <th>HLE</th><th>Browse<br/>Comp</th><th>Browse<br/>Comp-ZH</th><th>GAIA</th><th>xbench<br/>DeepSearch</th><th>WebWalker<br/>QA</th><th>FRAMES</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">GLM-4.5</td><td>21.2</td><td>26.4</td><td>37.5</td><td>66.0</td><td>70.0</td><td>65.6</td><td>78.9</td></tr>
+          <tr><td class="name">DeepSeek-V3.1</td><td>29.8</td><td>30.0</td><td>49.2</td><td>63.1</td><td>71.0</td><td>61.2</td><td>83.7</td></tr>
+          <tr><td class="name">Claude-4-Sonnet</td><td>20.3</td><td>12.2</td><td>29.1</td><td>68.3</td><td>65.0</td><td>61.7</td><td>80.7</td></tr>
+          <tr><td class="name">OpenAI o3</td><td>24.9</td><td>49.7</td><td>58.1</td><td>–</td><td>67.0</td><td>71.7</td><td>84.0</td></tr>
+          <tr><td class="name">OpenAI DeepResearch</td><td>26.6</td><td>51.5</td><td>42.9</td><td>67.4</td><td>–</td><td>–</td><td>–</td></tr>
+          <tr class="hl"><td class="name">Tongyi DeepResearch (30B-A3B)</td><td>32.9</td><td>43.4</td><td>46.7</td><td>70.9</td><td>75.0</td><td>72.2</td><td>90.6</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px;color:var(--ink-soft);margin-top:-8px;">另在 2025 年 10 月新发布的 xbench-DeepSearch-2510 上得 55.0，仅次于 ChatGPT-5-Pro。完整对比含 Kimi-K2、o4-mini、Gemini/Kimi DeepResearch 等，详见原文。</p>
+
+    <h3>几个值得记住的分析结论</h3>
+    <div class="deck">
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">训练奖励稳步上升、熵保持稳定<span class="ptag">RL 稳定性</span></span>
+            <span class="summary">奖励持续上行、策略熵在短暂上升后收敛，既不崩塌也不爆炸。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p>随训练推进，agent 性能呈清晰且显著的上升趋势，验证了策略学习有效；持续的提升也印证了动态数据治理的作用——不断提供有挑战的材料，避免学习停滞。与此同时策略熵异常稳定，短暂上升后收敛到一个一致值，<strong>既避免坍缩也避免爆炸</strong>，这正是环境设计与算法修改共同创造的稳定 RL 条件的有力证据。</p>
+        </div></div>
+      </div>
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">RL 上下文长度：32K 反而「学会更高效」<span class="ptag">反直觉</span></span>
+            <span class="summary">64K 奖励上限最高；而 32K 模型在为强模型设计的课程下，被迫学出更短更精的解法。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p>对比 32K / 48K / 64K 三种上下文限制（数据治理都由同一个 64K 模型完成）：三者奖励都单调上升、训练稳定，但<strong>性能上限分化</strong>——64K 与自身数据完美匹配，奖励最高；48K、32K 受限于无法解出课程中最复杂的题，上限被压低。</p>
+          <p>更有意思的是响应长度：64K 模型稳步变长、学会用更大上下文构建更精细解法；48K 维持平衡；而 <strong>32K 模型的响应长度明显下降</strong>。因为课程里很多题的最优解超过 32K，对 32K 模型而言尝试这些题往往零奖励，于是形成一种隐式激励，<strong>逼它发现更简洁、更有效的动作序列</strong>，随时间越来越高效。</p>
+        </div></div>
+      </div>
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">交互轮数即测试时扩展的新维度<span class="ptag">Interaction Scaling</span></span>
+            <span class="summary">不靠堆输出 token，而靠增加与环境的交互轮数；轮数越多，BrowseComp 越好。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p>与普通推理模型靠增加输出 token 扩展不同，深度研究 agent 主要靠<strong>与环境交互获取信息</strong>，因此交互轮数至关重要。随上下文长度与交互轮数增加，模型在 BrowseComp 上的表现持续提升——这是一条沿「环境交互次数」展开的、不同于纯输出长度的扩展曲线。</p>
+        </div></div>
+      </div>
+      <div class="deep">
+        <div class="head" onclick="toggleCard(this)">
+          <span class="chev">▶</span>
+          <span class="htext">
+            <span class="title">从模拟到真实：Wiki「风洞实验室」<span class="ptag">Sim-to-Real</span></span>
+            <span class="summary">基于 2024 Wikipedia 的离线模拟环境，奖励曲线与真实环境高度吻合，大幅提速迭代。</span>
+          </span>
+        </div>
+        <div class="body"><div class="inner">
+          <p>作者基于 2024 年 Wikipedia 数据库 + 本地 RAG 工具构建离线模拟环境，并复用数据合成管线产出高质量、结构复杂的 QA。在该环境测试定制 GRPO，得到的奖励曲线与真实环境高度吻合。这个 Wiki 模拟环境如同<strong>「风洞实验室」</strong>，支持高频快速实验，显著提升了开发效率。</p>
+          <p><strong>合成数据的复杂度</strong>：SFT 数据中超过 20% 的样本超过 32K token 且涉及 10 次以上工具调用，印证了合成数据的高复杂度，为 RL 提供了优秀初始化。在通用基准（AIME25、HMMT25、SimpleQA）上，借助搜索与 Python 解释器，模型也较纯推理的基座有大幅提升。</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIMITATIONS / CONCLUSION ============ -->
+  <section id="end" class="anchor-pad">
+    <h2><span class="num">08</span> 局限、小模型理念与展望</h2>
+    <p>作者坦诚列出了几条<strong>局限</strong>：</p>
+    <ul>
+      <li><strong>上下文仍不够长</strong>：128K 对最复杂的长程任务仍不足，需探索更长窗口或更先进的上下文管理。</li>
+      <li><strong>尚未放出更大模型</strong>：小模型已表现强劲，更大规模的版本仍在进行中。</li>
+      <li><strong>报告生成与偏好对齐</strong>：仍在持续提升报告的忠实度与对用户偏好的对齐。</li>
+      <li><strong>RL 效率</strong>：计划探索 partial rollouts 等技术，但需解决随之而来的 off-policy / 分布漂移问题。</li>
+      <li><strong>泛化到更广的工具使用</strong>：当前聚焦特定指令与预设工具集，未来要从深度研究扩展到更广的 agentic 工具使用场景。</li>
+    </ul>
+
+    <div class="quote">
+      我们相信，在相对较小的模型上训练 agentic 能力极具价值：小模型更易部署到端侧、覆盖更多真实场景，并带来更快、更灵敏的交互。这与「让自主研究 agent 既强大又可落地」的大目标一致。
+      <span class="who">—— 摘自原论文 §5.2 关于模型规模</span>
+    </div>
+
+    <p><strong>结论：</strong>Tongyi DeepResearch 把 agentic 中期训练与后期训练统一成一套可扩展的端到端范式，通过全自动数据合成与分阶段定制环境，让模型学会自主规划、搜索、推理与信息综合。尽管只激活 3.3B 参数，它仍在多个深度研究基准上达到 SOTA、超越强大的专有系统，为「开放、可复现的自主 AI agent 研究」立下了一块基石，并指向更通用、可自我改进的智能。</p>
+
+    <div class="note">
+      <b>关于本页真实性：</b>本可视化的全部内容（模型规格、训练阶段、超参数、基准成绩、图片）均来自实际抓取的 Tongyi DeepResearch 技术报告（arXiv:2510.24701 的 HTML v3 版）。嵌入的 4 张图均为原论文原图，已逐一用 <span class="mono">curl -sI</span> 验证返回 HTTP 200 且为 PNG。结果图表与附录表格未截图搬运，改用 metric card 与节选表格呈现核心数字；未抓取/未采用的内容未在本页杜撰。
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="fin">
+    <p><strong>Tongyi DeepResearch Technical Report</strong> · Tongyi DeepResearch Team, Tongyi Lab, Alibaba Group · 2025.10（arXiv preprint）</p>
+    <p class="ref">
+      原文与资料来源：
+      <a href="https://arxiv.org/abs/2510.24701" target="_blank" rel="noopener">arXiv:2510.24701（abstract）</a> ·
+      <a href="https://arxiv.org/html/2510.24701v3" target="_blank" rel="noopener">arXiv HTML v3</a> ·
+      <a href="https://github.com/Alibaba-NLP/DeepResearch" target="_blank" rel="noopener">Alibaba-NLP/DeepResearch（开源仓库）</a> ·
+      <a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base" target="_blank" rel="noopener">Qwen3-30B-A3B-Base</a>
+    </p>
+    <p class="ref">本页为教学性图解，非官方发布物。图片版权归原论文作者所有。</p>
+  </div>
+</footer>
+
+<script>
+  function toggleFigDetail(el) {
+    var d = el.nextElementSibling;
+    if (!d) return;
+    var open = d.classList.toggle('active');
+    el.textContent = open ? '收起说明 ▴' : '展开说明 ▸';
+  }
+  function toggleCard(headEl) {
+    var card = headEl.parentElement;
+    card.classList.toggle('open');
+  }
+
+  var stageIdx = 0;
+  var stages = document.querySelectorAll('.stage-panel');
+  var nodes = document.querySelectorAll('#rail .rail-node');
+  function showStage(i) {
+    if (i < 0) i = 0;
+    if (i > stages.length - 1) i = stages.length - 1;
+    stageIdx = i;
+    for (var k = 0; k < stages.length; k++) {
+      stages[k].classList.toggle('active', k === i);
+    }
+    for (var n = 0; n < nodes.length; n++) {
+      nodes[n].classList.toggle('on', n <= i);
+      nodes[n].classList.toggle('cur', n === i);
+    }
+    var prog = document.getElementById('stageProg');
+    if (prog) prog.textContent = (i + 1) + ' / ' + stages.length;
+  }
+  function stageNext() { showStage(stageIdx + 1); }
+  function stagePrev() { showStage(stageIdx - 1); }
+  function stageReset() { showStage(0); }
+  showStage(0);
+</script>
+
+</body>
+</html>

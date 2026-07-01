@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MiniMax-M1 图解：用 Lightning Attention 高效扩展推理算力</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fbf6ea;
+    --bg-soft: #f6efdf;
+    --card: #f4ead7;
+    --card-2: #efe3cd;
+    --line: #e3d5bd;
+    --line-strong: #d8c6a8;
+    --ink: #2c2620;
+    --ink-soft: #4b4439;
+    --muted: #807663;
+    --accent: #b15a27;
+    --accent-soft: #c9803f;
+    --accent-wash: #f0e0cb;
+    --good: #5c7a4f;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.75;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 22px; }
+
+  /* Header */
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #f9f2e3 0%, var(--bg) 100%);
+  }
+  .top-inner { padding: 40px 0 30px; }
+  .eyebrow {
+    font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 14px;
+  }
+  h1.title {
+    font-size: 32px; line-height: 1.28; margin: 0 0 8px;
+    font-weight: 800; letter-spacing: -0.01em;
+  }
+  .subtitle-en {
+    font-size: 15px; color: var(--muted); font-weight: 500; margin-bottom: 18px;
+    font-family: var(--sans);
+  }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--card); border: 1px solid var(--line-strong);
+    color: var(--ink-soft); font-size: 13px; font-weight: 600;
+    padding: 5px 11px; border-radius: 999px;
+  }
+  .badge.src { background: var(--accent); color: #fff7ec; border-color: var(--accent); }
+  .badge.src a { color: #fff7ec; text-decoration: none; }
+  a { color: var(--accent); }
+
+  /* Sections */
+  section { padding: 38px 0; border-bottom: 1px solid var(--line); }
+  .sec-tag {
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px;
+  }
+  h2 { font-size: 25px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.01em; }
+  h3 { font-size: 19px; font-weight: 700; margin: 28px 0 10px; }
+  p { margin: 0 0 15px; }
+  strong { font-weight: 700; color: var(--ink); }
+  ul { margin: 0 0 15px; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+
+  /* TL;DR */
+  .tldr {
+    background: var(--card); border: 1px solid var(--line-strong);
+    border-radius: 16px; padding: 24px 26px; margin-top: 6px;
+  }
+  .tldr h2 { font-size: 21px; margin-bottom: 12px; display: flex; align-items: center; gap: 9px; }
+  .tldr .lead { font-size: 17.5px; }
+  .keyrow { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .chip {
+    background: var(--bg); border: 1px solid var(--line-strong);
+    border-radius: 10px; padding: 8px 13px; font-size: 13.5px; font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .chip b { color: var(--accent); font-weight: 800; }
+
+  /* Metric cards */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 22px 0 6px; }
+  .metric {
+    background: var(--card); border: 1px solid var(--line-strong);
+    border-radius: 14px; padding: 16px 16px 14px;
+  }
+  .metric .num { font-size: 27px; font-weight: 800; color: var(--accent); line-height: 1.1; font-family: var(--sans); }
+  .metric .num small { font-size: 15px; font-weight: 700; color: var(--accent-soft); }
+  .metric .lbl { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 600; }
+
+  /* Expandable prior-approach cards */
+  .ex-card {
+    background: var(--card); border: 1px solid var(--line-strong);
+    border-radius: 14px; margin-bottom: 14px; overflow: hidden;
+  }
+  .ex-head {
+    padding: 16px 20px; cursor: pointer; display: flex; gap: 14px; align-items: flex-start;
+    user-select: none;
+  }
+  .ex-head:hover { background: var(--card-2); }
+  .ex-ic {
+    flex: 0 0 auto; width: 34px; height: 34px; border-radius: 9px;
+    background: var(--accent-wash); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-top: 2px;
+  }
+  .ex-head .tt { flex: 1; }
+  .ex-head .nm { font-weight: 700; font-size: 17px; }
+  .ex-head .one { font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .ex-head .arr { color: var(--accent); font-weight: 700; transition: transform .25s ease; margin-top: 4px; }
+  .ex-card.open .ex-head .arr { transform: rotate(90deg); }
+  .ex-body {
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height .4s ease, opacity .3s ease;
+    padding: 0 20px;
+  }
+  .ex-card.open .ex-body { max-height: 1400px; opacity: 1; padding: 4px 20px 20px; }
+  .ex-body .venue {
+    display: inline-block; font-size: 12px; font-weight: 600; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+    padding: 2px 9px; margin-bottom: 12px;
+  }
+
+  /* Figures */
+  figure.fig { margin: 22px 0; background: var(--card); border: 1px solid var(--line-strong); border-radius: 16px; padding: 18px; }
+  figure.fig img { width: 100%; height: auto; display: block; border-radius: 10px; background: #fff; }
+  .fig-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .fig-cap { font-size: 13.5px; color: var(--muted); margin-top: 12px; }
+  .fig-cap b { color: var(--ink-soft); }
+  .fig-toggle {
+    display: inline-block; margin-top: 12px; cursor: pointer; user-select: none;
+    color: var(--accent); font-weight: 700; font-size: 14px;
+  }
+  .figure-detail {
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height .45s ease, opacity .3s ease;
+  }
+  .figure-detail.active { max-height: 1600px; opacity: 1; margin-top: 12px; }
+  .figure-detail ul { margin-bottom: 6px; }
+  .figure-detail li { font-size: 14.5px; }
+
+  /* Self-made diagrams */
+  .diagram { background: var(--card); border: 1px solid var(--line-strong); border-radius: 16px; padding: 24px 22px; margin: 22px 0; }
+  .diagram .dtitle { font-weight: 700; font-size: 15px; color: var(--ink-soft); margin-bottom: 18px; text-align: center; }
+
+  /* pipeline flow */
+  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; justify-content: center; }
+  .flow .node {
+    flex: 1; min-width: 140px; background: var(--bg); border: 1px solid var(--line-strong);
+    border-radius: 12px; padding: 14px 12px; text-align: center; position: relative;
+  }
+  .flow .node .st { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: .05em; }
+  .flow .node .nt { font-weight: 700; font-size: 15px; margin: 4px 0 3px; }
+  .flow .node .nd { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .flow .arrowx { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 22px; font-weight: 700; padding: 0 6px; }
+
+  /* architecture block stack */
+  .arch { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: center; }
+  .stack { display: flex; flex-direction: column; gap: 7px; }
+  .blk {
+    border-radius: 9px; padding: 9px 13px; font-size: 13.5px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent;
+  }
+  .blk.lite { background: var(--accent-wash); border-color: var(--line-strong); color: var(--ink-soft); }
+  .blk.soft { background: #e3ead8; border-color: #cdd9bc; color: #46523a; }
+  .blk .tag { font-size: 11px; font-weight: 700; opacity: .8; }
+  .repeat-bracket { font-size: 12.5px; color: var(--muted); text-align: center; margin: 2px 0; font-weight: 600; }
+  .arch-note ul { padding-left: 18px; }
+  .arch-note li { font-size: 14px; }
+
+  /* CISPO toggle diagram */
+  .algo-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+  .algo-tab {
+    cursor: pointer; border: 1px solid var(--line-strong); background: var(--bg);
+    padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--ink-soft);
+    user-select: none;
+  }
+  .algo-tab.active { background: var(--accent); color: #fff7ec; border-color: var(--accent); }
+  .algo-panel { display: none; }
+  .algo-panel.active { display: block; }
+  .token-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 6px 0 14px; }
+  .tok {
+    font-family: var(--mono); font-size: 13px; padding: 7px 11px; border-radius: 8px;
+    border: 1px solid var(--line-strong); background: var(--bg); position: relative;
+  }
+  .tok.fork { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .tok.dropped { opacity: .32; text-decoration: line-through; }
+  .tok.kept { background: var(--accent-wash); }
+  .algo-explain { font-size: 14px; color: var(--ink-soft); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 15px; }
+  .algo-explain b { color: var(--accent); }
+
+  /* formula */
+  .formula {
+    font-family: var(--mono); font-size: 13.5px; background: #322b22; color: #f0e6d4;
+    border-radius: 12px; padding: 16px 18px; overflow-x: auto; line-height: 1.7; margin: 6px 0 4px;
+  }
+  .formula .cm { color: #b79a6e; }
+  .formula .hl { color: #e6a463; font-weight: 600; }
+
+  /* detail cards grid */
+  .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+  .dcard { background: var(--card); border: 1px solid var(--line-strong); border-radius: 13px; padding: 16px 18px; }
+  .dcard .dh { font-weight: 700; font-size: 15.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .dcard .dh .di { font-size: 17px; }
+  .dcard p { font-size: 14px; color: var(--ink-soft); margin: 0; }
+
+  /* quote */
+  .quote {
+    border-left: 3px solid var(--accent); background: var(--card); border-radius: 0 12px 12px 0;
+    padding: 14px 18px; margin: 18px 0; font-size: 15px; color: var(--ink-soft);
+  }
+
+  details.raw { background: var(--card); border: 1px solid var(--line-strong); border-radius: 12px; padding: 4px 18px; margin: 16px 0; }
+  details.raw summary { cursor: pointer; font-weight: 700; padding: 12px 0; font-size: 15px; }
+  details.raw summary .hint { font-weight: 500; color: var(--muted); font-size: 13.5px; }
+  details.raw[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+
+  /* footer */
+  footer { padding: 34px 0 60px; }
+  .foot-box { background: var(--card); border: 1px solid var(--line-strong); border-radius: 16px; padding: 22px 24px; }
+  .foot-box .ft { font-weight: 700; margin-bottom: 6px; }
+  .foot-box .fm { font-size: 13.5px; color: var(--muted); }
+
+  @media (max-width: 880px) {
+    body { font-size: 16px; }
+    h1.title { font-size: 26px; }
+    h2 { font-size: 22px; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .arch { grid-template-columns: 1fr; }
+    .fig-grid2 { grid-template-columns: 1fr; }
+    .dgrid { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow .arrowx { transform: rotate(90deg); padding: 4px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="eyebrow">论文图解 · 高效推理大模型</div>
+    <h1 class="title">MiniMax-M1：用 Lightning Attention 高效扩展测试时算力</h1>
+    <div class="subtitle-en">MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention</div>
+    <div class="meta-row">
+      <span class="badge">arXiv preprint · 2025.06</span>
+      <span class="badge">MiniMax AI</span>
+      <span class="badge">arXiv:2506.13585</span>
+      <span class="badge">456B 参数 / 45.9B 激活</span>
+      <span class="badge src">📄 <a href="https://arxiv.org/abs/2506.13585" target="_blank" rel="noopener">阅读原文 / Source</a></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- TL;DR -->
+  <section id="tldr">
+    <div class="tldr">
+      <h2>⚡ 一句话总览（TL;DR）</h2>
+      <p class="lead">
+        MiniMax-M1 是<strong>首个开源的大规模「混合注意力 + MoE」推理模型</strong>。它用
+        <strong>Lightning Attention</strong>（线性注意力变体）替换掉绝大多数 softmax 注意力，使得「长链思考」的推理算力随生成长度
+        <strong>近似线性增长</strong>，而非传统 Transformer 的二次方爆炸。这让又长又多的思维链（CoT）和大规模强化学习都变得便宜得多。
+        配合新提出的 <strong>CISPO</strong> 强化学习算法，团队仅用 512 张 H800、3 周、约 53 万美元就跑完了完整 RL，
+        并原生支持 <strong>100 万 token 上下文</strong>、<strong>8 万 token 生成</strong>。
+      </p>
+      <div class="keyrow">
+        <span class="chip">生成 10 万 token 时仅用 DeepSeek-R1 约 <b>25%</b> FLOPs</span>
+        <span class="chip">原生上下文 <b>1M</b> tokens（R1 的 8 倍）</span>
+        <span class="chip">CISPO 较 DAPO <b>2×</b> 训练加速</span>
+        <span class="chip">完整 RL：<b>3 周 / 512×H800 / ~$0.53M</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section id="problem">
+    <div class="sec-tag">问题定义</div>
+    <h2>为什么需要这篇论文？</h2>
+    <p>
+      像 OpenAI o1、DeepSeek-R1 这样的<strong>大推理模型（LRM）</strong>，靠「把思考链写得更长 + 大规模强化学习」不断刷高数学、竞赛编程等复杂任务的成绩。
+      这背后是一个新的扩展维度——<strong>测试时算力（test-time compute）</strong>：推理时投入越多 FLOPs 去「想得更久」，效果就越好。
+    </p>
+    <p>
+      但「想得更久」在传统 Transformer 上代价高昂。softmax 注意力的计算复杂度是序列长度的 <strong>二次方 O(n²)</strong>：
+      思维链越长，算力和显存开销膨胀得越快。这不仅让推理变贵，更让<strong>「边生成长回复、边做 RL」的训练成本难以承受</strong>——
+      而 RL 阶段恰恰需要模型反复生成越来越长的回复。
+    </p>
+    <p>
+      学界早有 sparse / linear attention、状态空间模型（SSM）等高效注意力方案，但它们<strong>几乎没在大规模推理模型上被真正验证过</strong>，
+      至今有竞争力的 LRM 仍清一色用传统注意力。本文要回答的问题是：
+    </p>
+    <div class="quote">能否造出一个<strong>高效、可扩展、而且开源</strong>的强推理模型，让「长思考 + 大规模 RL」既跑得起、又打得过最前沿模型？</div>
+  </section>
+
+  <!-- Prior approaches -->
+  <section id="prior">
+    <div class="sec-tag">已有方案速览</div>
+    <h2>前人怎么做，卡在哪里</h2>
+    <p>点击展开，看每条路线「做了什么、怎么做、卡在哪」。</p>
+
+    <div class="ex-card">
+      <div class="ex-head" onclick="toggleCard(this)">
+        <div class="ex-ic">🧮</div>
+        <div class="tt">
+          <div class="nm">标准注意力推理模型（o1、DeepSeek-R1）</div>
+          <div class="one">折叠态：用 softmax 注意力堆长思维链，效果强但越长越贵。</div>
+        </div>
+        <div class="arr">▸</div>
+      </div>
+      <div class="ex-body">
+        <span class="venue">代表：OpenAI o1 (2024) · DeepSeek-R1 (2025)</span>
+        <p><strong>做了什么：</strong>沿用经典 Transformer + softmax 注意力，通过大规模 RL 让模型学会写很长的反思型思维链，从而在奥数、竞赛编程上大幅提升。</p>
+        <p><strong>怎么做：</strong>全程 full softmax attention，每个 token 都与之前所有 token 做注意力；上下文与生成长度受限（DeepSeek-R1-0528 最大输入 128K、输出 64K）。</p>
+        <p><strong>卡在哪：</strong>注意力是 <strong>O(n²)</strong> 复杂度。思维链越长，单步推理 FLOPs、显存、RL rollout 成本都急剧上升，成为「测试时算力扩展」的天花板。</p>
+      </div>
+    </div>
+
+    <div class="ex-card">
+      <div class="ex-head" onclick="toggleCard(this)">
+        <div class="ex-ic">🪶</div>
+        <div class="tt">
+          <div class="nm">高效注意力路线（线性 / 稀疏 / SSM / 线性 RNN）</div>
+          <div class="one">折叠态：理论上能降复杂度，但一直没在大推理模型上被验证。</div>
+        </div>
+        <div class="arr">▸</div>
+      </div>
+      <div class="ex-body">
+        <span class="venue">代表：Linear Attention · Mamba/SSM · Hunyuan-T1 (2025)</span>
+        <p><strong>做了什么：</strong>用 sparse attention、linear attention、状态空间模型、线性 RNN 等替换 softmax，把复杂度从二次降到近线性，让长序列更便宜。</p>
+        <p><strong>怎么做：</strong>各种近似或线性化注意力计算；但绝大多数只在中小规模或非推理任务上做过实验。</p>
+        <p><strong>卡在哪：</strong>这些方案<strong>「尚未在大规模推理模型上充分验证」</strong>，几乎没有有竞争力的 LRM 采用。唯一的例外 Hunyuan-T1 用了 Mamba 架构，但<strong>不开源、披露细节极少</strong>。MiniMax-M1 正是要填补这块空白：把高效注意力真正做进一个开源、能打的大推理模型。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Method -->
+  <section id="method">
+    <div class="sec-tag">本文方法 · 重头戏</div>
+    <h2>MiniMax-M1 怎么做</h2>
+    <p>
+      整体可分为两层创新：<strong>① 架构层</strong>——混合 Lightning Attention + MoE，让长生成天然高效；
+      <strong>② 训练层</strong>——CISPO 强化学习算法 + 一系列稳定 RL 的工程配方。先看从底座到成品的总流水线。
+    </p>
+
+    <!-- pipeline -->
+    <div class="diagram">
+      <div class="dtitle">训练总流水线：从底座模型到 MiniMax-M1</div>
+      <div class="flow">
+        <div class="node">
+          <div class="st">底座</div>
+          <div class="nt">MiniMax-Text-01</div>
+          <div class="nd">已有混合注意力 MoE 基座（456B/45.9B）</div>
+        </div>
+        <div class="arrowx">→</div>
+        <div class="node">
+          <div class="st">第 1 步</div>
+          <div class="nt">持续预训练</div>
+          <div class="nd">+7.5T tokens，STEM/代码占 70%，上下文渐扩到 1M</div>
+        </div>
+        <div class="arrowx">→</div>
+        <div class="node">
+          <div class="st">第 2 步</div>
+          <div class="nt">SFT 冷启动</div>
+          <div class="nd">注入反思型 CoT 模式，数学/代码约 60%</div>
+        </div>
+        <div class="arrowx">→</div>
+        <div class="node">
+          <div class="st">第 3 步</div>
+          <div class="nt">CISPO 强化学习</div>
+          <div class="nd">多样数据 + 规则/模型奖励，输出 40K</div>
+        </div>
+        <div class="arrowx">→</div>
+        <div class="node">
+          <div class="st">第 4 步</div>
+          <div class="nt">长度扩展 RL</div>
+          <div class="nd">40K→80K 阶梯扩窗，得 M1-80k</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Architecture -->
+    <h3>① 架构：Lightning Attention 混合 MoE</h3>
+    <p>
+      M1 的核心是<strong>「7 + 1」混合注意力</strong>：每 7 个使用 <strong>Lightning Attention</strong>（一种 I/O 感知、线性复杂度的线性注意力实现）的 transnormer 块，
+      才插入 <strong>1 个</strong>常规 softmax 注意力块。绝大部分计算因此变成线性，少量 softmax 块则保留对精确全局检索的能力。
+      模型整体是 MoE：<strong>456B 总参数、45.9B 激活、32 个专家</strong>。
+    </p>
+
+    <div class="diagram">
+      <div class="dtitle">混合注意力块结构（每 8 层循环一次）</div>
+      <div class="arch">
+        <div class="stack">
+          <div class="repeat-bracket">↻ 重复 7 次</div>
+          <div class="blk lite">Lightning Attention 块 ×7 <span class="tag">线性 O(n)</span></div>
+          <div class="blk soft">Softmax Attention 块 ×1 <span class="tag">二次 O(n²)</span></div>
+          <div class="repeat-bracket">↑ 以上 8 层为一个循环单元，堆叠多次 · 每块内含 MoE（32 专家，激活 45.9B）</div>
+        </div>
+        <div class="arch-note">
+          <ul>
+            <li><strong>为什么 7:1：</strong>大部分上下文交互交给线性的 Lightning Attention 处理，省下绝大多数算力；周期性的 softmax 块补回精确长距离检索能力。</li>
+            <li><strong>效果：</strong>长生成时 FLOPs 近似线性增长，天然适合「想得很长」。</li>
+            <li><strong>RL 友好：</strong>RL 的瓶颈常在 rollout（生成）算力与延迟，线性注意力让大规模 RL 也跑得动。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <p>下面这张原文图直接量化了这种效率优势——这是全文最关键的「为什么高效」证据。</p>
+
+    <figure class="fig">
+      <img src="assets/x2.png" alt="推理 FLOPs 随生成长度的理论增长曲线：DeepSeek R1、Qwen3-235B 与 MiniMax-M1 对比" />
+      <div class="fig-cap"><b>图（原文 Figure 1 右）：</b>理论推理 FLOPs 随生成长度（token 数）的变化。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>横轴 = 生成长度（0→128K tokens），纵轴 = 推理 FLOPs（×10¹⁶）</strong>：衡量「生成这么长的回复」要花多少算力。</li>
+          <li><strong>绿线 DeepSeek-R1（全 softmax 注意力）</strong>：曲线明显上凸，呈二次方增长，生成越长涨得越陡。</li>
+          <li><strong>橙线 Qwen3-235B-A22B</strong>：同为传统注意力，增长同样超线性，居中。</li>
+          <li><strong>红线 MiniMax-M1（Lightning 混合注意力）</strong>：几乎是一条直线，近似线性增长——这正是 Lightning Attention 的价值所在。</li>
+          <li><strong>差距随长度拉大：</strong>原文给出，64K 生成长度时 M1 用不到 R1 的 50% FLOPs；100K 时约只用 25%。</li>
+          <li><strong>一句话总结：</strong>三条线起点接近，但越往右越分叉——M1 把「长思考」的边际成本压到了近线性，使长 CoT 与大规模 RL 在经济上可行。</li>
+        </ul>
+      </div>
+    </figure>
+
+    <!-- CISPO -->
+    <h3>② CISPO：不丢 token 的强化学习算法</h3>
+    <p>
+      RL 阶段团队发现：直接用 GRPO/PPO 会<strong>「误伤」最关键的反思 token</strong>。像
+      <span style="font-family:var(--mono);font-size:13px">However</span>、
+      <span style="font-family:var(--mono);font-size:13px">Wait</span>、
+      <span style="font-family:var(--mono);font-size:13px">Aha</span>、
+      <span style="font-family:var(--mono);font-size:13px">Recheck</span>
+      这些充当「推理分叉点」的词，在底座模型里概率很低，于是更新时重要性采样权重 <em>r</em> 会很大，
+      <strong>第一次 on-policy 更新后就被裁剪（clip）掉</strong>，再也参与不了后续的 off-policy 梯度更新。
+      可这些低概率 token 恰恰对稳定熵、维持探索、可扩展 RL 至关重要。
+    </p>
+    <p>
+      CISPO（Clipped IS-weight Policy Optimization）的解法很巧：<strong>不再裁剪 token 的梯度，而是裁剪「重要性采样权重」本身</strong>，
+      并用类 REINFORCE 的目标保留每个 token 的对数似然梯度。下面切换两个视角对比。
+    </p>
+
+    <div class="diagram">
+      <div class="dtitle">GRPO 的 token 裁剪 vs. CISPO 的权重裁剪</div>
+      <div class="algo-tabs">
+        <div class="algo-tab active" id="tab-grpo" onclick="showAlgo('grpo')">GRPO / PPO（会丢 token）</div>
+        <div class="algo-tab" id="tab-cispo" onclick="showAlgo('cispo')">CISPO（保留所有 token）</div>
+      </div>
+
+      <div class="algo-panel active" id="panel-grpo">
+        <div class="token-row">
+          <span class="tok">The</span>
+          <span class="tok">answer</span>
+          <span class="tok fork dropped">Wait</span>
+          <span class="tok">let</span>
+          <span class="tok fork dropped">Recheck</span>
+          <span class="tok">we</span>
+          <span class="tok fork dropped">Aha</span>
+          <span class="tok">get</span>
+        </div>
+        <div class="algo-explain">
+          反思型 token（<b>橙色</b>）概率低、<em>r</em> 大，触发裁剪 → <b>被丢弃</b>（划线半透明），其梯度贡献归零。
+          模型逐渐失去「分叉探索」能力，长 CoT 难以涌现。DAPO 通过抬高上裁剪界缓解，但在本文 16 轮 off-policy 更新的设置下效果有限。
+        </div>
+      </div>
+
+      <div class="algo-panel" id="panel-cispo">
+        <div class="token-row">
+          <span class="tok">The</span>
+          <span class="tok">answer</span>
+          <span class="tok fork kept">Wait</span>
+          <span class="tok">let</span>
+          <span class="tok fork kept">Recheck</span>
+          <span class="tok">we</span>
+          <span class="tok fork kept">Aha</span>
+          <span class="tok">get</span>
+        </div>
+        <div class="algo-explain">
+          CISPO 改为裁剪<b>重要性采样权重</b> <em>r̂ = clip(r, 1−ε_low, 1+ε_high)</em>，并对其做 stop-gradient。
+          所有 token（尤其是橙色反思 token）<b>都保留梯度</b>（高亮，不被丢弃），同时把权重控制在合理范围内稳定训练——
+          长回复里的每个 token 都持续贡献学习信号。
+        </div>
+      </div>
+    </div>
+
+    <div class="formula">
+<span class="cm"># CISPO 目标（简化）：裁剪的是 IS 权重，而非 token，且对权重 stop-gradient</span>
+J_CISPO(θ) = E[ (1/|o|) · Σ_t  <span class="hl">sg( clip(r_t, 1−ε_low, 1+ε_high) )</span> · Â_t · log π_θ(o_t | q, o_&lt;t) ]
+<span class="cm"># r_t = π_θ(o_t)/π_old(o_t) 为重要性采样权重；Â_t 为组内归一化优势；sg = 停止梯度</span>
+<span class="cm"># 关键：min/clip 不再作用在 token 梯度上 → 没有任何 token 被「裁出」更新</span>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">2×</div><div class="lbl">相同效果下，CISPO 比 DAPO 少用一半训练步数</div></div>
+      <div class="metric"><div class="num">全部</div><div class="lbl">保留所有 token 的梯度，尤其利好长回复</div></div>
+      <div class="metric"><div class="num">&gt;</div><div class="lbl">同步数下显著超过 GRPO 与 DAPO（Qwen2.5-32B zero-RL）</div></div>
+      <div class="metric"><div class="num">16</div><div class="lbl">每批生成做 16 轮 off-policy 更新，传统裁剪在此尤其吃亏</div></div>
+    </div>
+    <p class="fig-cap" style="margin-top:14px">
+      在 Qwen2.5-32B-base 的 zero-RL 对照实验（AIME 2024）中，CISPO 在相同训练步数下明显领先 GRPO/DAPO，并仅用约 50% 步数就追平 DAPO。
+    </p>
+  </section>
+
+  <!-- Interesting details -->
+  <section id="details">
+    <div class="sec-tag">有意思的细节</div>
+    <h2>把大规模 RL 真正跑稳的工程配方</h2>
+    <p>作为「第一个在这种混合架构上做大规模 RL」的团队，作者踩了不少独有的坑。最关键的一个，是训练与推理之间的<strong>数值精度不匹配</strong>。</p>
+
+    <figure class="fig">
+      <div class="fig-grid2">
+        <img src="assets/x4.png" alt="修复前：训练态与推理态 token 概率散点，存在明显条带状偏差，相关系数 0.987" />
+        <img src="assets/x5.png" alt="修复后：将 LM 输出头精度提升到 FP32，散点紧贴对角线，相关系数 0.997" />
+      </div>
+      <div class="fig-cap"><b>图（原文 Figure 3）：</b>训练态 token 概率 vs. 推理态 token 概率。左 = 修复前，右 = 修复后（LM 输出头用 FP32）。理论上两者应完全相等、落在对角线上。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><strong>每个点 = 一个 token</strong>；横轴是推理（生成）时算出的概率，纵轴是训练时重算的概率，红色虚线是「完美一致」的 y=x。</li>
+          <li><strong>颜色 = 两个概率的绝对差</strong>：越偏黄绿，偏差越大；越偏深紫，越一致。</li>
+          <li><strong>左图（修复前，相关系数 0.987）：</strong>出现明显的<strong>水平条带</strong>与偏离对角线的散点——这就是训练/推理 kernel 的精度失配，会直接<strong>阻止 reward 增长</strong>，RL 训不动。</li>
+          <li><strong>根因：</strong>逐层排查发现，<strong>输出层 LM head 的高幅激活</strong>在低精度下放大了误差；有趣的是，小型稠密 softmax 模型并不会出现这个问题。</li>
+          <li><strong>右图（修复后，相关系数 0.997）：</strong>把 <strong>LM 输出头精度提升到 FP32</strong> 后，散点紧贴对角线、条带消失，两个本应相等的概率重新对齐，reward 才能稳定上涨。</li>
+          <li><strong>一句话总结：</strong>在大混合注意力模型上，一个看似不起眼的输出头精度，决定了整个 RL 能不能学起来。</li>
+        </ul>
+      </div>
+    </figure>
+
+    <div class="dgrid">
+      <div class="dcard">
+        <div class="dh"><span class="di">🔁</span>重复早停</div>
+        <p>病态重复会带来巨大梯度、威胁稳定。规则：连续 3000 个 token 概率都 &gt;0.99 即提前截断，既防崩溃又提升吞吐。</p>
+      </div>
+      <div class="dcard">
+        <div class="dh"><span class="di">⚙️</span>优化器超参敏感</div>
+        <p>梯度幅度横跨 1e-18~1e-5（多数 &lt;1e-14）。弃用 VeRL 默认值，改用 AdamW β1=0.9、β2=0.95、eps=1e-15 才收敛。</p>
+      </div>
+      <div class="dcard">
+        <div class="dh"><span class="di">📏</span>奖励模型长度偏置</div>
+        <p>生成式奖励模型偏爱长回复，易诱发「灌水换高分」的 reward hacking。对策：训练中<strong>在线监控</strong>长度偏置并及时重校准。</p>
+      </div>
+      <div class="dcard">
+        <div class="dh"><span class="di">📐</span>长度扩展不稳定</div>
+        <p>扩窗时负样本比正样本更快撞上下文上限，后段累积过大负梯度致模式崩溃。用 sample+token 级混合损失、降裁剪阈值等缓解。</p>
+      </div>
+    </div>
+
+    <details class="raw">
+      <summary>RL 训练数据构成 <span class="hint">— 展开看可验证 / 不可验证两类环境的数据量</span></summary>
+      <ul>
+        <li><strong>数学推理：</strong>近 50K 高质量竞赛级题，pass@10 严格落在 0~0.9 之间筛选，规则校验答案。</li>
+        <li><strong>逻辑推理：</strong>用 SynLogic 框架合成 41 类任务（密码、数独等）约 53K 条，难度随训练动态上调。</li>
+        <li><strong>竞赛编程：</strong>30K 条，缺测试用例的题用模型自动补全测试套件。</li>
+        <li><strong>软件工程：</strong>仿 SWE-bench 构建容器化沙盒，真实执行代码、以测试通过/失败作为奖励，数千条样本。</li>
+        <li><strong>通用领域：</strong>25K 条用生成式奖励模型（GenRM）打分，含有/无标准答案两类，pairwise 比较打 −1/0/+1。</li>
+        <li><strong>课程式混合：</strong>先纯「可验证推理任务」，再逐步混入通用任务，防止灾难性遗忘。</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- Results -->
+  <section id="results">
+    <div class="sec-tag">实验结论</div>
+    <h2>它到底有多强</h2>
+    <p>
+      综合来看，<strong>MiniMax-M1 跻身世界最强开源模型之列</strong>，整体超越此前的开源 LRM（原版 DeepSeek-R1、Qwen3-235B），
+      尤其在<strong>软件工程、智能体工具使用、长上下文</strong>这些贴近真实场景的任务上优势明显（以下为 M1-80k 分数）。
+    </p>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">56.0</div><div class="lbl">SWE-bench Verified（Qwen3-235B 仅 34.4）</div></div>
+      <div class="metric"><div class="num">62.0</div><div class="lbl">TAU-bench 航司（&gt; Gemini 2.5 Pro 50.0、o3 52.0）</div></div>
+      <div class="metric"><div class="num">61.5</div><div class="lbl">LongBench-v2（&gt; o3 58.8、Claude 4 Opus 55.6）</div></div>
+      <div class="metric"><div class="num">86.0</div><div class="lbl">AIME 2024（数学竞赛，avg）</div></div>
+    </div>
+
+    <p style="margin-top:18px">
+      <strong>测试时算力扩展确实有效：</strong>把生成上限从 40K 扩到 80K（M1-80k）后，在复杂数学与代码任务上进一步超过 M1-40k。
+      RL 训练过程中，AIME 2024 准确率从 <strong>68% 一路涨到 80%</strong>，且回复长度与准确率同步增长——印证了「想得更长 → 推得更准」。
+    </p>
+    <p>
+      <strong>也有短板：</strong>在最纯粹的数学/代码竞赛上，M1 略逊于最新的 DeepSeek-R1-0528；但在更现实的工具使用与长上下文理解上达到相当甚至更优的水平。
+      作者把 M1 定位为<strong>面向真实世界、需要长输入与多轮长推理的智能体底座</strong>。
+    </p>
+    <div class="quote">
+      用约 <strong>53 万美元</strong>、512 张 H800、3 周完成完整 RL，就训出一个原生 1M 上下文、能与 DeepSeek-R1、Qwen3-235B 并列的开源强推理模型——这正是「高效」二字的分量。
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <div class="foot-box">
+    <div class="ft">MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention</div>
+    <div class="fm">
+      MiniMax AI · arXiv preprint 2025.06 · arXiv:2506.13585 ·
+      <a href="https://arxiv.org/abs/2506.13585" target="_blank" rel="noopener">阅读原文 / Source（arXiv abs）</a> ·
+      <a href="https://github.com/MiniMax-AI/MiniMax-M1" target="_blank" rel="noopener">GitHub 仓库</a>
+    </div>
+    <div class="fm" style="margin-top:10px">
+      本页为教学用途的中文图解。原文图 1（右）与图 3 取自 arXiv HTML 版（<code>assets/x2.png</code>、<code>x4.png</code>、<code>x5.png</code>）；
+      架构与 CISPO 机制示意图为依据原文描述自制。核心数字均对齐原文，如有出入以原文为准。
+    </div>
+  </div>
+</footer>
+
+<script>
+  function toggleCard(headEl) {
+    var card = headEl.closest('.ex-card');
+    if (card) card.classList.toggle('open');
+  }
+
+  function toggleFigDetail(el) {
+    var detail = el.nextElementSibling;
+    if (detail && detail.classList.contains('figure-detail')) {
+      detail.classList.toggle('active');
+      el.textContent = detail.classList.contains('active') ? '收起说明 ▾' : '展开说明 ▸';
+    }
+  }
+
+  function showAlgo(which) {
+    var isGrpo = (which === 'grpo');
+    document.getElementById('tab-grpo').classList.toggle('active', isGrpo);
+    document.getElementById('tab-cispo').classList.toggle('active', !isGrpo);
+    document.getElementById('panel-grpo').classList.toggle('active', isGrpo);
+    document.getElementById('panel-cispo').classList.toggle('active', !isGrpo);
+  }
+</script>
+
+</body>
+</html>

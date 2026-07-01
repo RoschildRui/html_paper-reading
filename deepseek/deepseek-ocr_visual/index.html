@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeepSeek-OCR：用「光学压缩」把长文本塞进视觉 token</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --bg-2:#f4ead7;
+    --bg-3:#e8dcc7;
+    --card:#fffdf8;
+    --line:#e3d6bf;
+    --ink:#33302a;
+    --ink-soft:#5e564a;
+    --ink-mute:#8c8170;
+    --accent:#b05f33;
+    --accent-soft:#f0e2cf;
+    --radius:14px;
+    --maxw:860px;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.78;font-size:17px;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+
+  /* ---------- nav ---------- */
+  .topnav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(251,246,234,.9);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .topnav-inner{
+    max-width:var(--maxw);margin:0 auto;padding:11px 24px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .topnav .brand{font-weight:700;font-size:15px;letter-spacing:.2px;}
+  .topnav .brand .dot{color:var(--accent);}
+  .topnav .links{display:flex;gap:18px;align-items:center;font-size:13.5px;}
+  .topnav .links a{color:var(--ink-soft);text-decoration:none;}
+  .topnav .links a:hover{color:var(--accent);}
+  .topnav .src{
+    color:var(--accent);font-weight:600;border:1px solid var(--accent);
+    padding:4px 11px;border-radius:999px;
+  }
+  .topnav .src:hover{background:var(--accent);color:#fff;}
+  @media(max-width:880px){.topnav .links .navlink{display:none;}}
+
+  /* ---------- layout ---------- */
+  main{max-width:var(--maxw);margin:0 auto;padding:0 24px 90px;}
+  section{padding-top:54px;}
+  h1,h2,h3{line-height:1.3;letter-spacing:.1px;}
+  h2{font-size:27px;margin:0 0 6px;}
+  h2 .num{color:var(--accent);font-family:var(--mono);font-size:18px;margin-right:10px;font-weight:500;}
+  h3{font-size:19px;margin:30px 0 8px;}
+  p{margin:14px 0;}
+  a{color:var(--accent);}
+  strong{font-weight:700;color:var(--ink);}
+  .lead{font-size:18.5px;color:var(--ink-soft);}
+  .eyebrow{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:8px;
+  }
+  .section-intro{color:var(--ink-soft);}
+
+  /* ---------- hero ---------- */
+  .hero{padding-top:54px;}
+  .hero h1{font-size:39px;margin:8px 0 14px;letter-spacing:-.5px;}
+  .hero .sub{font-size:19px;color:var(--ink-soft);max-width:680px;}
+  .meta-row{
+    display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 6px;
+    font-size:13px;font-family:var(--mono);
+  }
+  .chip{
+    background:var(--bg-2);border:1px solid var(--line);
+    padding:5px 12px;border-radius:999px;color:var(--ink-soft);
+  }
+  .chip.accent{background:var(--accent-soft);border-color:#e6cdac;color:var(--accent);}
+
+  /* ---------- tldr ---------- */
+  .tldr{
+    background:var(--card);border:1px solid var(--line);
+    border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:24px 26px;margin:30px 0 8px;
+  }
+  .tldr h2{font-size:17px;margin:0 0 10px;color:var(--accent);
+    font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
+  .tldr p{margin:10px 0;font-size:17px;}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0;}
+  .metric{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 16px;text-align:center;
+  }
+  .metric .big{font-size:30px;font-weight:700;color:var(--accent);font-family:var(--mono);letter-spacing:-1px;}
+  .metric .lbl{font-size:12.5px;color:var(--ink-mute);margin-top:6px;line-height:1.5;}
+  @media(max-width:880px){.metrics{grid-template-columns:repeat(2,1fr);}}
+
+  /* ---------- callout ---------- */
+  .callout{
+    background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px 22px;margin:22px 0;
+  }
+  .callout.quote{border-left:4px solid var(--accent);font-style:italic;color:var(--ink-soft);}
+  .callout .q-zh{font-style:normal;color:var(--ink);margin-top:8px;font-size:15px;}
+
+  ul.tidy{margin:14px 0;padding-left:0;list-style:none;}
+  ul.tidy li{position:relative;padding-left:22px;margin:9px 0;}
+  ul.tidy li::before{content:'';position:absolute;left:4px;top:11px;width:6px;height:6px;
+    border-radius:50%;background:var(--accent);}
+
+  /* ---------- figure ---------- */
+  figure{margin:26px 0;}
+  .fig-wrap{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;overflow:hidden;
+  }
+  .fig-wrap img{width:100%;display:block;border-radius:8px;cursor:zoom-in;}
+  .fig-cap{font-size:14px;color:var(--ink-soft);margin-top:12px;padding:0 4px;}
+  .fig-cap .fig-id{font-family:var(--mono);color:var(--accent);font-weight:600;margin-right:6px;}
+  .fig-toggle{
+    display:inline-block;margin:10px 4px 2px;cursor:pointer;user-select:none;
+    color:var(--accent);font-size:13.5px;font-weight:600;
+  }
+  .fig-toggle:hover{text-decoration:underline;}
+  .figure-detail{
+    max-height:0;overflow:hidden;transition:max-height .4s ease;
+    background:var(--bg-2);border-radius:10px;margin-top:0;
+  }
+  .figure-detail.active{max-height:1600px;margin-top:10px;}
+  .figure-detail .inner{padding:16px 20px;font-size:14.5px;color:var(--ink-soft);}
+  .figure-detail .inner ul{margin:8px 0;padding-left:0;list-style:none;}
+  .figure-detail .inner li{position:relative;padding-left:20px;margin:8px 0;}
+  .figure-detail .inner li::before{content:'▸';position:absolute;left:0;color:var(--accent);}
+  .figure-detail .inner .sum{margin-top:12px;font-style:italic;color:var(--ink-mute);}
+
+  /* ---------- expandable cards ---------- */
+  .exp{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    margin:14px 0;overflow:hidden;
+  }
+  .exp-head{
+    padding:16px 20px;cursor:pointer;display:flex;gap:14px;align-items:flex-start;
+    user-select:none;
+  }
+  .exp-head:hover{background:var(--bg-2);}
+  .exp-head .tw{flex:1;}
+  .exp-head .t{font-weight:700;font-size:16px;}
+  .exp-head .tag{
+    font-family:var(--mono);font-size:11px;color:var(--accent);
+    background:var(--accent-soft);padding:2px 8px;border-radius:6px;margin-left:8px;
+    white-space:nowrap;font-weight:500;
+  }
+  .exp-head .s{font-size:13.5px;color:var(--ink-mute);margin-top:4px;line-height:1.55;}
+  .exp-head .chev{color:var(--accent);transition:transform .3s;font-size:14px;margin-top:3px;}
+  .exp.open .exp-head .chev{transform:rotate(90deg);}
+  .exp-body{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .exp.open .exp-body{max-height:3000px;}
+  .exp-body .inner{padding:2px 20px 20px;border-top:1px solid var(--line);}
+  .exp-body .inner p:first-child{margin-top:14px;}
+
+  /* ---------- stepper ---------- */
+  .stepper{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;margin:24px 0;
+  }
+  .pipe{display:flex;align-items:stretch;gap:0;margin:6px 0 18px;flex-wrap:nowrap;}
+  .pnode{
+    flex:1;text-align:center;padding:14px 8px;border-radius:10px;
+    border:1px solid var(--line);background:var(--bg);transition:all .35s;
+    opacity:.45;position:relative;
+  }
+  .pnode.on{opacity:1;background:var(--accent-soft);border-color:#e6cdac;}
+  .pnode.done{opacity:.85;}
+  .pnode .ico{font-size:20px;}
+  .pnode .nm{font-size:12.5px;font-weight:600;margin-top:5px;line-height:1.35;}
+  .pnode .tk{font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:4px;font-weight:600;}
+  .parrow{display:flex;align-items:center;color:var(--ink-mute);font-size:16px;padding:0 4px;}
+  .step-info{
+    background:var(--bg-2);border-radius:10px;padding:16px 18px;min-height:96px;
+    font-size:15px;color:var(--ink-soft);
+  }
+  .step-info b{color:var(--ink);}
+  .step-ctrl{display:flex;gap:10px;align-items:center;margin-top:16px;}
+  .btn{
+    font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;
+    border:1px solid var(--accent);background:var(--accent);color:#fff;
+    padding:8px 18px;border-radius:9px;transition:all .2s;
+  }
+  .btn:hover{filter:brightness(1.06);}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn.ghost:hover{background:var(--accent-soft);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .step-dots{display:flex;gap:7px;margin-left:auto;}
+  .step-dots i{width:8px;height:8px;border-radius:50%;background:var(--bg-3);transition:background .2s;}
+  .step-dots i.on{background:var(--accent);}
+  @media(max-width:880px){
+    .pipe{flex-wrap:wrap;gap:8px;}
+    .pnode{flex:1 1 40%;}
+    .parrow{display:none;}
+  }
+
+  /* ---------- table ---------- */
+  .tbl-wrap{overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:var(--radius);}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--card);}
+  th,td{padding:10px 13px;text-align:center;border-bottom:1px solid var(--line);}
+  th{background:var(--bg-2);font-weight:600;color:var(--ink);font-size:13px;}
+  td:first-child,th:first-child{text-align:left;font-weight:600;}
+  tr:last-child td{border-bottom:none;}
+  td.hl{color:var(--accent);font-weight:700;}
+  tr.divider td{background:var(--accent-soft);font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600;}
+  .mono{font-family:var(--mono);}
+
+  /* ---------- compression bars ---------- */
+  .crow{display:flex;align-items:center;gap:12px;margin:9px 0;font-size:13.5px;}
+  .crow .rng{width:88px;font-family:var(--mono);color:var(--ink-soft);flex-shrink:0;}
+  .crow .bar{flex:1;height:22px;background:var(--bg-2);border-radius:6px;overflow:hidden;position:relative;}
+  .crow .fill{height:100%;border-radius:6px;background:var(--accent);transition:width .8s ease;}
+  .crow .fill.lo{background:#cbb6a0;}
+  .crow .pct{width:54px;text-align:right;font-family:var(--mono);font-weight:600;flex-shrink:0;}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    margin:14px 0;padding:0 18px;}
+  details summary{cursor:pointer;padding:15px 0;font-weight:600;list-style:none;
+    display:flex;align-items:center;gap:10px;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:'＋';color:var(--accent);font-family:var(--mono);}
+  details[open] summary::before{content:'－';}
+  details summary .ds{font-weight:400;color:var(--ink-mute);font-size:13.5px;}
+  details .dbody{padding:0 0 18px;}
+
+  .gal{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:4px;}
+  .gal figure{margin:0;}
+  @media(max-width:880px){.gal{grid-template-columns:1fr;}}
+
+  /* lightbox */
+  .lb{position:fixed;inset:0;background:rgba(40,34,26,.86);z-index:200;display:none;
+    align-items:center;justify-content:center;padding:30px;cursor:zoom-out;}
+  .lb.on{display:flex;}
+  .lb img{max-width:96%;max-height:94%;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.4);}
+
+  footer{
+    border-top:1px solid var(--line);margin-top:70px;padding:30px 24px 50px;
+    text-align:center;color:var(--ink-mute);font-size:13.5px;
+  }
+  footer a{color:var(--accent);text-decoration:none;}
+  footer .ft-src{margin-bottom:10px;font-size:14.5px;color:var(--ink-soft);}
+
+  hr.soft{border:none;border-top:1px solid var(--line);margin:0;}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand">DeepSeek-OCR<span class="dot"> · 光学上下文压缩</span></div>
+    <div class="links">
+      <a class="navlink" href="#problem">问题</a>
+      <a class="navlink" href="#prior">已有方案</a>
+      <a class="navlink" href="#method">本文方法</a>
+      <a class="navlink" href="#interesting">有意思的点</a>
+      <a class="navlink" href="#results">实验</a>
+      <a class="src" href="https://arxiv.org/abs/2510.18234" target="_blank" rel="noopener">原文 ↗</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="eyebrow">DeepSeek 技术报告 · 视觉-文本压缩</div>
+    <h1>用一张「图」装下一千个字</h1>
+    <p class="sub">DeepSeek-OCR 把这件事当作一个可量化的科学问题来研究：解码 1000 个文字，到底最少需要几个视觉 token？答案是——在 10× 压缩内几乎无损（97% 精度），20× 压缩仍有约 60%。</p>
+    <div class="meta-row">
+      <span class="chip accent">2025.10</span>
+      <span class="chip">arXiv preprint · 2510.18234</span>
+      <span class="chip">DeepSeek-AI</span>
+      <span class="chip">OCR / 长上下文压缩</span>
+    </div>
+    <div class="meta-row" style="margin-top:4px;">
+      <a class="chip" href="https://arxiv.org/abs/2510.18234" target="_blank" rel="noopener">📄 arXiv 摘要页 ↗</a>
+      <a class="chip" href="https://arxiv.org/html/2510.18234v1" target="_blank" rel="noopener">🌐 HTML 全文 ↗</a>
+      <a class="chip" href="https://github.com/deepseek-ai/DeepSeek-OCR" target="_blank" rel="noopener">💻 GitHub 代码与权重 ↗</a>
+    </div>
+  </header>
+
+  <!-- ============ TL;DR ============ -->
+  <div class="tldr">
+    <h2>TL;DR</h2>
+    <p>大模型处理长文本，算力随序列长度<strong>平方级增长</strong>。本文提出一个反直觉的思路：<strong>把文字「拍成图片」</strong>，再用视觉编码器压成极少的视觉 token，交给语言模型「读」回来——因为一张含文字的图，用的 token 数远少于等价的数字文本。</p>
+    <p>为此他们设计了核心引擎 <strong>DeepEncoder</strong>（串联 SAM 局部注意力 → 16× 卷积压缩器 → CLIP 全局注意力），以及一个 3B-MoE（实际激活 570M）解码器，组成 <strong>DeepSeek-OCR</strong>。它在 OmniDocBench 上用<strong>最少的视觉 token 拿到端到端 SOTA</strong>，单张 A100 一天能造 20 万+ 页训练数据。</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="big">97%</div><div class="lbl">10× 压缩内的<br>OCR 解码精度</div></div>
+    <div class="metric"><div class="big">~60%</div><div class="lbl">压到 20×<br>仍保留的精度</div></div>
+    <div class="metric"><div class="big">100</div><div class="lbl">视觉 token 即超越<br>GOT-OCR2.0(256)</div></div>
+    <div class="metric"><div class="big">200k+</div><div class="lbl">单卡 A100<br>每日生产页数</div></div>
+  </div>
+
+  <!-- ============ PROBLEM ============ -->
+  <section id="problem">
+    <div class="eyebrow">问题</div>
+    <h2><span class="num">01</span>长文本的代价，与一个大胆的猜想</h2>
+    <p class="section-intro">LLM 处理长文本时，注意力的开销随 token 数<strong>平方级膨胀</strong>。于是大家想尽办法压缩文本上下文。本文换了个角度：既然多模态系统反正要带一个视觉编码器，<strong>能不能让「视觉」本身成为高效的文本压缩介质？</strong></p>
+
+    <p>核心观察很朴素：一页文档拍成图片后，用<strong>极少的视觉 token</strong> 就能携带原本需要大量文本 token 才能表达的信息。OCR 任务恰好是验证这个想法的理想试验台——它天然构成「视觉 → 文本」的<strong>压缩-解压映射</strong>，而且有可量化的精度指标。</p>
+
+    <div class="callout quote">
+      <p>"for a document containing 1000 words, how many vision tokens are at least needed for decoding? ... a picture is worth a thousand words."</p>
+      <p class="q-zh">📌 全文的「北极星」问题：解码 1000 字的文档，至少需要多少视觉 token？这正是"一图胜千言"的可量化版本。现有 OCR 模型都没正面回答过它。</p>
+    </div>
+
+    <ul class="tidy">
+      <li><strong>动机</strong>：把视觉编码器从「做 VQA」重新定位为「帮 LLM 更高效地处理文字信息」。</li>
+      <li><strong>压缩比定义</strong>：压缩比 = 真值文本 token 数 ÷ 模型实际用的视觉 token 数。</li>
+      <li><strong>意义</strong>：若可行，长上下文、对话历史、甚至 LLM 的「记忆遗忘机制」都能借此重新设计。</li>
+    </ul>
+  </section>
+
+  <!-- ============ PRIOR ============ -->
+  <section id="prior">
+    <div class="eyebrow">已有方案</div>
+    <h2><span class="num">02</span>现有 VLM 的视觉编码器，卡在哪？</h2>
+    <p class="section-intro">要做光学压缩，需要一个「能吃高分辨率、激活内存低、视觉 token 少、支持多分辨率」的编码器。但论文指出，当前开源 VLM 的三类主流编码器各有硬伤——这正是 DeepEncoder 的设计动机。</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <img src="assets/x1.png" alt="三类主流视觉编码器对比" onclick="zoom(this)" />
+      </div>
+      <div class="fig-cap"><span class="fig-id">Figure 2</span>当前流行 VLM 中三种典型视觉编码器，各自存在缺陷。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>双塔架构（Vary 类）</b>：并行接一个 SAM 编码器扩充视觉词表来吃高分辨率。参数与激活可控，但<b>需要双重图像预处理</b>，部署复杂、训练时编码器难做流水线并行。</li>
+          <li><b>分块 / Tile 架构（InternVL2.0 类）</b>：把大图切成小块并行处理，降低激活内存。但<b>原生分辨率偏低</b>（常 &lt;512×512），大图被切得太碎，产生<b>海量视觉 token</b>。</li>
+          <li><b>自适应分辨率（Qwen2-VL 类）</b>：用 NaViT 范式直接按 patch 处理整图，分辨率灵活。但大图会带来<b>巨大激活内存</b>（易爆显存），训练需要超长序列，长视觉 token 还会拖慢推理的 prefill 与生成。</li>
+        </ul>
+        <div class="sum">一句话：三类方案在「高分辨率 × 低激活 × 少 token」这个三角里，总要牺牲一项——所以作者决定自己造一个编码器。</div>
+      </div></div>
+    </figure>
+
+    <h3>端到端 OCR 模型：进步很大，但没回答关键问题</h3>
+    <p>从 Nougat（arXiv 学术论文 OCR）到 GOT-OCR2.0（拓展到图表等合成图解析），端到端 OCR 把传统「检测+识别」多专家流水线大幅简化。Qwen-VL、InternVL 系列也在不断增强文档 OCR 能力。但论文强调：<strong>没有人系统回答过「一页文档最少需要多少视觉 token」这个压缩边界问题</strong>——这正是本文要填的空白。</p>
+  </section>
+
+  <!-- ============ METHOD ============ -->
+  <section id="method">
+    <div class="eyebrow">本文方法 · 重头戏</div>
+    <h2><span class="num">03</span>DeepSeek-OCR：DeepEncoder + MoE 解码器</h2>
+    <p class="section-intro">整体是一个统一的端到端 VLM：<strong>编码器（DeepEncoder）负责把图像压成极少的视觉 token，解码器（DeepSeek-3B-MoE）根据这些 token + 提示词重建出文本</strong>。下面这张是全文最重要的架构图。</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <img src="assets/x2.png" alt="DeepSeek-OCR 整体架构" onclick="zoom(this)" />
+      </div>
+      <div class="fig-cap"><span class="fig-id">Figure 3</span>DeepSeek-OCR 的整体架构：DeepEncoder（核心）+ DeepSeek-3B-MoE 解码器。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>DeepEncoder（约 380M）</b>：是整个模型的核心引擎，由三部分串联——SAM 负责「感知」（以窗口注意力为主），CLIP 负责「知识」（密集全局注意力），中间一个 <b>16× token 压缩器</b> 把两者桥接起来。</li>
+          <li><b>SAM-base（约 80M）</b>：以窗口注意力处理大量 patch token。因为是局部注意力且参数小，<b>即使输入高分辨率，激活内存也可控</b>。</li>
+          <li><b>16× 卷积压缩器</b>：在进入昂贵的全局注意力之前，先把视觉 token 数砍掉 16 倍——这是「少 token」的关键开关。</li>
+          <li><b>CLIP-large（约 300M）</b>：对已被压缩的少量 token 做密集全局注意力，注入语义知识；其原始的 patch embedding 层被移除（输入已不是图像而是上游 token）。</li>
+          <li><b>DeepSeek-3B-MoE 解码器</b>：从压缩后的视觉 token 重建文本。推理时仅激活 6/64 路由专家 + 2 共享专家，<b>约 570M 激活参数</b>，兼具 3B 的表达力与 500M 的推理效率。</li>
+        </ul>
+        <div class="sum">数据流：高分辨率图 → SAM 局部注意力（token 多但激活低）→ 16× 压缩（token 骤减）→ CLIP 全局注意力 → 少量视觉 token 进入 MoE 解码出文本。</div>
+      </div></div>
+    </figure>
+
+    <h3>DeepEncoder 内部：token 是怎么一步步被压下去的</h3>
+    <p>关键巧思在于<strong>「先局部、再压缩、后全局」的串联顺序</strong>。下面这个分步演示，跟着一张 1024×1024 的图走一遍，看视觉 token 数如何从 4096 一路降到 256：</p>
+
+    <div class="stepper">
+      <div class="pipe">
+        <div class="pnode" id="n0"><div class="ico">🖼️</div><div class="nm">输入图像</div><div class="tk">1024²</div></div>
+        <div class="parrow">→</div>
+        <div class="pnode" id="n1"><div class="ico">🪟</div><div class="nm">SAM 窗口注意力</div><div class="tk">4096 tok</div></div>
+        <div class="parrow">→</div>
+        <div class="pnode" id="n2"><div class="ico">🗜️</div><div class="nm">16× 卷积压缩</div><div class="tk">256 tok</div></div>
+        <div class="parrow">→</div>
+        <div class="pnode" id="n3"><div class="ico">🧠</div><div class="nm">CLIP 全局注意力</div><div class="tk">256 tok</div></div>
+      </div>
+      <div class="step-info" id="stepInfo"></div>
+      <div class="step-ctrl">
+        <button class="btn ghost" id="prevBtn" onclick="step(-1)">上一步</button>
+        <button class="btn" id="nextBtn" onclick="step(1)">下一步 →</button>
+        <div class="step-dots" id="dots"></div>
+      </div>
+    </div>
+
+    <p>这套设计同时满足了前面那个「不可能三角」：SAM 阶段 token 虽多但用<strong>窗口注意力 + 小参数</strong>压住激活内存；昂贵的<strong>全局注意力只面对压缩后的少量 token</strong>；于是「高分辨率、低激活、少 token」三者兼得。一张 1024×1024 图最终只产生 256 个视觉 token。</p>
+
+    <h3>多分辨率：一个模型，多档压缩比</h3>
+    <p>为了系统研究「不同压缩比下精度如何变化」，DeepEncoder 通过<strong>位置编码动态插值</strong>支持多种分辨率模式，并在训练时同时喂入，使<strong>单个模型即可在多档分辨率间切换</strong>。分原生分辨率（Tiny/Small/Base/Large）与动态分辨率（Gundam，由多个局部块 + 一个全局视图拼成，处理报纸等超高分辨率）。</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <img src="assets/x3.png" alt="DeepSeek-OCR 的多分辨率模式" onclick="zoom(this)" />
+      </div>
+      <div class="fig-cap"><span class="fig-id">Figure 4</span>多分辨率模式：用不同分辨率得到不同的视觉 token 数，从而测试不同压缩比。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>原生分辨率（4 档）</b>：Tiny / Small 分辨率小，直接 resize 避免浪费 token；Base / Large 为保持长宽比改用 padding，padding 后<b>有效视觉 token 数会小于实际数</b>（按论文公式 1 计算）。</li>
+          <li><b>动态分辨率（Gundam）</b>：由 n 个 640×640 局部块 + 一个 1024×1024 全局视图组成，分块沿用 InternVL2.0。相当于「二次窗口注意力」，进一步压低激活内存。</li>
+          <li><b>分块克制</b>：由于原生分辨率本就较大，动态模式下图不会被切太碎，块数控制在 2~9 之间；宽高都 &lt;640 时退化为 Base 模式。</li>
+          <li><b>Gundam-master</b>：在已训练好的模型上继续训练得到（1024 局部 + 1280 全局），分辨率太大故单独训练以做负载均衡。</li>
+        </ul>
+        <div class="sum">设计目的：用「一档分辨率 = 一个压缩比」的方式，把"压缩比 vs 精度"做成可控的连续光谱。</div>
+      </div></div>
+    </figure>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>模式</th><th>Tiny</th><th>Small</th><th>Base</th><th>Large</th><th>Gundam</th></tr></thead>
+        <tbody>
+          <tr><td>分辨率</td><td>512</td><td>640</td><td>1024</td><td>1280</td><td>640+1024</td></tr>
+          <tr><td>视觉 token</td><td class="hl">64</td><td class="hl">100</td><td>256</td><td>400</td><td>n×100+256</td></tr>
+          <tr><td>处理方式</td><td>resize</td><td>resize</td><td>padding</td><td>padding</td><td>resize+padding</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px;color:var(--ink-mute);margin-top:-6px;">表 1：DeepEncoder 的多分辨率支持（含原生与动态模式）。</p>
+
+    <details>
+      <summary>训练与数据引擎 <span class="ds">· 两阶段训练 + OCR1.0/2.0/通用/纯文本四类数据（点开看细节）</span></summary>
+      <div class="dbody">
+        <p><strong>两阶段训练</strong>：① 先用「下一个 token 预测」独立训练 DeepEncoder（OCR 1.0/2.0 数据 + 从 LAION 采样的 1 亿通用数据）；② 再训练完整的 DeepSeek-OCR。在 HAI-LLM 平台上用 20 个节点（每节点 8×A100-40G）做 4 段流水线并行——SAM+压缩器当「视觉 tokenizer」冻结放 PP0，CLIP 当输入嵌入层放 PP1 训练，12 层 MoE 平分到 PP2/PP3。</p>
+        <ul class="tidy">
+          <li><strong>OCR 1.0</strong>：3000 万页、约 100 种语言的 PDF（中英约 2500 万，其他语言 500 万）；区分粗标注（fitz 直接抽取，教模型认字）与精标注（用版面/OCR 模型构造「检测+识别」交错数据，坐标归一化到 1000 个 bin）。</li>
+          <li><strong>OCR 2.0</strong>：图表、化学式、平面几何等复杂人造图的解析数据（图表用 HTML 表格而非字典格式以省 token）。</li>
+          <li><strong>通用视觉数据</strong>：注入基本图像理解能力，保留通用视觉接口。</li>
+          <li><strong>纯文本数据</strong>：维持模型的语言能力。</li>
+        </ul>
+        <p style="font-size:13.5px;color:var(--ink-mute);">注：模型未做 SFT 阶段，因此不是 chatbot，部分能力需用 completion 提示激活。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ INTERESTING ============ -->
+  <section id="interesting">
+    <div class="eyebrow">有意思的点</div>
+    <h2><span class="num">04</span>压缩比的「悬崖」，与一种类人的遗忘机制</h2>
+
+    <h3>① 压缩比 vs 精度：10× 是一道分水岭</h3>
+    <p>在 Fox 基准上（取 600–1300 token 的英文文档），作者系统测了不同压缩比下的精度。规律非常清晰：<strong>10× 以内几乎无损（~97%），超过 10× 后开始下滑，到约 20× 仍能保住 ~60%</strong>。下面是用 64 个视觉 token（Tiny 模式）时，文本越长（压缩比越高）精度的变化：</p>
+
+    <div class="callout" style="background:var(--card);">
+      <div class="crow"><span class="rng">600–700</span><div class="bar"><div class="fill" style="width:96.5%"></div></div><span class="pct">96.5%</span></div>
+      <div class="crow"><span class="rng">700–800</span><div class="bar"><div class="fill" style="width:93.8%"></div></div><span class="pct">93.8%</span></div>
+      <div class="crow"><span class="rng">800–900</span><div class="bar"><div class="fill" style="width:83.8%"></div></div><span class="pct">83.8%</span></div>
+      <div class="crow"><span class="rng">900–1000</span><div class="bar"><div class="fill" style="width:85.9%"></div></div><span class="pct">85.9%</span></div>
+      <div class="crow"><span class="rng">1000–1100</span><div class="bar"><div class="fill lo" style="width:79.3%"></div></div><span class="pct">79.3%</span></div>
+      <div class="crow"><span class="rng">1100–1200</span><div class="bar"><div class="fill lo" style="width:76.4%"></div></div><span class="pct">76.4%</span></div>
+      <div class="crow"><span class="rng">1200–1300</span><div class="bar"><div class="fill lo" style="width:59.1%"></div></div><span class="pct">59.1%</span></div>
+      <p style="font-size:13px;color:var(--ink-mute);margin:14px 0 0;">表 2（节选）：仅用 64 视觉 token 时，文本越长 = 压缩比越高（10.5× → 19.7×），精度随之下降。换成 100 token（Small 模式），同样文本的压缩比降到 6.7×–12.6×，精度普遍回到 87%–98%。</p>
+    </div>
+
+    <p>作者推测精度下滑有两个原因：一是<strong>长文档版面更复杂</strong>（可通过把文字渲染到单一版面缓解）；二是<strong>长文本在低分辨率下变模糊</strong>——而后者他们认为<em>不是 bug，反而正好可以做成「遗忘机制」的特性</em>。这就引出了下一个点。</p>
+
+    <h3>② 光学压缩 ≈ 生物记忆的遗忘曲线</h3>
+    <p>这是论文最具想象力的部分。既然"图越缩小、文字越模糊、token 越少、信息损失越多"，那它和<strong>人类记忆随时间衰退</strong>的模式天然同构：近期上下文保持高清，越久远的历史就<strong>逐级缩小渲染、压得越狠、越模糊</strong>，自然实现一种"渐进式遗忘"。</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <img src="assets/x10.png" alt="光学压缩模拟记忆遗忘机制" onclick="zoom(this)" />
+      </div>
+      <div class="fig-cap"><span class="fig-id">Figure 12</span>用光学压缩模拟遗忘机制：历史文本逐轮渲染成图并逐级缩小，token 渐少、文字渐糊。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ul>
+          <li><b>近期上下文</b>：以高分辨率渲染，保留高保真信息，对应"清晰的记忆"。</li>
+          <li><b>较早的历史</b>：把前几轮文本渲染成图后<b>逐级缩小</b>，token 数逐步减少、文字逐渐模糊，实现多级压缩。</li>
+          <li><b>类比 1（时间）</b>：对应人类记忆随时间的自然衰退——越久远越模糊。</li>
+          <li><b>类比 2（空间）</b>：对应视觉感知随距离的退化——越远越看不清，两者损失模式一致。</li>
+          <li><b>潜在收益</b>：为「理论上无限长上下文」提供一条路径——近端高清、远端低耗，在信息保留与算力之间取得平衡。</li>
+        </ul>
+        <div class="sum">作者坦言这是早期设想（early-stage），但它把"压缩比上限"从缺点重构成了"可调的遗忘速率"。</div>
+      </div></div>
+    </figure>
+
+    <div class="callout quote">
+      <p>"recent information maintains high fidelity while distant memories naturally fade through increased compression ratios."</p>
+      <p class="q-zh">近期信息保持高保真，越久远的记忆则随压缩比升高而自然淡去——一种由"分辨率"驱动的遗忘曲线。</p>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="results">
+    <div class="eyebrow">实验结论</div>
+    <h2><span class="num">05</span>不只是实验玩具：实用且高效</h2>
+    <p class="section-intro">DeepSeek-OCR 在真实文档解析基准 OmniDocBench 上的结论可以一句话概括：<strong>用别人零头的视觉 token，拿到端到端 SOTA</strong>。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="big">100</div><div class="lbl">视觉 token 即超越<br>GOT-OCR2.0（256）</div></div>
+      <div class="metric"><div class="big">&lt;800</div><div class="lbl">token 超越 MinerU2.0<br>（需 ~7000 token）</div></div>
+      <div class="metric"><div class="big">285</div><div class="lbl">有效 token 即达到<br>该基准 SOTA 水平</div></div>
+      <div class="metric"><div class="big">33M</div><div class="lbl">页/天（20 节点）<br>大规模数据生产</div></div>
+    </div>
+
+    <p>按文档类型看（表 4）：幻灯片只要 <strong>64</strong> 个 token 就够，书籍/报告用 <strong>100</strong> 个 token 即可达到不错效果（因为这些文档文本量大多在 1000 字内，压缩比不超过 10×）；而<strong>报纸</strong>文本量达 4000–5000 字，必须上 Gundam / Gundam-master 模式——这恰好又一次印证了"10× 压缩边界"的存在。</p>
+
+    <details>
+      <summary>定性示例画廊 <span class="ds">· 深度解析：图表→结构化、化学式→SMILES、多语种、通用视觉（点开看原文样例）</span></summary>
+      <div class="dbody">
+        <p style="font-size:14.5px;color:var(--ink-soft);">论文展示了"深度解析（deep parsing）"模式的多种能力——只用一个提示词，模型就能自动判断图像类型并输出结构化结果。以下为原文样例图：</p>
+        <div class="gal">
+          <figure>
+            <div class="fig-wrap"><img src="assets/x4.png" alt="金融研报图表结构化" onclick="zoom(this)" /></div>
+            <div class="fig-cap"><span class="fig-id">Figure 6</span>金融研报：把文档内图表解析为结构化结果。</div>
+            <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+            <div class="figure-detail"><div class="inner"><ul>
+              <li><b>输入</b>：含柱状/折线图的金融研报页面。</li>
+              <li><b>输出</b>：图表被还原为结构化数据（而非仅识别文字）。</li>
+              <li><b>意义</b>：图表是金融/科研的核心数据形式，结构化抽取是未来 OCR 的关键能力。</li>
+            </ul></div></div>
+          </figure>
+          <figure>
+            <div class="fig-wrap"><img src="assets/x6.png" alt="化学式转 SMILES" onclick="zoom(this)" /></div>
+            <div class="fig-cap"><span class="fig-id">Figure 8</span>识别化学文档中的化学式并转为 SMILES 格式。</div>
+            <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+            <div class="figure-detail"><div class="inner"><ul>
+              <li><b>输入</b>：化学文档中的分子结构式。</li>
+              <li><b>输出</b>：标准 SMILES 字符串，可被下游程序直接使用。</li>
+              <li><b>意义</b>：OCR 1.0+2.0 有望服务 VLM/LLM 在 STEM 领域的发展。</li>
+            </ul></div></div>
+          </figure>
+          <figure>
+            <div class="fig-wrap"><img src="assets/x8.png" alt="多语种 OCR" onclick="zoom(this)" /></div>
+            <div class="fig-cap"><span class="fig-id">Figure 10</span>近 100 种语言的 OCR，支持带版面/不带版面两种输出。</div>
+            <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+            <div class="figure-detail"><div class="inner"><ul>
+              <li><b>覆盖</b>：为处理网上海量多语种 PDF，训练了近 100 种语言的 OCR 能力。</li>
+              <li><b>灵活输出</b>：小语种文档可通过不同提示词，选择输出带版面或纯文本。</li>
+              <li><b>数据基础</b>：来自 3000 万页、约 100 种语言的 PDF 训练集。</li>
+            </ul></div></div>
+          </figure>
+          <figure>
+            <div class="fig-wrap"><img src="assets/x5.png" alt="书籍自然图像密集描述" onclick="zoom(this)" /></div>
+            <div class="fig-cap"><span class="fig-id">Figure 7</span>书籍/文章：对文中自然图像输出密集描述（dense caption）。</div>
+            <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+            <div class="figure-detail"><div class="inner"><ul>
+              <li><b>输入</b>：书籍/文章中夹带的自然图像。</li>
+              <li><b>输出</b>：模型自动判断图像类型并生成密集描述。</li>
+              <li><b>亮点</b>：只需一个提示词即可触发，无需为不同图类切换流程。</li>
+            </ul></div></div>
+          </figure>
+          <figure>
+            <div class="fig-wrap"><img src="assets/x7.png" alt="平面几何结构复制" onclick="zoom(this)" /></div>
+            <div class="fig-cap"><span class="fig-id">Figure 9</span>复制（结构化）简单平面几何图形——线段相互依赖，极具挑战。</div>
+            <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+            <div class="figure-detail"><div class="inner"><ul>
+              <li><b>任务</b>：把平面几何图「复制」成结构化表示（线段、端点坐标、类型等）。</li>
+              <li><b>难点</b>：线段之间相互依赖，解析极具挑战，作者坦言"任重道远"。</li>
+              <li><b>编码</b>：线段用 Slow Perception 方式编码以提升可读性。</li>
+            </ul></div></div>
+          </figure>
+          <figure>
+            <div class="fig-wrap"><img src="assets/x9.png" alt="通用视觉理解" onclick="zoom(this)" /></div>
+            <div class="fig-cap"><span class="fig-id">Figure 11</span>保留通用视觉理解能力：图像描述、目标检测、grounding 等。</div>
+            <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+            <div class="figure-detail"><div class="inner"><ul>
+              <li><b>通用视觉</b>：保留了图像描述、目标检测、grounding 等能力。</li>
+              <li><b>语言能力</b>：因纳入纯文本数据，模型的语言能力也得以保留。</li>
+              <li><b>注意</b>：未做 SFT，因此不是 chatbot，部分能力需 completion 提示激活。</li>
+            </ul></div></div>
+          </figure>
+        </div>
+      </div>
+    </details>
+
+    <h3>局限与展望（作者自述）</h3>
+    <ul class="tidy">
+      <li><strong>仍是早期探索</strong>：作者多次强调这是 proof-of-concept，遗忘机制等设想需进一步研究。</li>
+      <li><strong>OCR 不足以完全验证</strong>：后续计划做数字-光学文本交错预训练、大海捞针（needle-in-a-haystack）测试等。</li>
+      <li><strong>高压缩比下精度下滑</strong>：超过 10× 后精度明显下降，复杂版面与低分辨率模糊是主因。</li>
+    </ul>
+
+    <div class="callout">
+      <p style="margin:0;"><strong>一句话总结</strong>：DeepSeek-OCR 把"一图胜千言"变成了可量化的工程结论——<strong>10× 压缩内近乎无损</strong>，并借由 DeepEncoder 的"局部→压缩→全局"串联，在最少视觉 token 下拿到端到端 OCR 的 SOTA，同时为 LLM 的长上下文与遗忘机制打开了一扇新窗。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="ft-src">原文：<a href="https://arxiv.org/abs/2510.18234" target="_blank" rel="noopener">DeepSeek-OCR: Contexts Optical Compression</a> · arXiv:2510.18234 · DeepSeek-AI（2025.10）</div>
+  <div>代码与权重：<a href="https://github.com/deepseek-ai/DeepSeek-OCR" target="_blank" rel="noopener">github.com/deepseek-ai/DeepSeek-OCR</a> ·
+  HTML 全文：<a href="https://arxiv.org/html/2510.18234v1" target="_blank" rel="noopener">arxiv.org/html/2510.18234v1</a></div>
+  <div style="margin-top:12px;color:var(--ink-mute);">本页为教学性可视化解读，图片均取自论文 arXiv HTML 版（已验证 HTTP 200）。</div>
+</footer>
+
+<div class="lb" id="lb" onclick="this.classList.remove('on')"><img id="lbimg" src="" alt="放大图" /></div>
+
+<script>
+  // figure caption toggle
+  function toggleFig(el){
+    var d = el.nextElementSibling;
+    d.classList.toggle('active');
+    el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+  }
+  // expandable card toggle (bind on head only)
+  document.querySelectorAll('.exp-head').forEach(function(h){
+    h.addEventListener('click', function(){ h.parentElement.classList.toggle('open'); });
+  });
+  // lightbox
+  function zoom(img){
+    var lb = document.getElementById('lb');
+    document.getElementById('lbimg').src = img.src;
+    lb.classList.add('on');
+  }
+
+  // ---- DeepEncoder stepper ----
+  var steps = [
+    {on:[0], info:'<b>输入：</b>一张 1024×1024 的文档图像。目标是把它压成尽可能少、又能解码回原文的视觉 token。'},
+    {on:[1], done:[0], info:'<b>SAM 窗口注意力：</b>按 patch-size 16 切分，得到 1024/16 × 1024/16 = <b>4096 个 patch token</b>。此阶段只有 80M 参数、且以局部窗口注意力为主，所以即便 token 多，<b>激活内存依然可控</b>。'},
+    {on:[2], done:[0,1], info:'<b>16× 卷积压缩器：</b>两层卷积（kernel 3 / stride 2 / pad 1，通道 256→1024）把 token 数压到 4096 ÷ 16 = <b>256 个</b>。这是「少 token」的关键开关——在进入昂贵的全局注意力之前先瘦身。'},
+    {on:[3], done:[0,1,2], info:'<b>CLIP 全局注意力：</b>仅对压缩后的 <b>256 个 token</b> 做密集全局注意力注入语义知识，激活内存因此可控。最终这 256 个视觉 token 进入 MoE 解码器重建文本。'}
+  ];
+  var cur = 0;
+  var dotsWrap = document.getElementById('dots');
+  steps.forEach(function(_,i){ var d=document.createElement('i'); if(i===0)d.className='on'; dotsWrap.appendChild(d); });
+  function render(){
+    for(var i=0;i<4;i++){
+      var n = document.getElementById('n'+i);
+      n.classList.remove('on','done');
+    }
+    var s = steps[cur];
+    (s.done||[]).forEach(function(i){ document.getElementById('n'+i).classList.add('done'); });
+    s.on.forEach(function(i){ document.getElementById('n'+i).classList.add('on'); });
+    document.getElementById('stepInfo').innerHTML = s.info;
+    document.getElementById('prevBtn').disabled = (cur===0);
+    document.getElementById('nextBtn').disabled = (cur===steps.length-1);
+    document.querySelectorAll('#dots i').forEach(function(d,i){ d.className = (i===cur)?'on':''; });
+  }
+  function step(dir){
+    cur = Math.max(0, Math.min(steps.length-1, cur+dir));
+    render();
+  }
+  render();
+</script>
+</body>
+</html>

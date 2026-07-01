@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MiniMax-M2 系列：用「迷你激活」撬动「最大真实世界智能」</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fbf6ea;
+    --bg-soft: #f6efe0;
+    --card: #f4ead7;
+    --card-2: #efe3cd;
+    --line: #e3d5bc;
+    --line-soft: #ebe0cc;
+    --ink: #2e2a23;
+    --ink-soft: #4f4738;
+    --muted: #897c64;
+    --accent: #b0682f;
+    --accent-soft: #f0e0cd;
+    --shadow: 0 1px 2px rgba(80, 60, 30, 0.06);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+    line-height: 1.78;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 22px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: "JetBrains Mono", monospace; font-size: 0.9em; }
+
+  /* ---------- header ---------- */
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #f7f0e1 0%, var(--bg) 100%);
+  }
+  .top-inner { padding: 40px 22px 30px; max-width: 980px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; gap: 8px; align-items: center;
+    font-size: 13px; letter-spacing: 0.04em; color: var(--muted);
+    text-transform: uppercase; font-weight: 600; margin-bottom: 14px;
+  }
+  h1 {
+    font-size: 33px; line-height: 1.3; margin: 0 0 8px;
+    font-weight: 700; letter-spacing: -0.01em;
+  }
+  .subtitle-en { font-size: 16px; color: var(--ink-soft); font-weight: 500; margin: 0 0 18px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; font-size: 14px; color: var(--muted); }
+  .pill {
+    background: var(--card); border: 1px solid var(--line);
+    padding: 4px 11px; border-radius: 999px; font-size: 13px; color: var(--ink-soft);
+  }
+  .pill strong { color: var(--accent); font-weight: 700; }
+  .src-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--accent); color: #fff; padding: 6px 14px; border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+  }
+  .src-link:hover { background: #9a5a28; text-decoration: none; }
+
+  /* ---------- sections ---------- */
+  section { padding: 36px 0 6px; }
+  .sec-tag { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+  h2 { font-size: 25px; margin: 4px 0 14px; font-weight: 700; letter-spacing: -0.01em; }
+  h3 { font-size: 19px; margin: 26px 0 10px; font-weight: 600; }
+  p { margin: 12px 0; }
+  strong { font-weight: 700; color: var(--ink); }
+  .lead { font-size: 18px; color: var(--ink-soft); }
+  ul.clean { margin: 12px 0; padding-left: 22px; }
+  ul.clean li { margin: 7px 0; }
+
+  /* ---------- TL;DR ---------- */
+  .tldr {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 24px 26px; margin-top: 8px; box-shadow: var(--shadow);
+  }
+  .tldr h2 { margin-top: 0; }
+  .tldr .big {
+    font-size: 20px; font-weight: 600; color: var(--ink); line-height: 1.6; margin: 6px 0 14px;
+  }
+  .tldr .big em { font-style: normal; color: var(--accent); font-weight: 700; }
+
+  /* ---------- pillar quickcards ---------- */
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 18px 0 4px; }
+  .pillar {
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 16px 14px;
+  }
+  .pillar .num { font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--accent); font-weight: 600; }
+  .pillar .t { font-weight: 700; font-size: 15.5px; margin: 4px 0 6px; }
+  .pillar .d { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+  /* ---------- metric cards ---------- */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0; }
+  .metric {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 15px 14px; text-align: center;
+  }
+  .metric .v { font-size: 26px; font-weight: 700; color: var(--accent); font-family: "JetBrains Mono", monospace; line-height: 1.1; }
+  .metric .k { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+  .metric .sub { font-size: 11px; color: #a99a7e; margin-top: 2px; }
+
+  /* ---------- spec grid ---------- */
+  .specgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
+  .spec {
+    background: var(--bg-soft); border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 12px 13px;
+  }
+  .spec .sv { font-weight: 700; font-size: 16px; color: var(--ink); font-family: "JetBrains Mono", monospace; }
+  .spec .sk { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* ---------- expandable cards (prior approaches) ---------- */
+  .cards { display: flex; flex-direction: column; gap: 14px; margin: 16px 0; }
+  .xcard { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .xcard .head {
+    padding: 16px 20px; cursor: pointer; display: flex; align-items: flex-start; gap: 14px;
+    user-select: none;
+  }
+  .xcard .head:hover { background: var(--card-2); }
+  .xcard .badge {
+    flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--accent-soft);
+    color: var(--accent); font-weight: 700; display: flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", monospace; font-size: 14px; margin-top: 2px;
+  }
+  .xcard .htext { flex: 1; }
+  .xcard .htitle { font-weight: 700; font-size: 16.5px; }
+  .xcard .hsum { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+  .xcard .chev { flex: none; color: var(--muted); transition: transform 0.25s ease; font-size: 14px; margin-top: 4px; }
+  .xcard.open .chev { transform: rotate(90deg); }
+  .xcard .body {
+    max-height: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease;
+    opacity: 0; padding: 0 20px;
+  }
+  .xcard.open .body { max-height: 1400px; opacity: 1; padding: 0 20px 18px; }
+  .xcard .body p { margin: 10px 0; font-size: 15px; }
+  .mini-diagram {
+    background: var(--bg-soft); border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 16px; margin: 12px 0; display: flex; gap: 18px; align-items: center; justify-content: center; flex-wrap: wrap;
+  }
+  .grid-cells { display: grid; grid-template-columns: repeat(4, 16px); grid-auto-rows: 16px; gap: 4px; }
+  .gc { width: 16px; height: 16px; border-radius: 4px; background: var(--card-2); border: 1px solid var(--line); }
+  .gc.on { background: var(--accent); border-color: var(--accent); }
+  .gc.dim { background: #efe3cd; }
+  .diag-label { font-size: 12.5px; color: var(--muted); text-align: center; }
+  .flow-mini { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+  .fm-node { background: var(--card-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; color: var(--ink-soft); font-weight: 500; }
+  .fm-node.accent { background: var(--accent-soft); border-color: #e2c39e; color: var(--accent); font-weight: 600; }
+  .fm-arrow { color: var(--muted); font-weight: 700; }
+
+  /* ---------- figures ---------- */
+  figure.fig { margin: 22px 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+  figure.fig img { width: 100%; height: auto; border-radius: 8px; background: #fff; display: block; border: 1px solid var(--line-soft); }
+  .figcap { font-size: 13.5px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+  .figcap b { color: var(--ink-soft); }
+  .fig-toggle {
+    display: inline-block; margin-top: 10px; color: var(--accent); font-weight: 600; font-size: 13.5px;
+    cursor: pointer; user-select: none;
+  }
+  .fig-toggle:hover { text-decoration: underline; }
+  .figure-detail {
+    max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 0;
+  }
+  .figure-detail.active { max-height: 1800px; opacity: 1; margin-top: 12px; }
+  .figure-detail ul { margin: 6px 0; padding-left: 20px; }
+  .figure-detail li { margin: 7px 0; font-size: 14px; color: var(--ink-soft); }
+  .figure-detail li b { color: var(--ink); }
+  .fd-end { font-size: 13.5px; color: var(--muted); font-style: italic; margin-top: 8px; }
+
+  /* ---------- callout ---------- */
+  .callout {
+    background: var(--accent-soft); border: 1px solid #e6cba6; border-left: 4px solid var(--accent);
+    border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 15px; color: var(--ink-soft);
+  }
+  .callout b { color: var(--accent); }
+
+  /* ---------- detail blocks ---------- */
+  details.code {
+    background: var(--bg-soft); border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 6px 16px; margin: 14px 0;
+  }
+  details.code summary { cursor: pointer; font-weight: 600; font-size: 14.5px; color: var(--ink-soft); padding: 8px 0; }
+  details.code summary span { color: var(--muted); font-weight: 400; font-size: 13px; }
+  details.code .inner { padding: 4px 0 12px; font-size: 14.5px; }
+
+  /* ---------- two-col ---------- */
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .panel h4 { margin: 0 0 8px; font-size: 15.5px; font-weight: 700; }
+  .panel p { font-size: 14px; margin: 6px 0; color: var(--ink-soft); }
+  .panel .tag { font-size: 11.5px; font-family: "JetBrains Mono", monospace; color: var(--accent); }
+
+  /* ---------- footer ---------- */
+  footer {
+    margin-top: 50px; border-top: 1px solid var(--line); background: var(--bg-soft);
+    padding: 30px 22px 44px;
+  }
+  .foot-inner { max-width: 980px; margin: 0 auto; font-size: 14px; color: var(--muted); }
+  .foot-inner a { font-weight: 600; }
+  .foot-inner .ftitle { font-weight: 700; color: var(--ink-soft); font-size: 15px; margin-bottom: 4px; }
+
+  @media (max-width: 880px) {
+    body { font-size: 16px; }
+    h1 { font-size: 27px; }
+    .pillars, .metrics, .specgrid, .twocol { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .specgrid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="eyebrow">技术报告 · 大模型 / 智能体 RL</div>
+    <h1>MiniMax-M2 系列：用「迷你激活」撬动「最大真实世界智能」</h1>
+    <p class="subtitle-en">The MiniMax-M2 Series: Mini Activations Unleashing Max Real-World Intelligence</p>
+    <div class="meta-row">
+      <span class="pill">作者：<strong>MiniMax</strong></span>
+      <span class="pill">发表：arXiv preprint · 2026.05</span>
+      <span class="pill">规模：<strong>229.9B</strong> 总参数 / 仅 <strong>9.8B</strong> 激活</span>
+      <a class="src-link" href="https://arxiv.org/abs/2605.26494" target="_blank" rel="noopener">阅读原文 / Source ↗</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===================== TL;DR ===================== -->
+  <section id="tldr">
+    <div class="tldr">
+      <div class="sec-tag">TL;DR · 30 秒读懂</div>
+      <h2>一句话核心</h2>
+      <p class="big">同样是 MoE，<em>每个 token 只激活 ~10B 参数</em>，却能在「智能体编程、智能体协同办公、推理与知识」三大真实任务上，逼平激活量大一个数量级的闭源前沿模型。</p>
+      <p>MiniMax-M2 的旗舰版是一个 <strong>62 层、229.9B 总参数、每 token 仅激活 9.8B</strong> 的解码器 Transformer（256 个细粒度专家、top-8 路由）。它从设计之初就为<strong>智能体部署</strong>而生，把这份「迷你激活」翻译成前沿级真实世界能力，靠的是三根支柱：</p>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="num">支柱 ①</div>
+          <div class="t">智能体数据管线</div>
+          <div class="d">每条训练轨迹都扎根于<strong>可执行环境</strong>，配上<strong>可验证奖励</strong>，覆盖编程、协同办公、推理等。</div>
+        </div>
+        <div class="pillar">
+          <div class="num">支柱 ②</div>
+          <div class="t">Forge RL 系统</div>
+          <div class="d">面向<strong>长程智能体轨迹</strong>的原生强化学习框架，训练 / 推理 / 智能体三者解耦，白盒黑盒通吃。</div>
+        </div>
+        <div class="pillar">
+          <div class="num">支柱 ③</div>
+          <div class="t">自进化 (Self-Evolution)</div>
+          <div class="d">M2.7 已能<strong>自主调试训练任务、改写自己的脚手架</strong>，迈出自我迭代的第一步。</div>
+        </div>
+      </div>
+      <p style="font-size:14px;color:var(--muted);margin-top:14px;">📄 原文：<a href="https://arxiv.org/abs/2605.26494" target="_blank" rel="noopener">arXiv:2605.26494</a> · 作者 MiniMax · 通讯 model@minimax.io</p>
+    </div>
+  </section>
+
+  <!-- ===================== 问题 ===================== -->
+  <section id="problem">
+    <div class="sec-tag">第一步 · 问题</div>
+    <h2>这篇报告想解决什么问题？</h2>
+    <p class="lead">大模型正从「短的、单轮的对话」迁移到「长程的、智能体式的工作流」——写代码并交付上线、在开放网页里检索、操作各种异构工具、产出结构化的办公文档，往往要跨越成百上千个「推理 + 动作」交替的步骤。</p>
+    <p>这个转变同时暴露出两个难题：</p>
+    <ul class="clean">
+      <li><strong>效率与成本瓶颈</strong>：智能体任务天然是<strong>超长上下文</strong>（M2 原生支持 192K token），在训练和推理两端都带来巨大的算力与成本压力，尤其是在「大规模、高可用」的生产部署要求下。</li>
+      <li><strong>任务本身又难又高风险</strong>：真实世界部署要解决的是生产级软件工程、知识密集型办公自动化这类<strong>内在复杂、容错率低</strong>的任务，光靠「更大的模型」并不划算。</li>
+    </ul>
+    <div class="callout">M2 的赌注：与其用「更多激活参数」去硬扛，不如把算力省下来，用<strong>更高质量的数据 + 更扎实的 RL 系统</strong>去把一个「迷你激活」的底座，逼到前沿能力带。</div>
+  </section>
+
+  <!-- ===================== 已有方案 ===================== -->
+  <section id="prior">
+    <div class="sec-tag">第二步 · 已有方案怎么做、卡在哪</div>
+    <h2>M2 在和谁对比？</h2>
+    <p>M2 的每个设计决策，都是在和下面这些「常规做法」做对照后才定下来的。点开每张卡片看它们各自的取舍。</p>
+
+    <div class="cards">
+      <!-- card 1 -->
+      <div class="xcard" id="card1">
+        <div class="head" onclick="toggleCard('card1')">
+          <div class="badge">A</div>
+          <div class="htext">
+            <div class="htitle">稠密 Transformer（Dense）</div>
+            <div class="hsum">每个 token 都激活全部参数——能力强但「按全量算力计费」，长程智能体场景下太贵。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body">
+          <p><strong>做了什么：</strong>传统稠密模型里，每生成一个 token 都要让<strong>全部权重</strong>参与计算。参数越多，单 token 的算力（FLOPs）和显存开销就线性增长。</p>
+          <p><strong>卡在哪：</strong>智能体任务动辄上百轮、几十万 token，稠密模型的「每 token 全激活」会让长程推理成本失控。M2 改用 <strong>MoE 稀疏化</strong>：总参数照样堆到 229.9B 以保住容量，但每 token 只激活其中 9.8B（256 个专家里选 8 个），把「容量」和「单步算力」解耦开。</p>
+          <div class="mini-diagram">
+            <div>
+              <div class="grid-cells">
+                <div class="gc on"></div><div class="gc on"></div><div class="gc on"></div><div class="gc on"></div>
+                <div class="gc on"></div><div class="gc on"></div><div class="gc on"></div><div class="gc on"></div>
+                <div class="gc on"></div><div class="gc on"></div><div class="gc on"></div><div class="gc on"></div>
+              </div>
+              <div class="diag-label">稠密：全部点亮</div>
+            </div>
+            <div class="fm-arrow">vs</div>
+            <div>
+              <div class="grid-cells">
+                <div class="gc dim"></div><div class="gc on"></div><div class="gc dim"></div><div class="gc dim"></div>
+                <div class="gc dim"></div><div class="gc dim"></div><div class="gc on"></div><div class="gc dim"></div>
+                <div class="gc on"></div><div class="gc dim"></div><div class="gc dim"></div><div class="gc dim"></div>
+              </div>
+              <div class="diag-label">MoE：仅少数专家激活</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- card 2 -->
+      <div class="xcard" id="card2">
+        <div class="head" onclick="toggleCard('card2')">
+          <div class="badge">B</div>
+          <div class="htext">
+            <div class="htitle">混合注意力 / 上一代 MiniMax-Text-01</div>
+            <div class="hsum">前代用「线性 + 全注意力」混合机制省算力；M2 反而回归全量注意力。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body">
+          <p><strong>做了什么：</strong>上一代 <em>MiniMax-Text-01</em> 探索了<strong>混合注意力</strong>（部分层用线性/lightning 注意力降低长上下文开销）。这是当时降低长序列成本的主流思路之一。</p>
+          <p><strong>M2 的取舍：</strong>M2 在所有层都采用<strong>全量多头注意力</strong>（48 个 query 头、8 个 KV 头的 GQA + RoPE），明确表态「在大规模场景下我们更偏好全注意力」。省算力的担子，转交给 MoE 稀疏化与 MTP 投机解码去挑。</p>
+          <p><strong>为什么这么做：</strong>全注意力在长程、需要精确跨步检索的智能体任务里表达力更稳；而效率问题用「细粒度专家 + 多 token 预测（MTP）+ 投机解码」这套组合拳来补，避免在注意力上做近似带来的能力损耗。</p>
+          <div class="mini-diagram">
+            <div class="flow-mini">
+              <span class="fm-node">Text-01：线性注意力</span>
+              <span class="fm-arrow">+</span>
+              <span class="fm-node">全注意力（混合）</span>
+              <span class="fm-arrow">→</span>
+              <span class="fm-node accent">M2：全层全注意力 (GQA)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- card 3 -->
+      <div class="xcard" id="card3">
+        <div class="head" onclick="toggleCard('card3')">
+          <div class="badge">C</div>
+          <div class="htext">
+            <div class="htitle">传统 RLHF / 单域强化学习</div>
+            <div class="hsum">面向短的单轮回复、或只在单一领域训练——长程多工具智能体里会遗忘、会负迁移。</div>
+          </div>
+          <div class="chev">▸</div>
+        </div>
+        <div class="body">
+          <p><strong>做了什么：</strong>常规 RLHF 主要优化「单轮回复的人类偏好」；不少 agent RL 则只在单一领域（如只刷编程题）上微调。</p>
+          <p><strong>卡在哪：</strong>论文指出两类失败模式——<strong>单域 RL 会灾难性遗忘</strong>底座的通用推理与知识能力；<strong>跨域顺序训练又会负迁移</strong>，一个领域涨点、另一个领域掉点。同时，传统框架也难以承载「秒级到小时级」差异巨大、长达 192K token 的智能体轨迹。</p>
+          <p><strong>M2 的回应：</strong>用 <strong>Forge</strong> 这套智能体原生 RL 系统 + <strong>混合域 RL</strong>（每个阶段同时混合推理 / 编程 / 智能体 / 通用四类数据），并把「策略 = LLM、其余一切 = 环境」彻底解耦，详见下一节。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 本文方法 ===================== -->
+  <section id="method">
+    <div class="sec-tag">第三步 · 本文方法（重头戏）</div>
+    <h2>M2 是怎么做的？</h2>
+    <p class="lead">先看底座架构，再依次拆开三根支柱：数据管线 → Forge RL 系统 → 智能体机制（交错思考 + 自进化）。</p>
+
+    <h3>① 底座架构一览</h3>
+    <p>预训练在 29.2T token 上完成，确立基础能力；M2 真正的「真实世界能力」绝大部分由后续的<strong>智能体原生后训练</strong>构建，并随 M2 → M2.5 → M2.7 持续演进。</p>
+    <div class="specgrid">
+      <div class="spec"><div class="sv">229.9B</div><div class="sk">总参数</div></div>
+      <div class="spec"><div class="sv">9.8B</div><div class="sk">每 token 激活</div></div>
+      <div class="spec"><div class="sv">256 / 8</div><div class="sk">专家数 / 激活专家</div></div>
+      <div class="spec"><div class="sv">62 层</div><div class="sk">解码器 Transformer</div></div>
+      <div class="spec"><div class="sv">192K</div><div class="sk">原生上下文窗口</div></div>
+      <div class="spec"><div class="sv">48 / 8</div><div class="sk">注意力 Q 头 / KV 头 (GQA)</div></div>
+      <div class="spec"><div class="sv">29.2T</div><div class="sk">预训练 token 数</div></div>
+      <div class="spec"><div class="sv">MTP</div><div class="sk">多 token 预测 + 投机解码</div></div>
+    </div>
+    <p>三处关键设计：<strong>细粒度专家</strong>（更多更小的专家，提高路由组合多样性、降低跨设备负载方差）、<strong>sigmoid 门控 + 可学习专家偏置</strong>（改善负载均衡、几乎免去辅助损失）、以及 <strong>MTP 模块</strong>（预训练提供更丰富训练信号，推理时充当投机解码的 draft 路径）。</p>
+    <div class="callout"><b>巧妙的小细节：</b>MTP 模块从 1 个扩展到 3 个时，不是随机初始化，而是<strong>复制主模型权重</strong>来初始化——收敛快得多，且几乎不扰动主模型表征；推理时 3 个 MTP 一次性产出 draft token，由主模型单次前向验证，在<strong>不改变输出质量</strong>的前提下提升吞吐。</p></div>
+
+    <!-- 支柱 1 -->
+    <h3>② 支柱一：智能体数据管线（数据决定上限）</h3>
+    <p>论文反复强调：把每条被接受轨迹的<strong>奖励质量与可信度</strong>提上去——无论是靠可执行的验证信号，还是靠裁判模型的证据核查——是「释放底座潜能」的头等大事。下图是其中最核心的两条编程数据管线。</p>
+
+    <figure class="fig">
+      <img src="assets/fig3.png" alt="智能体编程数据管线：SWE-Scaling（上，7 阶段）与 AppDev（下，6 阶段）" />
+      <div class="figcap"><b>图 3（原论文）：</b>面向 SWE（软件工程）与 AppDev（应用开发）任务的智能体编程数据管线。上半部分红色为 SWE-Scaling 七阶段流水线，下半部分蓝色为 AppDev 六阶段流水线。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开逐阶段说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>SWE-Scaling（上，红色，处理「已有代码库的修改」）：</b>从左到右七步——<b>① 数据采集与过滤</b>（爬取宽松许可的 GitHub PR/Commit，规则过滤已合并且带测试的 PR）→ <b>② 环境构建</b>（智能体迭代式自动生成 Docker 构建脚本，靠执行反馈自我纠错，攻克非 Python 语言的依赖难题）→ <b>③ PR 打标与路由</b>（按 Bug 修复 / 新增功能 / 性能优化 / 测试重构分类）→ <b>④ 任务抽取与验证</b>（Bug 修复用 F2P+P2P 测试，新增功能用新增测试点，性能优化用可稳定区分前后差异的 P2P 测试）→ <b>⑤ 模型校验任务</b>（LLM 核对「问题描述 ↔ 测试」一致性，补全缺失信息，使任务自洽可执行）→ <b>⑥ 变换与增强</b>（Bug 注入、合并相邻提交、SWE-Test 反转任务、代码评审任务，扩大多样性）。</li>
+          <li><b>SWE 最终产物（最右）：</b>每个样本 = <b>问题描述 + 可运行 Docker 环境 + 可验证奖励</b>，覆盖十余种编程语言。</li>
+          <li><b>AppDev（下，蓝色，处理「从零搭建完整应用」）：</b><b>① 领域专家介入</b>（前端/后端/Android/iOS 等专家在环）→ <b>② Meta Query 与采样</b>（专家定义元查询模板编码生产级技术栈，随机种子采样 + LLM 改写）→ <b>③ 去重与过滤</b>（MinHash 去重 + 基于「技术栈合理性 / 功能可行性 / 需求清晰度」的 rubric 打分）→ <b>④ 轨迹采样与提示蒸馏</b>（用富信息系统提示引导生成，训练时刻意丢弃部分提示，逼模型把最佳实践内化为默认行为）→ <b>⑤ Agent-as-a-Verifier 奖励</b>（在沙箱里真正部署应用，做三层验证：执行层 / 交互层 / 视觉美学层）。</li>
+          <li><b>箭头含义：</b>每条管线都是<b>从左到右的流水线数据流</b>；红/蓝两色区分两类编程任务（仓库修改 vs 从零开发），右侧虚线框是各自交付的训练数据集。</li>
+        </ul>
+        <p class="fd-end">一句话：把「嘈杂的真实代码 / 专家知识」自动转化为「可执行、可验证、带奖励」的大规模训练样本，这正是 M2 编程能力的源头。</p>
+      </div>
+    </figure>
+
+    <p>除了编程，<strong>智能体协同办公（Cowork）</strong>同样遵循「真实可运行工作区 + 与产物形态对齐的验证信号」这一共同范式，覆盖四大领域：</p>
+    <ul class="clean">
+      <li><strong>深度检索 / 开放网页研究</strong>：用「引导-改写」合成法连续调节难度，并强制每条答案都<strong>扎根于真实检索到的证据</strong>（而非凭记忆编造）。</li>
+      <li><strong>知识工作者办公任务</strong>：以 GDPval 为锚点，按职业层级合成报告/幻灯片/备忘录，用多轴 rubric 验收并清除伪造数据的轨迹。</li>
+      <li><strong>金融分析与表格操作</strong>：「先跑真实金融工具拿执行轨迹、再反推任务」，做到「构造即可验证」；表格题优先做单元格<strong>数值级精确比对</strong>。</li>
+      <li><strong>幻灯片生成与编辑</strong>：因产物是「视觉消费」的，验收叠加执行成功、功能正确、布局规则检查与<strong>渲染成图后的视觉评分</strong>。</li>
+    </ul>
+    <details class="code">
+      <summary>更多数据track <span>（推理 / 通用对话写作 / 角色扮演）</span></summary>
+      <div class="inner">
+        <p><strong>推理密集任务：</strong>沿「查询侧 / 回答侧 / 训练侧」三轴扩展——扩充独特题目、为每题生成多条正确解法（提升 OOD 泛化）、并在固定算力下调优「扩题 vs 扩解」的混合比例；配合多阶段质检（查询、验证器、答案、回答四个环节各自把关）。</p>
+        <p><strong>通用对话与写作：</strong>以高质量 long-CoT 为主，注入推理能力的同时保住通用能力，为后续 RL 提供稳定冷启动；同时混入「带工具」与「不带工具」两类样本。</p>
+        <p><strong>角色扮演与人设一致性：</strong>当作独立 track，提出 <em>Role-Play Bench</em>，基于「错配可客观检测、对齐却主观」的洞见，用自博弈合成数据并通过 RLHF 优化，配合熵监控抑制 reward hacking。</p>
+      </div>
+    </details>
+
+    <!-- 支柱 2 -->
+    <h3>③ 支柱二：Forge——智能体原生 RL 系统</h3>
+    <p>Forge 的设计起点是一个干净的抽象：<strong>把 LLM 当作策略 (policy)，把模型生成之外的一切——上下文管理、记忆访问、工具执行、智能体状态转移——统统看作「环境」。</strong>边界就划在「模型的生成接口」上。这让标准 RL 框架能自然地容纳智能体系统的复杂度。下图是 Forge 的系统总览。</p>
+
+    <figure class="fig">
+      <img src="assets/fig4.png" alt="Forge RL 系统总览：Agent 侧、训练/推理侧、中间件三层解耦" />
+      <div class="figcap"><b>图 4（原论文）：</b>Forge RL 系统总览。三个解耦模块——Agent 侧、训练/推理侧、以及中间件抽象层（Gateway Server + Data Pool）——通过标准化接口通信，使「智能体」与「训练循环」可以各自独立扩展。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开逐模块说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>Agent 侧（顶层）：</b>纯粹的「轨迹生产者」，对训练/推理机制完全无感知。支持两种范式——<b>黑盒（Black Box）</b>：把智能体当不透明黑箱，只经 API 路由补全请求，框架只收集外部可见的 (状态, 动作, 观测) 元组；<b>白盒（White Box）</b>：Agent Loop 把上下文管理逻辑暴露给框架，与 LLM Server / Env Server / Reward Server 交互，框架可精确重建训练状态。两种范式都已在数百种脚手架、数千种工具调用格式上验证。</li>
+          <li><b>中间件抽象层（中层）：</b><b>Gateway Server</b> 提供统一通信接口，把异构智能体的补全请求路由到 LLM 引擎，屏蔽脚手架的差异；<b>Data Pool</b> 是分布式轨迹存储，异步收集 rollout 数据（图中含 Completions：prompt_ids / response_ids，以及 Rewards：outcome / process），<b>彻底解耦「生成」与「训练」两条流水线</b>，让两端各自伸缩。</li>
+          <li><b>引擎侧（底层）：</b><b>Rollout Engine</b> 负责高吞吐 token 生成，充当策略 π<sub>θ</sub> 响应 Gateway 请求；<b>Train Engine</b> 从 Data Pool 消费处理好的轨迹，计算 <b>CISPO</b> 策略梯度，再把更新后的权重 <b>sync weights</b> 同步回 Rollout Engine。</li>
+          <li><b>箭头/分层含义：</b>三条水平分割线对应「策略 ↔ 环境」的边界——上方 Agent 侧是环境，下方训推侧是策略；双向箭头表示请求-响应，单向箭头表示数据流与权重同步。</li>
+        </ul>
+        <p class="fd-end">一句话：Gateway + Data Pool 这层「中间件」把智能体彻底从训练循环里解耦出来，所以无论是白盒还是黑盒、无论脚手架多复杂，都能塞进同一套 RL 循环。</p>
+      </div>
+    </figure>
+
+    <p>在这套架构之上，Forge 还有几个关键的算法与系统设计：</p>
+    <div class="twocol">
+      <div class="panel">
+        <div class="tag">policy optimization</div>
+        <h4>CISPO 策略优化</h4>
+        <p>沿用 MiniMax-M1 的 <strong>Clipped Importance Sampling Policy Optimization</strong>：对重要性采样比做<strong>非对称裁剪</strong>（上界限制过大更新，下界为 0 允许激进降权），并对裁剪后的比值做 stop-gradient，得到稳定的一阶更新。</p>
+      </div>
+      <div class="panel">
+        <div class="tag">reward design</div>
+        <h4>复合奖励</h4>
+        <p>单纯的结果奖励不足以在 192K token、上千动作的轨迹里做信用分配。M2 用三项复合：<strong>过程奖励</strong>（密集、惩罚语言混杂/工具格式错误）、<strong>完成时间奖励</strong>（鼓励并行工具调用）、<strong>性能奖励</strong>，再配 reward-to-go + 轨迹基线降方差。</p>
+      </div>
+      <div class="panel">
+        <div class="tag">scheduling</div>
+        <h4>Windowed FIFO 调度</h4>
+        <p>智能体 rollout 完成时间从秒到小时不等。严格 FIFO 保分布但有队头阻塞，贪婪调度高吞吐却分布漂移。M2 在大小为 <span class="mono">W=0.3N</span> 的<strong>滑动窗口内贪婪、跨窗口严格有序</strong>，在两者间取得可调折中。</p>
+      </div>
+      <div class="panel">
+        <div class="tag">efficiency · up to 40×</div>
+        <h4>前缀树合并</h4>
+        <p>多轮轨迹里同组样本共享大量前缀。把它们合并成一棵<strong>前缀树</strong>：共享前缀只在前向传播算一次，再分叉到各自的回复段。数学上与逐样本训练<strong>完全等价（零近似误差）</strong>，却带来最高 <strong>40× 训练加速</strong>。</p>
+      </div>
+    </div>
+    <p>此外，推理侧用了三招提速：<strong>MTP 投机解码</strong>（MTP 模块与 RL 策略持续协同训练，保证策略漂移时 draft 接受率仍高）、<strong>Prefill-Decode 异构分离</strong>、<strong>全局 L3 KV 缓存池</strong>。训练层面则采用<strong>混合域 RL</strong>：每阶段同时混合推理 / 编程 / 智能体 / 通用四域数据，并跨阶段调节域配比、上下文长度等，既防遗忘又防负迁移。</p>
+
+    <!-- 支柱 3 -->
+    <h3>④ 支柱三：智能体机制——交错思考 &amp; 自进化</h3>
+    <p>有了底座和 RL 系统，最后要解决的是「模型在多步任务里怎么思考、怎么自己变强」。M2 把<strong>交错思考（Interleaved Thinking）</strong>当作一等公民的智能体建模原则。</p>
+
+    <figure class="fig">
+      <img src="assets/fig7.png" alt="三种思考模式对比：无思考 / 前置思考 / 交错思考" />
+      <div class="figcap"><b>图 7（原论文）：</b>M2 的交错思考与另两种模式对比。三列分别是 <b>No Thinking</b>（无思考）、<b>Extended Thinking</b>（前置思考）、<b>Interleaved Thinking</b>（交错思考），对应 7.1 节的 Plan-Act-Reflect 循环。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开三种模式说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>No Thinking（左）：</b>系统/用户提示之后，直接是「工具调用 ↔ 工具返回」的循环，全程<b>没有显式思考</b>，只在最后才有 Final Thinking + Final Content。模型无法在中途反思。</li>
+          <li><b>Extended Thinking（中）：</b><b>只在开头思考一次</b>，随后进入「工具调用 ↔ 工具返回」循环，中间不再产生新的思考。属于「前置式推理」——所有规划集中在动作之前，无法根据中途观测调整。</li>
+          <li><b>Interleaved Thinking（右，M2 采用）：</b>每一轮都是 <b>Thinking → Content → 工具调用 → 工具返回 → Thinking → …</b> 的交替；关键在于<b>把每一轮完整输出（含思考块）都追加进历史</b>，作为下一轮的上下文，让推理状态<b>跨轮持续传递</b>。</li>
+          <li><b>颜色含义：</b>黄色块 = 模型的思考 (Thinking)、绿色块 = 工具调用、紫色块 = 工具返回——交错思考列里黄色块反复出现，正是「思考状态不被丢弃」的可视化。</li>
+        </ul>
+        <p class="fd-end">交错思考把每一轮变成一个 <b>Plan（回顾状态、定策略）→ Act（执行工具）→ Reflect（对照观测、更新世界模型）</b> 的认知循环；消融实验显示：在深度检索、软件工程这类需要长链规划的任务上，保留推理状态带来的提升最显著。</p>
+      </div>
+    </figure>
+
+    <p>更进一步，M2.7 在交错思考能力之上，迈出了<strong>自进化</strong>的第一步——不再只是被动接受训练，而是主动驱动自己的迭代开发。</p>
+
+    <figure class="fig">
+      <img src="assets/fig8.png" alt="自进化：模型迭代系统(A) 与 RL 团队双循环工作流(B)" />
+      <div class="figcap"><b>图 8（原论文）：</b>(A) 驱动 M2.7 自主执行的「模型迭代系统」；(B) RL 团队使用的双循环工作流。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开自进化系统说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>(A) 模型迭代系统——「人类掌舵、模型搭建」：</b>左侧<b>人类</b>只做三件事：配置脚手架、用对话引导智能体、审阅产出并决策；右侧 <b>Agent Harness</b> 是一个<b>完全由内部 M2.7 生成、零人工代码</b>的工作区，给模型配齐层级化技能、持久记忆、安全护栏与评测基础设施。中央的 <b>Agent (M2*)</b> 能读文档/日志、学习规范、自审代码、链式调用技能、生成报告、维护记忆。</li>
+          <li><b>三种箭头：</b><i>configure（配置）</i> 与 <i>steer（引导）</i> 由人类指向系统，<i>report / escalate（汇报/上报）</i> 由智能体回流给人类——人类只在关键节点介入。</li>
+          <li><b>(B) RL 团队双循环工作流：</b>五个阶段——1. 实验规划（人+AI）→ 2. 实验开发与运行（AI 自主）→ 3. 分析与报告（AI 自主）→ 4. 评审讨论（人+AI）→ 5. 实验迭代循环（人+AI）。</li>
+          <li><b>两条回路：</b>绿色的「<i>auto-continue</i>」让智能体在评审之间自动从「分析」回到「开发运行」做有界的自主迭代；蓝色的「<i>next iteration（human triggers）</i>」则由人类触发，从第 5 步回到第 1 步开启下一轮大迭代。图例区分：蓝=人类、绿=AI 自主、橙=人机协作、灰=脚手架组件。</li>
+        </ul>
+        <p class="fd-end">效果：M2.7 已能自动分诊失败的训练任务、改配置、调代码，吸收掉团队<b>30%–50% 的日常迭代工作量</b>；在一次完全自主的 <b>100 轮脚手架优化</b>中，它引入了循环检测等机制、找到更优参数组合，带来内部评测 <b>+30%</b> 的提升——模型开始改进「塑造它自己下一轮迭代」的基础设施。</p>
+      </div>
+    </figure>
+  </section>
+
+  <!-- ===================== 有意思的点 ===================== -->
+  <section id="insights">
+    <div class="sec-tag">第四步 · 有意思的设计取舍</div>
+    <h2>几个值得单独拎出来的点</h2>
+    <ul class="clean">
+      <li><strong>前缀树合并 = 零误差的 40× 加速：</strong>它不是近似优化，而是利用「因果注意力对共享前缀的激活与计算次数无关」这一事实做的<strong>数学等价</strong>重构——既省算力又不损精度，是长上下文 agent 训练里少见的「免费午餐」。</li>
+      <li><strong>把「速度」写进奖励：</strong>传统 RL 只优化对错，M2 额外用<strong>墙钟完成时间</strong>做奖励，逼模型主动发现并行工具调用的机会，产出「又对又快」的解法。</li>
+      <li><strong>提示蒸馏（Prompt Distillation）：</strong>采样轨迹时喂给模型完整的专家系统提示，训练时却<strong>刻意丢弃</strong>其中一部分——逼模型把专家最佳实践内化为「默认行为」，降低推理期对长提示的依赖。</li>
+      <li><strong>策略与状态转移彻底解耦：</strong>训练以单个 (状态, 动作) 对为原子单位，模型<strong>无需知道</strong>状态是来自简单追加、激进截断还是整段重写，但信用分配仍在整条轨迹的回合级别完成。</li>
+      <li><strong>自进化闭环：</strong>「迷你激活 → 强 MLE 能力 → 自主优化训练脚手架 → 下一版更强」——这正是 M2 系列围绕设计的核心循环。</li>
+    </ul>
+  </section>
+
+  <!-- ===================== 实验结论 ===================== -->
+  <section id="results">
+    <div class="sec-tag">第五步 · 实验结论（一句话版）</div>
+    <h2>仅 ~10B 激活，逼平大一个数量级的闭源前沿模型</h2>
+    <p>M2.7 与最强闭源前沿推理模型（Claude Opus 4.6、Claude Sonnet 4.6、GPT 5.4、Gemini 3.1 Pro）在三大能力域对标，并刻意偏向「长程、环境扎根」的基准而非封闭式问答。代表性结果（M2.7）：</p>
+
+    <h3>智能体编程</h3>
+    <div class="metrics">
+      <div class="metric"><div class="v">56.2</div><div class="k">SWE-bench Pro</div></div>
+      <div class="metric"><div class="v">76.5</div><div class="k">SWE-bench Multilingual</div></div>
+      <div class="metric"><div class="v">52.7</div><div class="k">Multi-SWE-bench</div><div class="sub">同组最高</div></div>
+      <div class="metric"><div class="v">57.0</div><div class="k">Terminal-Bench 2.0</div></div>
+    </div>
+
+    <h3>智能体协同办公 (Cowork)</h3>
+    <div class="metrics">
+      <div class="metric"><div class="v">77.8</div><div class="k">BrowseComp</div></div>
+      <div class="metric"><div class="v">75.2</div><div class="k">Wide Search</div></div>
+      <div class="metric"><div class="v">62.7</div><div class="k">MM Claw</div></div>
+      <div class="metric"><div class="v">50.0</div><div class="k">GDPval-AA</div></div>
+    </div>
+
+    <h3>推理与知识</h3>
+    <div class="metrics">
+      <div class="metric"><div class="v">94.2</div><div class="k">AIME 2026</div></div>
+      <div class="metric"><div class="v">89.8</div><div class="k">GPQA-Diamond</div></div>
+      <div class="metric"><div class="v">81.8</div><div class="k">MMLU-Pro</div></div>
+      <div class="metric"><div class="v">76.0</div><div class="k">IFBench</div></div>
+    </div>
+
+    <div class="callout">
+      <b>系列内进步最能说明问题：</b>从 M2 → M2.5 → M2.7，所有 11 个共测基准全部上涨，幅度从 +11（AA-LCR、GPQA-Diamond）到 <b>+33.8（BrowseComp）</b>不等，且涨幅最大的恰是 M2.5/M2.7 数据管线新引入任务族的领域（深度检索、工具使用、自主 ML 工程）。在 <b>MLE Bench Lite</b> 上，M2.7 经 24 小时自主迭代达到 <b>66.6% 夺牌率，追平 Gemini 3.1 Pro</b>——最佳一轮拿下 9 金 5 银 1 铜。
+    </div>
+
+    <p><strong>局限与展望：</strong>作者把这些结果定位为「更长旅程上的一步」——数据、RL 系统、自进化三条轴<strong>都远未饱和</strong>，后续 M2.x 版本会继续在三者上协同扩展。自进化目前仍是「早期可运行形态」，主要在 ML 工程类代表性任务上验证。</p>
+  </section>
+
+</div>
+
+<footer>
+  <div class="foot-inner">
+    <div class="ftitle">The MiniMax-M2 Series: Mini Activations Unleashing Max Real-World Intelligence</div>
+    <p>作者：MiniMax · arXiv preprint 2026.05 · arXiv:2605.26494 [cs.AI]</p>
+    <p>📄 阅读原文：<a href="https://arxiv.org/abs/2605.26494" target="_blank" rel="noopener">https://arxiv.org/abs/2605.26494</a> &nbsp;|&nbsp; HTML 版：<a href="https://arxiv.org/html/2605.26494v1/" target="_blank" rel="noopener">arxiv.org/html/2605.26494v1</a></p>
+    <p style="margin-top:10px;color:#a99a7e;font-size:13px;">本页为教学向中文可视化解读，图 3 / 4 / 7 / 8 均来自原论文（arXiv HTML v1）。核心数字与原文对齐，若有出入以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+  function toggleFigDetail(el) {
+    var detail = el.nextElementSibling;
+    if (!detail) return;
+    var isActive = detail.classList.toggle("active");
+    el.textContent = isActive ? "收起说明 ▾" : "展开说明 ▸";
+  }
+
+  function toggleCard(id) {
+    var card = document.getElementById(id);
+    if (!card) return;
+    card.classList.toggle("open");
+  }
+</script>
+
+</body>
+</html>

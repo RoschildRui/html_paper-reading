@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeepSeek-V3 技术报告 · 图解精读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea; --bg2:#f4ead7; --bg3:#e8dcc7;
+    --line:#e3d6bd; --line2:#d8c9ac;
+    --ink:#2e2a24; --ink-soft:#5f574a; --ink-faint:#938a78;
+    --accent:#b5612f; --accent-soft:#f1e2d2; --accent-line:#e0b896;
+    --maxw:1080px;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(60,45,25,.06), 0 6px 18px rgba(60,45,25,.05);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    line-height:1.78; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;}
+
+  /* ---- top nav ---- */
+  .topnav{
+    position:sticky; top:0; z-index:50; background:rgba(251,246,234,.9);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+  }
+  .topnav-inner{
+    max-width:var(--maxw); margin:0 auto; padding:10px 24px;
+    display:flex; align-items:center; gap:18px; justify-content:space-between;
+  }
+  .brand{font-weight:700; font-size:15px; letter-spacing:.2px; white-space:nowrap;}
+  .brand .dot{color:var(--accent);}
+  .navlinks{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .navlinks a{
+    font-size:13.5px; color:var(--ink-soft); padding:5px 10px; border-radius:8px;
+  }
+  .navlinks a:hover{background:var(--bg3); text-decoration:none; color:var(--ink);}
+  .navlinks a.src{color:var(--accent); font-weight:600;}
+
+  /* ---- layout ---- */
+  main{max-width:var(--maxw); margin:0 auto; padding:0 24px 80px;}
+  section{scroll-margin-top:70px;}
+  .wrap{max-width:760px; margin:0 auto;}
+
+  /* ---- hero ---- */
+  header.hero{max-width:var(--maxw); margin:0 auto; padding:54px 24px 26px;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600;
+    color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line);
+    padding:5px 12px; border-radius:999px; margin-bottom:18px;
+  }
+  h1.title{
+    font-size:clamp(30px,5vw,46px); line-height:1.18; margin:0 0 14px; font-weight:700;
+    letter-spacing:-.5px;
+  }
+  .subtitle{font-size:clamp(17px,2.4vw,20px); color:var(--ink-soft); margin:0 0 22px; max-width:720px;}
+  .meta{
+    display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; font-size:13.5px;
+    color:var(--ink-soft); margin-bottom:8px;
+  }
+  .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:4px 11px;}
+  .chip.strong{background:var(--accent-soft); border-color:var(--accent-line); color:var(--accent); font-weight:600;}
+
+  /* ---- TL;DR ---- */
+  .tldr{
+    background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px 26px; margin:30px auto 8px; box-shadow:var(--shadow); max-width:var(--maxw);
+  }
+  .tldr h2{margin:0 0 12px; font-size:18px; display:flex; align-items:center; gap:9px;}
+  .tldr h2 .ic{font-size:19px;}
+  .tldr p{margin:0 0 10px;}
+  .tldr p:last-child{margin-bottom:0;}
+  .tldr strong{color:var(--ink); font-weight:700;}
+  .tldr .accent{color:var(--accent); font-weight:700;}
+
+  /* ---- section headings ---- */
+  h2.sec{
+    font-size:clamp(23px,3.4vw,30px); margin:64px 0 6px; font-weight:700; letter-spacing:-.3px;
+    display:flex; align-items:baseline; gap:12px;
+  }
+  h2.sec .num{
+    font-size:15px; color:var(--accent); font-weight:700; font-family:"JetBrains Mono",monospace;
+    background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:8px;
+    padding:2px 9px; position:relative; top:-3px;
+  }
+  .lead{font-size:18px; color:var(--ink-soft); margin:6px 0 22px;}
+  h3.sub{font-size:20px; margin:38px 0 8px; font-weight:700;}
+  p{margin:0 0 16px;}
+  .wrap strong{color:var(--ink); font-weight:600;}
+  .wrap ul{margin:0 0 18px; padding-left:0; list-style:none;}
+  .wrap ul li{position:relative; padding-left:22px; margin-bottom:9px;}
+  .wrap ul li::before{
+    content:""; position:absolute; left:4px; top:.72em; width:6px; height:6px;
+    background:var(--accent); border-radius:2px; transform:translateY(-50%);
+  }
+
+  /* ---- figures ---- */
+  figure.fig{margin:26px auto; max-width:var(--maxw);}
+  figure.fig img{
+    width:100%; height:auto; display:block; border:1px solid var(--line2);
+    border-radius:12px; background:#fff; box-shadow:var(--shadow);
+  }
+  .figcap{font-size:14px; color:var(--ink-soft); margin-top:11px; padding-left:2px;}
+  .figcap b{color:var(--ink);}
+  .fig-toggle{
+    display:inline-block; margin-top:8px; font-size:13.5px; font-weight:600; color:var(--accent);
+    cursor:pointer; user-select:none; border:1px solid var(--accent-line); background:var(--accent-soft);
+    padding:3px 11px; border-radius:8px;
+  }
+  .fig-toggle:hover{background:#ecd9c5;}
+  .figure-detail{
+    max-height:0; overflow:hidden; transition:max-height .4s ease, margin .3s ease, padding .3s ease;
+    background:var(--bg2); border-radius:12px; border:1px solid var(--line);
+    margin-top:0; padding:0 20px;
+  }
+  .figure-detail.open{max-height:1400px; margin-top:12px; padding:18px 20px;}
+  .figure-detail ul{margin:0; padding:0; list-style:none;}
+  .figure-detail li{position:relative; padding-left:20px; margin-bottom:11px; font-size:15px; line-height:1.7;}
+  .figure-detail li:last-child{margin-bottom:0;}
+  .figure-detail li::before{content:""; position:absolute; left:2px; top:.7em; width:7px; height:7px; border-radius:2px; background:var(--accent-line);}
+  .figure-detail li b{color:var(--ink);}
+  .figure-detail .sum{font-size:14px; color:var(--ink-faint); margin-top:14px; padding-top:12px; border-top:1px dashed var(--line2); font-style:italic;}
+
+  /* ---- expandable deep cards ---- */
+  .dcard{
+    background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius);
+    margin:14px 0; overflow:hidden; transition:border-color .2s;
+  }
+  .dcard.open{border-color:var(--accent-line);}
+  .dcard-head{padding:16px 20px; cursor:pointer; display:flex; align-items:flex-start; gap:14px;}
+  .dcard-head:hover{background:var(--bg3);}
+  .dcard-main{flex:1; min-width:0;}
+  .dcard-title{font-weight:700; font-size:16.5px; display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .tag{
+    font-size:11.5px; font-weight:600; color:var(--accent); background:var(--accent-soft);
+    border:1px solid var(--accent-line); border-radius:6px; padding:1px 8px; letter-spacing:.2px;
+  }
+  .tag.gray{color:var(--ink-faint); background:var(--bg3); border-color:var(--line2);}
+  .dcard-sum{font-size:13.5px; color:var(--ink-faint); margin-top:4px;}
+  .chev{color:var(--accent); font-size:13px; transition:transform .3s; margin-top:4px; flex:none;}
+  .dcard.open .chev{transform:rotate(90deg);}
+  .dcard-body{max-height:0; overflow:hidden; transition:max-height .45s ease;}
+  .dcard.open .dcard-body{max-height:2400px;}
+  .dcard-inner{padding:2px 20px 20px; border-top:1px solid var(--line);}
+  .dcard-inner p{font-size:15.5px;}
+  .dcard-inner p:first-child{margin-top:14px;}
+
+  /* ---- metric cards ---- */
+  .metrics{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:24px 0;}
+  .metric{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:18px 16px; text-align:center;
+  }
+  .metric .v{font-size:30px; font-weight:700; color:var(--accent); font-family:"JetBrains Mono",monospace; line-height:1.1;}
+  .metric .u{font-size:13px; color:var(--ink-faint); margin-top:2px;}
+  .metric .l{font-size:13.5px; color:var(--ink-soft); margin-top:8px; font-weight:500;}
+
+  /* ---- callout ---- */
+  .callout{
+    border-left:3px solid var(--accent); background:var(--bg2); border-radius:0 12px 12px 0;
+    padding:16px 20px; margin:22px 0; font-size:15.5px; color:var(--ink-soft);
+  }
+  .callout b{color:var(--ink);}
+  .quote{
+    border-left:3px solid var(--accent-line); padding:6px 20px; margin:22px 0; color:var(--ink-soft);
+    font-style:italic; font-size:16px;
+  }
+
+  /* ---- details / formula ---- */
+  details.box{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px; margin:18px 0; padding:0 18px;
+  }
+  details.box[open]{padding-bottom:16px;}
+  details.box summary{
+    cursor:pointer; padding:14px 0; font-weight:600; font-size:15.5px; list-style:none;
+    display:flex; align-items:center; gap:9px;
+  }
+  details.box summary::-webkit-details-marker{display:none;}
+  details.box summary .mk{color:var(--accent); transition:transform .25s; font-size:12px;}
+  details.box[open] summary .mk{transform:rotate(90deg);}
+  details.box summary .s{font-weight:400; color:var(--ink-faint); font-size:13.5px;}
+  details.box .body{font-size:15px; border-top:1px solid var(--line); padding-top:14px;}
+  .eq{font-family:"JetBrains Mono",monospace; background:var(--bg3); border:1px solid var(--line2); border-radius:8px; padding:10px 14px; font-size:13.5px; overflow-x:auto; margin:10px 0;}
+
+  /* ---- config table ---- */
+  table.cfg{width:100%; border-collapse:collapse; font-size:14.5px; margin:6px 0;}
+  table.cfg td,table.cfg th{padding:9px 12px; border-bottom:1px solid var(--line); text-align:left;}
+  table.cfg th{color:var(--ink-faint); font-weight:600; font-size:13px;}
+  table.cfg td.v{font-family:"JetBrains Mono",monospace; color:var(--accent); text-align:right; white-space:nowrap;}
+  table.cfg tr:last-child td{border-bottom:none;}
+
+  /* ---- stepper (aux-loss-free) ---- */
+  .stepper{
+    background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px; margin:24px 0; box-shadow:var(--shadow);
+  }
+  .stepper-top{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;}
+  .stepper-top .title{font-weight:700; font-size:16px;}
+  .stepper-ctrl{display:flex; gap:8px;}
+  .btn{
+    font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; border-radius:8px;
+    padding:7px 14px; border:1px solid var(--line2); background:var(--bg); color:var(--ink);
+  }
+  .btn:hover{background:var(--bg3);}
+  .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .btn.primary:hover{background:#9f5125;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .experts{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:18px 0 6px;}
+  .expert{text-align:center;}
+  .ename{font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;}
+  .bar{height:120px; background:var(--bg3); border-radius:8px 8px 0 0; position:relative; display:flex; align-items:flex-end; overflow:hidden; border:1px solid var(--line2); border-bottom:none;}
+  .bar .fill{width:100%; background:linear-gradient(180deg,#cf7a45,#b5612f); transition:height .6s cubic-bezier(.4,0,.2,1); border-radius:6px 6px 0 0;}
+  .bar.balanced .fill{background:linear-gradient(180deg,#cdbb98,#b9a47c);}
+  .bias{font-family:"JetBrains Mono",monospace; font-size:12.5px; margin-top:8px; color:var(--ink-soft); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:3px 0;}
+  .bias.up{color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft);}
+  .bias.down{color:var(--ink-faint);}
+  .step-caption{font-size:14.5px; color:var(--ink-soft); margin-top:16px; min-height:48px; background:var(--bg); border:1px dashed var(--line2); border-radius:10px; padding:12px 16px;}
+  .step-caption b{color:var(--accent);}
+  .dots{display:flex; gap:7px; justify-content:center; margin-top:14px;}
+  .dots span{width:8px; height:8px; border-radius:50%; background:var(--line2);}
+  .dots span.on{background:var(--accent);}
+
+  /* ---- footer ---- */
+  footer{
+    max-width:var(--maxw); margin:40px auto 0; padding:28px 24px 60px; border-top:1px solid var(--line);
+    color:var(--ink-soft); font-size:14px;
+  }
+  footer a{font-weight:600;}
+  footer .row{margin-bottom:8px;}
+  .disclaimer{font-size:12.5px; color:var(--ink-faint); margin-top:16px; line-height:1.65;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    .navlinks{display:none;}
+    .experts{grid-template-columns:repeat(4,1fr); gap:7px;}
+    .bar{height:96px;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand">DeepSeek-V3 <span class="dot">·</span> 图解精读</div>
+    <div class="navlinks">
+      <a href="#problem">问题</a>
+      <a href="#arch">架构</a>
+      <a href="#mla">MLA</a>
+      <a href="#moe">MoE 均衡</a>
+      <a href="#mtp">MTP</a>
+      <a href="#infra">工程</a>
+      <a href="#fp8">FP8</a>
+      <a href="#results">结论</a>
+      <a class="src" href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">原文 ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">📄 DeepSeek 技术报告 · 单篇精读</div>
+  <h1 class="title">DeepSeek-V3：用 557 万美元<br/>训练一个比肩 GPT-4o 的开源大模型</h1>
+  <p class="subtitle">一个 671B 参数、每 token 仅激活 37B 的 MoE 模型。靠「算法 — 框架 — 硬件」协同设计，把超大模型的训练成本压到了同行的零头，并把性能做到开源第一档。</p>
+  <div class="meta">
+    <span class="chip strong">arXiv preprint</span>
+    <span class="chip">发布 2024.12 · v2 修订 2025.02</span>
+    <span class="chip">DeepSeek-AI</span>
+    <span class="chip">arXiv:2412.19437</span>
+    <span class="chip"><a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">阅读原文 ↗</a></span>
+    <span class="chip"><a href="https://github.com/deepseek-ai/DeepSeek-V3" target="_blank" rel="noopener">GitHub ↗</a></span>
+  </div>
+</header>
+
+<main>
+
+  <div class="tldr">
+    <h2><span class="ic">⚡</span> TL;DR — 30 秒看懂</h2>
+    <p><strong>它做了什么：</strong>DeepSeek-V3 是一个 <span class="accent">671B 总参数 / 每 token 激活 37B</span> 的混合专家（MoE）大模型，在 14.8 万亿 token 上预训练，性能超越所有开源模型，并在多数基准上比肩 GPT-4o、Claude-3.5-Sonnet 等闭源旗舰。</p>
+    <p><strong>为什么重要：</strong>全程训练只花了 <span class="accent">2.788M H800 GPU 小时（约 557.6 万美元）</span>，且训练全程<strong>没有一次不可恢复的 loss 突刺、没有回滚</strong>。这把「开源也能低成本逼近闭源」从口号变成了可复现的工程事实。</p>
+    <p><strong>怎么做到的：</strong>四个支柱——<strong>MLA</strong> 压缩 KV cache 让推理更省、<strong>DeepSeekMoE + 无辅助损失负载均衡</strong>避免为了均衡牺牲性能、<strong>多 token 预测（MTP）</strong>加密训练信号、<strong>FP8 混合精度 + DualPipe</strong> 把通信藏进计算、把算力榨干。</p>
+  </div>
+
+  <figure class="fig">
+    <img src="assets/x1.png" alt="DeepSeek-V3 与其他模型的基准性能对比" />
+    <div class="figcap"><b>图 1 ·</b> DeepSeek-V3 与主流开源 / 闭源模型在各项基准上的总体表现对比（论文 Figure 1）。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>横轴是基准、纵轴是分数</b>：每组柱子对比 DeepSeek-V3 与 Qwen2.5-72B、Llama-3.1-405B 等开源模型，以及 GPT-4o、Claude-3.5-Sonnet 等闭源模型。</li>
+        <li><b>DeepSeek-V3（最深色柱）整体领先开源阵营</b>：在 MMLU-Pro、GPQA、MATH-500、Codeforces、AIME 等硬核基准上明显高出其他开源模型一截。</li>
+        <li><b>逼近闭源旗舰</b>：在数学、代码类任务上甚至追平或超过 GPT-4o / Claude-3.5-Sonnet，在英文事实知识（SimpleQA）上仍略逊于闭源。</li>
+        <li><b>这张图是全文的「结论先行」</b>：作者先把成绩单摆出来，再用后面的章节解释「为什么花这么少的钱能做到」。</li>
+      </ul>
+      <div class="sum">一句话总结：DeepSeek-V3 在开源模型中全面领先，并在关键推理 / 代码 / 数学任务上达到闭源旗舰水平。</div>
+    </div>
+  </figure>
+
+  <!-- ===================== 问题 ===================== -->
+  <section id="problem" class="wrap">
+    <h2 class="sec"><span class="num">01</span> 问题：开源如何低成本追平闭源</h2>
+    <p class="lead">这篇报告要解决的不是「单一算法」，而是一个系统级难题：在算力预算有限的前提下，把开源模型做到闭源旗舰的水平。</p>
+    <p>近两年闭源模型（GPT-4o、Claude-3.5、Gemini）一路狂奔，开源阵营（LLaMA、Qwen、Mistral、DeepSeek）拼命追赶。要继续往上顶，最直接的办法是<strong>把模型做大</strong>——但「做大」会立刻撞上三堵墙：</p>
+    <ul>
+      <li><strong>推理成本墙</strong>：标准多头注意力（MHA）的 KV cache 随序列和层数线性膨胀，长上下文推理时显存吃紧、吞吐受限。</li>
+      <li><strong>负载均衡墙</strong>：MoE 用稀疏专家省算力，但专家负载一旦不均就会「路由坍缩」；传统解法是加 auxiliary loss 强制均衡，<strong>而这个损失项越大、模型性能掉得越多</strong>。</li>
+      <li><strong>训练成本墙</strong>：超大模型用 BF16/FP16 训练，显存与算力开销巨大；跨节点 MoE 的 all-to-all 通信又会把 GPU 闲置成「等数据」的状态。</li>
+    </ul>
+    <p>DeepSeek-V3 的回答是：<strong>不靠单点突破，而是把架构、训练框架、硬件特性三者协同设计</strong>，逐一拆掉这三堵墙。下面按「先架构、后工程」的顺序展开。</p>
+  </section>
+
+  <!-- ===================== 架构总览 ===================== -->
+  <section id="arch" class="wrap">
+    <h2 class="sec"><span class="num">02</span> 架构总览：MLA + DeepSeekMoE</h2>
+    <p class="lead">DeepSeek-V3 仍是标准 Transformer 框架，但在两个关键位置做了替换：注意力换成 MLA，FFN 换成 DeepSeekMoE。这套组合已在 DeepSeek-V2 验证过，V3 在其上新增了「无辅助损失负载均衡」和「多 token 预测」。</p>
+  </section>
+
+  <figure class="fig">
+    <img src="assets/x2.png" alt="DeepSeek-V3 基础架构示意图" />
+    <div class="figcap"><b>图 2 ·</b> DeepSeek-V3 的基础架构：左侧是 MLA（多头潜在注意力），右侧是 DeepSeekMoE（论文 Figure 2）。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>整体是一摞 Transformer Block</b>：每层由「注意力子层（MLA）+ 前馈子层（DeepSeekMoE）」组成，配 RMSNorm 和残差连接。全模型共 61 层、隐藏维度 7168。</li>
+        <li><b>左侧 MLA</b>：输入先经「下投影」压成一个低维潜在向量 c_KV，推理时<strong>只缓存这个压缩后的潜在向量</strong>（图中蓝框），再上投影还原出多头的 Key/Value。这就是 KV cache 大幅缩小的来源。</li>
+        <li><b>RoPE 解耦</b>：位置编码（RoPE）走单独一支「解耦的 query/key」，与压缩通路分开，避免压缩破坏位置信息。</li>
+        <li><b>右侧 DeepSeekMoE</b>：FFN 被替换成「1 个共享专家 + 256 个路由专家」，每个 token 只激活其中 8 个路由专家 + 共享专家。Router 用 sigmoid 算 token-专家亲和度并取 top-K。</li>
+        <li><b>稀疏激活</b>：虽然总参数 671B，但每个 token 实际只过一小撮专家，所以激活参数只有 37B——这就是「大而省」的关键。</li>
+      </ul>
+      <div class="sum">一句话总结：左边用低秩压缩省推理显存，右边用细粒度稀疏专家省训练算力，两者合起来让 671B 模型跑得起、训得起。</div>
+    </div>
+  </figure>
+
+  <div class="wrap">
+    <details class="box">
+      <summary><span class="mk">▶</span> 模型关键配置 <span class="s">· 61 层 / 7168 维 / 256 路由专家 / 激活 37B（点开看完整表）</span></summary>
+      <div class="body">
+        <table class="cfg">
+          <tr><th>配置项</th><th style="text-align:right">数值</th></tr>
+          <tr><td>总参数 / 每 token 激活参数</td><td class="v">671B / 37B</td></tr>
+          <tr><td>Transformer 层数</td><td class="v">61</td></tr>
+          <tr><td>隐藏维度</td><td class="v">7168</td></tr>
+          <tr><td>注意力头数 / 每头维度</td><td class="v">128 / 128</td></tr>
+          <tr><td>MoE：共享专家 / 路由专家</td><td class="v">1 / 256</td></tr>
+          <tr><td>每 token 激活路由专家</td><td class="v">8</td></tr>
+          <tr><td>前 3 层为 Dense，其余为 MoE</td><td class="v">3 + 58</td></tr>
+          <tr><td>MTP 预测深度 D</td><td class="v">1</td></tr>
+          <tr><td>预训练 token 总量</td><td class="v">14.8T</td></tr>
+          <tr><td>词表（Byte-level BPE）</td><td class="v">128K</td></tr>
+          <tr><td>上下文长度（两阶段扩展）</td><td class="v">4K → 32K → 128K</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <!-- ===================== MLA ===================== -->
+  <section id="mla" class="wrap">
+    <h2 class="sec"><span class="num">03</span> MLA：把 KV cache 压下去</h2>
+    <p class="lead">多头潜在注意力（Multi-head Latent Attention）的核心动作只有一个：<strong>对 Key/Value 做低秩联合压缩</strong>，让推理时只需缓存一个小小的潜在向量。</p>
+    <p>标准 MHA 推理时要为每个 token、每个头都缓存完整的 K 和 V，显存随上下文线性暴涨。MLA 的做法是：把输入先用一个下投影矩阵压成低维潜在向量 <code>c_KV</code>，<strong>生成时只缓存 c_KV</strong>；真正算注意力时再用上投影矩阵把它还原成各头的 K、V。这样 KV cache 体积大幅缩小，而性能基本与 MHA 持平。</p>
+    <ul>
+      <li><strong>Query 也压缩</strong>：对 query 同样做低秩压缩，主要目的是降低<strong>训练时</strong>的激活显存。</li>
+      <li><strong>RoPE 解耦</strong>：位置编码单独走一支「解耦 query/key」，与压缩通路解耦，避免压缩干扰位置信息。</li>
+      <li><strong>收益</strong>：推理显存显著下降、长上下文（128K）更经济，是 V3 「高效推理」的地基。</li>
+    </ul>
+    <details class="box">
+      <summary><span class="mk">▶</span> 看一眼数学形式 <span class="s">· 低秩压缩 + 上投影还原（公式较短，点开）</span></summary>
+      <div class="body">
+        <p style="margin-top:0">压缩与还原（示意，符号同论文）：</p>
+        <div class="eq">c_KV = W_DKV · h_t            // 下投影：压成低维潜在向量（仅此项进 KV cache）</div>
+        <div class="eq">k_C = W_UK · c_KV ,  v_C = W_UV · c_KV   // 上投影：还原各头 Key / Value</div>
+        <div class="eq">k_R = RoPE(W_KR · h_t)         // 解耦分支：单独承载位置编码</div>
+        <p style="margin-bottom:0">推理时只缓存 <code>c_KV</code> 与解耦 key <code>k_R</code>，相比缓存全部 K/V，体积大幅下降。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== MoE 负载均衡 ===================== -->
+  <section id="moe" class="wrap">
+    <h2 class="sec"><span class="num">04</span> DeepSeekMoE + 无辅助损失负载均衡</h2>
+    <p class="lead">这是 V3 相对 V2 的核心创新之一：用一个<strong>不进梯度的偏置项</strong>来调度专家负载，从而摆脱「为了均衡而损害性能」的老问题。</p>
+    <p>DeepSeekMoE 相比 GShard 这类传统 MoE，用了<strong>更细粒度的专家</strong>并<strong>隔离出共享专家</strong>（所有 token 都过的「通用专家」）。但 MoE 的老毛病是：如果某些专家被路由器偏爱、负载过高，就会「路由坍缩」、并拖垮专家并行的效率。</p>
+    <p><strong>传统解法</strong>是加 auxiliary loss 惩罚不均衡——可这个损失项越大，模型本身的性能掉得越多，是个两难取舍。</p>
+    <div class="callout"><b>V3 的关键招数：</b>给每个专家配一个<strong>偏置项 b_i</strong>，只在 <em>top-K 选择</em>时把它加到亲和度分数上；而真正乘到专家输出上的<strong>门控值仍来自原始亲和度</strong>。每个训练步结束后，监控各专家负载——<strong>过载就把它的偏置调低、欠载就调高</strong>。负载被「悄悄」拉平，梯度却完全不受这个均衡操作污染。</div>
+    <p>下面这个分步演示，展示一个训练步内偏置项如何把不均衡的专家负载拉平：</p>
+  </section>
+
+  <div class="wrap">
+    <div class="stepper" id="moeStep">
+      <div class="stepper-top">
+        <div class="title">无辅助损失负载均衡 · 分步演示</div>
+        <div class="stepper-ctrl">
+          <button class="btn" id="mPrev" onclick="moeMove(-1)">上一步</button>
+          <button class="btn primary" id="mNext" onclick="moeMove(1)">下一步 →</button>
+        </div>
+      </div>
+      <div class="experts" id="mExperts"></div>
+      <div class="step-caption" id="mCap"></div>
+      <div class="dots" id="mDots"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <p>除了无辅助损失策略，V3 还保留了两个补充设计：</p>
+    <ul>
+      <li><strong>序列级辅助损失（权重极小）</strong>：只为防止单条序列内部出现极端失衡，系数设得非常小，几乎不影响整体性能。</li>
+      <li><strong>节点受限路由</strong>：每个 token 最多被发往 4 个节点，限制跨节点通信量——这是后面 all-to-all 通信能「几乎完全重叠」的前提。</li>
+      <li><strong>全程不丢 token</strong>：因为负载始终均衡，训练与推理都不需要丢弃 token。</li>
+    </ul>
+  </div>
+
+  <!-- ===================== MTP ===================== -->
+  <section id="mtp" class="wrap">
+    <h2 class="sec"><span class="num">05</span> 多 token 预测（MTP）</h2>
+    <p class="lead">让模型在每个位置不仅预测「下一个 token」，还顺带预测「再下一个」，从而加密训练信号、让表示提前为未来 token 做规划。</p>
+    <p>标准语言模型每个位置只预测 1 个 token。MTP 把预测范围扩展到多个未来 token。与 Gloeckle 等人「用多个独立输出头并行预测」不同，<strong>V3 是顺序预测、并在每个预测深度保留完整的因果链</strong>。</p>
+  </section>
+
+  <figure class="fig">
+    <img src="assets/x3.png" alt="多 token 预测 MTP 实现示意图" />
+    <div class="figcap"><b>图 3 ·</b> DeepSeek-V3 的 MTP 实现：每个深度保留完整因果链，串行预测后续 token（论文 Figure 3）。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>最左是主模型（Main Model）</b>：照常做「下一个 token」预测，输出每个位置的隐表示。</li>
+        <li><b>右侧是若干 MTP 模块</b>：第 k 个模块负责预测「第 k 个额外 token」。每个模块含一个 Transformer block、一个投影矩阵，并<strong>与主模型共享同一个 embedding 层和输出头</strong>。</li>
+        <li><b>串行 + 因果链</b>：第 k 个模块的输入，是把「上一深度该 token 的表示」与「下一个 token 的 embedding」拼接后做线性投影——所以预测是逐级递进的，不是各头独立并行。</li>
+        <li><b>训练目标</b>：每个深度算一个交叉熵损失，跨深度求平均后乘一个小权重 λ，作为主目标之外的附加损失。</li>
+        <li><b>推理时可丢弃</b>：MTP 模块主要为提升主模型质量；推理时可直接丢掉，主模型独立工作；也可复用它们做<strong>投机解码（speculative decoding）</strong>加速生成。</li>
+      </ul>
+      <div class="sum">一句话总结：MTP 用「多预测一步」的附加任务把训练信号变密，免费提升主模型质量，还能顺手当投机解码用。V3 实际设深度 D=1（多预测 1 个 token）。</div>
+    </div>
+  </figure>
+
+  <!-- ===================== 工程 / DualPipe ===================== -->
+  <section id="infra" class="wrap">
+    <h2 class="sec"><span class="num">06</span> 工程：把通信藏进计算</h2>
+    <p class="lead">跨节点 MoE 训练的死穴是 all-to-all 通信——计算与通信几乎 1:1，GPU 一半时间在等数据。V3 用 DualPipe 流水线 + 定制通信内核，把通信几乎完全「藏」进计算里。</p>
+    <p>DeepSeek-V3 在 <strong>2048 张 H800</strong> 上训练，采用 16 路流水线并行（PP）、跨 8 节点的 64 路专家并行（EP）和 ZeRO-1 数据并行，<strong>完全不用昂贵的张量并行（TP）</strong>。三个工程支柱：</p>
+    <ul>
+      <li><strong>DualPipe 双向流水线</strong>：把一对前向 / 反向 chunk 拆成「注意力 / all-to-all 分发 / MLP / all-to-all 合并」四段，重排后让计算与通信相互重叠——流水线气泡更少，通信被隐藏。</li>
+      <li><strong>定制 all-to-all 内核</strong>：协同设计 MoE 路由与网络拓扑，让 IB（节点间）与 NVLink（节点内）通信完全重叠，<strong>只用 20 个 SM</strong> 就跑满带宽。</li>
+      <li><strong>极致省显存</strong>：重算 RMSNorm 与 MLA 上投影、EMA 参数放 CPU、MTP 与主模型物理共享 embedding/输出头——省到可以不开 TP。</li>
+    </ul>
+  </section>
+
+  <figure class="fig">
+    <img src="assets/x5.png" alt="DualPipe 双向流水线调度示意图" />
+    <div class="figcap"><b>图 5 ·</b> DualPipe 调度示例：8 个 PP rank、20 个 micro-batch，从流水线两端同时喂数据（论文 Figure 5）。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>每一行是一个 PP rank（GPU 阶段）</b>，横轴是时间；每个小格是一个 micro-batch 的前向或反向计算。</li>
+        <li><b>双向喂数据</b>：micro-batch 同时从流水线的两端注入（正向与反向对称），让原本闲置的「气泡」时段被另一方向的计算填满。</li>
+        <li><b>被黑框圈住的两格</b>：表示这两段的计算与通信是<strong>相互重叠</strong>的——一个在算，另一个在通信，GPU 不空等。</li>
+        <li><b>对比传统 1F1B / ZB1P</b>：DualPipe 显著减少气泡，代价只是峰值激活显存略增、需保存两份参数（但因 EP 规模大，显存影响有限）。</li>
+        <li><b>可扩展性</b>：只要保持「计算/通信比」恒定，模型继续放大也能维持近乎零的 all-to-all 通信开销。</li>
+      </ul>
+      <div class="sum">一句话总结：DualPipe 用双向流水线 + 计算通信重叠，把跨节点 MoE 最贵的通信开销几乎完全隐藏，是「低成本训练」的引擎。</div>
+    </div>
+  </figure>
+
+  <!-- ===================== FP8 ===================== -->
+  <section id="fp8" class="wrap">
+    <h2 class="sec"><span class="num">07</span> FP8 训练：首次在超大模型上验证</h2>
+    <p class="lead">V3 是<strong>首个在极大规模模型上验证 FP8 混合精度训练可行性</strong>的工作。核心难点是 FP8 动态范围太窄、易被离群值打爆；解法是「细粒度量化 + 高精度累加」。</p>
+    <p>大部分计算密集的 GEMM（前向 Fprop、激活反传 Dgrad、权重反传 Wgrad）都用 FP8 执行，理论上比 BF16 快一倍，还能把激活以 FP8 缓存、省显存。但对精度敏感的模块（embedding、输出头、MoE 门控、归一化、注意力）仍保留 BF16/FP32。</p>
+  </section>
+
+  <figure class="fig">
+    <img src="assets/x7.png" alt="FP8 细粒度量化与高精度累加示意图" />
+    <div class="figcap"><b>图 7 ·</b> (a) 细粒度量化缓解离群值；(b) 每隔 N_C 个元素「提升到 CUDA Core」做 FP32 高精度累加（论文 Figure 7）。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>(a) 细粒度量化</b>：不再对整个张量用一个缩放因子，而是<strong>激活按 1×128 的 tile（每 token 每 128 通道）、权重按 128×128 的 block</strong> 各自缩放。更小的分组能让缩放因子贴合局部分布，从而「包容」离群值，避免一个极端值把整组打爆。</li>
+        <li><b>(b) 高精度累加</b>：H800 的 Tensor Core 做 FP8 累加只保留约 14 位精度，K 维很大时误差可达 ~2%。解法是每累加 N_C（=128）个元素，就把中间结果搬到 CUDA Core 的 FP32 寄存器上做全精度累加。</li>
+        <li><b>双 WGMMA 重叠</b>：一个 warpgroup 做「提升累加」时，另一个继续在 Tensor Core 上算 MMA，两者重叠，保持 Tensor Core 高利用率。</li>
+        <li><b>全程用 E4M3</b>：不同于前人「Fprop 用 E4M3、反传用 E5M2」的混合格式，V3 借助细粒度量化对所有张量统一用精度更高的 E4M3。</li>
+        <li><b>在线量化</b>：每个 tile/block 的缩放因子在线实时计算（而非沿用历史最大值），更准也更简洁。</li>
+      </ul>
+      <div class="sum">一句话总结：用「更细的分组缩放」对抗离群值、用「搬到 CUDA Core 做 FP32 累加」对抗精度损失，让 FP8 训练在 671B 规模上稳定可用。</div>
+    </div>
+  </figure>
+
+  <div class="wrap">
+    <div class="callout"><b>结果有多稳？</b>在两个规模上各训练约 1 万亿 token 验证：相比 BF16 基线，FP8 训练模型的<strong>相对 loss 误差始终低于 0.25%</strong>，完全落在训练随机性的可接受范围内。换句话说——FP8 训练几乎无损，但省了一半算力和大量显存。</div>
+  </div>
+
+  <!-- ===================== 有意思的点 ===================== -->
+  <section id="cost" class="wrap">
+    <h2 class="sec"><span class="num">08</span> 有意思的点：成本、稳定性与蒸馏</h2>
+    <p class="lead">抛开具体技术，这篇报告最让业界震动的是几个「数字」与「工程纪律」。</p>
+  </section>
+
+  <div class="wrap">
+    <div class="metrics">
+      <div class="metric"><div class="v">$5.576M</div><div class="u">全程训练总成本（H800 $2/时）</div></div>
+      <div class="metric"><div class="v">2.788M</div><div class="u">H800 GPU 小时（含预训练+扩展+后训练）</div></div>
+      <div class="metric"><div class="v">14.8T</div><div class="u">预训练 token 总量</div></div>
+      <div class="metric"><div class="v">&lt;0.25%</div><div class="u">FP8 vs BF16 相对 loss 误差</div></div>
+    </div>
+
+    <div class="dcard">
+      <div class="dcard-head" onclick="toggleCard(this)">
+        <div class="dcard-main">
+          <div class="dcard-title">成本拆解：每万亿 token 只要 18 万 GPU 小时 <span class="tag">工程</span></div>
+          <div class="dcard-sum">预训练 2664K + 上下文扩展 119K + 后训练 5K = 2788K H800 GPU 小时</div>
+        </div>
+        <span class="chev">▸</span>
+      </div>
+      <div class="dcard-body"><div class="dcard-inner">
+        <p>预训练每处理 1 万亿 token 仅需 <strong>180K H800 GPU 小时</strong>——在 2048 卡集群上约 3.7 天。整个预训练不到两个月、耗 2664K GPU 小时；加上上下文扩展 119K、后训练 5K，全程 2.788M GPU 小时。按 H800 租金 $2/小时算，总成本约 <strong>557.6 万美元</strong>。</p>
+        <p>注意：这只是「正式训练」的开销，<strong>不含</strong>前期架构、算法、数据上的研究与消融实验成本。但即便如此，这个量级也远低于训练同等能力的 72B / 405B 稠密模型。</p>
+      </div></div>
+    </div>
+
+    <div class="dcard">
+      <div class="dcard-head" onclick="toggleCard(this)">
+        <div class="dcard-main">
+          <div class="dcard-title">训练纪律：全程零不可恢复突刺、零回滚 <span class="tag">稳定性</span></div>
+          <div class="dcard-sum">14.8T token 的预训练过程「remarkably stable」，没有任何回滚</div>
+        </div>
+        <span class="chev">▸</span>
+      </div>
+      <div class="dcard-body"><div class="dcard-inner">
+        <p>大模型训练最怕 loss 突刺（spike）和被迫回滚——一次回滚可能浪费数天算力。DeepSeek-V3 在整个 14.8T token 的预训练里<strong>没有出现一次不可恢复的 loss 突刺，也没有做过任何回滚</strong>。这种稳定性既来自 FP8 框架对数值稳定性的精心设计（关键模块保留高精度、master 权重/优化器状态 FP32），也是「算法-框架-硬件协同」成熟度的体现。</p>
+      </div></div>
+    </div>
+
+    <div class="dcard">
+      <div class="dcard-head" onclick="toggleCard(this)">
+        <div class="dcard-main">
+          <div class="dcard-title">从 R1 蒸馏推理能力到 V3 <span class="tag">后训练</span></div>
+          <div class="dcard-sum">把长链思维（long-CoT）模型 DeepSeek-R1 的推理 / 反思模式蒸馏进 V3</div>
+        </div>
+        <span class="chev">▸</span>
+      </div>
+      <div class="dcard-body"><div class="dcard-inner">
+        <p>后训练阶段（SFT + RL）只花了 <strong>5K GPU 小时（0.1M 量级）</strong>。其中一个亮点是：把 DeepSeek-R1 系列长链思维模型的<strong>验证与反思模式蒸馏进 V3</strong>，显著提升其推理表现，同时控制住输出风格与长度——既要会推理，又不能啰嗦到失控。</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ===================== 实验结论 ===================== -->
+  <section id="results" class="wrap">
+    <h2 class="sec"><span class="num">09</span> 实验结论：一句话</h2>
+    <p class="lead">DeepSeek-V3 是当时<strong>最强的开源模型</strong>，在数学、代码等硬核任务上达到甚至超过闭源旗舰，在英文事实知识上仍略逊于 GPT-4o / Claude-3.5。</p>
+    <div class="metrics">
+      <div class="metric"><div class="v">88.5</div><div class="l">MMLU（开源最强）</div></div>
+      <div class="metric"><div class="v">90.2</div><div class="l">MATH-500（超 o1-preview）</div></div>
+      <div class="metric"><div class="v">59.1</div><div class="l">GPQA-Diamond</div></div>
+      <div class="metric"><div class="v">51.6</div><div class="l">Codeforces 百分位</div></div>
+      <div class="metric"><div class="v">39.2</div><div class="l">AIME 2024</div></div>
+      <div class="metric"><div class="v">85.5</div><div class="l">Arena-Hard</div></div>
+    </div>
+    <p>具体来说：在 MMLU(88.5)/MMLU-Pro(75.9)/GPQA(59.1) 等知识基准上领先所有开源模型、比肩 GPT-4o 与 Claude-3.5；在数学（MATH-500 90.2、AIME 39.2）和代码（LiveCodeBench、Codeforces 51.6 百分位）上成为非长链思维模型中的最强者；在中文事实知识（Chinese SimpleQA）上甚至反超闭源旗舰。</p>
+    <div class="quote">「DeepSeek-V3 已成为目前最强的开源基础模型，尤其在代码和数学方面，其对话版本在一系列标准与开放式基准上的表现可与 GPT-4o、Claude-3.5-Sonnet 等顶级闭源模型相媲美。」</div>
+  </section>
+
+  <!-- ===================== 局限 ===================== -->
+  <section id="limit" class="wrap">
+    <h2 class="sec"><span class="num">10</span> 局限与未来</h2>
+    <p>作者也坦诚了两点局限，主要集中在<strong>部署</strong>：</p>
+    <ul>
+      <li><strong>部署单元偏大</strong>：为保证高效推理，推荐的部署单元规模较大，对小团队是一道门槛。</li>
+      <li><strong>生成速度仍有空间</strong>：尽管端到端生成速度已是 DeepSeek-V2 的两倍多，但仍有提升余地。作者认为这些会随更先进硬件自然缓解。</li>
+    </ul>
+    <p>未来方向：继续打磨架构以逼近「无限上下文」、突破 Transformer 限制、扩大训练数据维度、深化「深度思考」推理能力，以及探索更全面的评测方法（避免对固定基准过拟合）。</p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="row"><b>原文：</b> DeepSeek-V3 Technical Report · DeepSeek-AI · <a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">arXiv:2412.19437 ↗</a></div>
+  <div class="row"><b>代码与权重：</b> <a href="https://github.com/deepseek-ai/DeepSeek-V3" target="_blank" rel="noopener">github.com/deepseek-ai/DeepSeek-V3 ↗</a></div>
+  <div class="row"><b>HTML 源（图片来源）：</b> <a href="https://arxiv.org/html/2412.19437v2" target="_blank" rel="noopener">arxiv.org/html/2412.19437v2 ↗</a></div>
+  <div class="disclaimer">本页为教学性图解精读，所有数字、结论、图片均来自上述论文原文（arXiv v2，2025.02 修订）。图 1/2/3/5/7 为论文原图（Figure 1/2/3/5/7）。如与原文有出入，以原文为准。</div>
+</footer>
+
+<script>
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    var open = d.classList.toggle('open');
+    el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+  }
+  function toggleCard(head){
+    head.parentElement.classList.toggle('open');
+  }
+
+  /* ---- MoE aux-loss-free stepper ---- */
+  var moeSteps = [
+    {
+      loads:[92,70,46,22],
+      bias:['0.00','0.00','0.00','0.00'],
+      biasState:['','','',''],
+      balanced:false,
+      cap:'<b>第 0 步 · 初始状态</b>：4 个专家负载严重不均——专家 A 过载、专家 D 几乎空闲。此时所有偏置 b 都是 0，路由只看原始亲和度。'
+    },
+    {
+      loads:[92,70,46,22],
+      bias:['0.00','0.00','0.00','0.00'],
+      biasState:['hot','hot','cold','cold'],
+      balanced:false,
+      cap:'<b>第 1 步 · 监控负载</b>：在整批数据上统计每个专家的负载，标出「过载」(A、B) 与「欠载」(C、D)。'
+    },
+    {
+      loads:[92,70,46,22],
+      bias:['-γ','-γ','+γ','+γ'],
+      biasState:['down','down','up','up'],
+      balanced:false,
+      cap:'<b>第 2 步 · 调整偏置</b>：过载专家的偏置 b 调低 (−γ)、欠载专家调高 (+γ)。注意：偏置<b>只影响 top-K 选择</b>，不进入梯度。'
+    },
+    {
+      loads:[60,57,55,53],
+      bias:['-γ','-γ','+γ','+γ'],
+      biasState:['','','',''],
+      balanced:true,
+      cap:'<b>第 3 步 · 下一步路由</b>：top-K 用「亲和度 + 偏置」来选，负载被悄悄拉平；而乘到输出上的<b>门控值仍来自原始亲和度</b>——均衡了，性能却没被污染。'
+    }
+  ];
+  var moeIdx = 0;
+  var enames = ['专家 A','专家 B','专家 C','专家 D'];
+
+  function moeRender(){
+    var s = moeSteps[moeIdx];
+    var box = document.getElementById('mExperts');
+    var html = '';
+    for(var i=0;i<4;i++){
+      var h = s.loads[i];
+      var bcls = 'bias' + (s.biasState[i]==='up'?' up':(s.biasState[i]==='down'?' down':''));
+      var barcls = 'bar' + (s.balanced?' balanced':'');
+      var hot = s.biasState[i]==='hot' ? ' ⬆ 过载' : (s.biasState[i]==='cold' ? ' ⬇ 欠载' : '');
+      html += '<div class="expert">'
+        + '<div class="ename">'+enames[i]+hot+'</div>'
+        + '<div class="'+barcls+'"><div class="fill" style="height:'+h+'%"></div></div>'
+        + '<div class="'+bcls+'">b = '+s.bias[i]+'</div>'
+        + '</div>';
+    }
+    box.innerHTML = html;
+    document.getElementById('mCap').innerHTML = s.cap;
+    var dots = '';
+    for(var j=0;j<moeSteps.length;j++){ dots += '<span class="'+(j===moeIdx?'on':'')+'"></span>'; }
+    document.getElementById('mDots').innerHTML = dots;
+    document.getElementById('mPrev').disabled = (moeIdx===0);
+    document.getElementById('mNext').textContent = (moeIdx===moeSteps.length-1)?'重新开始':'下一步 →';
+  }
+  function moeMove(dir){
+    if(dir>0 && moeIdx===moeSteps.length-1){ moeIdx = 0; }
+    else { moeIdx = Math.max(0, Math.min(moeSteps.length-1, moeIdx+dir)); }
+    moeRender();
+  }
+  moeRender();
+</script>
+</body>
+</html>

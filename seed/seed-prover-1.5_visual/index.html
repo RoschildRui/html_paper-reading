@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Seed-Prover 1.5 · 从经验中学习的自动定理证明</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f4ecdb;
+  --paper:#fbf6ea;
+  --paper-2:#f4ead7;
+  --paper-3:#ede0c7;
+  --line:#e3d6bd;
+  --line-2:#d8c7a6;
+  --ink:#2b2316;
+  --ink-2:#4a3f2c;
+  --ink-soft:#7a6c52;
+  --ink-faint:#9c8e72;
+  --accent:#b3541e;
+  --accent-soft:#c9803f;
+  --accent-bg:#f3e2cf;
+  --good:#5b7a4f;
+  --good-bg:#e7eddc;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Inter","Noto Sans SC",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:17px;line-height:1.78;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:860px;margin:0 auto;padding:0 22px}
+
+/* ---------- top nav ---------- */
+.topnav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(244,236,219,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.topnav .wrap{display:flex;align-items:center;gap:18px;height:52px;overflow-x:auto}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:16px;font-size:14px;white-space:nowrap}
+.topnav .links a{color:var(--ink-soft)}
+.topnav .links a:hover{color:var(--accent);text-decoration:none}
+
+/* ---------- header ---------- */
+header.hero{padding:54px 0 30px}
+.kicker{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1.title{font-size:38px;line-height:1.2;margin:14px 0 8px;font-weight:700;letter-spacing:-.01em}
+.subtitle-en{font-size:16px;color:var(--ink-soft);font-weight:500;margin-bottom:20px}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
+.tag{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--paper);border:1px solid var(--line-2);border-radius:999px;
+  padding:5px 13px;font-size:13px;color:var(--ink-2);
+}
+.tag b{font-weight:600;color:var(--ink)}
+.read-src{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--accent);color:#fff;border-radius:999px;
+  padding:6px 15px;font-size:14px;font-weight:600;
+}
+.read-src:hover{background:#9a4717;text-decoration:none;color:#fff}
+
+/* ---------- sections ---------- */
+section{padding:30px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:none}
+h2{font-size:26px;margin:6px 0 6px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+h2 .num{font-family:var(--mono);font-size:15px;color:var(--accent);font-weight:600;background:var(--accent-bg);border-radius:7px;padding:2px 9px}
+h3{font-size:19px;margin:26px 0 8px;font-weight:600}
+.lead{font-size:18px;color:var(--ink-2)}
+p{margin:12px 0}
+strong{font-weight:600;color:var(--ink)}
+ul,ol{margin:12px 0;padding-left:22px}
+li{margin:7px 0}
+.section-hint{color:var(--ink-soft);font-size:15px;margin-top:-2px}
+
+/* ---------- TL;DR ---------- */
+.tldr{
+  background:linear-gradient(180deg,var(--paper) 0%,var(--paper-2) 100%);
+  border:1px solid var(--line-2);border-radius:16px;padding:24px 26px;margin-top:6px;
+}
+.tldr h2{margin-top:0;font-size:21px}
+.tldr p{font-size:17px;color:var(--ink-2);margin:10px 0 0}
+.tldr .em{color:var(--accent);font-weight:600}
+
+/* ---------- metric cards ---------- */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0 6px}
+.metric{
+  background:var(--paper);border:1px solid var(--line-2);border-radius:13px;
+  padding:16px 14px;text-align:center;
+}
+.metric .v{font-family:var(--mono);font-size:27px;font-weight:700;color:var(--accent);line-height:1.1}
+.metric .l{font-size:13px;color:var(--ink-soft);margin-top:6px}
+.metric .lv{font-size:12px;color:var(--ink-faint);margin-top:2px}
+
+/* ---------- figure ---------- */
+figure.fig{margin:22px 0;background:var(--paper);border:1px solid var(--line-2);border-radius:14px;padding:16px;overflow:hidden}
+figure.fig img{width:100%;height:auto;display:block;border-radius:8px;background:#fff;border:1px solid var(--line)}
+.fig-cap{font-size:14px;color:var(--ink-soft);margin-top:11px;line-height:1.6}
+.fig-cap .tag-f{font-weight:600;color:var(--ink-2)}
+.fig-toggle{
+  display:inline-block;margin-top:10px;cursor:pointer;user-select:none;
+  font-size:14px;font-weight:600;color:var(--accent);
+}
+.fig-toggle:hover{text-decoration:underline}
+.figure-detail{
+  max-height:0;overflow:hidden;opacity:0;
+  transition:max-height .45s ease,opacity .35s ease,margin .35s ease;
+}
+.figure-detail.active{max-height:1600px;opacity:1;margin-top:12px}
+.figure-detail .inner{
+  background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  font-size:14.5px;color:var(--ink-2);line-height:1.7;
+}
+.figure-detail .inner ol{padding-left:20px;margin:6px 0}
+.figure-detail .inner li{margin:6px 0}
+.figure-detail .inner .sum{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2);color:var(--ink-soft)}
+
+/* ---------- expandable card ---------- */
+.cards{display:flex;flex-direction:column;gap:12px;margin:16px 0}
+.card{background:var(--paper);border:1px solid var(--line-2);border-radius:13px;overflow:hidden}
+.card-head{padding:15px 18px;cursor:pointer;user-select:none;display:flex;align-items:flex-start;gap:12px}
+.card-head:hover{background:var(--paper-2)}
+.card-head .chev{font-family:var(--mono);color:var(--accent);font-size:15px;transition:transform .3s ease;margin-top:2px}
+.card.open .card-head .chev{transform:rotate(90deg)}
+.card-head .ht{flex:1}
+.card-head .ht .t{font-weight:600;font-size:16.5px}
+.card-head .ht .s{font-size:13.5px;color:var(--ink-soft);margin-top:2px}
+.card-body{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .35s ease}
+.card.open .card-body{max-height:1200px;opacity:1}
+.card-body .cb-inner{padding:2px 18px 18px;font-size:15.5px;color:var(--ink-2)}
+.card-body .cb-inner p{margin:9px 0}
+.pill{display:inline-block;font-size:11.5px;font-family:var(--mono);background:var(--paper-3);border:1px solid var(--line-2);border-radius:6px;padding:1px 7px;color:var(--ink-soft);margin-left:6px}
+
+/* ---------- code / formula ---------- */
+.code{
+  background:#2b2316;color:#f1e7d4;border-radius:11px;padding:15px 17px;margin:16px 0;
+  font-family:var(--mono);font-size:13.5px;line-height:1.62;overflow-x:auto;
+}
+.code .c{color:#9c8e72}
+.code .k{color:#d99a5e}
+.code .s{color:#a9c08f}
+.code .t{color:#7fb0c4}
+.formula{
+  background:var(--paper);border:1px solid var(--line-2);border-left:3px solid var(--accent);
+  border-radius:10px;padding:13px 16px;margin:14px 0;font-family:var(--mono);font-size:14px;
+  color:var(--ink-2);overflow-x:auto;line-height:1.7;
+}
+.formula .lbl{font-family:var(--sans);font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}
+
+details.det{background:var(--paper);border:1px solid var(--line-2);border-radius:11px;margin:14px 0;overflow:hidden}
+details.det summary{padding:13px 16px;cursor:pointer;font-weight:600;font-size:15px;list-style:none}
+details.det summary::-webkit-details-marker{display:none}
+details.det summary .s{display:block;font-weight:400;font-size:13.5px;color:var(--ink-soft);margin-top:3px}
+details.det[open] summary{border-bottom:1px solid var(--line)}
+details.det .det-inner{padding:14px 16px}
+
+/* ---------- quote ---------- */
+.quote{
+  border-left:3px solid var(--accent);background:var(--paper);
+  border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0;
+}
+.quote .en{font-style:italic;color:var(--ink-2);font-size:15.5px}
+.quote .zh{font-size:14.5px;color:var(--ink-soft);margin-top:7px}
+
+/* ---------- compare table ---------- */
+.tbl-wrap{overflow-x:auto;margin:16px 0}
+table.cmp{width:100%;border-collapse:collapse;font-size:14.5px;min-width:560px}
+table.cmp th,table.cmp td{padding:9px 11px;text-align:center;border-bottom:1px solid var(--line)}
+table.cmp th{background:var(--paper-2);font-weight:600;color:var(--ink-2);font-size:13.5px}
+table.cmp td:first-child,table.cmp th:first-child{text-align:left}
+table.cmp tr.hl td{background:var(--accent-bg);font-weight:600;color:var(--ink)}
+table.cmp .mono{font-family:var(--mono);font-size:13px}
+table.cmp .dim{color:var(--ink-faint)}
+
+/* ---------- workflow diagram ---------- */
+.flow{background:var(--paper);border:1px solid var(--line-2);border-radius:16px;padding:22px;margin:18px 0}
+.flow-agents{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.agent{
+  border:1.5px solid var(--line-2);border-radius:12px;padding:14px;background:var(--paper-2);
+  transition:border-color .3s,background .3s,box-shadow .3s;position:relative;
+}
+.agent.on{border-color:var(--accent);background:#fff;box-shadow:0 4px 16px rgba(179,84,30,.12)}
+.agent .ic{font-size:22px}
+.agent .an{font-weight:600;font-size:15px;margin-top:4px}
+.agent .ad{font-size:12.5px;color:var(--ink-soft);margin-top:4px;line-height:1.5}
+.agent .src{font-size:11px;color:var(--ink-faint);font-family:var(--mono);margin-top:6px}
+.flow-steps{margin-top:18px;border-top:1px dashed var(--line-2);padding-top:16px}
+.step-ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.step-ctrl button{
+  font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;
+  background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 16px;
+}
+.step-ctrl button:hover{background:#9a4717}
+.step-ctrl button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line-2)}
+.step-ctrl button.ghost:hover{background:var(--paper-2)}
+.step-ctrl .idx{font-family:var(--mono);font-size:13px;color:var(--ink-soft)}
+.step-box{
+  margin-top:14px;background:var(--paper-2);border:1px solid var(--line);border-radius:11px;
+  padding:15px 17px;min-height:92px;
+}
+.step-box .st{font-weight:600;font-size:16px;color:var(--accent);display:flex;align-items:center;gap:8px}
+.step-box .sx{font-size:14.5px;color:var(--ink-2);margin-top:7px;line-height:1.66}
+.loop-note{font-size:13px;color:var(--ink-soft);margin-top:12px;display:flex;gap:8px;align-items:flex-start}
+
+/* ---------- tools strip ---------- */
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.tool{background:var(--paper);border:1px solid var(--line-2);border-radius:12px;padding:14px 15px}
+.tool .ti{font-size:20px}
+.tool .tn{font-weight:600;font-size:15px;margin-top:4px}
+.tool .td{font-size:13.5px;color:var(--ink-soft);margin-top:5px;line-height:1.55}
+
+/* ---------- advantages chips ---------- */
+.adv{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}
+.adv .a{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.adv .a .t{font-weight:600;font-size:14.5px}
+.adv .a .d{font-size:13px;color:var(--ink-soft);margin-top:3px;line-height:1.5}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);padding:34px 0 60px;margin-top:20px;color:var(--ink-soft);font-size:14px}
+footer .frow{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+footer b{color:var(--ink-2)}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  h1.title{font-size:30px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .flow-agents{grid-template-columns:1fr}
+  .tools{grid-template-columns:1fr}
+  .adv{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <span class="brand">Seed-Prover 1.5</span>
+    <span class="links">
+      <a href="#tldr">速览</a>
+      <a href="#problem">问题</a>
+      <a href="#baseline">已有方案</a>
+      <a href="#method">本文方法</a>
+      <a href="#insight">巧思</a>
+      <a href="#exp">实验</a>
+    </span>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">自动定理证明 · 形式化数学推理</div>
+    <h1 class="title">从经验中学习：让大模型攻克本科到博士级的形式化定理证明</h1>
+    <div class="subtitle-en">Seed-Prover 1.5: Mastering Undergraduate-Level Theorem Proving via Learning from Experience</div>
+    <div class="meta-row">
+      <span class="tag">🗓 <b>2025 年 12 月</b></span>
+      <span class="tag">📄 <b>arXiv preprint</b></span>
+      <span class="tag">🏢 ByteDance Seed AI4Math</span>
+      <span class="tag">🤖 Doubao-Seedprover-1.5</span>
+      <a class="read-src" href="https://arxiv.org/abs/2512.17260" target="_blank" rel="noopener">阅读原文 ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- TL;DR -->
+  <section id="tldr" style="border-top:none">
+    <div class="tldr">
+      <h2>30 秒速览</h2>
+      <p>形式化证明（Lean）能被机器<strong>完全验证</strong>、彻底消除幻觉，但长期以来在能力和效率上都<strong>远落后于</strong>自然语言证明。本文用<span class="em">大规模 agentic 强化学习</span>训练了一个会主动调用 Lean、Mathlib 检索、Python 等工具的证明智能体：它在与 Lean 的反复交互中<strong>不断积累经验</strong>，越练越快、越练越强。再配上一套把自然语言证明「翻译」成 Lean 草图（sketch）的高效测试时扩展（TTS）工作流，Seed-Prover 1.5 用<strong>更小的算力预算</strong>刷到了 SOTA。</p>
+      <p style="margin-top:14px">它解决了 <span class="em">88% 的 PutnamBench（本科级）</span>、<span class="em">80% 的 Fate-H（研究生级）</span>、<span class="em">33% 的 Fate-X（博士级）</span>；并在 <span class="em">9 小时内做出 Putnam 2025 的 11/12 道题</span>。核心结论：由高质量形式化反馈驱动的「从经验中学习」，是形式化数学推理未来的关键路径。</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">88%</div><div class="l">PutnamBench</div><div class="lv">本科级 · 580/660</div></div>
+      <div class="metric"><div class="v">80%</div><div class="l">Fate-H</div><div class="lv">研究生级</div></div>
+      <div class="metric"><div class="v">33%</div><div class="l">Fate-X</div><div class="lv">博士级及以上</div></div>
+      <div class="metric"><div class="v">11/12</div><div class="l">Putnam 2025</div><div class="lv">9 小时内完成</div></div>
+    </div>
+    <p class="section-hint">注：Seed-Prover 1.5 全流程约 <strong>10 H20-天/题</strong>，对比 Seed-Prover 1.0 的 18 H20-天/题、AlphaProof 的约 500 TPU-天/题，算力大幅降低。</p>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 要解决什么问题</h2>
+    <p class="lead">如果大模型用自然语言已经能写出近乎严谨的证明，那费力做 Lean 形式化证明还值得吗？</p>
+    <p>用 Lean 做定理证明的最大好处是<strong>可信</strong>：每一步都由编译器机械验证，天然消除了自然语言证明里常见的「跳步」「逻辑漏洞」和幻觉。因此形式化验证被广泛视为数学研究的潜在范式变革。</p>
+    <p>但现实很骨感——形式化证明与自然语言证明之间存在<strong>巨大的能力与效率鸿沟</strong>。论文给出一个扎心对比：</p>
+    <ul>
+      <li><strong>DeepSeek-Math-V2</strong>（自然语言）在 Putnam 2024 上拿到近满分；</li>
+      <li>而 <strong>AlphaProof</strong>（形式化）只解出整个 Putnam 基准的 <strong>56%</strong>（这套题平均比 2024 年更简单），且代价高达<strong>约 500 TPU-天/题</strong>。</li>
+    </ul>
+    <p>于是有人质疑：形式化证明既费算力又能力受限，这条路还有意义吗？</p>
+    <div class="quote">
+      <div class="en">“We argue that the answer is yes … Lean provides a unique advantage: it serves as a fully verifiable environment where models can freely explore, accumulate experience, and undergo large-scale Agentic RL training with ground-truth feedback.”</div>
+      <div class="zh">作者的回答是「值得」：Lean 提供了一个独一无二的<strong>完全可验证环境</strong>——模型可以自由探索、积累经验，并在<strong>真值反馈</strong>下做大规模 Agentic RL 训练。正是这一点，让形式化证明有望成为比自然语言更优的范式。</div>
+    </div>
+  </section>
+
+  <!-- BASELINE -->
+  <section id="baseline">
+    <h2><span class="num">02</span> 已有方案怎么做、卡在哪</h2>
+    <p>在 Seed-Prover 1.5 之前，基于大模型的 Lean 证明器主要分成两大流派。它们都能跑通，但都在「<strong>和 Lean 交互的颗粒度</strong>」上走了极端。点击展开看各自的做法与瓶颈。</p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-head" onclick="toggleCard(this)">
+          <span class="chev">▸</span>
+          <span class="ht">
+            <span class="t">流派一：Step-level 逐 tactic 交互</span>
+            <span class="s">每生成一条 tactic 就和 Lean 交互一次 — 交互太频繁，开销大</span>
+          </span>
+        </div>
+        <div class="card-body"><div class="cb-inner">
+          <p><strong>做了什么：</strong>模型针对当前证明状态只生成<strong>单条 tactic</strong>，提交给 Lean，拿到新状态后再生成下一条，像下棋一样一步步推进（如 AlphaProof、BFS-Prover 等）。</p>
+          <p><strong>怎么做：</strong>通常配合树搜索 / best-first search，在每个证明状态上扩展候选 tactic。</p>
+          <p><strong>卡在哪：</strong>与 Lean <strong>交互过于频繁</strong>，每步都要往返编译，长证明里累积的搜索与验证开销极大，效率低下。</p>
+        </div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head" onclick="toggleCard(this)">
+          <span class="chev">▸</span>
+          <span class="ht">
+            <span class="t">流派二：Whole-proof 整段证明生成</span>
+            <span class="s">长思考后一次性产出完整 Lean 代码 — 交互太稀疏，难以纠错</span>
+          </span>
+        </div>
+        <div class="card-body"><div class="cb-inner">
+          <p><strong>做了什么：</strong>模型先做长链思考，然后<strong>一次性</strong>输出一整段完整 Lean 证明，只与编译器交互一次（如 Kimina、DeepSeek-Prover-V2、Seed-Prover 1.0 等）。</p>
+          <p><strong>怎么做：</strong>把整道题当作一次「生成—编译」任务；失败就整段重写。</p>
+          <p><strong>卡在哪：</strong>与 Lean <strong>交互过于稀疏</strong>，模型拿不到中间反馈，一旦某处出错往往要推倒重来，验证信号利用率低。</p>
+        </div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head" onclick="toggleCard(this)">
+          <span class="chev">▸</span>
+          <span class="ht">
+            <span class="t">本文取的中间道路：以 lemma 为单位的 agentic 证明</span>
+            <span class="s">在「太频繁」和「太稀疏」之间找到平衡点 — 一次提交一条引理</span>
+          </span>
+        </div>
+        <div class="card-body"><div class="cb-inner">
+          <p>Seed-Prover 1.5 是一个 <strong>agent 式</strong>证明器，<strong>以引理（lemma）为单位</strong>与 Lean 交互：既不像 step-level 那样每条 tactic 都打断，也不像 whole-proof 那样闷头写到底，而是<strong>增量式</strong>地一条条构造、验证、缓存引理。</p>
+          <p>这种颗粒度让交互更<strong>均衡高效</strong>，同时让模型能动态调整交互节奏、掌握辅助工具的使用——这正是本文方法的核心。</p>
+          <p class="section-hint">对照组还有 Hilbert：它用一个强通用推理模型做自然语言证明 + 一个专用 Lean 模型做验证；本文则用 Rubric RL 训练 sketch 模型来连接二者，并训练出更强的 agent 证明器。</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METHOD -->
+  <section id="method">
+    <h2><span class="num">03</span> 本文方法</h2>
+    <p class="lead">三块拼图：① 会用工具的 Agentic Prover；② 把它练强练快的 Agentic RL；③ 连接自然语言与形式化的 Sketch 模型，最后用一套分层 TTS 工作流把三者编排起来。</p>
+
+    <h3>3.1 Agentic Prover：会主动调工具的证明智能体</h3>
+    <p>不同于以往「写完整段证明再反复丢给编译器」的做法，本文让模型<strong>增量地、按需调用多种工具</strong>来一步步搭建形式化证明。一旦某条引理成功编译，它就被<strong>缓存进上下文并转成 axiom</strong>，后续步骤可直接复用，无需重新生成。模型的工具分三类：</p>
+
+    <div class="tools">
+      <div class="tool"><div class="ti">✅</div><div class="tn">Lean 验证</div><div class="td">用 LooKeng（基于 REPL 的 Python 接口）编译 Lean 证明，返回结构化反馈；每次只输入<strong>一条引理</strong>，已证引理存入运行上下文。</div></div>
+      <div class="tool"><div class="ti">🔍</div><div class="tn">Mathlib 检索</div><div class="td">基于嵌入的语义检索，按语义相似度找出相关 theorem / lemma / def；固定在 Mathlib v4.22.0 以保证可复现。</div></div>
+      <div class="tool"><div class="ti">🐍</div><div class="tn">Python 执行</div><div class="td">模型可生成并运行 Python 脚本，在证明过程中做数值实验与计算性验证。</div></div>
+    </div>
+
+    <p>这种「以引理为单位 + 增量缓存」的表示带来四点好处：</p>
+    <div class="adv">
+      <div class="a"><div class="t">与模块化证明对齐</div><div class="d">无缝衔接 Seed-Prover 提出的 lemma-style 证明表示。</div></div>
+      <div class="a"><div class="t">分解复杂度</div><div class="d">模型不必一口气写出整段证明，只需专注解决眼前的子目标。</div></div>
+      <div class="a"><div class="t">上下文高效</div><div class="d">顺序缓存有效引理，相比反复重写完整证明历史大幅省 context。</div></div>
+      <div class="a"><div class="t">灵活的推理控制</div><div class="d">可剪枝无关中间步、或回溯到特定节点重启对话。</div></div>
+    </div>
+
+    <figure class="fig">
+      <img src="assets/agentic_prover_example.png" alt="Seed-Prover 1.5 agentic prover 在 FATE-H 问题上的运行示例"/>
+      <div class="fig-cap"><span class="tag-f">图 1（原文 Figure 2）</span>：Agentic Prover 在一道 FATE-H 问题上的真实运行轨迹——多轮「思考 → 调工具 → 读反馈」的交互，以及 Lean 上下文如何随轨迹增量演化。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ol>
+          <li><strong>User Prompt（绿色，左上）</strong>：输入是一条带 <span style="font-family:var(--mono)">sorry</span> 占位的 Lean 形式化命题（例：关于 AddSubgroup 有限指数的定理）。</li>
+          <li><strong>第 1 轮 — Assistant Response → Lean Tool</strong>：模型先用自然语言分析「要证什么子目标」，再触发 <span style="font-family:var(--mono)">verify_lean</span> 提交一条 round1 引理；Lean 编译器返回反馈，此处报 <span style="font-family:var(--mono)">severity: error</span> 与 unsolved goals。</li>
+          <li><strong>第 k 轮 — Assistant Response → Search Tool</strong>：模型转而调用 <span style="font-family:var(--mono)">mathlib_semantic_search</span>，用自然语言查询「有限指数子群相关引理」，检索返回最相关的 Mathlib 定理（如 AddSubgroup.FiniteIndex）。</li>
+          <li><strong>第 k+1 轮 — Assistant Response → Lean Tool</strong>：模型借助检索到的定理重写引理，再次提交，编译器返回 <span style="font-family:var(--mono)">No goals</span> —— 该引理证明成功。</li>
+          <li><strong>收尾</strong>：模型确认「需要的都齐了」，提交完整 theorem 完成证明。</li>
+          <li><strong>右下角「Lean Context」面板</strong>：展示增量缓存机制——初始上下文只有 <span style="font-family:var(--mono)">import Mathlib</span>；当 round1 引理验证通过后，它被<strong>转成 axiom 追加进上下文</strong>（<span style="font-family:var(--mono)">axiom round1 …</span>），供后续轮复用。蓝色箭头/方框代表上下文随工具调用轨迹的逐步演化。</li>
+        </ol>
+        <div class="sum">一句话总结：模型在多轮里灵活地「Lean 验证 ↔ Mathlib 检索」交替推进，每证一条引理就把它沉淀为 axiom，从而把一道大题拆成可复用的小块、逐步攻克。</div>
+      </div></div>
+    </figure>
+
+    <p class="section-hint"><strong>推理设置：</strong>输入为 Lean 形式化命题（可选附自然语言证明）；模型先用自然语言推理并调工具验证中间步，单轮内可多次调用、不限次数与顺序；当最终定理验证通过、或交互预算耗尽（最长 <strong>64K</strong> 序列、最多 <strong>28</strong> 次工具调用）时停止——这被记为 Pass@1。预算耗尽时可用「light inference」：自我总结后重启一条新轨迹。</p>
+
+    <h3>3.2 Agentic Prover 的后训练：先冷启动，再大规模 RL</h3>
+    <p><strong>① Cold Start（冷启动）：</strong>在 Seed-Prover 1.0 的基础上，用<strong>自建合成数据做 SFT</strong>，让模型先学会本文的工具调用范式与 Lean 环境特有的交互模式。</p>
+    <p><strong>② RL 训练：</strong>基于 <strong>VAPO</strong> 实现，并借鉴 <strong>ReTool</strong> 做工具集成强化学习。奖励极简——<strong>结果导向</strong>：证明被 Lean 编译器验证通过得 +1，否则 -1。训练中设计了三种任务格式：直接从形式化命题证明、基于自然语言草图证明、基于此前失败尝试的总结再证明。</p>
+
+    <div class="formula">
+      <div class="lbl">PPO 目标（原文式 1，简化记法）</div>
+      L_PPO(θ) = − (1/Σ|o_i|) · Σ_i Σ_t  min( r_{i,t}(θ)·Â_{i,t} ,  clip(r_{i,t}(θ), 1−ε_low, 1+ε_high)·Â_{i,t} )
+    </div>
+    <p class="section-hint">其中 r_{i,t}(θ) 是新旧策略的概率比，rollout 中交错着工具调用与工具返回 𝒯；训练时模型实时与环境交互、执行工具并获取返回，进行多轮生成。</p>
+
+    <details class="det">
+      <summary>RL 数据是怎么筛的？<span class="s">用「难度过滤」聚焦在最有学习价值的题上</span></summary>
+      <div class="det-inner">
+        <p>训练集 = 公开数据集（Big-Math、NuminaMath、Lean-Workbook、Kimina 等）+ 自建形式化数学教材（含《Graduate Texts in Mathematics》）。</p>
+        <ul>
+          <li>用 SFT 模型在 <strong>light inference（Pass@4×8）</strong>下评估每道题；失败时会自我总结并基于总结重开轨迹。</li>
+          <li><strong>剔除过易：</strong>被成功证明超过 3 次的样本删掉，把 RL 信号集中到足够难的题上。</li>
+          <li><strong>剔除过难：</strong>任何提示策略下都证不出来的样本删掉。</li>
+          <li><strong>保留有潜力的：</strong>若一道题在「总结提示」下能证、但「直接提示」下不能证，仍以直接提示形式保留——因为它可证、且有望提升模型效率。</li>
+        </ul>
+      </div>
+    </details>
+
+    <h3>3.3 Sketch 模型：把自然语言证明翻译成 Lean 草图</h3>
+    <p>既然大模型的自然语言证明能力突飞猛进，何不拿来加速形式化？本文训练了一个 <strong>Sketch 模型</strong>：输入「形式化命题 + 其自然语言证明」，输出一份 <strong>lemma-style 的 Lean 草图</strong>。它把命题<strong>分解成 N 个相互独立的子目标</strong>——先用 <span style="font-family:var(--mono)">sorry</span> 占位各辅助引理，再把它们组织进主证明体。由于 Lean 保证了高层结构的可靠性，评估重心就落到<strong>引理的质量</strong>上：好草图的每条引理都数学有效，且最难的那条也要<strong>严格比原命题更易</strong>。</p>
+
+    <figure class="fig">
+      <img src="assets/sketch_example.png" alt="Seed-Prover 1.5 生成的 Lean sketch 示例（Putnam 1999 A2）"/>
+      <div class="fig-cap"><span class="tag-f">图 2（原文 Figure 7）</span>：Sketch 模型为 Putnam 1999 A2（非负多项式可写成若干平方和）生成的 Lean 草图——五条用 <span style="font-family:var(--mono)">sorry</span> 占位的引理 + 一个把它们拼起来的主定理。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="inner">
+        <ol>
+          <li><strong>顶部（注释块）</strong>：以注释写下原始命题——「设 p(x) 对所有实数非负，证明存在多项式 f₁…f_k 使 p(x)=Σ f_j(x)²」，即要证明的数学目标。</li>
+          <li><strong>中部 — 五条 <span style="font-family:var(--mono)">lemma … sorry</span></strong>：模型把大命题拆成一串递进的辅助引理，每条都先用 <span style="font-family:var(--mono)">sorry</span> 占位（待证）：处理 p=0 的退化情形、把非负多项式因式分解为 h²·q（q 严格正）、严格正多项式写成两平方和、平方和的乘积仍是两平方和、最后归约到存在性形式。</li>
+          <li><strong>底部 — <span style="font-family:var(--mono)">theorem putnam_1999_a2</span></strong>：主证明体用 <span style="font-family:var(--mono)">by_cases</span> 分 p=0 / p≠0 两类，再依次 <span style="font-family:var(--mono)">exact / rcases</span> 调用上面的引理，把它们<strong>组装</strong>成对原命题的完整证明。</li>
+          <li><strong>颜色含义</strong>：紫色为引理/定理名，蓝色为类型（如 Polynomial ℝ），橙色为关键词与 Mathlib 记号——整体是一份结构完整、但叶子节点尚待填充的「证明骨架」。</li>
+        </ol>
+        <div class="sum">一句话总结：Sketch 模型负责「搭骨架」——把一道难题切成若干更小、相互独立的引理，主体逻辑由 Lean 结构保证正确，剩下的每个 <span style="font-family:var(--mono)">sorry</span> 子目标再交给 Agentic Prover 去填。</div>
+      </div></div>
+    </figure>
+
+    <p><strong>Sketch 模型怎么训：Rubric RL。</strong>同样用 VAPO，但奖励是<strong>混合信号</strong>：Lean 编译器保证草图结构正确，再由「LLM-as-a-Judge Rubric」作为语义价值模型（用 Long-CoT，比标量模型泛化更好）。流程上先让自然语言证明器逐条验证引理——只要有一条数学无效就直接判负（S_NL = -1，且作者发现用 NL 证明器「证伪」比用定理证明器便宜）；再让 LLM 综合评估草图整体质量（与 NL 证明的一致性、分解粒度、难度下降、Lean junk value 等）。最后融合成严格的二元奖励：</p>
+    <div class="formula">
+      <div class="lbl">Sketch 奖励函数（原文式 2）</div>
+      R = +1  当  N_lemmas ≥ 3  且  S_FL ≥ 0  且  S_NL ≥ 0.7<br>
+      R = −1  其它情况
+    </div>
+    <p class="section-hint">直觉：既要<strong>充分分解</strong>（至少 3 条引理）、又要<strong>结构编译通过</strong>（S_FL≥0）、还要<strong>语义高质量</strong>（S_NL≥0.7），三者全满足才给正奖励。</p>
+
+    <h3>3.4 测试时工作流：三个智能体协作 + 递归分解</h3>
+    <p>复杂定理的 Lean 证明常达上千行，单次整段生成在计算上不可行。为此本文设计了一套<strong>分层、多智能体协作</strong>的测试时工作流，统筹上下文管理、问题分解与子目标分配。下面这张图可逐步演示三个智能体如何协作、以及失败时如何递归回退。</p>
+
+    <div class="flow">
+      <div class="flow-agents">
+        <div class="agent" id="ag0">
+          <div class="ic">🗣️</div>
+          <div class="an">① 自然语言证明器</div>
+          <div class="ad">先生成严谨的 lemma-style 自然语言证明，指导后续形式化。</div>
+          <div class="src">init: Doubao-Seed-1.6</div>
+        </div>
+        <div class="agent" id="ag1">
+          <div class="ic">🧩</div>
+          <div class="an">② Sketch 模型</div>
+          <div class="ad">把自然语言证明翻译成 lemma-style Lean 草图，连接非形式推理与形式语法。</div>
+          <div class="src">Rubric RL 训练</div>
+        </div>
+        <div class="agent" id="ag2">
+          <div class="ic">⚙️</div>
+          <div class="an">③ Agentic Lean 证明器</div>
+          <div class="ad">逐条证明 / 反驳草图中的每个引理（工具集成的 agent）。</div>
+          <div class="src">预算 Pass@3 × 3</div>
+        </div>
+      </div>
+
+      <div class="flow-steps">
+        <div class="step-ctrl">
+          <button class="ghost" onclick="stepFlow(-1)">‹ 上一步</button>
+          <button onclick="stepFlow(1)">下一步 ›</button>
+          <span class="idx" id="flowIdx">步骤 1 / 5</span>
+          <button class="ghost" onclick="resetFlow()">重置</button>
+        </div>
+        <div class="step-box">
+          <div class="st" id="flowTitle">①  自然语言证明</div>
+          <div class="sx" id="flowDesc">给定一条 Lean 命题，自然语言证明器先产出一份严谨的、按引理组织的自然语言证明，作为后续形式化的蓝图。</div>
+        </div>
+        <div class="loop-note">🔁 <span><strong>递归与回退闭环：</strong>若某引理证不出来，系统对它递归执行「自然语言证明 → Lean 草图」继续向下分解；若某引理被<strong>反驳</strong>，则退回 Sketch 模型重新精修草图。如此反复，直到搜索树每个叶子节点都被证明，或达到最大搜索深度。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIGHT -->
+  <section id="insight">
+    <h2><span class="num">04</span> 几个有意思的点</h2>
+
+    <h3>越练越「省」，却越练越强</h3>
+    <p>RL 训练中出现了反直觉的效率提升：平均<strong>函数调用次数从约 15 降到 10</strong>，平均<strong>序列长度从约 28K 降到 17K token</strong>，但模型的推理能力<strong>反而提升</strong>。这说明模型学会了更有策略地用工具，避免冗余的「试错式」调用——把搜索结果<strong>内化</strong>成了自己的知识。训练准确率也从初始约 <strong>50%</strong> 一路升到 1000+ 步后的<strong>近 90%</strong>。</p>
+
+    <h3>自适应的搜索行为</h3>
+    <p>同一个模型会<strong>因题制宜</strong>地调整工具使用：在 <strong>Fate-H</strong> 上平均要做约 <strong>10 次</strong> Mathlib 检索（因为它高度依赖查库找定理），而在 <strong>Putnam</strong> 上平均只用 <strong>1–2 次</strong>。更有意思的是，越到后期的 checkpoint 检索次数越少，但性能仍在提升——能更快定位关键引理。</p>
+
+    <div class="quote">
+      <div class="en">“This trend suggests that RL training not only improves reasoning capabilities but also enables the model to internalize knowledge from search results.”</div>
+      <div class="zh">这一趋势表明，RL 训练不仅提升了推理能力，还让模型把检索得到的知识<strong>内化</strong>了下来——逐渐不再依赖反复查库。</div>
+    </div>
+
+    <h3>增量缓存：把已证引理变成 axiom</h3>
+    <p>每当一条引理通过 Lean 验证，它就被缓存并<strong>转成 axiom</strong> 追加进上下文，后续推理直接引用。相比 whole-proof 方法反复重写完整证明历史，这种机制让上下文窗口的利用效率高得多——这也是 agent 式交互能兼顾能力与效率的关键工程细节。</p>
+  </section>
+
+  <!-- EXPERIMENTS -->
+  <section id="exp">
+    <h2><span class="num">05</span> 实验结论一句话</h2>
+    <p class="lead">用更小算力，在本科到研究生级别全面领先；博士级与前沿研究仍有距离。</p>
+
+    <p>在 PutnamBench 上，Seed-Prover 1.5 显著超过 AlphaProof、Hilbert、Aleph Prover 等强基线；相比自家 1.0，几乎所有基准都更强、却用更少算力。它解决了 PutnamBench 的 <strong>87.9%</strong>、Fate-H 的 <strong>80%</strong>，展示了处理本科与研究生级形式化证明的实力。</p>
+
+    <div class="tbl-wrap">
+      <table class="cmp">
+        <thead>
+          <tr><th>方法</th><th>算力预算</th><th>Putnam</th><th>Fate-H</th><th>Fate-X</th><th>CombiBench</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Seed-Prover 1.0 (medium)</td><td class="mono">18 H20-天/题</td><td>50.4%</td><td>35%</td><td>9%</td><td>39%</td></tr>
+          <tr><td>AlphaProof</td><td class="mono">500 TPU-天/题</td><td>56.1%</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td></tr>
+          <tr><td>Hilbert</td><td class="mono">avg pass@1840</td><td>70.0%</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td></tr>
+          <tr><td>Aleph Prover</td><td class="mono">avg 1834 次工具调用</td><td>75.8%</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td></tr>
+          <tr class="hl"><td>Seed-Prover 1.5</td><td class="mono">10 H20-天/题</td><td>87.9%</td><td>80%</td><td>33%</td><td>48%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-hint">表对应原文 Table 2。另：仅用 Agentic Prover（Pass@8×8，不含 TTS 工作流）即可达到 Putnam 359/660、Fate-H 57/100、Fate-X 10/100，已显著超过 1.0 的 medium 工作流。</p>
+
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric"><div class="v">11/12</div><div class="l">Putnam 2025</div><div class="lv">9 小时内 · 无数据泄漏</div></div>
+      <div class="metric"><div class="v">5/6</div><div class="l">IMO 2025</div><div class="lv">Medium 算力即可（P2 由 Seed-Geometry 解）</div></div>
+      <div class="metric"><div class="v">log-linear</div><div class="l">测试时扩展</div><div class="lv">解题数随算力对数线性增长</div></div>
+    </div>
+
+    <details class="det">
+      <summary>前沿数学：Erdős 问题与局限性<span class="s">解出了一些，但坦诚承认离「真正推进数学研究」还远</span></summary>
+      <div class="det-inner">
+        <p>Seed-Prover 1.5 解出了若干 Erdős 问题（编号 124、198、303、316、330、350、370、379、418、449、493、499、645、728、958）。但作者<strong>坦诚</strong>：这些题数学上相对简单，或因形式化错误而只证明了平凡 / 简化版本。无论用自然语言还是形式语言，距离真正帮助攻克前沿开放猜想仍有距离。</p>
+        <p><strong>根因——「依赖性问题」：</strong>IMO/Putnam 题被刻意设计成不需要先验论文知识；而推进真正的数学研究往往要综合大量相关论文的洞见。作者指出需攻克三个相互交织的挑战：① 识别最有影响力、最相关的论文；② 在这些工作之上做自然语言证明；③ 发展可扩展的方法来形式化论文本身及其推论。</p>
+      </div>
+    </details>
+
+    <div class="quote">
+      <div class="en">“Our findings suggest that scaling learning from experience, driven by high-quality formal feedback, holds immense potential for the future of formal mathematical reasoning.”</div>
+      <div class="zh">本文的发现表明：由<strong>高质量形式化反馈</strong>驱动的「从经验中学习」，对形式化数学推理的未来蕴含着巨大潜力。</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="frow">
+      <div>
+        <div><b>Seed-Prover 1.5: Mastering Undergraduate-Level Theorem Proving via Learning from Experience</b></div>
+        <div style="margin-top:4px">ByteDance Seed AI4Math · arXiv:2512.17260 · 2025 年 12 月 · arXiv preprint</div>
+        <div style="margin-top:4px">项目页：<a href="https://github.com/ByteDance-Seed/Seed-Prover" target="_blank" rel="noopener">github.com/ByteDance-Seed/Seed-Prover</a></div>
+      </div>
+      <a class="read-src" href="https://arxiv.org/abs/2512.17260" target="_blank" rel="noopener">阅读原文 ↗</a>
+    </div>
+    <div style="margin-top:16px;font-size:13px;color:var(--ink-faint)">本页为面向中文读者的教学可视化解读，内容与数字均来自上述 arXiv 原文；图 1 / 图 2 取自原论文 Figure 2 / Figure 7。</div>
+  </div>
+</footer>
+
+<script>
+function toggleFigDetail(el){
+  var d = el.nextElementSibling;
+  if(!d) return;
+  d.classList.toggle("active");
+  el.textContent = d.classList.contains("active") ? "收起说明 ▾" : "展开说明 ▸";
+}
+function toggleCard(headEl){
+  var card = headEl.parentElement;
+  card.classList.toggle("open");
+}
+
+var flowSteps = [
+  {t:"①  自然语言证明", a:[0], d:"给定一条 Lean 命题，自然语言证明器先产出一份严谨的、按引理组织的自然语言证明，作为后续形式化的蓝图。"},
+  {t:"②  转成 Lean 草图", a:[1], d:"Sketch 模型把自然语言证明翻译成 lemma-style 的 Lean 草图：用 sorry 占位若干辅助引理，并组织进主证明体。"},
+  {t:"③  逐条证明引理", a:[2], d:"对草图中每条尚未解决的引理，Agentic Lean 证明器在 Pass@3 × 3 的预算下尝试证明或反驳它。"},
+  {t:"🔁  失败 → 递归分解", a:[0,1], d:"若某条引理证不出来，系统对它递归执行「自然语言证明 → Lean 草图」继续向下细分；若引理被反驳，则退回 Sketch 模型重新精修草图。"},
+  {t:"✅  全部叶子证完", a:[2], d:"如此反复，直到搜索树的每个叶子节点（子引理）都被 Lean 证明器成功证明，或达到最大搜索深度，整道题完成。"}
+];
+var flowI = 0;
+function renderFlow(){
+  var s = flowSteps[flowI];
+  document.getElementById("flowTitle").textContent = s.t;
+  document.getElementById("flowDesc").textContent = s.d;
+  document.getElementById("flowIdx").textContent = "步骤 " + (flowI+1) + " / " + flowSteps.length;
+  for(var i=0;i<3;i++){
+    var ag = document.getElementById("ag"+i);
+    if(ag) ag.classList.toggle("on", s.a.indexOf(i) !== -1);
+  }
+}
+function stepFlow(dir){
+  flowI = (flowI + dir + flowSteps.length) % flowSteps.length;
+  renderFlow();
+}
+function resetFlow(){ flowI = 0; renderFlow(); }
+renderFlow();
+</script>
+</body>
+</html>

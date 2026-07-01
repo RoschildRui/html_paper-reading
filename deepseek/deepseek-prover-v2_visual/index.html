@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DeepSeek-Prover-V2 图解精读 · 子目标分解与强化学习</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#fbf6ea;
+    --surface:#fffdf7;
+    --surface-2:#f4ead7;
+    --surface-3:#e8dcc7;
+    --border:#e3d5ba;
+    --border-strong:#d4c19c;
+    --ink:#393127;
+    --ink-soft:#6c5d49;
+    --ink-faint:#9b8b71;
+    --accent:#b06a3b;
+    --accent-soft:#f1e2cd;
+    --accent-line:#d8b489;
+    --danger:#b0432e;
+    --code-bg:#f4ecdb;
+    --code-border:#e0d2b4;
+    --shadow:0 1px 2px rgba(76,58,32,.05),0 8px 24px rgba(76,58,32,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    line-height:1.78;font-size:17px;-webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* top nav */
+  .topnav{
+    position:sticky;top:0;z-index:50;background:rgba(251,246,234,.9);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
+  }
+  .topnav .inner{max-width:1000px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:16px}
+  .topnav .brand{font-weight:700;font-size:15px;letter-spacing:.2px}
+  .topnav .links{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+  .topnav .links a{color:var(--ink-soft);font-size:14px;font-weight:500}
+  .topnav .links a:hover{color:var(--accent)}
+
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+  header.hero{padding:54px 0 30px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--accent);
+    background:var(--accent-soft);border:1px solid var(--accent-line);padding:5px 12px;border-radius:999px;letter-spacing:.3px}
+  h1{font-size:38px;line-height:1.25;margin:18px 0 6px;letter-spacing:-.4px}
+  .subtitle-en{font-size:16px;color:var(--ink-soft);font-weight:500;margin:0 0 18px}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+  .chip{font-size:13px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);
+    padding:5px 11px;border-radius:8px;display:inline-flex;align-items:center;gap:6px}
+  .chip b{color:var(--ink);font-weight:600}
+
+  section{padding:30px 0;border-top:1px solid var(--border)}
+  section:first-of-type{border-top:none}
+  h2.sec{font-size:26px;margin:6px 0 4px;letter-spacing:-.2px}
+  .sec-kicker{font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.6px;text-transform:uppercase}
+  p{margin:14px 0}
+  .lead{font-size:18.5px}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:normal;color:var(--accent);font-weight:600}
+
+  ul.clean{margin:14px 0;padding-left:0;list-style:none}
+  ul.clean li{position:relative;padding-left:22px;margin:9px 0}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:11px;width:6px;height:6px;border-radius:2px;background:var(--accent-line)}
+
+  /* TL;DR */
+  .tldr{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow)}
+  .tldr h3{margin:0 0 8px;font-size:17px;display:flex;align-items:center;gap:8px}
+  .tldr p{margin:8px 0}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0 6px}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;box-shadow:var(--shadow)}
+  .metric .num{font-size:30px;font-weight:700;color:var(--accent);letter-spacing:-.5px;font-family:"Inter"}
+  .metric .lab{font-size:13.5px;color:var(--ink-soft);margin-top:4px;font-weight:500}
+  .metric .sub{font-size:12px;color:var(--ink-faint);margin-top:3px}
+
+  /* generic card */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+  /* figure */
+  figure.fig{margin:22px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;box-shadow:var(--shadow)}
+  figure.fig img{width:100%;height:auto;border-radius:8px;display:block;background:#fff;border:1px solid var(--border)}
+  .fig-cap{font-size:14px;color:var(--ink-soft);margin-top:12px}
+  .fig-cap .tag{font-weight:700;color:var(--ink)}
+  .fig-toggle{display:inline-block;margin-top:10px;font-size:13.5px;font-weight:600;color:var(--accent);
+    cursor:pointer;user-select:none;border:1px solid var(--accent-line);background:var(--accent-soft);
+    padding:4px 11px;border-radius:8px}
+  .fig-toggle:hover{background:#ecdcc4}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0}
+  .figure-detail.active{max-height:1400px;opacity:1;margin-top:14px}
+  .figure-detail ul{margin:0;padding-left:0;list-style:none}
+  .figure-detail li{position:relative;padding-left:20px;margin:8px 0;font-size:14.5px;color:var(--ink-soft)}
+  .figure-detail li::before{content:"▸";position:absolute;left:0;top:0;color:var(--accent)}
+  .figure-detail li b{color:var(--ink)}
+  .figure-detail .summary-line{font-size:14px;color:var(--ink);font-weight:600;margin-bottom:6px}
+
+  /* code */
+  pre.lean{background:var(--code-bg);border:1px solid var(--code-border);border-radius:10px;padding:14px 16px;
+    overflow-x:auto;font-family:"JetBrains Mono",monospace;font-size:13.5px;line-height:1.6;margin:14px 0;color:#43392b}
+  pre.lean .kw{color:var(--accent);font-weight:600}
+  pre.lean .sry{color:var(--danger);font-weight:600}
+  pre.lean .cm{color:var(--ink-faint);font-style:italic}
+  code.inl{background:var(--code-bg);border:1px solid var(--code-border);border-radius:5px;padding:1px 6px;
+    font-family:"JetBrains Mono",monospace;font-size:13.5px;color:#5a4c38}
+
+  details.ex{margin:14px 0;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden}
+  details.ex>summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:14.5px;list-style:none;
+    display:flex;align-items:center;gap:8px}
+  details.ex>summary::-webkit-details-marker{display:none}
+  details.ex>summary::before{content:"▸";color:var(--accent);transition:transform .2s}
+  details.ex[open]>summary::before{transform:rotate(90deg)}
+  details.ex>summary .s-sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+  details.ex .body{padding:0 16px 14px}
+
+  /* pipeline overview diagram */
+  .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:0;align-items:stretch;margin:22px 0}
+  .flow .node{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+  .flow .node .ic{font-size:22px}
+  .flow .node h4{margin:8px 0 4px;font-size:15px}
+  .flow .node p{margin:0;font-size:13px;color:var(--ink-soft);line-height:1.55}
+  .flow .arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:22px;padding:0 8px}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+
+  /* expandable concept cards */
+  .xcard{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);margin:14px 0;overflow:hidden}
+  .xcard .head{padding:16px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px}
+  .xcard .head .tw{flex:1}
+  .xcard .head .ttl{font-weight:700;font-size:16px}
+  .xcard .head .pos{font-size:13.5px;color:var(--ink-faint);margin-top:3px}
+  .xcard .head .caret{color:var(--accent);font-size:16px;transition:transform .25s;margin-top:2px}
+  .xcard.open .head .caret{transform:rotate(90deg)}
+  .xcard .panel{max-height:0;overflow:hidden;transition:max-height .45s ease}
+  .xcard.open .panel{max-height:2600px}
+  .xcard .panel .inner{padding:2px 18px 18px}
+  .tagpill{display:inline-block;font-size:11.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);
+    border:1px solid var(--accent-line);border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+
+  /* stepper */
+  .stepper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin:20px 0}
+  .steps-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .stepdot{flex:1;min-width:120px;border:1px solid var(--border);border-radius:9px;padding:9px 10px;background:var(--surface-2);
+    font-size:12.5px;color:var(--ink-soft);transition:.25s;cursor:pointer}
+  .stepdot .n{font-weight:700;color:var(--ink-faint);font-size:11px}
+  .stepdot.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}
+  .stepdot.active .n{color:var(--accent)}
+  .stepdot.done{border-color:var(--accent-line)}
+  .step-panel{margin-top:14px;border-top:1px dashed var(--border);padding-top:14px}
+  .step-panel h4{margin:0 0 6px;font-size:16.5px}
+  .step-panel h4 .badge{font-size:12px;color:var(--accent);font-weight:600;margin-left:8px}
+  .step-panel p{margin:6px 0;font-size:15px;color:var(--ink-soft)}
+  .step-ctrl{display:flex;gap:10px;margin-top:16px;align-items:center}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;border:1px solid var(--accent-line);background:var(--accent-soft);
+    color:var(--accent);padding:7px 16px;border-radius:9px;cursor:pointer;transition:.2s}
+  .btn:hover{background:#ecdcc4}
+  .btn.ghost{background:var(--surface);color:var(--ink-soft);border-color:var(--border)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .step-count{font-size:13px;color:var(--ink-faint);margin-left:auto}
+
+  blockquote{margin:18px 0;padding:14px 18px;background:var(--surface-2);border-left:3px solid var(--accent-line);
+    border-radius:0 10px 10px 0;color:var(--ink-soft);font-size:15px}
+  blockquote b{color:var(--ink)}
+
+  table.cmp{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  table.cmp th,table.cmp td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  table.cmp thead th{background:var(--surface-2);font-size:13px;color:var(--ink-soft);font-weight:600}
+  table.cmp tbody tr:last-child td{border-bottom:none}
+  table.cmp td.hl{color:var(--accent);font-weight:700}
+  table.cmp .mname{font-weight:600}
+
+  footer{border-top:1px solid var(--border);padding:30px 0 60px;color:var(--ink-soft);font-size:14px}
+  footer a{font-weight:600}
+  .footlink{display:block;margin:6px 0}
+
+  @media (max-width:880px){
+    body{font-size:16px}
+    h1{font-size:29px}
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    .flow{grid-template-columns:1fr;gap:10px}
+    .flow .arrow{transform:rotate(90deg);padding:2px 0}
+    .two{grid-template-columns:1fr}
+    .topnav .links{display:none}
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="inner">
+    <span class="brand">DeepSeek-Prover-V2 · 图解精读</span>
+    <span class="links">
+      <a href="#tldr">速览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#method">本文方法</a>
+      <a href="#nuggets">有意思的点</a>
+      <a href="#results">实验</a>
+      <a href="https://arxiv.org/abs/2504.21801" target="_blank" rel="noopener">原文 ↗</a>
+    </span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="eyebrow">📐 形式化数学证明 · Lean 4</span>
+    <h1>用「子目标分解 + 强化学习」<br/>让大模型写出可被机器验证的数学证明</h1>
+    <p class="subtitle-en">DeepSeek-Prover-V2: Advancing Formal Mathematical Reasoning via Reinforcement Learning for Subgoal Decomposition</p>
+    <div class="meta-row">
+      <span class="chip">🏷️ <b>DeepSeek-AI</b></span>
+      <span class="chip">📅 发表 <b>2025.04</b></span>
+      <span class="chip">📄 <b>arXiv preprint</b>（arXiv:2504.21801）</span>
+      <span class="chip">🔗 <a href="https://arxiv.org/abs/2504.21801" target="_blank" rel="noopener">阅读原文</a></span>
+      <span class="chip">💻 <a href="https://github.com/deepseek-ai/DeepSeek-Prover-V2" target="_blank" rel="noopener">GitHub 开源</a></span>
+    </div>
+  </header>
+
+  <!-- TL;DR -->
+  <section id="tldr" style="border-top:none;padding-top:6px">
+    <div class="tldr">
+      <h3>⚡ 30 秒看懂这篇论文</h3>
+      <p>大模型擅长用<strong>自然语言</strong>"凭直觉"做数学题，但 Lean 这类<strong>证明助手</strong>要求每一步都严丝合缝、可被机器逐行验证——两者之间有一条难以跨越的鸿沟。</p>
+      <p>本文的做法：让通用大模型 <strong>DeepSeek-V3</strong> 像人一样把难题<em>拆成一串子目标</em>（写成 Lean 里一连串 <code class="inl">have ... := by sorry</code>），再用一个小巧的 <strong>7B 证明模型</strong>去递归地把每个 <code class="inl">sorry</code> 填上；所有子目标补全后，拼成完整证明，并和 DeepSeek-V3 的思维链配对，作为<em>冷启动数据</em>，最后用<em>强化学习</em>进一步打通"非形式推理 ↔ 形式化证明"。</p>
+      <p>结果：<strong>DeepSeek-Prover-V2-671B</strong> 在 MiniF2F-test 上达到 <strong>88.9%</strong>，刷新神经定理证明的 SOTA，并首次让形式化证明与自然语言推理的差距明显收窄。</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">88.9%</div><div class="lab">MiniF2F-test 通过率</div><div class="sub">Pass@8192 · 神经定理证明 SOTA</div></div>
+      <div class="metric"><div class="num">47<span style="font-size:18px;color:var(--ink-faint)">/658</span></div><div class="lab">PutnamBench 求解数</div><div class="sub">本科竞赛级难题</div></div>
+      <div class="metric"><div class="num">6<span style="font-size:18px;color:var(--ink-faint)">/15</span></div><div class="lab">AIME 24&amp;25 形式化证明</div><div class="sub">对比 V3 自然语言解出 8/15</div></div>
+      <div class="metric"><div class="num">37.1%</div><div class="lab">ProofNet-test 通过率</div><div class="sub">Pass@1024 · 本科纯数学</div></div>
+    </div>
+  </section>
+
+  <!-- 问题 -->
+  <section id="problem">
+    <span class="sec-kicker">问题</span>
+    <h2 class="sec">为什么"让 AI 写形式化证明"这么难？</h2>
+    <p class="lead">大模型解数学题，靠的是<strong>启发式、近似和数据里学来的猜测模式</strong>——这种"非形式推理"虽然在竞赛题上很强，但本质上是不严格的。</p>
+    <p>而 <strong>Lean</strong>、Isabelle、Coq 这类<strong>证明助手</strong>建立在严格的逻辑地基上：每一步推理都必须被显式写出、被机器形式化验证，<strong>不允许任何含糊、隐含假设或省略</strong>。把"高层次的、跳步的人类直觉"翻译成"一丝不苟的形式化语言"，正是神经定理证明长期未解的核心难题。</p>
+    <div class="two">
+      <div class="card" style="padding:18px">
+        <div style="font-size:13px;font-weight:700;color:var(--ink-soft);letter-spacing:.4px">🗣️ 非形式推理（大模型擅长）</div>
+        <ul class="clean" style="margin-top:8px">
+          <li>用自然语言"想清楚"，允许跳步</li>
+          <li>靠直觉、近似、模式匹配</li>
+          <li>错了也能蒙对，<strong>无法机器验证</strong></li>
+        </ul>
+      </div>
+      <div class="card" style="padding:18px">
+        <div style="font-size:13px;font-weight:700;color:var(--ink-soft);letter-spacing:.4px">🔒 形式化证明（Lean 要求）</div>
+        <ul class="clean" style="margin-top:8px">
+          <li>每一步都要显式、可检查</li>
+          <li>不允许含糊、隐含或省略</li>
+          <li>对了就<strong>100% 可信</strong>，但门槛极高</li>
+        </ul>
+      </div>
+    </div>
+    <p>本文的出发点：<strong>能不能让擅长"自然语言推理"的通用大模型，去指挥"形式化证明"的生成？</strong>——这正是子目标分解的用武之地。</p>
+  </section>
+
+  <!-- 已有方案 -->
+  <section id="prior">
+    <span class="sec-kicker">已有方案</span>
+    <h2 class="sec">前人怎么做：Draft, Sketch, and Prove</h2>
+    <p>把形式化证明<strong>分层拆解</strong>、用自然语言草图来引导，是一条经典思路。最具代表性的是 Jiang et al. 提出的 <strong>DSP（Draft, Sketch, and Prove）</strong>框架。理解了它，才能看懂本文的改进动机。</p>
+
+    <div class="xcard" id="xc-dsp">
+      <div class="head" onclick="toggleX('xc-dsp')">
+        <span class="caret">▸</span>
+        <div class="tw">
+          <div class="ttl">Draft, Sketch, and Prove (DSP) <span class="tagpill">ICLR'23 · Jiang et al.</span></div>
+          <div class="pos">用大模型写"证明草图"，把空缺交给自动证明器填补——把非形式推理接入形式化验证的奠基性思路。</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="inner">
+          <p style="margin-top:14px">DSP 把"从直觉到形式证明"拆成三步流水线：</p>
+          <div class="flow">
+            <div class="node">
+              <div class="ic">✍️</div>
+              <h4>1. Draft 起草</h4>
+              <p>大模型先用<strong>自然语言</strong>写一份非形式的证明草稿（像人在草稿纸上推一遍）。</p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="node">
+              <div class="ic">🧩</div>
+              <h4>2. Sketch 形式化骨架</h4>
+              <p>把草稿翻译成 Lean/Isabelle 的<strong>证明骨架</strong>：保留高层结构，中间留出待证的空缺（conjecture/gap）。</p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="node">
+              <div class="ic">🔧</div>
+              <h4>3. Prove 填补</h4>
+              <p>用现成的<strong>自动证明器</strong>（如 Sledgehammer）逐个补上空缺，最终交给证明助手验证。</p>
+            </div>
+          </div>
+          <p><strong>它卡在哪？</strong>骨架里的空缺要靠传统自动证明器填补，能力有限；草图与形式化是两套独立工具拼接，难以端到端优化，遇到需要多步深推理的难题就力不从心。</p>
+          <blockquote>本文的关键升级：不再依赖外部自动证明器，而是用 <b>DeepSeek-V3 统一负责"分解 + 形式化"</b>，再用一个 <b>7B 专用模型递归求解子目标</b>，并把整条链路通过<b>冷启动 + 强化学习</b>统一进一个模型——把 DSP 的"拼接式流水线"变成"可训练的闭环"。</blockquote>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:14px;color:var(--ink-faint)">注：另一并行工作 <strong>Kimina-Prover</strong> 采用<strong>反向流程</strong>——先收集完整形式化证明及其非形式对照，再用通用推理模型"逆合成"出中间的自然语言思考块；本文则是<strong>正向</strong>地把自然语言证明直接形式化成结构化证明草图。</p>
+  </section>
+
+  <!-- 本文方法 -->
+  <section id="method">
+    <span class="sec-kicker">本文方法 · 重头戏</span>
+    <h2 class="sec">核心做法：两个模型分工，子目标递归求解</h2>
+    <p class="lead">整套框架靠<strong>两个互补的模型</strong>协作：用 <em>DeepSeek-V3</em> 做"高层分解 + 形式化"，用一个 <em>7B 证明模型</em>填补每个子目标的细节。这样既借到了大模型的推理能力，又把昂贵的证明搜索交给小模型，大幅降低算力开销。</p>
+
+    <div class="flow">
+      <div class="node">
+        <div class="ic">🧠</div>
+        <h4>DeepSeek-V3</h4>
+        <p>读题 → 自然语言证明草图 → 形式化成一串带 <code class="inl">sorry</code> 的 <code class="inl">have</code> 子目标。</p>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node">
+        <div class="ic">🔁</div>
+        <h4>7B Prover 递归求解</h4>
+        <p>逐个把 <code class="inl">sorry</code> 子目标证出来，前序结论可作为后续前提。</p>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node">
+        <div class="ic">🧷</div>
+        <h4>拼接 + 冷启动 + RL</h4>
+        <p>子目标证明拼成完整证明，配上 V3 思维链做冷启动，再用 GRPO 强化学习。</p>
+      </div>
+    </div>
+
+    <h3 style="font-size:19px;margin-top:30px">① 从自然语言推理，草拟带"占位符"的形式化证明</h3>
+    <p>给定一个待证的 Lean 定理，先让 DeepSeek-V3 用自然语言分析问题、把证明拆成若干小步，并把每一步翻译成对应的 Lean 形式化陈述。关键在于：<strong>不要求它写出完整证明</strong>，只要写出高层<strong>证明草图</strong>——最终产物是一串 <code class="inl">have</code> 语句，每个都以 <code class="inl">sorry</code> 占位，代表一个<em>待解决的子目标</em>。这正模仿了人类"先把大定理逐步归约为更易处理的引理"的习惯。</p>
+
+    <pre class="lean"><span class="cm">-- DeepSeek-V3 产出的证明草图（每个 sorry = 一个子目标）</span>
+<span class="kw">theorem</span> induction_ineq_nsqlefactn (n : ℕ) (h₀ : 4 ≤ n) : n ^ 2 ≤ n ! := <span class="kw">by</span>
+  <span class="kw">have</span> base_case : 4 ^ 2 ≤ 4 ! := <span class="kw">by</span> <span class="sry">sorry</span>
+  <span class="kw">have</span> inductive_step : ∀ k ≥ 4, k ^ 2 ≤ k ! → (k + 1) ^ 2 ≤ (k + 1) ! := <span class="kw">by</span> <span class="sry">sorry</span>
+  <span class="kw">have</span> final_proof : ∀ n ≥ 4, n ^ 2 ≤ n ! := <span class="kw">by</span> <span class="sry">sorry</span></pre>
+
+    <figure class="fig">
+      <img src="assets/fig2_coldstart_pipeline.png" alt="DeepSeek-Prover-V2 冷启动数据收集流程图"/>
+      <div class="fig-cap"><span class="tag">图 1（原文 Figure 2）·</span> 冷启动数据的收集流程：以"证明 n² ≤ n!（n≥4）"为例，从 DeepSeek-V3 出草图，到 7B 模型递归补全，再合成为完整形式化证明。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <div class="summary-line">一张图看懂"非形式思维链 → 带占位符的形式骨架 → 递归补全 → 完整证明 → 冷启动数据"的全流程。</div>
+        <ul>
+          <li><b>左半部分（蓝底）— DeepSeek-V3 的思维链：</b>它先用自然语言"读懂问题"（Understanding the Problem）、写出"证明草图"（Proof Sketch，说明用数学归纳法：先证 n=4 的基例，再证归纳步），最后给出 <b>Lean 4 证明结构</b>——一串 <code class="inl">have</code>（base_case / inductive_step / final_proof），每个都以红色 <code class="inl">sorry</code> 收尾，标记一个待填的子目标。</li>
+          <li><b>右上（橙底）— 7B 模型递归求解子目标：</b>把高亮的 <code class="inl">inductive_step</code> 单独拎出来，写成一条独立 <code class="inl">lemma</code>，由 DeepSeek-Prover-V2-7B 去补出真正的证明（<code class="inl">intro / simp_all / nlinarith</code> 等 tactic）。</li>
+          <li><b>右下（灰底）— 合成完整形式化证明：</b>把每个子目标补好的证明回填到原定理里，原先的 <code class="inl">sorry</code> 被真实 tactic 取代（绿色高亮的 <code class="inl">inductive_step</code> 已被证出），最终 <code class="inl">apply final_proof</code> 收束，得到一份能被 Lean 验证的完整证明。</li>
+          <li><b>数据流关系：</b>左侧的自然语言思维链 + 右下合成的完整证明配成一对，就是一条<b>高质量冷启动训练样本</b>——它把"非形式推理"和"形式化证明"缝合在了同一条样本里。</li>
+        </ul>
+        <p style="font-size:14px;color:var(--ink-soft);margin-top:4px">一句话总结：大模型负责"怎么想"，小模型负责"怎么写严谨"，两者产物合并成训练大模型形式推理的燃料。</p>
+      </div>
+    </figure>
+
+    <h3 style="font-size:19px;margin-top:30px">② 递归求解子目标：替换目标 + 注入前提</h3>
+    <p>拿到这串 <code class="inl">have</code> 子目标后，怎么逐个攻克？本文用一个简单而有效的<strong>递归策略</strong>，把每个子目标改写成可独立求解的引理，交给 7B 模型：</p>
+    <ul class="clean">
+      <li><strong>(a) 替换原始目标</strong>：把 <code class="inl">have</code> 里的子目标表达式提取出来，<strong>替换掉</strong>原问题的目标，得到一条只证这一小步的 <code class="inl">lemma</code>。</li>
+      <li><strong>(b) 注入前序子目标为前提</strong>：把<strong>前面已证的子目标</strong>作为<strong>前提（premises）</strong>加进来，这样后续子目标就能"站在前面结论的肩膀上"求解，形成更局部、更简单的依赖结构。</li>
+    </ul>
+    <p>类型 <strong>(b)</strong> 用于复杂问题的递归求解；而 (a) 和 (b) <strong>都</strong>会被纳入下面的课程学习。把繁重的证明搜索交给 7B 小模型，正是为了降低算力。</p>
+
+    <figure class="fig">
+      <img src="assets/fig3_subgoal_translation.png" alt="把子目标翻译成引理陈述的两种类型示例"/>
+      <div class="fig-cap"><span class="tag">图 2（原文 Figure 3）·</span> 以 IMO 1974 P5 为例，展示如何把分解出的子目标翻译成引理陈述的两种类型：(a) 替换原始目标；(b) 把前序子目标作为前提注入。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <div class="summary-line">同一道难题（IMO 1974 P5）被拆成一串子目标后，每个子目标可改写成两种"可独立求解"的引理形式。</div>
+        <ul>
+          <li><b>左侧 — Subgoal Decomposition（子目标分解）：</b>原定理 <code class="inl">imo_1974_p5</code> 被分解成一长串 <code class="inl">have</code>：term1_pos / term1_less1 / …（各项的上下界）、以及 <code class="inl">lower_bound</code>、<code class="inl">upper_bound</code> 等，每条都带 <code class="inl">sorry</code>。高亮的是要进一步处理的 <code class="inl">lower_bound : 1 &lt; s</code>。</li>
+          <li><b>右上 (a) Substitute the original goal：</b>把子目标 <code class="inl">lower_bound</code> 单独抽出来，<b>替换</b>原目标，生成一条只需证 <code class="inl">1 &lt; s</code> 的 <code class="inl">lemma</code>（保留原始假设 h₀、h₁）。这是最"干净"的单步引理。</li>
+          <li><b>右下 (b) Incorporate preceding subgoals as premises：</b>在同一条引理里，把<b>前面已证的子目标</b>（term1_pos、term1_less1…等八个界）作为<b>额外前提</b>显式加入，再去证 <code class="inl">1 &lt; s</code>。这样求解器可以直接利用这些中间结论。</li>
+          <li><b>(a) 与 (b) 的分工：</b>(b) 因为带了上下文前提，适合<b>递归求解复杂问题</b>；(a) 与 (b) 都被喂进<b>课程学习</b>，构成由易到难的训练题库。</li>
+        </ul>
+        <p style="font-size:14px;color:var(--ink-soft);margin-top:4px">一句话总结：同一个子目标，"裸证"（a）和"带前提证"（b）两种写法，分别服务于训练样本扩充与难题递归攻坚。</p>
+      </div>
+    </figure>
+
+    <h3 style="font-size:19px;margin-top:30px">③ 课程学习：用子目标"造题"，由易到难</h3>
+    <p>训练证明模型需要大量形式化题目，但直接形式化人类文本得到的训练信号往往<strong>稀疏</strong>（大部分尝试失败、没有正奖励）。本文用上一步生成的<strong>两类子目标定理</strong>（带前提 / 不带前提）来<strong>扩充题库</strong>，并把它们纳入<em>专家迭代（expert iteration）</em>，搭出一条难度递增的<strong>课程</strong>，引导模型系统性地啃下精选的难题（比如 MiniF2F-valid 里的硬骨头）。这一思路与 AlphaProof 的测试时强化学习同源——围绕目标问题生成变体来增强能力。</p>
+
+    <h3 style="font-size:19px;margin-top:30px">④ 冷启动合成 + 推理导向的强化学习</h3>
+    <p><strong>冷启动数据怎么来：</strong>挑出那些 7B 模型<strong>端到端证不出来、但所有子目标都被逐个证出</strong>的难题，把子目标证明拼成原题的完整证明，再<strong>接到 DeepSeek-V3 的思维链后面</strong>——于是得到一份"非形式推理 + 后续形式化"浑然一体的高质量样本。这样能攒出数百条冷启动数据，作为训练 DeepSeek-Prover-V2 的地基。</p>
+    <p><strong>强化学习阶段：</strong>在冷启动微调之后，用 <strong>GRPO（Group Relative Policy Optimization）</strong>做强化学习。它不需要单独的 critic 模型，而是对每道题采样一组候选证明、按<strong>相对奖励</strong>来优化策略。奖励是<strong>二值</strong>的——Lean 验证通过得 1，否则得 0。</p>
+    <blockquote>训练中发现一个问题：模型生成的证明结构常常<b>偏离</b>思维链给出的子目标分解。于是在训练早期加入一项<b>一致性奖励（consistency reward）</b>，惩罚结构错位、强制最终证明<b>包含所有分解出的 <code class="inl">have</code> 子目标</b>。实践证明，这种对齐显著提升了复杂多步定理的证明准确率。</blockquote>
+
+    <h3 style="font-size:19px;margin-top:30px">⑤ 两阶段训练 · 两种证明模式</h3>
+    <p>DeepSeek-Prover-V2 通过两阶段训练，建立起两种互补的证明生成模式：</p>
+    <table class="cmp">
+      <thead><tr><th>模式</th><th>特点</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td class="mname">non-CoT<br/>非思维链</td><td>快速生成简洁的 Lean 证明代码，<strong>不带显式中间推理</strong></td><td>推理 / 验证周期快，用于第一阶段的专家迭代与数据收集</td></tr>
+        <tr><td class="mname">CoT<br/>思维链</td><td>先<strong>显式展开</strong>中间推理步骤，强调透明与逻辑递进，再写最终证明</td><td>高精度模式，第二阶段用冷启动 CoT 数据 + 强化学习强化</td></tr>
+      </tbody>
+    </table>
+    <details class="ex">
+      <summary>展开：训练流水线的关键细节 <span class="s-sub">SFT / RL / 蒸馏的超参与配置</span></summary>
+      <div class="body">
+        <ul class="clean">
+          <li><strong>第一阶段（non-CoT）：</strong>在课程学习框架内做专家迭代训练 non-CoT 证明器，同时用子目标递归证明为难题合成证明；选 non-CoT 是因为它推理/验证快，适合迭代。</li>
+          <li><strong>第二阶段（CoT）：</strong>用 DeepSeek-V3 的推理 + 合成形式证明做出冷启动 CoT 数据，再经强化学习强化。</li>
+          <li><strong>监督微调（SFT）：</strong>基于 <code class="inl">DeepSeek-V3-Base-671B</code>，恒定学习率 5e-6，上下文窗口 16,384 tokens；语料 = 专家迭代得到的 non-CoT 数据 + 冷启动 CoT 数据。</li>
+          <li><strong>强化学习（RL）：</strong>GRPO，二值奖励；每轮采样 256 道题、每题 32 个候选证明，最大序列长度 32,768 tokens；训练题只保留"够难但 SFT 模型仍可解"的样本。</li>
+          <li><strong>7B 模型蒸馏：</strong>把 <code class="inl">DeepSeek-Prover-V1.5-Base-7B</code> 的上下文从 4,096 扩展到 32,768，用 671B 在 RL 阶段的 rollout 数据微调，并施加同样的 RL 阶段，得到 DeepSeek-Prover-V2-7B。</li>
+        </ul>
+      </div>
+    </details>
+
+    <h3 style="font-size:19px;margin-top:30px">🔂 把整条冷启动流水线走一遍</h3>
+    <p>下面按"下一步"逐步演示一条难题如何从自然语言走到可被验证的形式化证明、并最终变成训练数据：</p>
+    <div class="stepper" id="pipe">
+      <div class="steps-bar" id="pipeBar"></div>
+      <div class="step-panel">
+        <h4 id="pipeTitle"></h4>
+        <p id="pipeBody"></p>
+        <pre class="lean" id="pipeCode" style="margin-bottom:0"></pre>
+        <div class="step-ctrl">
+          <button class="btn ghost" id="pipePrev" onclick="pipeGo(-1)">◀ 上一步</button>
+          <button class="btn" id="pipeNext" onclick="pipeGo(1)">下一步 ▶</button>
+          <button class="btn ghost" onclick="pipeReset()">重置</button>
+          <span class="step-count" id="pipeCount"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 有意思的点 -->
+  <section id="nuggets">
+    <span class="sec-kicker">有意思的点</span>
+    <h2 class="sec">几个值得单独拎出来的发现</h2>
+
+    <div class="two">
+      <div class="card" style="padding:18px">
+        <div style="font-weight:700;font-size:15.5px">📈 CoT 远胜 non-CoT</div>
+        <p style="font-size:14.5px;color:var(--ink-soft);margin:8px 0 0">思维链模式在形式化证明上有<strong>实质性优势</strong>，证实了"推理时扩展（inference-time scaling）"在形式化定理证明领域同样成立——把难题拆成中间步骤确实有用。代价是输出更长：671B 在 MiniF2F-test 上 CoT 平均生成约 <strong>6752</strong> tokens，non-CoT 仅约 <strong>762</strong>。</p>
+      </div>
+      <div class="card" style="padding:18px">
+        <div style="font-weight:700;font-size:15.5px">🤫 大模型会"偷偷推理"</div>
+        <p style="font-size:14.5px;color:var(--ink-soft);margin:8px 0 0">有趣的是，在 non-CoT 设定下，<strong>671B 的平均输出反而比 7B 更长</strong>。细看发现：即便没被要求显式推理，大模型也会在证明代码里<strong>插入简短的自然语言注释</strong>，像隐式的推理步骤。说明高容量模型即使没有 CoT 提示，也会把中间推理"内化又外显"出来。</p>
+      </div>
+    </div>
+
+    <div class="card" style="padding:20px;margin-top:16px">
+      <div style="font-weight:700;font-size:15.5px">🤝 形式 vs 非形式：差距正在收窄</div>
+      <p style="font-size:14.5px;color:var(--ink-soft);margin:8px 0 0">在 15 道精选的 AIME 24&amp;25 题上：DeepSeek-V3 用<strong>自然语言</strong>找答案（Maj@16）解出 <strong>8/15</strong>；而 DeepSeek-Prover-V2-671B 在<strong>给定正确答案、需构造形式化证明</strong>的更难设定下解出 <strong>6/15</strong>。两者只差 2 题——这表明大模型的"语言理解"与"形式逻辑严谨性"正趋于一致，形式化与非形式数学推理之间的鸿沟正在明显收窄。</p>
+    </div>
+  </section>
+
+  <!-- 实验 -->
+  <section id="results">
+    <span class="sec-kicker">实验结论</span>
+    <h2 class="sec">一句话：在各类基准上全面领先</h2>
+    <p class="lead">DeepSeek-Prover-V2-671B（CoT 模式）在从高中竞赛到本科数学的多个基准上<strong>一致超越所有基线</strong>，刷新神经定理证明的 SOTA。</p>
+
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric"><div class="num">88.9%</div><div class="lab">MiniF2F-test</div><div class="sub">Pass@8192（Pass@32 为 82.4%）</div></div>
+      <div class="metric"><div class="num">37.1%</div><div class="lab">ProofNet-test</div><div class="sub">Pass@1024 · 本科纯数学</div></div>
+      <div class="metric"><div class="num">47<span style="font-size:18px;color:var(--ink-faint)">/658</span></div><div class="lab">PutnamBench</div><div class="sub">初解 49，剔除 2 道误述</div></div>
+      <div class="metric"><div class="num">61.88%</div><div class="lab">FormalMATH-Lite</div><div class="sub">Pass@3200（All 子集 28.31%）</div></div>
+      <div class="metric"><div class="num">10<span style="font-size:18px;color:var(--ink-faint)">/100</span></div><div class="lab">CombiBench</div><div class="sub">组合数学（带解设定）</div></div>
+      <div class="metric"><div class="num">6<span style="font-size:18px;color:var(--ink-faint)">/15</span></div><div class="lab">AIME 24&amp;25</div><div class="sub">ProverBench · 形式化证明</div></div>
+    </div>
+
+    <p style="margin-top:18px">本文还顺带贡献了一个新基准 <strong>ProverBench</strong>：325 道形式化题目，其中 15 道取自最新 AIME 24&amp;25 竞赛（数论与代数，过滤掉几何/组合/计数等在 Lean 中难表达的题型），其余 310 道来自教材与教程，覆盖数论、代数、微积分、分析、概率等领域，便于更全面地评测。</p>
+
+    <details class="ex">
+      <summary>展开：ProofNet 与 PutnamBench 的对比要点 <span class="s-sub">CoT 对本科级难题的提升</span></summary>
+      <div class="body">
+        <ul class="clean">
+          <li><strong>跨域泛化：</strong>尽管训练数据以高中级数学为主，模型对本科级题目（实/复分析、线代、抽象代数、拓扑）展现出强泛化能力。</li>
+          <li><strong>CoT 的增益：</strong>在 ProofNet-test 与 PutnamBench 上，CoT 相比 non-CoT 都有显著提升，凸显思维链对本科级难题的价值。</li>
+          <li><strong>7B 也很能打：</strong>DeepSeek-Prover-V2-7B 在 FormalMATH 上以 22.41%（All）/55.06%（Lite, Pass@3200）超过 Goedel-Prover-SFT、STP、Kimina-Prover-Distill-7B 等先前基线。</li>
+        </ul>
+      </div>
+    </details>
+
+    <h2 class="sec" style="margin-top:30px;font-size:21px">结论与展望</h2>
+    <p>本文提出了一条完整的<strong>冷启动推理数据合成流水线</strong>：以 DeepSeek-V3 为统一模型完成子目标分解与引理形式化，用 7B 小模型高效求解子目标、显著降低算力；课程学习用子目标"造题"由易到难；把完整形式证明与 V3 思维链配对得到冷启动数据，再经强化学习打通"非形式思维 ↔ 形式结构"。<strong>未来方向</strong>：把这套范式扩展成 AlphaProof 式系统，去攻克 IMO 级别的数学难题。</p>
+  </section>
+
+  <footer>
+    <div><strong>原文：</strong>DeepSeek-Prover-V2: Advancing Formal Mathematical Reasoning via Reinforcement Learning for Subgoal Decomposition · DeepSeek-AI · 2025.04（arXiv preprint）</div>
+    <a class="footlink" href="https://arxiv.org/abs/2504.21801" target="_blank" rel="noopener">📄 arXiv:2504.21801 ↗</a>
+    <a class="footlink" href="https://github.com/deepseek-ai/DeepSeek-Prover-V2" target="_blank" rel="noopener">💻 github.com/deepseek-ai/DeepSeek-Prover-V2 ↗</a>
+    <div style="margin-top:14px;color:var(--ink-faint);font-size:13px">本页为教学性图解，图片取自 arXiv HTML 版（Figure 2 / Figure 3），内容均依据论文实际内容整理，不代表原作者立场。</div>
+  </footer>
+</div>
+
+<script>
+  function toggleX(id){
+    var el=document.getElementById(id);
+    if(el) el.classList.toggle('open');
+  }
+  function toggleFigDetail(el){
+    var d=el.nextElementSibling;
+    if(!d) return;
+    var on=d.classList.toggle('active');
+    el.textContent = on ? '收起 ▴' : '展开说明 ▸';
+  }
+
+  var pipeSteps=[
+    {
+      t:'读题 + 自然语言证明草图',
+      badge:'DeepSeek-V3',
+      b:'通用大模型先用自然语言理解问题、规划证明思路（这里用数学归纳法），产出一段思维链（CoT）。',
+      c:'-- 目标：证明 当 n ≥ 4 时, n^2 ≤ n!\n-- 思路：数学归纳法\n--   基例 n=4；归纳步 k → k+1'
+    },
+    {
+      t:'形式化成带 sorry 的 have 子目标',
+      badge:'DeepSeek-V3',
+      b:'把草图翻译成 Lean：一串 have 语句，每个以 sorry 占位，代表一个待证子目标。此时只有骨架，没有真正的证明。',
+      c:'theorem t (n : ℕ) (h₀ : 4 ≤ n) : n ^ 2 ≤ n ! := by\n  have base_case : 4 ^ 2 ≤ 4 ! := by sorry\n  have inductive_step : ∀ k ≥ 4, k^2 ≤ k! → (k+1)^2 ≤ (k+1)! := by sorry\n  have final_proof : ∀ n ≥ 4, n ^ 2 ≤ n ! := by sorry'
+    },
+    {
+      t:'7B 模型递归求解每个子目标',
+      badge:'Prover-V2-7B',
+      b:'把每个子目标改写成独立 lemma（可替换原目标，或注入前序子目标为前提），交给 7B 证明模型用 tactic 把 sorry 填上。',
+      c:'lemma inductive_step (k : ℕ) (h : 4 ≤ k) (base_case : 4^2 ≤ 4!)\n    : k^2 ≤ k! → (k+1)^2 ≤ (k+1)! := by\n  intro h₁ h₂\n  simp_all [Nat.factorial]\n  nlinarith   -- 子目标被证出 ✓'
+    },
+    {
+      t:'拼接成原定理的完整形式化证明',
+      badge:'合成',
+      b:'所有子目标都补全后，回填到原定理里——sorry 被真实 tactic 取代，得到一份能被 Lean 逐行验证的完整证明。',
+      c:'theorem t (n : ℕ) (h₀ : 4 ≤ n) : n ^ 2 ≤ n ! := by\n  have base_case : 4 ^ 2 ≤ 4 ! := by simp [Nat.factorial]\n  have inductive_step : ... := by intro k h h₁; simp_all; nlinarith\n  have final_proof : ... := by intro n hn; induction\' hn with k hk ...\n  apply final_proof; exact h₀   -- ✓ 通过验证'
+    },
+    {
+      t:'与 V3 思维链配对 → 冷启动数据',
+      badge:'训练数据',
+      b:'把第①步的自然语言思维链 + 第④步的完整形式证明拼成一条样本，即"非形式推理 + 形式化"浑然一体的冷启动数据，用于训练 DeepSeek-Prover-V2，随后再上 GRPO 强化学习。',
+      c:'<think> 用归纳法：先证基例，再证归纳步... </think>\n<proof>\ntheorem t ... := by\n  have base_case ...; have inductive_step ...; apply final_proof\n</proof>\n=> 一条高质量冷启动样本 ✓'
+    }
+  ];
+  var pipeIdx=0;
+  function pipeRender(){
+    var bar=document.getElementById('pipeBar');
+    bar.innerHTML='';
+    for(var i=0;i<pipeSteps.length;i++){
+      (function(i){
+        var d=document.createElement('div');
+        d.className='stepdot'+(i===pipeIdx?' active':'')+(i<pipeIdx?' done':'');
+        d.innerHTML='<div class="n">STEP '+(i+1)+'</div>'+pipeSteps[i].t;
+        d.onclick=function(){pipeIdx=i;pipeRender();};
+        bar.appendChild(d);
+      })(i);
+    }
+    var s=pipeSteps[pipeIdx];
+    document.getElementById('pipeTitle').innerHTML=s.t+'<span class="badge">'+s.badge+'</span>';
+    document.getElementById('pipeBody').textContent=s.b;
+    document.getElementById('pipeCode').textContent=s.c;
+    document.getElementById('pipeCount').textContent=(pipeIdx+1)+' / '+pipeSteps.length;
+    document.getElementById('pipePrev').disabled=(pipeIdx===0);
+    document.getElementById('pipeNext').disabled=(pipeIdx===pipeSteps.length-1);
+  }
+  function pipeGo(d){
+    pipeIdx=Math.max(0,Math.min(pipeSteps.length-1,pipeIdx+d));
+    pipeRender();
+  }
+  function pipeReset(){pipeIdx=0;pipeRender();}
+  pipeRender();
+</script>
+</body>
+</html>

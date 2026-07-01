@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Seed-OSS · 图解精读：字节 Seed 开源的 36B 长上下文推理模型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#fbf6ea; --bg2:#f4ead7; --bg3:#e8dcc7;
+    --line:#e3d6bd; --line2:#d8c9ac;
+    --ink:#2e2a24; --ink-soft:#5f574a; --ink-faint:#938a78;
+    --accent:#9a6a2f; --accent-soft:#f1e2d2; --accent-line:#e0b896;
+    --maxw:1080px;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(60,45,25,.06), 0 6px 18px rgba(60,45,25,.05);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Inter","Noto Sans SC",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    line-height:1.78; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;}
+
+  /* ---- top nav ---- */
+  .topnav{
+    position:sticky; top:0; z-index:50; background:rgba(251,246,234,.9);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+  }
+  .topnav-inner{
+    max-width:var(--maxw); margin:0 auto; padding:10px 24px;
+    display:flex; align-items:center; gap:18px; justify-content:space-between;
+  }
+  .brand{font-weight:700; font-size:15px; letter-spacing:.2px; white-space:nowrap;}
+  .brand .dot{color:var(--accent);}
+  .navlinks{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .navlinks a{
+    font-size:13.5px; color:var(--ink-soft); padding:5px 10px; border-radius:8px;
+  }
+  .navlinks a:hover{background:var(--bg3); text-decoration:none; color:var(--ink);}
+  .navlinks a.src{color:var(--accent); font-weight:600;}
+
+  /* ---- layout ---- */
+  main{max-width:var(--maxw); margin:0 auto; padding:0 24px 80px;}
+  section{scroll-margin-top:70px;}
+  .wrap{max-width:760px; margin:0 auto;}
+
+  /* ---- hero ---- */
+  header.hero{max-width:var(--maxw); margin:0 auto; padding:54px 24px 26px;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600;
+    color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line);
+    padding:5px 12px; border-radius:999px; margin-bottom:18px;
+  }
+  h1.title{
+    font-size:clamp(30px,5vw,46px); line-height:1.18; margin:0 0 14px; font-weight:700;
+    letter-spacing:-.5px;
+  }
+  .subtitle{font-size:clamp(17px,2.4vw,20px); color:var(--ink-soft); margin:0 0 22px; max-width:760px;}
+  .meta{
+    display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; font-size:13.5px;
+    color:var(--ink-soft); margin-bottom:8px;
+  }
+  .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:4px 11px;}
+  .chip.strong{background:var(--accent-soft); border-color:var(--accent-line); color:var(--accent); font-weight:600;}
+
+  /* ---- TL;DR ---- */
+  .tldr{
+    background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px 26px; margin:30px auto 8px; box-shadow:var(--shadow); max-width:var(--maxw);
+  }
+  .tldr h2{margin:0 0 12px; font-size:18px; display:flex; align-items:center; gap:9px;}
+  .tldr h2 .ic{font-size:19px;}
+  .tldr p{margin:0 0 10px;}
+  .tldr p:last-child{margin-bottom:0;}
+  .tldr strong{color:var(--ink); font-weight:700;}
+  .tldr .accent{color:var(--accent); font-weight:700;}
+
+  /* ---- section headings ---- */
+  h2.sec{
+    font-size:clamp(23px,3.4vw,30px); margin:64px 0 6px; font-weight:700; letter-spacing:-.3px;
+    display:flex; align-items:baseline; gap:12px;
+  }
+  h2.sec .num{
+    font-size:15px; color:var(--accent); font-weight:700; font-family:"JetBrains Mono",monospace;
+    background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:8px;
+    padding:2px 9px; position:relative; top:-3px;
+  }
+  .lead{font-size:18px; color:var(--ink-soft); margin:6px 0 22px;}
+  h3.sub{font-size:20px; margin:38px 0 8px; font-weight:700;}
+  p{margin:0 0 16px;}
+  .wrap strong{color:var(--ink); font-weight:600;}
+  .wrap ul{margin:0 0 18px; padding-left:0; list-style:none;}
+  .wrap ul li{position:relative; padding-left:22px; margin-bottom:9px;}
+  .wrap ul li::before{
+    content:""; position:absolute; left:4px; top:.72em; width:6px; height:6px;
+    background:var(--accent); border-radius:2px; transform:translateY(-50%);
+  }
+
+  /* ---- figures ---- */
+  figure.fig{margin:26px auto; max-width:var(--maxw);}
+  figure.fig img{
+    width:100%; height:auto; display:block; border:1px solid var(--line2);
+    border-radius:12px; background:#fff; box-shadow:var(--shadow); padding:10px;
+  }
+  .figcap{font-size:14px; color:var(--ink-soft); margin-top:11px; padding-left:2px;}
+  .figcap b{color:var(--ink);}
+  .fig-toggle{
+    display:inline-block; margin-top:8px; font-size:13.5px; font-weight:600; color:var(--accent);
+    cursor:pointer; user-select:none; border:1px solid var(--accent-line); background:var(--accent-soft);
+    padding:3px 11px; border-radius:8px;
+  }
+  .fig-toggle:hover{background:#ecd9c5;}
+  .figure-detail{
+    max-height:0; overflow:hidden; transition:max-height .4s ease, margin .3s ease, padding .3s ease;
+    background:var(--bg2); border-radius:12px; border:1px solid var(--line);
+    margin-top:0; padding:0 20px;
+  }
+  .figure-detail.open{max-height:1600px; margin-top:12px; padding:18px 20px;}
+  .figure-detail ul{margin:0; padding:0; list-style:none;}
+  .figure-detail li{position:relative; padding-left:20px; margin-bottom:11px; font-size:15px; line-height:1.7;}
+  .figure-detail li:last-child{margin-bottom:0;}
+  .figure-detail li::before{content:""; position:absolute; left:2px; top:.7em; width:7px; height:7px; border-radius:2px; background:var(--accent-line);}
+  .figure-detail li b{color:var(--ink);}
+  .figure-detail .sum{font-size:14px; color:var(--ink-faint); margin-top:14px; padding-top:12px; border-top:1px dashed var(--line2); font-style:italic;}
+
+  /* ---- expandable deep cards ---- */
+  .dcard{
+    background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius);
+    margin:14px 0; overflow:hidden; transition:border-color .2s;
+  }
+  .dcard.open{border-color:var(--accent-line);}
+  .dcard-head{padding:16px 20px; cursor:pointer; display:flex; align-items:flex-start; gap:14px;}
+  .dcard-head:hover{background:var(--bg3);}
+  .dcard-main{flex:1; min-width:0;}
+  .dcard-title{font-weight:700; font-size:16.5px; display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .tag{
+    font-size:11.5px; font-weight:600; color:var(--accent); background:var(--accent-soft);
+    border:1px solid var(--accent-line); border-radius:6px; padding:1px 8px; letter-spacing:.2px;
+  }
+  .tag.gray{color:var(--ink-faint); background:var(--bg3); border-color:var(--line2);}
+  .dcard-sum{font-size:13.5px; color:var(--ink-faint); margin-top:4px;}
+  .chev{color:var(--accent); font-size:13px; transition:transform .3s; margin-top:4px; flex:none;}
+  .dcard.open .chev{transform:rotate(90deg);}
+  .dcard-body{max-height:0; overflow:hidden; transition:max-height .45s ease;}
+  .dcard.open .dcard-body{max-height:1200px;}
+  .dcard-inner{padding:2px 20px 20px; border-top:1px solid var(--line);}
+  .dcard-inner p{font-size:15.5px;}
+  .dcard-inner p:first-child{margin-top:14px;}
+  .dcard-inner ul{margin:6px 0 4px; padding:0; list-style:none;}
+  .dcard-inner ul li{position:relative; padding-left:20px; margin-bottom:8px; font-size:15px;}
+  .dcard-inner ul li::before{content:""; position:absolute; left:2px; top:.7em; width:6px; height:6px; border-radius:2px; background:var(--accent-line);}
+
+  /* ---- metric cards ---- */
+  .metrics{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:24px 0;}
+  .metric{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:18px 16px; text-align:center;
+  }
+  .metric .v{font-size:30px; font-weight:700; color:var(--accent); font-family:"JetBrains Mono",monospace; line-height:1.1;}
+  .metric .u{font-size:13px; color:var(--ink-faint); margin-top:2px;}
+  .metric .l{font-size:13.5px; color:var(--ink-soft); margin-top:8px; font-weight:500;}
+  .metric .sota{font-size:11px; color:var(--accent); font-weight:600; margin-top:5px;}
+
+  /* ---- callout ---- */
+  .callout{
+    border-left:3px solid var(--accent); background:var(--bg2); border-radius:0 12px 12px 0;
+    padding:16px 20px; margin:22px 0; font-size:15.5px; color:var(--ink-soft);
+  }
+  .callout b{color:var(--ink);}
+  .quote{
+    border-left:3px solid var(--accent-line); padding:6px 20px; margin:22px 0; color:var(--ink-soft);
+    font-style:italic; font-size:16px;
+  }
+
+  /* ---- details / formula / code ---- */
+  details.box{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px; margin:18px 0; padding:0 18px;
+  }
+  details.box[open]{padding-bottom:16px;}
+  details.box summary{
+    cursor:pointer; padding:14px 0; font-weight:600; font-size:15.5px; list-style:none;
+    display:flex; align-items:center; gap:9px;
+  }
+  details.box summary::-webkit-details-marker{display:none;}
+  details.box summary .mk{color:var(--accent); transition:transform .25s; font-size:12px;}
+  details.box[open] summary .mk{transform:rotate(90deg);}
+  details.box summary .s{font-weight:400; color:var(--ink-faint); font-size:13.5px;}
+  details.box .body{font-size:15px; border-top:1px solid var(--line); padding-top:14px;}
+  pre.code{
+    font-family:"JetBrains Mono",monospace; background:#2e2a24; color:#f4ead7;
+    border-radius:10px; padding:14px 16px; font-size:13px; line-height:1.6; overflow-x:auto; margin:10px 0;
+  }
+  pre.code .c{color:#b9a47c;}
+  pre.code .k{color:#e0b896;}
+  pre.code .seed{color:#d9a05b; font-weight:600;}
+
+  /* ---- config table ---- */
+  table.cfg{width:100%; border-collapse:collapse; font-size:14.5px; margin:6px 0;}
+  table.cfg td,table.cfg th{padding:9px 12px; border-bottom:1px solid var(--line); text-align:left;}
+  table.cfg th{color:var(--ink-faint); font-weight:600; font-size:13px;}
+  table.cfg td.v{font-family:"JetBrains Mono",monospace; color:var(--accent); text-align:right; white-space:nowrap;}
+  table.cfg tr:last-child td{border-bottom:none;}
+
+  /* ---- architecture diagram ---- */
+  .arch{
+    background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px; margin:24px 0; box-shadow:var(--shadow);
+  }
+  .arch-flow{display:flex; align-items:stretch; gap:14px; flex-wrap:wrap; justify-content:center;}
+  .arch-col{flex:1; min-width:220px; display:flex; flex-direction:column; gap:10px;}
+  .ablock{
+    background:var(--bg); border:1px solid var(--line2); border-radius:10px; padding:11px 14px; text-align:center;
+    font-size:14px; position:relative;
+  }
+  .ablock.lite{background:var(--bg3); color:var(--ink-soft); font-size:13px;}
+  .ablock .t{font-weight:700; font-size:14.5px;}
+  .ablock .d{font-size:12.5px; color:var(--ink-faint); margin-top:2px;}
+  .ablock.accent{border-color:var(--accent-line); background:var(--accent-soft);}
+  .arch-arrow{text-align:center; color:var(--accent-line); font-size:16px; line-height:1;}
+  .block-title{font-weight:700; font-size:13px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; text-align:center;}
+  .block-card{border:1px dashed var(--line2); border-radius:12px; padding:14px; background:rgba(255,255,255,.35);}
+
+  /* ---- budget stepper ---- */
+  .stepper{
+    background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px; margin:24px 0; box-shadow:var(--shadow);
+  }
+  .stepper-top{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .stepper-top .title{font-weight:700; font-size:16px;}
+  .stepper-ctrl{display:flex; gap:8px;}
+  .btn{
+    font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; border-radius:8px;
+    padding:7px 14px; border:1px solid var(--line2); background:var(--bg); color:var(--ink);
+  }
+  .btn:hover{background:var(--bg3);}
+  .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .btn.primary:hover{background:#84592479;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .budget-meter{margin:6px 0 4px;}
+  .budget-bar{height:26px; background:var(--bg3); border:1px solid var(--line2); border-radius:8px; overflow:hidden; position:relative;}
+  .budget-fill{height:100%; background:linear-gradient(90deg,#c89255,#9a6a2f); width:0%; transition:width .6s cubic-bezier(.4,0,.2,1);}
+  .budget-fill.done{background:linear-gradient(90deg,#a9b07a,#8a9156);}
+  .budget-nums{display:flex; justify-content:space-between; font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--ink-soft); margin-top:7px;}
+  .budget-nums b{color:var(--accent);}
+  .reflect{
+    font-family:"JetBrains Mono",monospace; font-size:13px; margin-top:16px; min-height:46px;
+    background:var(--bg); border:1px dashed var(--line2); border-radius:10px; padding:12px 16px; color:var(--ink-soft);
+  }
+  .reflect .seedtag{color:var(--accent); font-weight:600;}
+  .step-caption{font-size:14.5px; color:var(--ink-soft); margin-top:12px; min-height:24px;}
+  .step-caption b{color:var(--accent);}
+  .dots{display:flex; gap:7px; justify-content:center; margin-top:14px;}
+  .dots span{width:8px; height:8px; border-radius:50%; background:var(--line2);}
+  .dots span.on{background:var(--accent);}
+
+  /* ---- footer ---- */
+  footer{
+    max-width:var(--maxw); margin:40px auto 0; padding:28px 24px 60px; border-top:1px solid var(--line);
+    color:var(--ink-soft); font-size:14px;
+  }
+  footer a{font-weight:600;}
+  footer .row{margin-bottom:8px;}
+  .disclaimer{font-size:12.5px; color:var(--ink-faint); margin-top:16px; line-height:1.65;}
+
+  @media (max-width:880px){
+    body{font-size:16px;}
+    .navlinks{display:none;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .arch-col{min-width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand">Seed-OSS <span class="dot">·</span> 图解精读</div>
+    <div class="navlinks">
+      <a href="#why">动机</a>
+      <a href="#arch">架构</a>
+      <a href="#budget">思考预算</a>
+      <a href="#highlights">其他亮点</a>
+      <a href="#capability">能力</a>
+      <a href="#opensource">开源细节</a>
+      <a href="#limit">局限</a>
+      <a class="src" href="https://github.com/ByteDance-Seed/seed-oss" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">🌱 ByteDance Seed · 开源模型发布精读</div>
+  <h1 class="title">Seed-OSS：字节 Seed 开源的<br/>36B 长上下文 / 强推理基础模型</h1>
+  <p class="subtitle">仅用 12T tokens 训练，原生支持 512K 上下文，可由用户手动控制「思考预算」(thinking budget)，并以 Apache-2.0 协议全面开源。面向 agent、工具调用与长文本场景。</p>
+  <div class="meta">
+    <span class="chip strong">官方开源发布 (open-source release)</span>
+    <span class="chip">发布 2025.08（2025/08/20）</span>
+    <span class="chip">ByteDance Seed Team</span>
+    <span class="chip">Apache-2.0</span>
+    <span class="chip"><a href="https://github.com/ByteDance-Seed/seed-oss" target="_blank" rel="noopener">GitHub ↗</a></span>
+    <span class="chip"><a href="https://huggingface.co/collections/ByteDance-Seed/seed-oss-68a609f4201e788db05b5dcd" target="_blank" rel="noopener">Hugging Face ↗</a></span>
+  </div>
+</header>
+
+<main>
+
+  <div class="tldr">
+    <h2><span class="ic">⚡</span> TL;DR — 30 秒看懂</h2>
+    <p><strong>它是什么：</strong>Seed-OSS 是字节跳动 Seed 团队开源的一系列<span class="accent">36B 稠密大语言基础模型</span>（含 Base、Base-woSyn、Instruct 三个变体），原生支持 <span class="accent">512K 超长上下文</span>，仅用 <span class="accent">12T tokens</span> 预训练就在多个公开基准上取得开源 SOTA 级表现。</p>
+    <p><strong>最大亮点：</strong>「<span class="accent">思考预算</span>」可手动控制——用户能指定模型最多思考多少 token，模型在推理过程中还会周期性地<strong>自我汇报已用 / 剩余预算</strong>，预算用尽即给出最终答案，从而在精度与推理成本之间灵活权衡。</p>
+    <p><strong>为什么重要：</strong>采用 <strong>Apache-2.0</strong> 商用友好协议；同时开源「<strong>含 / 不含合成指令数据</strong>」两个 Base 版本，方便后训练研究；在推理、数学、代码、agent 工具调用与长上下文上都有强表现。</p>
+  </div>
+
+  <!-- ===================== 动机 ===================== -->
+  <section id="why" class="wrap">
+    <h2 class="sec"><span class="num">01</span> 为什么做这个开源模型</h2>
+    <p class="lead">开源社区不缺模型，缺的是「既能强推理、又能跑长文本、还对开发者足够友好」的基础模型。Seed-OSS 想一次性把这几件事补齐。</p>
+    <p>过去一年开源基础模型层出不穷，但开发者在真正落地时常被几个现实问题卡住：推理任务想要更长更深的思维链，却没法控制「到底让模型想多久」；长文档场景需要原生大窗口，而不是靠外推硬撑；做后训练研究时，又因为预训练里混入了合成指令数据，难以判断是「模型本身强」还是「被指令数据带强」。Seed-OSS 把官方的设计目标概括为几条对开发者直接有用的特性：</p>
+    <ul>
+      <li><strong>可控的思考长度</strong>：让用户按需调节推理长度，在实际场景里平衡精度与推理效率。</li>
+      <li><strong>强推理 + 均衡通用能力</strong>：专门为推理任务优化，同时不牺牲通用能力。</li>
+      <li><strong>Agentic 智能</strong>：在工具调用、issue 解决等 agent 任务上表现突出。</li>
+      <li><strong>研究友好</strong>：同时放出「含 / 不含合成指令数据」两个预训练版本，给社区更干净的对照基线。</li>
+      <li><strong>原生长上下文</strong>：训练阶段就用最高 512K 的长上下文，而非事后外推。</li>
+    </ul>
+    <div class="callout"><b>一个定位说明：</b>官方明确 Seed-OSS 主要面向<strong>国际化 (i18n) 场景</strong>、以英文为主要优化与评测语言；其它语言能力有限、未经充分测试。把它当作一个英文优先的强基础模型来用最稳妥。</div>
+  </section>
+
+  <!-- ===================== 架构 ===================== -->
+  <section id="arch" class="wrap">
+    <h2 class="sec"><span class="num">02</span> 模型与架构</h2>
+    <p class="lead">Seed-OSS 没有走花哨的新架构，而是采用业界成熟、可复现的稠密 causal LM 配方，把工程确定性放在第一位。</p>
+    <p>整个系列是 <strong>36B 参数的稠密（dense）因果语言模型</strong>，采用当下主流的组合：<strong>RoPE</strong> 旋转位置编码、<strong>GQA</strong> 分组查询注意力、<strong>RMSNorm</strong> 归一化与 <strong>SwiGLU</strong> 激活。它不是 MoE，所有参数对每个 token 都参与计算；卖点不在「稀疏省算力」，而在<strong>长上下文 + 可控推理 + 数据干净</strong>。</p>
+  </section>
+
+  <div class="wrap">
+    <div class="arch">
+      <div class="block-title">Seed-OSS-36B · 单层 Transformer Block（共 64 层）</div>
+      <div class="arch-flow">
+        <div class="arch-col">
+          <div class="ablock lite">输入 tokens</div>
+          <div class="arch-arrow">▼</div>
+          <div class="ablock">Embedding<div class="d">词表 155K · 隐藏维度 5120</div></div>
+          <div class="arch-arrow">▼</div>
+          <div class="block-card">
+            <div class="ablock">RMSNorm</div>
+            <div class="arch-arrow">▼</div>
+            <div class="ablock accent">GQA 注意力 + RoPE<div class="d">Q/K/V 头 = 80 / 8 / 8 · 头维 128 · RoPE base 1e7</div></div>
+            <div class="arch-arrow">▼</div>
+            <div class="ablock lite">残差相加 ⊕</div>
+          </div>
+        </div>
+        <div class="arch-col">
+          <div class="ablock lite" style="visibility:hidden">占位</div>
+          <div class="arch-arrow" style="visibility:hidden">▼</div>
+          <div class="ablock lite" style="visibility:hidden">占位</div>
+          <div class="arch-arrow" style="visibility:hidden">▼</div>
+          <div class="block-card">
+            <div class="ablock">RMSNorm</div>
+            <div class="arch-arrow">▼</div>
+            <div class="ablock accent">SwiGLU 前馈网络 (FFN)<div class="d">门控线性单元激活</div></div>
+            <div class="arch-arrow">▼</div>
+            <div class="ablock lite">残差相加 ⊕</div>
+          </div>
+          <div class="arch-arrow">▼</div>
+          <div class="ablock">×64 层后 → 输出<div class="d">原生上下文长度 512K</div></div>
+        </div>
+      </div>
+      <div class="figcap" style="margin-top:16px;"><b>示意图 ·</b> 依据官方 Model Summary 自制的架构示意（CSS 绘制，非官方原图）。每个 Block 由「RMSNorm → GQA+RoPE 注意力 → 残差」与「RMSNorm → SwiGLU FFN → 残差」两个子层堆叠，重复 64 层。</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <details class="box">
+      <summary><span class="mk">▶</span> 模型关键配置 <span class="s">· 36B / 64 层 / 5120 维 / GQA 80-8-8 / 512K 上下文（点开看完整表）</span></summary>
+      <div class="body">
+        <table class="cfg">
+          <tr><th>配置项</th><th style="text-align:right">Seed-OSS-36B</th></tr>
+          <tr><td>参数量 (Parameters)</td><td class="v">36B</td></tr>
+          <tr><td>注意力 (Attention)</td><td class="v">GQA</td></tr>
+          <tr><td>激活函数 (Activation)</td><td class="v">SwiGLU</td></tr>
+          <tr><td>层数 (Number of Layers)</td><td class="v">64</td></tr>
+          <tr><td>QKV 头数 (Q / K / V Heads)</td><td class="v">80 / 8 / 8</td></tr>
+          <tr><td>头维度 (Head Size)</td><td class="v">128</td></tr>
+          <tr><td>隐藏维度 (Hidden Size)</td><td class="v">5120</td></tr>
+          <tr><td>词表大小 (Vocabulary)</td><td class="v">155K</td></tr>
+          <tr><td>上下文长度 (Context Length)</td><td class="v">512K (524,288)</td></tr>
+          <tr><td>RoPE 基频 (Base Frequency)</td><td class="v">1e7</td></tr>
+          <tr><td>预训练 token 总量</td><td class="v">12T</td></tr>
+          <tr><td>知识截止 (Knowledge Cutoff)</td><td class="v">2024/07</td></tr>
+        </table>
+        <p style="font-size:13.5px; color:var(--ink-faint); margin:12px 0 0;">数据来源：官方 README「Model Summary」与 MODEL_CARD。QKV 头数 80/8/8 即 80 个 Query 头共享 8 个 K 头、8 个 V 头，是典型的 GQA 设计。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- ===================== 思考预算 ===================== -->
+  <section id="budget" class="wrap">
+    <h2 class="sec"><span class="num">03</span> 招牌能力：思考预算 (Thinking Budget)</h2>
+    <p class="lead">这是 Seed-OSS 最有辨识度的特性：你可以像设「字数上限」一样，告诉模型「这次最多思考 N 个 token」，模型会一边推理一边盯着自己的预算条。</p>
+    <p>大多数推理模型只能在「想很久」与「直接答」之间二选一。Seed-OSS 把<strong>思考长度变成一个可调旋钮</strong>：在调用时通过 <code>thinking_budget</code> 指定预算，模型就会在 <code>&lt;seed:think&gt;</code> 内部推理，并周期性插入 <code>&lt;seed:cot_budget_reflect&gt;</code> 标签来<strong>自我汇报已消耗与剩余的 token</strong>；当预算耗尽（或推理自然结束）时，立刻收束并给出最终答案。</p>
+    <ul>
+      <li><strong>默认模式</strong>：不设预算（<code>thinking_budget = -1</code>）时，模型不限长度地思考。</li>
+      <li><strong>推荐取值</strong>：优先用 512 的整数倍（512、1K、2K、4K、8K、16K），因为模型在这些区间被充分训练过。</li>
+      <li><strong>直接作答</strong>：预算设为 0 时模型不思考直接回答；官方建议把任何低于 512 的预算都当作 0 处理。</li>
+    </ul>
+    <p>下面这个分步演示，重现官方给出的「预算 = 512」例子：跟着「下一步」看预算条如何被消耗、模型如何自我汇报，直到预算耗尽开始作答。</p>
+  </section>
+
+  <div class="wrap">
+    <div class="stepper" id="budgetStep">
+      <div class="stepper-top">
+        <div class="title">思考预算 = 512 · 分步演示</div>
+        <div class="stepper-ctrl">
+          <button class="btn" id="bPrev" onclick="budgetMove(-1)">← 上一步</button>
+          <button class="btn primary" id="bNext" onclick="budgetMove(1)">下一步 →</button>
+        </div>
+      </div>
+      <div class="budget-meter">
+        <div class="budget-bar"><div class="budget-fill" id="bFill"></div></div>
+        <div class="budget-nums">
+          <span>已用 <b id="bUsed">0</b> tokens</span>
+          <span>剩余 <b id="bLeft">512</b> tokens</span>
+        </div>
+      </div>
+      <div class="reflect" id="bReflect"></div>
+      <div class="step-caption" id="bCap"></div>
+      <div class="dots" id="bDots"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <details class="box">
+      <summary><span class="mk">▶</span> 在 Transformers 里设置思考预算 <span class="s">· apply_chat_template 传入 thinking_budget（点开看代码）</span></summary>
+      <div class="body">
+<pre class="code"><span class="c"># pip install transformers&gt;=4.56.1</span>
+<span class="k">from</span> transformers <span class="k">import</span> AutoModelForCausalLM, AutoTokenizer
+
+model_name = <span class="seed">"ByteDance-Seed/Seed-OSS-36B-Instruct"</span>
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name, device_map=<span class="seed">"auto"</span>)
+
+messages = [{<span class="seed">"role"</span>: <span class="seed">"user"</span>, <span class="seed">"content"</span>: <span class="seed">"How to make pasta?"</span>}]
+tokenized_chat = tokenizer.apply_chat_template(
+    messages, tokenize=True, add_generation_prompt=True,
+    return_tensors=<span class="seed">"pt"</span>,
+    thinking_budget=<span class="k">512</span>   <span class="c"># 控制思考预算（-1 表示不限）</span>
+)
+outputs = model.generate(tokenized_chat.to(model.device), max_new_tokens=<span class="k">2048</span>)
+print(tokenizer.decode(outputs[<span class="k">0</span>]))</pre>
+      </div>
+    </details>
+  </div>
+
+  <p class="wrap">官方还给出了一张「思考预算 vs 任务得分」的曲线图，直观说明这个旋钮在不同难度任务上的不同效果：</p>
+
+  <figure class="fig">
+    <img src="assets/thinking_budget.png" alt="思考预算与三类任务得分的关系曲线（IFEval / AIME24 / LiveCodeBench V6）" />
+    <div class="figcap"><b>官方图 ·</b> 随思考预算（512 → Unlimited）变化，三类任务的得分曲线（图来源：官方仓库 figures/thinking_budget.png）。</div>
+    <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+    <div class="figure-detail">
+      <ul>
+        <li><b>三张子图、统一坐标</b>：横轴是思考预算（512、1K、2K、4K、8K、16K、Unlimited），纵轴是得分 (%)，分别对应 IFEval（指令遵循）、AIME24（竞赛数学）、LiveCodeBench V6（代码）。</li>
+        <li><b>左图 IFEval（简单任务）几乎走平</b>：得分在 84～88 之间小幅波动，说明简单任务本就只需要很短的思维链，给再多预算也不会持续涨分——预算大了反而出现轻微抖动。</li>
+        <li><b>中图 AIME24（难任务）单调上升</b>：从预算 512 时的 25.7 一路升到 Unlimited 的 91.7，曲线斜率很陡——难题需要长链推理，预算越多收益越明显。</li>
+        <li><b>右图 LiveCodeBench V6（难任务）同样上升</b>：从 29.8 升到 67.4，趋势与 AIME 一致，进一步印证「越难的任务越吃思考预算」。</li>
+        <li><b>这张图就是「可控旋钮」的实证</b>：它告诉开发者怎么花预算——简单任务用小预算省成本，难任务才把预算开大换精度。</li>
+      </ul>
+      <div class="sum">一句话总结：思考预算对简单任务边际收益很快趋平、对难任务则持续提分，因此「按任务难度调预算」是最划算的用法。</div>
+    </div>
+  </figure>
+
+  <div class="wrap">
+    <details class="box">
+      <summary><span class="mk">▶</span> 看一眼模型自我汇报预算的真实输出 <span class="s">· seed:think 与 seed:cot_budget_reflect 标签（点开）</span></summary>
+      <div class="body">
+<pre class="code"><span class="seed">&lt;seed:think&gt;</span>
+Got it, let's try to solve this problem step by step ...
+<span class="seed">&lt;seed:cot_budget_reflect&gt;</span>I have used 129 tokens, and there are 383 tokens remaining for use.<span class="seed">&lt;/seed:cot_budget_reflect&gt;</span>
+Using the power rule, ...
+<span class="seed">&lt;seed:cot_budget_reflect&gt;</span>I have used 258 tokens, and there are 254 tokens remaining for use.<span class="seed">&lt;/seed:cot_budget_reflect&gt;</span>
+Alternatively, remember that ...
+<span class="seed">&lt;seed:cot_budget_reflect&gt;</span>I have used 393 tokens, and there are 119 tokens remaining for use.<span class="seed">&lt;/seed:cot_budget_reflect&gt;</span>
+<span class="seed">&lt;seed:cot_budget_reflect&gt;</span>I have exhausted my token budget, and now I will start answering the question.<span class="seed">&lt;/seed:cot_budget_reflect&gt;</span>
+<span class="seed">&lt;/seed:think&gt;</span>
+To solve the problem, we start by using the properties of logarithms ... (final answer)</pre>
+        <p style="margin-bottom:0; font-size:13.5px; color:var(--ink-faint);">摘自官方 README 的示例（预算 = 512）。模型把「预算管理」显式写进思维链，便于观测与控制。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- ===================== 其他亮点 ===================== -->
+  <section id="highlights" class="wrap">
+    <h2 class="sec"><span class="num">04</span> 其他关键亮点</h2>
+    <p class="lead">除了思考预算，Seed-OSS 还有三个对开发者和研究者都很实在的设计。点开每张卡片看它解决什么问题。</p>
+  </section>
+
+  <div class="wrap">
+    <div class="dcard">
+      <div class="dcard-head" onclick="toggleCard(this)">
+        <span class="chev">▶</span>
+        <div class="dcard-main">
+          <div class="dcard-title">原生 512K 长上下文 <span class="tag">长文本</span></div>
+          <div class="dcard-sum">训练阶段就用最高 512K 长上下文，而非事后外推</div>
+        </div>
+      </div>
+      <div class="dcard-body"><div class="dcard-inner">
+        <p>Seed-OSS 在预训练时<strong>原生（natively）</strong>就采用最高 512K（524,288）token 的上下文窗口，配合 RoPE 基频 1e7。这意味着长文档问答、长代码库、长对话历史等场景不必依赖事后外推（extrapolation）来硬撑窗口。</p>
+        <p>在长上下文基准 <strong>RULER (128K)</strong> 上，Seed-OSS-36B-Instruct 取得 <strong>94.6</strong>，是对比开源模型中的最高分，印证了长窗口不只是「能塞进去」，而是「真能用」。</p>
+      </div></div>
+    </div>
+
+    <div class="dcard">
+      <div class="dcard-head" onclick="toggleCard(this)">
+        <span class="chev">▶</span>
+        <div class="dcard-main">
+          <div class="dcard-title">Agentic 智能：工具调用与 issue 解决 <span class="tag">Agent</span></div>
+          <div class="dcard-sum">在 tool-use 与软件工程类 agent 任务上表现突出</div>
+        </div>
+      </div>
+      <div class="dcard-body"><div class="dcard-inner">
+        <p>官方把 agent 能力列为核心卖点之一。在工具调用基准 <strong>TAU1-Retail</strong> 上达到 <strong>70.4</strong>（对比开源最佳），在软件工程基准 <strong>SWE-Bench Verified (OpenHands)</strong> 上达到 <strong>56</strong>、<strong>Multi-SWE-Bench</strong> 达到 <strong>17</strong>。</p>
+        <p>部署上也对 agent 友好：vLLM 推理时提供专门的工具调用解析器 <code>--tool-call-parser seed_oss</code>，可直接接入 OpenAI 风格的 tool call 流程。</p>
+      </div></div>
+    </div>
+
+    <div class="dcard">
+      <div class="dcard-head" onclick="toggleCard(this)">
+        <span class="chev">▶</span>
+        <div class="dcard-main">
+          <div class="dcard-title">研究友好：含 / 不含合成指令数据的双 Base 版本 <span class="tag">研究</span></div>
+          <div class="dcard-sum">提供更干净的对照基线，避免合成指令数据干扰后训练研究</div>
+        </div>
+      </div>
+      <div class="dcard-body"><div class="dcard-inner">
+        <p>在预训练中加入合成指令数据通常能提升大多数基准表现，但也会<strong>污染后训练（post-training）研究</strong>——很难分清提升来自模型本身还是合成数据。为此官方放出两个 Base：</p>
+        <ul>
+          <li><strong>Seed-OSS-36B-Base（w/ syn.）</strong>：含合成指令数据，作为默认高性能基座。</li>
+          <li><strong>Seed-OSS-36B-Base-woSyn（w/o syn.）</strong>：不含合成指令数据，给研究社区一个「不受合成数据影响」的干净基线。</li>
+        </ul>
+        <p>两者在不同基准上互有高低（例如 woSyn 在 SimpleQA、GPQA-D 上反而更高），正好方便研究者做对照实验。</p>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ===================== 能力 ===================== -->
+  <section id="capability" class="wrap">
+    <h2 class="sec"><span class="num">05</span> 能力与适用场景</h2>
+    <p class="lead">用一句话概括：Seed-OSS-36B-Instruct 在数学、代码、agent、长上下文等硬核任务上，多项指标拿下对比开源模型的第一档（README 中以加粗标注 open-source SOTA）。</p>
+    <p>下面挑出几个最具代表性的 Instruct 版结果做成数字卡片（数值均来自官方 README 评测表，「SOTA」表示官方标注的开源最佳）：</p>
+  </section>
+
+  <div class="wrap">
+    <div class="metrics">
+      <div class="metric"><div class="v">91.7</div><div class="l">AIME24（数学）</div></div>
+      <div class="metric"><div class="v">84.7</div><div class="l">AIME25（数学）</div></div>
+      <div class="metric"><div class="v">67.4</div><div class="l">LiveCodeBench v6</div><div class="sota">开源 SOTA</div></div>
+      <div class="metric"><div class="v">82.7</div><div class="l">MMLU-Pro</div><div class="sota">开源 SOTA</div></div>
+      <div class="metric"><div class="v">70.4</div><div class="l">TAU1-Retail（工具）</div><div class="sota">开源 SOTA</div></div>
+      <div class="metric"><div class="v">94.6</div><div class="l">RULER 128K（长文）</div><div class="sota">开源 SOTA</div></div>
+      <div class="metric"><div class="v">56</div><div class="l">SWE-Bench Verified</div><div class="u">OpenHands</div></div>
+      <div class="metric"><div class="v">85.8</div><div class="l">IFEval（指令遵循）</div></div>
+    </div>
+    <p>整体来看：<strong>数学</strong>（AIME24 91.7 / AIME25 84.7 / BeyondAIME 65）与<strong>代码</strong>（LiveCodeBench v6 67.4）是强项；<strong>agent</strong> 任务（TAU1-Retail 70.4、SWE-Bench Verified 56）和<strong>长上下文</strong>（RULER-128K 94.6）也拿到开源最佳；知识类基准（MMLU 87.4、MMLU-Pro 82.7）同样领先。相对弱一些的是 SimpleQA（9.7）与 IFEval（85.8）这类项目。</p>
+    <div class="callout"><b>采样建议：</b>官方推荐用 <code>temperature=1.1</code>、<code>top_p=0.95</code> 进行采样（TAU-bench 例外，用 <code>temperature=1</code>、<code>top_p=0.7</code>）。</div>
+    <p><strong>适用场景</strong>：作为通用基础模型，Seed-OSS 适合问答、摘要、推理、内容创作辅助、信息检索辅助，以及对话式 AI / agent 的底层模型。下方深卡列出官方明确<strong>禁止</strong>的用途。</p>
+
+    <details class="box">
+      <summary><span class="mk">▶</span> Base（w/ syn.）版的基础能力一览 <span class="s">· MMLU-Pro 65.1 / MATH 81.7 / HumanEval 76.8 等（点开）</span></summary>
+      <div class="body">
+        <table class="cfg">
+          <tr><th>基准</th><th style="text-align:right">Seed-OSS-36B-Base (w/ syn.)</th></tr>
+          <tr><td>MMLU-Pro</td><td class="v">65.1</td></tr>
+          <tr><td>MMLU</td><td class="v">84.9</td></tr>
+          <tr><td>TriviaQA</td><td class="v">82.1</td></tr>
+          <tr><td>BBH（推理）</td><td class="v">87.7</td></tr>
+          <tr><td>GSM8K（数学）</td><td class="v">90.8</td></tr>
+          <tr><td>MATH</td><td class="v">81.7</td></tr>
+          <tr><td>HumanEval（代码）</td><td class="v">76.8</td></tr>
+          <tr><td>MBPP（代码）</td><td class="v">80.6</td></tr>
+        </table>
+        <p style="font-size:13.5px; color:var(--ink-faint); margin:12px 0 0;">数值来自官方 README 的 Base 评测表；加粗 SOTA 标注详见原文。woSyn 版在 SimpleQA(7.4)、GPQA-D(35.2) 等项上反而更高。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- ===================== 开源细节 ===================== -->
+  <section id="opensource" class="wrap">
+    <h2 class="sec"><span class="num">06</span> 开源细节</h2>
+    <p class="lead">Seed-OSS 是「真开源」：权重、推理脚本、采样建议、工具调用解析器都给齐，协议宽松，可直接商用。</p>
+    <ul>
+      <li><strong>协议</strong>：Apache-2.0，允许商用与二次开发。</li>
+      <li><strong>发布时间</strong>：2025/08/20 释出 Base、Base-woSyn 与 Instruct。</li>
+      <li><strong>提供变体</strong>：<code>Seed-OSS-36B-Base</code>、<code>Seed-OSS-36B-Base-woSyn</code>、<code>Seed-OSS-36B-Instruct</code>。</li>
+      <li><strong>权重分发</strong>：Hugging Face 上的 ByteDance-Seed 组织 / Seed-OSS 合集。</li>
+      <li><strong>推理</strong>：支持 Transformers（<code>generate.py</code>，含 4/8-bit 量化）与 vLLM（≥0.10.2，含 <code>seed_oss</code> 工具调用解析器）。</li>
+      <li><strong>技术报告</strong>：官方标注「Tech Report Coming Soon」（尚未发布，本页基于 README / MODEL_CARD）。</li>
+    </ul>
+
+    <details class="box">
+      <summary><span class="mk">▶</span> 用 vLLM 起一个 API 服务 <span class="s">· vllm&gt;=0.10.2，启用 seed_oss 工具调用解析器（点开）</span></summary>
+      <div class="body">
+<pre class="code"><span class="c"># pip install vllm&gt;=0.10.2</span>
+python3 -m vllm.entrypoints.openai.api_server \
+    --host localhost --port 4321 \
+    --enable-auto-tool-choice \
+    --tool-call-parser <span class="seed">seed_oss</span> \
+    --trust-remote-code \
+    --model ./Seed-OSS-36B-Instruct \
+    --chat-template ./Seed-OSS-36B-Instruct/chat_template.jinja \
+    --tensor-parallel-size <span class="k">8</span> \
+    --dtype bfloat16 \
+    --served-model-name <span class="seed">seed_oss</span></pre>
+      </div>
+    </details>
+
+    <details class="box">
+      <summary><span class="mk">▶</span> 引用方式 (Citation) <span class="s">· BibTeX（点开复制）</span></summary>
+      <div class="body">
+<pre class="code">@misc{seed2025seed-oss,
+  author={ByteDance Seed Team},
+  title={Seed-OSS Open-Source Models},
+  year={2025},
+  howpublished={\url{https://github.com/ByteDance-Seed/seed-oss}}
+}</pre>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== 局限 ===================== -->
+  <section id="limit" class="wrap">
+    <h2 class="sec"><span class="num">07</span> 局限与安全</h2>
+    <p class="lead">官方在 MODEL_CARD 里对能力边界和安全使用做了明确说明，落地前值得先看一眼。</p>
+    <ul>
+      <li><strong>语言局限</strong>：主要面向并评测于英文（i18n），其它语言能力有限、未充分测试。</li>
+      <li><strong>训练数据局限</strong>：以公开数据为主，对特定文化、价值观、历史事件的理解可能不完整；知识截止 2024/07。</li>
+      <li><strong>幻觉</strong>：与所有 LLM 一样，可能生成不正确甚至虚构的内容。</li>
+      <li><strong>有害内容</strong>：尽管做了大量安全训练，仍可能产生有害 / 不准确 / 冒犯性输出，建议开发者自测并加人工监督。</li>
+    </ul>
+    <p>安全方面，官方称从训练数据准备到训练与评测全周期都做了内容安全措施，并在发布前经过由新加坡全球安全团队主导的多轮安全审查：包括<strong>训练数据过滤</strong>（清除 CSAM / 高毒内容、移除 PII）、<strong>安全微调</strong>（在 SFT 与 RLHF/PPO 阶段）以及<strong>常态化与对抗性安全测试</strong>。模型卡也列出了禁止用途（医疗 / 法律 / 金融专业建议、高风险自动决策、未成年人安全相关、违法活动、仇恨骚扰、虚假信息、军事监控等）。</p>
+    <div class="quote">「Although trained with only 12T tokens, Seed-OSS achieves excellent performance on several popular open benchmarks.」——官方 README（仅用 12T tokens 训练，却在多个流行公开基准上取得优异表现。）</div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="row"><b>来源：</b> Seed-OSS Open-Source Models · ByteDance Seed Team · <a href="https://github.com/ByteDance-Seed/seed-oss" target="_blank" rel="noopener">github.com/ByteDance-Seed/seed-oss ↗</a></div>
+  <div class="row"><b>权重：</b> <a href="https://huggingface.co/collections/ByteDance-Seed/seed-oss-68a609f4201e788db05b5dcd" target="_blank" rel="noopener">Hugging Face · ByteDance-Seed / Seed-OSS 合集 ↗</a></div>
+  <div class="row"><b>图片来源：</b> <a href="https://raw.githubusercontent.com/ByteDance-Seed/seed-oss/master/figures/thinking_budget.png" target="_blank" rel="noopener">官方仓库 figures/thinking_budget.png ↗</a></div>
+  <div class="disclaimer">本页为教学性图解精读，发布时间 2025-08，venue：官方开源发布（open-source release，非 arXiv）。所有参数、架构、基准数字均来自官方 README 与 MODEL_CARD；架构示意图为依据官方描述自制（CSS 绘制），思考预算曲线为官方原图。官方技术报告尚未发布（Tech Report Coming Soon），如与官方后续材料有出入，以官方为准。</div>
+</footer>
+
+<script>
+  function toggleFigDetail(el){
+    var d = el.nextElementSibling;
+    var open = d.classList.toggle('open');
+    el.textContent = open ? '收起 ▴' : '展开说明 ▸';
+  }
+  function toggleCard(head){
+    head.parentElement.classList.toggle('open');
+  }
+
+  /* ---- thinking budget stepper ---- */
+  var budgetSteps = [
+    {
+      used:0, total:512, done:false,
+      reflect:'<span class="seedtag">&lt;seed:think&gt;</span> 开始推理：先看懂题目，规划解题步骤 …',
+      cap:'<b>第 0 步 · 设定预算</b>：调用时传入 thinking_budget = 512，模型进入 seed:think 思维区，预算条满格。'
+    },
+    {
+      used:129, total:512, done:false,
+      reflect:'<span class="seedtag">&lt;seed:cot_budget_reflect&gt;</span> I have used 129 tokens, and there are 383 tokens remaining for use.',
+      cap:'<b>第 1 步 · 首次自查</b>：推进一段推理后，模型主动汇报「已用 129 / 剩余 383」。'
+    },
+    {
+      used:258, total:512, done:false,
+      reflect:'<span class="seedtag">&lt;seed:cot_budget_reflect&gt;</span> I have used 258 tokens, and there are 254 tokens remaining for use.',
+      cap:'<b>第 2 步 · 过半</b>：尝试另一种解法，预算消耗过半（已用 258 / 剩余 254）。'
+    },
+    {
+      used:393, total:512, done:false,
+      reflect:'<span class="seedtag">&lt;seed:cot_budget_reflect&gt;</span> I have used 393 tokens, and there are 119 tokens remaining for use.',
+      cap:'<b>第 3 步 · 临近上限</b>：剩余预算不多（已用 393 / 剩余 119），模型开始收束思路。'
+    },
+    {
+      used:512, total:512, done:true,
+      reflect:'<span class="seedtag">&lt;seed:cot_budget_reflect&gt;</span> I have exhausted my token budget, and now I will start answering the question.',
+      cap:'<b>第 4 步 · 预算耗尽</b>：达到上限，模型宣布停止思考、转入作答。'
+    },
+    {
+      used:512, total:512, done:true,
+      reflect:'<span class="seedtag">&lt;/seed:think&gt;</span> To solve the problem … (输出最终答案)',
+      cap:'<b>第 5 步 · 给出答案</b>：退出 seed:think，输出最终回答。精度与成本之间的权衡，由这条预算条完成。'
+    }
+  ];
+  var budgetIdx = 0;
+
+  function budgetRender(){
+    var s = budgetSteps[budgetIdx];
+    var pct = Math.round(s.used / s.total * 100);
+    var fill = document.getElementById('bFill');
+    fill.style.width = pct + '%';
+    if(s.done){ fill.classList.add('done'); } else { fill.classList.remove('done'); }
+    document.getElementById('bUsed').textContent = s.used;
+    document.getElementById('bLeft').textContent = (s.total - s.used);
+    document.getElementById('bReflect').innerHTML = s.reflect;
+    document.getElementById('bCap').innerHTML = s.cap;
+    var dots = '';
+    for(var j=0;j<budgetSteps.length;j++){ dots += '<span class="' + (j===budgetIdx?'on':'') + '"></span>'; }
+    document.getElementById('bDots').innerHTML = dots;
+    document.getElementById('bPrev').disabled = (budgetIdx===0);
+    document.getElementById('bNext').textContent = (budgetIdx===budgetSteps.length-1) ? '重新开始' : '下一步 →';
+  }
+  function budgetMove(dir){
+    if(dir>0 && budgetIdx===budgetSteps.length-1){ budgetIdx = 0; }
+    else { budgetIdx = Math.max(0, Math.min(budgetSteps.length-1, budgetIdx+dir)); }
+    budgetRender();
+  }
+  budgetRender();
+</script>
+</body>
+</html>

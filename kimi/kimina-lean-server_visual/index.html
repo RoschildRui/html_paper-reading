@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimina Lean Server · 中文导读：为大规模形式化验证而生的高性能 Lean 服务器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf6ea;
+  --surface:#f5ecd9;
+  --surface-2:#efe3cb;
+  --surface-3:#e7d9bd;
+  --border:#e3d5ba;
+  --border-strong:#d3c098;
+  --ink:#2c2620;
+  --ink-soft:#6a6051;
+  --ink-faint:#988d77;
+  --accent:#b27a2b;
+  --accent-deep:#8f5f1d;
+  --accent-soft:#f0e1c2;
+  --mono-bg:#efe5d1;
+  --shadow:0 1px 2px rgba(80,60,20,.06),0 4px 14px rgba(80,60,20,.05);
+  --maxw:860px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Inter","Noto Sans SC",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;-webkit-font-smoothing:antialiased;
+}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* nav */
+.topnav{position:sticky;top:0;z-index:50;background:rgba(251,246,234,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:var(--maxw);margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:16px}
+.topnav .brand{font-weight:700;font-size:15px;white-space:nowrap;color:var(--ink)}
+.topnav .links{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav .links a{color:var(--ink-soft);text-decoration:none;font-size:13.5px;font-weight:500;padding:4px 9px;border-radius:7px;white-space:nowrap;transition:all .18s}
+.topnav .links a:hover{background:var(--surface-2);color:var(--ink)}
+.topnav .links a.active{background:var(--accent-soft);color:var(--accent-deep)}
+.topnav .src{white-space:nowrap;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent-deep);border:1px solid var(--border-strong);padding:4px 11px;border-radius:7px;transition:all .18s}
+.topnav .src:hover{background:var(--accent-soft)}
+
+/* layout */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:46px 0 8px;scroll-margin-top:64px}
+section:first-of-type{padding-top:26px}
+h1{font-size:33px;line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+h2 .num{font-size:14px;font-weight:600;color:var(--accent);font-family:"JetBrains Mono",monospace}
+h3{font-size:18px;margin:30px 0 10px}
+p{margin:0 0 15px}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent-deep)}
+.lead{font-size:17.5px;color:var(--ink)}
+.muted{color:var(--ink-soft)}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+ul.tight{margin:4px 0 16px;padding-left:4px;list-style:none}
+ul.tight li{position:relative;padding-left:20px;margin-bottom:9px}
+ul.tight li::before{content:"";position:absolute;left:4px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+/* header */
+.hero{padding-top:34px}
+.meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{font-size:12.5px;font-weight:500;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);padding:4px 11px;border-radius:20px}
+.chip.accent{background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent-deep);font-weight:600}
+.subtitle{font-size:18px;color:var(--ink-soft);margin:0 0 4px;font-weight:500}
+
+/* metric cards */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0}
+.metrics-3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 15px;box-shadow:var(--shadow)}
+.metric .v{font-size:26px;font-weight:700;color:var(--accent-deep);line-height:1.1;letter-spacing:-.02em}
+.metric .v .u{font-size:14px;color:var(--ink-soft);font-weight:600}
+.metric .k{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* quote / callout */
+.quote{border-left:3px solid var(--accent);background:var(--surface);padding:15px 20px;border-radius:0 11px 11px 0;margin:20px 0}
+.quote.big{font-size:20px;font-weight:600;color:var(--ink);line-height:1.55}
+.callout{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px;margin:18px 0;font-size:15px}
+.callout .t{font-weight:700;color:var(--accent-deep);margin-bottom:3px}
+
+/* two col */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+.panel.after{border-color:var(--border-strong);background:var(--accent-soft)}
+.panel .ph{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel.before .ph{color:var(--ink-soft)}
+.panel.after .ph{color:var(--accent-deep)}
+.panel ul{margin:8px 0 12px;padding-left:2px;list-style:none}
+.panel li{position:relative;padding-left:19px;margin-bottom:8px;font-size:14.5px;line-height:1.55}
+.panel li::before{position:absolute;left:0;top:0;font-size:13px}
+.panel.before li::before{content:"✕";color:#a98a5a}
+.panel.after li::before{content:"✓";color:var(--accent);font-weight:700}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+table.data{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--surface)}
+table.data th,table.data td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--border)}
+table.data th{background:var(--surface-3);font-weight:600;color:var(--ink);font-size:13px}
+table.data td:first-child,table.data th:first-child{text-align:left;font-weight:600}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.hl td{background:var(--accent-soft);font-weight:600;color:var(--accent-deep)}
+table.data .dim{color:var(--ink-faint)}
+.cellok{color:var(--accent-deep);font-weight:700}
+.cellno{color:var(--ink-faint)}
+
+/* expandable small cards */
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.xcard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 17px;box-shadow:var(--shadow);transition:border-color .2s}
+.xcard:hover{border-color:var(--border-strong)}
+.xcard .xt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.xcard .xt .ic{font-size:17px}
+.xcard .xtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--surface-3);color:var(--ink-soft);margin-left:auto}
+.xcard .xs{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.xcard .xtoggle{margin-top:9px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none;display:inline-block}
+.xcard .xdetail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease}
+.xcard .xdetail.active{max-height:680px;opacity:1;margin-top:10px}
+.xcard .xdetail p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px}
+.xcard .xdetail b{color:var(--accent-deep)}
+
+/* figure */
+.figure{margin:22px 0}
+.figure img{width:100%;display:block;border:1px solid var(--border);border-radius:13px;background:#faf4e6;padding:14px;box-shadow:var(--shadow)}
+.fig-cap{font-size:13.5px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+.fig-cap .lbl{font-weight:700;color:var(--ink)}
+.fig-toggle{display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--accent-deep);cursor:pointer;user-select:none}
+.figure-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .3s ease;background:var(--surface);border-radius:11px}
+.figure-detail.active{max-height:1200px;opacity:1;margin-top:10px;padding:4px 18px}
+.figure-detail ul{margin:12px 0;padding-left:2px;list-style:none}
+.figure-detail li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14px;line-height:1.55}
+.figure-detail li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.figure-detail li b{color:var(--accent-deep)}
+
+/* code + details */
+pre.code{background:var(--mono-bg);border:1px solid var(--border);border-radius:11px;padding:15px 16px;overflow-x:auto;font-size:12.5px;line-height:1.65;margin:0}
+pre.code .cm{color:var(--ink-faint)}
+pre.code .fl{color:var(--accent-deep);font-weight:600}
+pre.code .em{color:var(--accent-deep);font-weight:600}
+.code-label{font-size:12.5px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+details.ex{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:16px 0;box-shadow:var(--shadow)}
+details.ex summary{cursor:pointer;padding:13px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary .mk{color:var(--accent);transition:transform .25s;display:inline-block}
+details.ex[open] summary .mk{transform:rotate(90deg)}
+details.ex summary .sub{font-weight:400;color:var(--ink-faint);font-size:13px}
+details.ex .ex-body{padding:0 16px 16px}
+
+/* flow nodes */
+.flow{display:grid;gap:14px;margin:22px 0}
+.flow-2{grid-template-columns:1fr 1fr}
+.flow-3{grid-template-columns:1fr 1fr 1fr}
+.flow-4{grid-template-columns:repeat(4,1fr)}
+.fnode{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.fnode .ftag{font-size:11.5px;font-weight:700;color:var(--accent);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+.fnode .fname{font-weight:700;font-size:15.5px;margin:3px 0 6px}
+.fnode .fdesc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+.fnode .fseq{margin-top:9px;font-size:11.5px;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);display:inline-block;padding:2px 9px;border-radius:7px}
+
+/* step animation */
+.stepbox{background:var(--surface);border:1px solid var(--border-strong);border-radius:15px;padding:20px;margin:22px 0;box-shadow:var(--shadow)}
+.sp-rail{display:flex;gap:6px;margin-bottom:16px}
+.sp-dot{flex:1;height:6px;border-radius:6px;background:var(--surface-3);transition:background .35s}
+.sp-dot.on{background:var(--accent)}
+.sp-stage{min-height:200px}
+.sp-step{display:none}
+.sp-step.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sp-step .sh{font-weight:700;font-size:16px;margin-bottom:6px;color:var(--accent-deep);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sp-step .stg{font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace;background:var(--accent-soft);color:var(--accent-deep);padding:2px 9px;border-radius:7px}
+.sp-step .sb{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+.sp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sp-io .io{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.sp-io .io .iol{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sp-decision{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}
+.sp-decision .qbox{background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;padding:7px 12px;font-weight:600;color:var(--ink)}
+.sp-decision .yes{font-weight:700;color:var(--accent-deep)}
+.sp-decision .no{font-weight:700;color:var(--ink-faint)}
+.sp-decision .res{background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:9px;padding:7px 12px;font-weight:600;color:var(--accent-deep)}
+.sp-controls{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sp-controls button{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:9px;transition:all .18s}
+.sp-controls button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-deep)}
+.sp-controls button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sp-controls button.primary:hover:not(:disabled){background:var(--accent-deep)}
+.sp-controls button:disabled{opacity:.4;cursor:not-allowed}
+.sp-counter{font-size:13px;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;margin-left:auto}
+
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--border);background:var(--surface)}
+.footer-inner{max-width:var(--maxw);margin:0 auto;padding:30px 22px 44px}
+.footer-inner .ft{font-weight:700;margin-bottom:8px}
+.footer-inner p{font-size:14px;color:var(--ink-soft);margin:0 0 8px}
+.footer-inner a{font-weight:600}
+
+@media (max-width:880px){
+  body{font-size:16px}
+  .metrics,.metrics-3{grid-template-columns:repeat(2,1fr)}
+  .twocol,.cardgrid,.flow-2,.flow-3,.flow-4,.sp-io{grid-template-columns:1fr}
+  h1{font-size:27px}
+  h2{font-size:22px}
+  .topnav .brand{display:none}
+}
+@media (max-width:560px){
+  .metrics,.metrics-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">Kimina Lean Server 导读</span>
+    <div class="links">
+      <a href="#tldr">概览</a>
+      <a href="#problem">问题</a>
+      <a href="#prior">已有方案</a>
+      <a href="#overview">设计总览</a>
+      <a href="#arch">架构</a>
+      <a href="#client">客户端</a>
+      <a href="#insights">有意思的点</a>
+      <a href="#results">实验结论</a>
+      <a href="#limits">适用与局限</a>
+    </div>
+    <a class="src" href="https://arxiv.org/abs/2504.21230" target="_blank" rel="noopener">原文 ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="kicker">论文导读 · Infrastructure for Neural Theorem Proving</div>
+    <h1>Kimina Lean Server：为大规模形式化验证而生的高性能 Lean 服务器</h1>
+    <p class="subtitle">Kimina Lean Server: A High-Performance Lean Server for Large-Scale Verification</p>
+    <div class="meta-chips">
+      <span class="chip accent">arXiv preprint · Technical Report</span>
+      <span class="chip">发表 2025.04</span>
+      <span class="chip">arXiv:2504.21230</span>
+      <span class="chip">Project Numina · Cambridge · Moonshot AI</span>
+      <span class="chip">开源 · MATH-AI Workshop</span>
+    </div>
+    <p class="lead">一句话：用 Lean 形式化证明给定理证明模型做强化学习，<strong>瓶颈不在模型而在「验证」</strong>——每条候选证明都要重新加载庞大的 Mathlib 库再编译，慢且不可扩展。本文用<strong>服务端并行（一核一个 Lean REPL）+ LRU import 缓存（复用已加载好库的 worker）</strong>把验证吞吐拉到比次优工具快 <strong>1.5–2×</strong>，并配一个「一个 <code>check</code> 函数搞定」的轻量 Python 客户端，已支撑 Kimina-Prover 两度登顶 miniF2F。</p>
+    <p class="muted" style="font-size:14px">本页基于已抓取的 arXiv HTML 原文（v3）正文、表格与官方架构图构建。术语首次出现时给出英文原词，便于对照原文。</p>
+  </header>
+
+  <!-- TLDR -->
+  <section id="tldr">
+    <h2><span class="num">00</span> TL;DR · 30 秒抓住核心</h2>
+    <ul class="tight">
+      <li><strong>要解决的问题</strong>：定理证明模型（如 Kimina-Prover）的 RL 训练，需要把 Lean 编译结果<strong>当作奖励信号</strong>。这意味着每一步都要<strong>大批量、高速地验证</strong>海量候选证明，而已有 Lean 工具在这里成了吞吐瓶颈。</li>
+      <li><strong>两个核心机制</strong>：① <strong>服务端并行</strong>——维护一池 Lean REPL 进程，<strong>一个核心跑一个常驻 REPL</strong>，把多核 CPU 吃满；② <strong>LRU import 缓存</strong>——把脚本拆成 <code>header</code>（import）+ <code>body</code>，用 header 当 key 复用「已经加载好 Mathlib」的 worker，省掉最贵的初始化。</li>
+      <li><strong>好用的客户端</strong>：一个 PyPI 包，<strong>单个 <code>check()</code> 调用</strong>提交一批证明、拿回结构化反馈（报错、环境 id、耗时、可选 infotree），并行与缓存全在服务端透明完成。</li>
+      <li><strong>额外能力</strong>：处理 Lean 的 <strong>infotree</strong>，把证明切成<strong>互不重叠的 tactic + tactic state</strong> 序列，专为树搜索（tree search）模型提供训练数据。</li>
+    </ul>
+    <div class="metrics">
+      <div class="metric"><div class="v">1.5–2<span class="u">×</span></div><div class="k">相比次优基线<br>（leanclient / LeanInteract）的验证加速</div></div>
+      <div class="metric"><div class="v">1.94<span class="u">×</span></div><div class="k">仅 LRU 缓存带来的加速<br>0.099s → 0.051s / 条</div></div>
+      <div class="metric"><div class="v">~4<span class="u">×</span></div><div class="k">8 → 32 核的扩展加速<br>近线性利用多核</div></div>
+      <div class="metric"><div class="v">9,419</div><div class="k">NuminaMath-LEAN<br>基准证明条数</div></div>
+    </div>
+    <div class="quote big">与其优化模型，不如先把「验证」这条流水线打通：<strong>把昂贵的库加载缓存起来、把多核用满</strong>，验证就不再是 RL 训练的瓶颈。<br><span style="font-size:14px;font-weight:400;color:var(--ink-soft)">—— 对本文工程动机的概括</span></div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <h2><span class="num">01</span> 问题：RL 训练定理证明，卡在「验证」这一环</h2>
+    <p>近两年的形式化数学 AI（neural theorem proving）有一条清晰的主线：把大语言模型接到 <strong>Lean 4</strong> 这样的交互式证明助手上，<strong>用「证明对不对」作为强化学习的奖励信号</strong>来训练模型。Kimina-Prover、DeepSeek-Prover-v2、Seed-Prover 等 SOTA 工作都走这条路。</p>
+    <p>但这条路有一个容易被忽视的工程现实：<strong>RL 每一步都会产生成千上万条候选证明，全部要送进 Lean 编译验证</strong>。验证一旦慢，整条训练流水线就被拖住。而验证之所以慢、之所以难扩展，根子在两处：</p>
+    <ul class="tight">
+      <li><strong>初始化代价极高</strong>：启动一个 Lean REPL，最贵的部分是<strong>加载 Mathlib 这种大型库</strong>。如果每验证一条证明都重新起一个 REPL、重新 import 一遍，绝大部分时间都耗在「热身」上。</li>
+      <li><strong>难以并行</strong>：单个 Lean REPL 进程是<strong>单线程</strong>，一个进程吃不满多核 CPU。多数已有工具没有为「跨核并行」设计，硬件再强也用不上。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">本文要回答的问题</div>
+      能不能做一个<strong>专为大规模 RL 流水线设计</strong>的 Lean 服务器，既<strong>把多核 CPU 吃满</strong>，又<strong>避免反复加载大型库</strong>，还顺手把「从 Python 调 Lean、拿结构化反馈、提取证明数据」这件麻烦事变简单？
+    </div>
+  </section>
+
+  <!-- PRIOR WORK -->
+  <section id="prior">
+    <h2><span class="num">02</span> 已有方案卡在哪</h2>
+    <p>社区已有不少把 Lean 4 接到 Python 的工具，各有取舍。把它们按「能不能并行、能不能缓存 import、能不能提取数据、适不适合大规模 RL」摆在一起，就能看清 Kimina Lean Server 想补的那块空白：</p>
+
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>工具</th><th>跨核并行</th><th>import 缓存</th><th>证明数据提取</th><th>大规模 RL 验证</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>LeanREPL（官方）</td><td class="cellno">✕ 单线程</td><td class="cellno">✕</td><td class="cellno">部分</td><td class="cellno">✕</td></tr>
+          <tr><td>Pantograph</td><td class="cellno">✕ 单线程</td><td class="cellno">✕</td><td class="cellok">✓ 强</td><td class="cellno">✕</td></tr>
+          <tr><td>leanclient</td><td class="cellok">✓（LSP）</td><td class="cellno">✕</td><td class="cellno">✕</td><td class="cellno">有限</td></tr>
+          <tr><td>LeanInteract</td><td class="cellok">✓（多 REPL）</td><td class="cellno">✕</td><td class="cellno">✕</td><td class="cellno">有限</td></tr>
+          <tr><td>LeanDojo / ProofWala</td><td class="cellno">部分</td><td class="cellno">✕</td><td class="cellok">✓（gym 式）</td><td class="cellno">✕ 慢</td></tr>
+          <tr class="hl"><td>Kimina Lean Server</td><td>✓ 一核一 REPL</td><td>✓ LRU</td><td>✓ infotree</td><td>✓ 专门设计</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>展开看每个工具具体怎么做、卡在哪——尤其是为什么「能并行」也不等于「适合大规模 RL」：</p>
+
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">⚙️</span>LeanREPL（官方）<span class="xtag">底层接口</span></div>
+        <div class="xs">把 Lean 暴露成一个交互式子进程，可逐条发 tactic 拿新 goal，或整段证明拿最终结果。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：read-eval-print loop（读取-求值-打印循环），是 Lean 官方提供的最底层 Python 交互入口，其它工具大多构建在它之上。</p>
+          <p><b>卡在哪</b>：<b>原生不支持</b>多行 <code>have</code>/<code>let</code> 写法、<code>calc</code> 模式、<code>conv</code> 模式；而且<b>本质单线程</b>，吃不满多核，不为高吞吐设计。</p>
+          <p><b>与本文关系</b>：Kimina 服务器<b>直接构建在官方 LeanREPL 之上</b>，因此天然兼容 REPL 支持的任何 Lean 版本——把它的单线程包成多进程池。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧩</span>Pantograph <span class="xtag">功能丰富</span></div>
+        <div class="xs">LeanREPL 的增强替代品，把子目标（subgoal）当独立对象处理。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：独立处理 subgoal，<b>支持 <code>have</code>/<code>let</code>/<code>conv</code>/<code>calc</code></b>，能提取 tactic state 和带注释的完整证明脚本，弥补了 LeanREPL 的表达力短板。</p>
+          <p><b>卡在哪</b>：和 LeanREPL 一样<b>仍是单线程</b>，没有为大规模 RL 的高吞吐验证设计。</p>
+          <p><b>与本文关系</b>：Kimina 在<b>客户端</b>用 infotree 处理补上了 calc/conv/have/let 这些「难提取」的 tactic（见后文），同时保留并行能力。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔀</span>leanclient <span class="xtag">支持并行</span></div>
+        <div class="xs">通过 Lean 的语言服务器协议（LSP）与 Lean 交互，支持文件级并行批处理。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：走 <b>LSP（Language Server Protocol）</b>通道，能并行批量处理多个文件。</p>
+          <p><b>卡在哪</b>：并行能力有了，但<b>大规模训练下性能仍受限</b>，且<b>不做证明数据提取</b>（拿不到单步 tactic 与 tactic state）。</p>
+          <p><b>与本文关系</b>：本文的<b>主要性能对比基线之一</b>。Kimina 在 8/16/32/64 核全面更快。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔁</span>LeanInteract <span class="xtag">支持并行</span></div>
+        <div class="xs">通过管理多个 REPL 实例来获得类似的并行能力。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：用 <code>LeanREPLConfig</code> + 多个 <code>AutoLeanServer</code> 实例（官方推荐：每进程一个）来并行跑证明。</p>
+          <p><b>卡在哪</b>：每条证明各自一个 server，<b>没有 import 复用/缓存</b>；要管理可复用的实例池，正是本文付出的工程量。性能仍受限，也<b>不做数据提取</b>。</p>
+          <p><b>与本文关系</b>：本文<b>另一个主要基线</b>，也是说明「缓存」价值的反例。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🏋️</span>LeanDojo / ProofWala <span class="xtag">gym 环境</span></div>
+        <div class="xs">提供更完整的、类似 gym 的环境，面向数据提取与证明搜索。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p><b>做法</b>：构建交互式「健身房」环境，便于做 proof search 与提取训练数据，功能全面。</p>
+          <p><b>卡在哪</b>：<b>没有为现代 RL 工作流所需的验证速度做优化</b>——能提数据，但验证吞吐跟不上大规模训练。</p>
+          <p><b>与本文关系</b>：本文要在「数据提取能力」之外，额外把<b>验证速度</b>做到适合 RL 的量级。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🎯</span>共同空白 <span class="xtag">本文切入点</span></div>
+        <div class="xs">能并行的不缓存、能提数据的不够快——没有一个同时把四件事做好。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>已有工具<b>要么并行但不缓存 import</b>（leanclient/LeanInteract），<b>要么能提数据但太慢</b>（LeanDojo/ProofWala），<b>要么单线程</b>（LeanREPL/Pantograph）。</p>
+          <p><b>本文切入点</b>：把「<b>并行 + import 缓存 + 数据提取 + 轻量客户端</b>」一次性整合到一个为大规模 RL 专门工程化的服务器里。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <h2><span class="num">03</span> 设计总览：四块拼图，一个目标</h2>
+    <p>Kimina Lean Server 对外是一个 <strong>REST API</strong>（任何语言都能调），对内由四块互相配合的设计组成。前两块在<strong>服务端</strong>负责「快」，后两块在<strong>客户端</strong>负责「好用」：</p>
+
+    <div class="flow flow-2">
+      <div class="fnode">
+        <div class="ftag">SERVER · 快</div>
+        <div class="fname">① 服务端并行</div>
+        <div class="fdesc">维护一池 Lean REPL，<strong>每个进程独占一个 CPU 核</strong>；请求到来时路由到空闲 REPL，吞吐随核心数近线性扩展。</div>
+        <div class="fseq">吃满多核</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">SERVER · 快</div>
+        <div class="fname">② LRU import 缓存</div>
+        <div class="fdesc">把脚本拆成 <code>header</code>(import) + <code>body</code>，用 header 当 key 在 <strong>LRU 缓存</strong>里找「已加载好库」的 worker，命中就只跑 body。</div>
+        <div class="fseq">省掉重复加载</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">CLIENT · 好用</div>
+        <div class="fname">③ 轻量 Python 客户端</div>
+        <div class="fdesc">一个 PyPI 包包住 REST API，<strong>单个 <code>check()</code></strong> 提交一批脚本、拿回结构化结果；并行与缓存对用户完全透明。</div>
+        <div class="fseq">一行调用</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">CLIENT · 好用</div>
+        <div class="fname">④ infotree 数据提取</div>
+        <div class="fdesc">解析 Lean 的 <strong>infotree</strong>，把证明切成<strong>互不重叠的 tactic + tactic state</strong>，为树搜索模型产出干净训练数据。</div>
+        <div class="fseq">喂给树搜索</div>
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:14px">下面先看服务端的<strong>架构与调度</strong>（全文最重要的图），再看客户端怎么用。</p>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="arch">
+    <h2><span class="num">04</span> 架构：并行 + 缓存怎么协同调度</h2>
+    <p>这张官方架构图是全文的核心。它回答一个具体问题：<strong>一条带 Lean 代码的请求进来后，服务器按什么优先级把它派给某个 Lean REPL？</strong> 关键就在「<strong>能不能复用一个已经加载好同样 import 的 worker</strong>」。</p>
+
+    <div class="figure">
+      <img src="assets/architecture.png" alt="Kimina Lean Server 并行与缓存的架构图：请求经 Splitter 拆成 header/body 后，按四级优先级决策派发给 Lean REPL" loading="lazy">
+      <div class="fig-cap"><span class="lbl">图 1（原论文 Figure 1）</span>：Kimina Lean Server 的并行与缓存架构。请求经 Splitter 拆成 header H / body B，再沿一条<strong>四级优先级决策链</strong>派发，核心目标是尽量命中「已加载好 import」的 REPL。</div>
+      <span class="fig-toggle" onclick="toggleFig(this)">展开说明 ▸</span>
+      <div class="figure-detail">
+        <ul>
+          <li><b>最左 · 请求入口</b>：客户端提交一批含 Lean 4 代码片段（snippets）的 API 请求。</li>
+          <li><b>Splitter（拆分器）</b>：把每段脚本拆成两部分——<b>Header H</b>（只含 <code>import</code> 等声明）和 <b>Body B</b>（其余的定理与证明代码）。H 就是后面缓存用的「钥匙」。</li>
+          <li><b>判断① 有没有「带 header H 的空闲 REPL」？</b> → <b>Yes：直接 Run body B</b>。这是<b>缓存命中</b>的最快路径：worker 已经加载好这套 import，省掉最贵的初始化，只需编译 body。</li>
+          <li><b>判断② 有没有空闲核心（free core）？</b> → <b>Yes：新建一个加载 header H 的 REPL，再跑 body B</b>。虽然要付一次 import 代价，但用上了一个原本闲置的核。</li>
+          <li><b>判断③ 有没有任意空闲 REPL？</b> → <b>Yes：销毁一个（最久未用的）空闲 REPL，腾出核心，新建加载 H 的 REPL 再跑 B</b>。这就是 <b>LRU 驱逐</b>：当核心被别的 header 占满时，淘汰最没用的缓存换进新 header。</li>
+          <li><b>判断④ 都没有？</b> → <b>Wait a bit…（稍等片刻）</b>，然后<b>回到判断①重试</b>（图底部的回环箭头）。所有核心都在忙时短暂排队，避免过载。</li>
+          <li><b>配色含义</b>：绿色高亮 <b>idle REPL</b> 与 header/body 这些关键对象，紫色高亮 <b>free core</b>；箭头表示请求依次流过这四级判断。</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-faint);margin:0 0 12px">一句话总结：调度按「<b>复用命中 &gt; 用空核新建 &gt; LRU 驱逐后新建 &gt; 等待</b>」的优先级派发——既尽量吃满多核，又尽量复用昂贵的 import 缓存。</p>
+      </div>
+    </div>
+
+    <h3>跟着一条请求走一遍调度（点「下一步」）</h3>
+    <p>把上图的四级判断拆开，跟着一条新请求看它如何一级一级地往下落，直到被某个 REPL 接住：</p>
+
+    <div class="stepbox" id="schedpipe">
+      <div class="sp-rail">
+        <div class="sp-dot on" data-dot="0"></div>
+        <div class="sp-dot" data-dot="1"></div>
+        <div class="sp-dot" data-dot="2"></div>
+        <div class="sp-dot" data-dot="3"></div>
+        <div class="sp-dot" data-dot="4"></div>
+      </div>
+
+      <div class="sp-stage">
+        <div class="sp-step active" data-step="0">
+          <div class="sh"><span class="stg">STEP 0</span>Splitter：拆分请求</div>
+          <div class="sb">请求里的每段脚本被切成 <strong>Header H</strong>（import 声明）和 <strong>Body B</strong>（证明本体）。H 将作为缓存查找的 key。</div>
+          <div class="sp-io">
+            <div class="io"><div class="iol">输入</div>一段 Lean 4 脚本（import + 定理 + 证明）</div>
+            <div class="io"><div class="iol">输出</div>Header H ＋ Body B</div>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="1">
+          <div class="sh"><span class="stg">判断 ①</span>有「带 H 的空闲 REPL」吗？</div>
+          <div class="sb">在 LRU 缓存里查：有没有一个空闲 worker <strong>恰好已经加载了 header H</strong>？这是最理想的情况。</div>
+          <div class="sp-decision">
+            <span class="qbox">命中？</span>
+            <span class="yes">Yes →</span>
+            <span class="res">直接 Run body B（缓存命中，最快路径，零 import 开销）</span>
+          </div>
+          <div class="sp-decision">
+            <span class="no">No ↓</span> <span class="muted">进入判断 ②</span>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="2">
+          <div class="sh"><span class="stg">判断 ②</span>有空闲核心吗？</div>
+          <div class="sb">没有现成缓存，那就看还有没有<strong>空闲 CPU 核</strong>可以新起一个 worker。</div>
+          <div class="sp-decision">
+            <span class="qbox">free core？</span>
+            <span class="yes">Yes →</span>
+            <span class="res">新建一个加载 H 的 REPL，再跑 B（付一次 import 代价）</span>
+          </div>
+          <div class="sp-decision">
+            <span class="no">No ↓</span> <span class="muted">进入判断 ③</span>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="3">
+          <div class="sh"><span class="stg">判断 ③</span>有任意空闲 REPL 吗？（LRU 驱逐）</div>
+          <div class="sb">核心都被别的 header 占着，但其中有 worker 当前空闲——那就<strong>销毁一个最久未用的空闲 REPL</strong>，把核心让给新 header。</div>
+          <div class="sp-decision">
+            <span class="qbox">any idle REPL？</span>
+            <span class="yes">Yes →</span>
+            <span class="res">销毁旧的 → 新建加载 H 的 REPL → 跑 B</span>
+          </div>
+          <div class="sp-decision">
+            <span class="no">No ↓</span> <span class="muted">进入判断 ④</span>
+          </div>
+        </div>
+
+        <div class="sp-step" data-step="4">
+          <div class="sh"><span class="stg">判断 ④</span>全忙：稍等再试</div>
+          <div class="sb">所有核心都在跑证明、没有空闲 REPL——请求<strong>短暂等待（wait a bit）</strong>，然后<strong>回到判断 ①</strong> 重新走一遍，避免过载。</div>
+          <div class="sp-decision">
+            <span class="qbox">都不满足</span>
+            <span class="no">→</span>
+            <span class="res">Wait a bit… ↻ 回到判断 ①</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-controls">
+        <button id="sp-prev" onclick="spPrev()">‹ 上一步</button>
+        <button id="sp-next" class="primary" onclick="spNext()">下一步 ›</button>
+        <button onclick="spReset()">重置</button>
+        <span class="sp-counter" id="sp-counter">1 / 5</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">为什么「一核一 REPL」很关键</div>
+      单个 Lean REPL 进程是<strong>单线程</strong>，CPU 占用不超过一个核。所以服务器<strong>给每个核常驻一个 REPL 进程</strong>——既不让进程互相抢核（关掉超线程 SMT 进一步保证稳定），又能让总吞吐随核心数<strong>近线性</strong>增长。
+    </div>
+  </section>
+
+  <!-- CLIENT -->
+  <section id="client">
+    <h2><span class="num">05</span> 客户端：一个 <code>check()</code> 提交，一棵 infotree 提数据</h2>
+    <p>服务端再快，调用麻烦也没人用。Kimina 的客户端是一个 <strong>PyPI 包</strong>，把 REST API 包成最简单的形式：<strong>所有交互都通过一个 <code>check()</code> 调用</strong>——传入一批 Lean 脚本，返回一批结果，并行执行与 REPL 缓存全在服务端幕后完成。</p>
+
+    <p>每条结果里包含：<strong>Lean 的告警/报错信息、REPL 环境标识、耗时、以及一个可选的 infotree</strong>。下面是最小用法：</p>
+
+    <div class="code-label">📦 最小用法：提交一批证明并拿回结果</div>
+    <pre class="code"><span class="cm"># 高层接口：一行跑完一个 benchmark（自动加载/处理数据）</span>
+<span class="fl">from</span> kimina_client <span class="fl">import</span> KiminaClient
+
+client = KiminaClient()
+client.<span class="em">run_benchmark</span>(
+    dataset_name=<span class="cm">"AI-MO/NuminaMath-LEAN"</span>,
+    n=1000, batch_size=8, max_workers=10,
+)</pre>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>更可控的写法：手动构造 Snippet 调用 <code>check()</code><span class="sub">点开看如何逐条提交并读取每条的验证状态</span></summary>
+      <div class="ex-body">
+        <pre class="code"><span class="fl">from</span> datasets <span class="fl">import</span> load_dataset
+<span class="fl">from</span> kimina_client <span class="fl">import</span> KiminaClient
+<span class="fl">from</span> kimina_client.models <span class="fl">import</span> Snippet
+
+dataset = load_dataset(<span class="cm">"AI-MO/NuminaMath-LEAN"</span>, split=<span class="cm">"train"</span>)
+dataset = dataset.filter(<span class="fl">lambda</span> x: x[<span class="cm">"ground_truth_type"</span>] == <span class="cm">"complete"</span>)
+dataset = dataset.select(range(1000))
+
+client = KiminaClient()
+snippets = [
+    Snippet(id=str(dataset[i][<span class="cm">"uuid"</span>]),
+            code=dataset[i][<span class="cm">"formal_ground_truth"</span>])
+    <span class="fl">for</span> i <span class="fl">in</span> range(len(dataset))
+]
+
+<span class="cm"># 一个 check 调用，服务端并行 + 缓存全透明</span>
+resp = client.<span class="em">check</span>(snippets, timeout=120)
+<span class="fl">for</span> r <span class="fl">in</span> resp.results:
+    <span class="fl">print</span>(r.id, r.analyze().status.value)</pre>
+      </div>
+    </details>
+
+    <h3>infotree → 干净的「tactic + tactic state」序列</h3>
+    <p>训练树搜索（tree search）模型需要把一条证明拆成<strong>一步步的 tactic</strong>，并记录<strong>每步执行前后的目标状态（goals）</strong>。Lean 的 infotree 信息丰富但原始、且不同 tactic 的区间会<strong>互相重叠</strong>。客户端用一条小流水线把它清洗成规整序列：</p>
+
+    <div class="flow flow-4">
+      <div class="fnode">
+        <div class="ftag">STEP 1</div>
+        <div class="fname">提取位置</div>
+        <div class="fdesc">从 infotree 里定位<strong>每个 tactic 的位置</strong>（起止偏移）。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STEP 2</div>
+        <div class="fname">消除重叠</div>
+        <div class="fdesc">调整这些位置，<strong>切成互不重叠</strong>的区间，避免一段代码被算进多个 tactic。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STEP 3</div>
+        <div class="fname">取代码片段</div>
+        <div class="fdesc">为每个区间<strong>抽出对应的源码片段</strong>。</div>
+      </div>
+      <div class="fnode">
+        <div class="ftag">STEP 4</div>
+        <div class="fname">收尾修正</div>
+        <div class="fdesc">处理<strong>空白、注释与特殊 tactic</strong>（<code>have</code>/<code>let</code>/<code>calc</code>/<code>conv</code>）。</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="t">它补上了 LeanREPL 的短板</div>
+      产出的序列<strong>支持所有 Lean tactic</strong>，包括 LeanREPL 的 Tactic 模式<strong>不总能处理</strong>的 <code>have</code>、<code>let</code>、<code>calc</code> 模式与 <code>conv</code> 模式——这正是树搜索数据最容易丢失的部分。
+    </div>
+
+    <details class="ex">
+      <summary><span class="mk">▸</span>调用示例 + 提取出的前两步（节选自原文 Appendix C.2）<span class="sub">点开看 infotree="tactics" 如何还原成 goalsBefore / tactic / goalsAfter</span></summary>
+      <div class="ex-body">
+        <pre class="code"><span class="cm"># 用 infotree="tactics" 取回原始证明轨迹，再解析成步骤</span>
+resp = client.<span class="em">check</span>(snippets, timeout=120, infotree=<span class="cm">"tactics"</span>)
+infotree = resp.results[0].response[<span class="cm">"infotree"</span>]
+header, body = split_snippet(sample[<span class="cm">"formal_ground_truth"</span>])
+intervals = extract_data(infotree, body)
+<span class="cm"># intervals: 每个元素含 goalsBefore / tactic / goalsAfter 三个字段</span></pre>
+        <pre class="code" style="margin-top:10px"><span class="em">INTERVAL 1</span>
+Goals before:
+  a b c : ℝ , h : a*b*c = 1 , haux : 1 + a + a*b ≠ 0
+  ⊢ a/(a*b+a+1) + b/(b*c+b+1) + c/(c*a+c+1) = 1
+Tactic:
+  by have : a*b*c ≠ 0 :=
+Goals after:
+  ... ⊢ a*b*c ≠ 0
+
+<span class="em">INTERVAL 2</span>
+Goals before:
+  ... ⊢ a*b*c ≠ 0
+Tactic:
+  by rw [h];
+Goals after:
+  ... ⊢ 1 ≠ 0</pre>
+        <p class="muted" style="font-size:13px;margin-top:10px">每一步都清楚记录「执行前的目标 → 用的 tactic → 执行后的目标」，正是树搜索模型需要的监督信号。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <h2><span class="num">06</span> 有意思的点</h2>
+    <p>这是一篇务实的工程报告，几处设计取舍比 benchmark 数字更能说明它「为什么这么做」：</p>
+    <div class="cardgrid">
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🔑</span>用 header 当缓存 key</div>
+        <div class="xs">真正贵的是 import，那就只拿 import 当 key 复用 worker。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>验证一条证明，最贵的部分是<b>加载库</b>而非编译 body。把脚本拆成 header/body 后，<b>只要 header（import 集合）相同就能复用</b>已热身的 REPL——而 RL 训练里成千上万条证明<b>往往共享同一行 <code>import Mathlib</code></b>，命中率极高。</p>
+          <p><b>启发</b>：缓存的粒度要对准「最贵且最常重复」的那部分，而不是整段输入。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧮</span>一核一 REPL，还关掉超线程</div>
+        <div class="xs">单线程进程就该独占一个物理核，超线程反而添乱。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>Lean REPL 单线程、占用不超过一个核，所以<b>每核常驻一个 REPL</b> 是最自然的并行粒度。实验机还<b>关闭了 SMT（超线程）</b>——对这种 CPU 密集型任务，超线程会拖慢整体并带来不可预测的抖动。</p>
+          <p><b>启发</b>：把并行单位对齐到硬件的真实并行度，比盲目开更多线程更稳。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🪶</span>把复杂度藏进「一个函数」</div>
+        <div class="xs">并行、缓存、调度全在服务端，用户只见一个 check()。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>客户端只暴露<b>一个 <code>check()</code></b>：传一批脚本、拿一批结构化结果。LRU 缓存、进程池、LRU 驱逐、排队重试这些复杂逻辑<b>全部对调用者透明</b>，极大降低「从 Python 调 Lean」的门槛。</p>
+          <p><b>启发</b>：基础设施的价值，一半在性能，一半在「让别人能轻松用上这份性能」。</p>
+        </div>
+      </div>
+
+      <div class="xcard">
+        <div class="xt"><span class="ic">🧱</span>直接用官方 REPL → 模块化可替换</div>
+        <div class="xs">不重造验证内核，因而天然兼容、易于替换。</div>
+        <span class="xtoggle" onclick="toggleX(this)">展开说明 ▸</span>
+        <div class="xdetail">
+          <p>服务器<b>直接构建在官方 LeanREPL 之上</b>，所以<b>兼容 REPL 支持的任何 Lean 版本</b>。架构还是模块化的：<b>只需小改进程派生（spawn）逻辑</b>，就能换用别的 Lean 证明检查器，同时<b>保留同一套 REST API</b>。</p>
+          <p><b>启发</b>：把「调度/缓存」与「验证内核」解耦，系统才有长期可维护性。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results">
+    <h2><span class="num">07</span> 实验结论：一句话能说清</h2>
+    <p>一句话：<strong>在 9,419 条 NuminaMath-LEAN 证明上，Kimina Lean Server 在 8/16/32/64 核全面快于 leanclient 与 LeanInteract（1.5–2×）；缓存单独再带来 1.94× 加速；吞吐随核心近线性扩展。</strong> 它已作为 Kimina-Prover 的核心验证引擎，支撑后者两度在 miniF2F 上登顶。</p>
+
+    <div class="metrics">
+      <div class="metric"><div class="v">7:56</div><div class="k">64 核处理 9,419 条总耗时<br>（LeanInteract 12:56 / leanclient 18:01）</div></div>
+      <div class="metric"><div class="v">0.051<span class="u">s</span></div><div class="k">64 核 + 缓存的单条均耗</div></div>
+      <div class="metric"><div class="v">1.94<span class="u">×</span></div><div class="k">缓存 vs 不缓存加速<br>0.099s → 0.051s</div></div>
+      <div class="metric"><div class="v">2<span class="u">次</span></div><div class="k">支撑 Kimina-Prover<br>登顶 miniF2F SOTA</div></div>
+    </div>
+
+    <h3>① 性能对比：全核数领先（Table 1）</h3>
+    <p>处理同样的 9,419 条证明，耗时越低越好。Kimina 在每个核数上都是最快的：</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>工具（验证总时长 mm:ss）</th><th>8 核</th><th>16 核</th><th>32 核</th><th>64 核</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>leanclient</td><td class="dim">109:55</td><td class="dim">56:58</td><td class="dim">30:16</td><td class="dim">18:01</td></tr>
+          <tr><td>LeanInteract</td><td class="dim">87:35</td><td class="dim">45:51</td><td class="dim">24:11</td><td class="dim">12:56</td></tr>
+          <tr class="hl"><td>Kimina Lean Server</td><td>42:40</td><td>21:48</td><td>11:33</td><td>7:56</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>② 可扩展性：加核近线性提速（Table 2）</h3>
+    <p>从 8 核到 32 核，总耗时从 42:40 降到 11:33，<strong>近 4×</strong> 加速——说明并行设计能真正吃到多核红利。</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th># CPU 核</th><th>总验证时长 (mm:ss)</th><th>单条均耗 (s)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>8</td><td>42:40</td><td>0.272</td></tr>
+          <tr><td>16</td><td>21:48</td><td>0.139</td></tr>
+          <tr><td>32</td><td>11:33</td><td>0.074</td></tr>
+          <tr class="hl"><td>64</td><td>7:56</td><td>0.051</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>③ 缓存：单独贡献 1.94× （Table 3）</h3>
+    <p>同在 64 核下，对比「每条证明都新起 REPL」与「复用预热 REPL」两种模式：</p>
+    <div class="tablewrap">
+      <table class="data">
+        <thead>
+          <tr><th>模式</th><th>总验证时长 (mm:ss)</th><th>单条均耗 (s)</th></tr>
+        </thead>
+        <tbody>
+          <tr class="hl"><td>Cached（缓存复用）</td><td>7:56</td><td>0.051</td></tr>
+          <tr><td>Non-Cached（每条新建）</td><td class="dim">15:28</td><td class="dim">0.099</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:14px">实验环境：GCP C4 虚拟机（第 5 代 Intel Xeon），72 vCPU / 540GB RAM，关闭超线程（SMT），Lean v4.15.0，全程本地运行以排除网络延迟。</p>
+
+    <div class="quote">真实战绩：Kimina Lean Server 已作为 <strong>Kimina-Prover</strong> 系列模型 RL 训练的<strong>核心验证引擎</strong>；这些模型<strong>两次在 miniF2F 基准上达到 SOTA</strong>——这比合成 benchmark 更能证明它在真实神经定理证明工作流里的效率与稳健性。</p>
+  </section>
+
+  <!-- LIMITS -->
+  <section id="limits">
+    <h2><span class="num">08</span> 适用边界与一句话总结</h2>
+    <p>这是一份目标明确的基础设施报告，它的适用性也很清晰：</p>
+    <ul class="tight">
+      <li><strong>最适合</strong>：需要<strong>大批量、高频复用相同 import</strong>（如统一 <code>import Mathlib</code>）的大规模验证 / RL 训练 / 证明数据提取——这正是缓存命中率最高、收益最大的场景。</li>
+      <li><strong>受 REPL 能力约束</strong>：服务器直接用官方 LeanREPL，<strong>能力上限取决于 REPL</strong>；好处是<strong>兼容任何 REPL 支持的 Lean 版本</strong>，坏处是 REPL 本身的限制需在客户端（如 infotree 处理）绕过。</li>
+      <li><strong>架构可替换</strong>：只需<strong>小改进程派生逻辑</strong>，即可换用其它 Lean 证明检查器，<strong>同时保留同一套 REST API</strong>——对长期维护友好。</li>
+      <li><strong>缓存收益依赖 import 重复度</strong>：若每条证明的 import 都各不相同，header 缓存命中率下降，加速主要来自并行而非缓存。</li>
+    </ul>
+    <div class="callout">
+      <div class="t">这篇报告最值得记住的一句话</div>
+      在「用形式化验证给模型做 RL」的时代，<strong>验证基础设施本身就是生产力</strong>：把最贵的库加载缓存起来、把多核吃满、再把调用收敛成一个 <code>check()</code>，就能让验证从训练瓶颈变成顺手的工具。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="ft">关于本页</div>
+    <p>本页是对论文 <strong>《Kimina Lean Server: A High-Performance Lean Server for Large-Scale Verification》</strong> 的中文导读可视化，内容基于已抓取的 arXiv HTML 原文（v3）正文、三张实验表格与官方架构图（Figure 1）。架构调度的步进动画依据原文图 1 与正文文字绘制，忠于原文流程；表格数字与示例代码均取自原论文。</p>
+    <p>原文：<a href="https://arxiv.org/abs/2504.21230" target="_blank" rel="noopener">arXiv:2504.21230 · Kimina Lean Server: A High-Performance Lean Server for Large-Scale Verification ↗</a></p>
+    <p>开源代码：<a href="https://github.com/project-numina/kimina-lean-server" target="_blank" rel="noopener">github.com/project-numina/kimina-lean-server ↗</a></p>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:10px">作者：Marco Dos Santos, Hugues de Saxcé, Haiming Wang, Ran Wang, Mantas Bakšys, Mert Ünsal, Junqi Liu, Zhengying Liu, Jia Li（Project Numina · University of Cambridge · Moonshot AI）· arXiv preprint，2025.04</p>
+  </div>
+</footer>
+
+<script>
+// 图片说明展开/收起（仅用于图片）
+function toggleFig(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+// 小卡片展开/收起
+function toggleX(el){
+  var d = el.nextElementSibling;
+  d.classList.toggle('active');
+  el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+}
+
+// 调度四级决策步进动画
+var spIdx = 0;
+var spTotal = 5;
+function spRender(){
+  var steps = document.querySelectorAll('#schedpipe .sp-step');
+  for (var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('active', Number(steps[i].getAttribute('data-step')) === spIdx);
+  }
+  var dots = document.querySelectorAll('#schedpipe .sp-dot');
+  for (var j=0;j<dots.length;j++){
+    dots[j].classList.toggle('on', Number(dots[j].getAttribute('data-dot')) <= spIdx);
+  }
+  document.getElementById('sp-counter').textContent = (spIdx+1) + ' / ' + spTotal;
+  document.getElementById('sp-prev').disabled = (spIdx === 0);
+  document.getElementById('sp-next').disabled = (spIdx === spTotal-1);
+}
+function spNext(){ if (spIdx < spTotal-1){ spIdx++; spRender(); } }
+function spPrev(){ if (spIdx > 0){ spIdx--; spRender(); } }
+function spReset(){ spIdx = 0; spRender(); }
+spRender();
+
+// 导航高亮 scroll-spy
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.topnav .links a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  if (links[0]) links[0].classList.add('active');
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'0px 0px -70% 0px', threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>

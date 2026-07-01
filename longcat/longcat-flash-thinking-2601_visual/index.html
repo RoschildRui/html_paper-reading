@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LongCat-Flash-Thinking-2601 技术报告 · 图解导读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fbf6ea;
+    --surface: #f4ead7;
+    --surface-2: #efe3cd;
+    --border: #e4d6bd;
+    --border-strong: #d8c5a4;
+    --ink: #2b2620;
+    --ink-soft: #4d4639;
+    --muted: #8a7f6c;
+    --accent: #c2632e;
+    --accent-soft: #f0d9c6;
+    --accent-ink: #94491f;
+    --sans: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+    --shadow: 0 1px 2px rgba(60, 45, 20, 0.05), 0 8px 24px rgba(60, 45, 20, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.78;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ---------- header ---------- */
+  header.site {
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #fdf9f0 0%, var(--bg) 100%);
+  }
+  .site-inner { padding: 56px 0 40px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--accent-ink); background: var(--accent-soft);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 20px;
+  }
+  h1.title {
+    font-size: 40px; line-height: 1.18; margin: 0 0 18px;
+    font-weight: 800; letter-spacing: -0.01em;
+  }
+  h1.title .sub { display: block; font-size: 19px; font-weight: 500; color: var(--ink-soft); margin-top: 10px; letter-spacing: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+    font-size: 14px; color: var(--muted); margin-top: 8px;
+  }
+  .meta-row .chip {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 4px 11px; border-radius: 8px; color: var(--ink-soft); font-weight: 500;
+  }
+  .meta-row .src-link { font-weight: 600; }
+
+  /* ---------- sections ---------- */
+  section.block { padding: 44px 0; border-bottom: 1px solid var(--border); }
+  .kicker {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 8px;
+  }
+  h2 { font-size: 27px; font-weight: 700; margin: 0 0 16px; letter-spacing: -0.01em; }
+  h3 { font-size: 20px; font-weight: 700; margin: 32px 0 12px; }
+  p { margin: 0 0 16px; }
+  strong { font-weight: 700; color: var(--ink); }
+  em { font-style: normal; color: var(--accent-ink); font-weight: 600; }
+
+  ul.clean { margin: 0 0 16px; padding-left: 22px; }
+  ul.clean li { margin-bottom: 9px; }
+
+  /* ---------- TL;DR ---------- */
+  .tldr {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-left: 4px solid var(--accent); border-radius: 14px;
+    padding: 26px 28px; box-shadow: var(--shadow); margin-bottom: 28px;
+  }
+  .tldr h2 { font-size: 18px; margin: 0 0 12px; color: var(--accent-ink); }
+  .tldr p { margin-bottom: 12px; font-size: 16.5px; }
+  .tldr p:last-child { margin-bottom: 0; }
+
+  /* ---------- metric cards ---------- */
+  .metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 26px 0 6px;
+  }
+  .metric {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 16px; text-align: center;
+  }
+  .metric .num { font-size: 26px; font-weight: 800; color: var(--accent-ink); font-family: var(--sans); letter-spacing: -0.01em; }
+  .metric .num small { font-size: 15px; font-weight: 700; }
+  .metric .lbl { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+
+  /* ---------- expandable cards ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 14px; overflow: hidden;
+  }
+  .card-head {
+    padding: 16px 20px; cursor: pointer; display: flex; align-items: flex-start;
+    gap: 14px; user-select: none;
+  }
+  .card-head:hover { background: var(--surface-2); }
+  .card-head .ct { flex: 1; }
+  .card-head .cname { font-weight: 700; font-size: 16.5px; }
+  .card-head .csum { font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+  .card-head .chev {
+    flex-shrink: 0; color: var(--accent); font-size: 13px; font-weight: 700;
+    transition: transform 0.25s ease; margin-top: 3px;
+  }
+  .card.open .card-head .chev { transform: rotate(90deg); }
+  .card-body {
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+  }
+  .card.open .card-body { max-height: 1400px; opacity: 1; }
+  .card-body-inner { padding: 4px 20px 20px; border-top: 1px solid var(--border); }
+  .card-body-inner p { font-size: 15px; margin: 14px 0 0; }
+  .card-body-inner p:first-child { margin-top: 14px; }
+
+  /* ---------- figures ---------- */
+  figure.paper-fig {
+    margin: 26px 0; background: #fdfaf3; border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; box-shadow: var(--shadow);
+  }
+  figure.paper-fig img { width: 100%; height: auto; display: block; border-radius: 8px; }
+  .fig-cap { font-size: 13.5px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+  .fig-cap .fnum { font-weight: 700; color: var(--ink-soft); }
+  .fig-toggle {
+    display: inline-block; margin-top: 12px; cursor: pointer;
+    font-size: 13.5px; font-weight: 600; color: var(--accent);
+    user-select: none;
+  }
+  .fig-toggle:hover { text-decoration: underline; }
+  .figure-detail {
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height 0.45s ease, opacity 0.3s ease;
+  }
+  .figure-detail.active { max-height: 2000px; opacity: 1; }
+  .figure-detail-inner {
+    margin-top: 14px; padding: 16px 18px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; font-size: 14.5px;
+  }
+  .figure-detail-inner ol { margin: 0; padding-left: 20px; }
+  .figure-detail-inner li { margin-bottom: 10px; }
+  .figure-detail-inner .sum { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-strong); color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+
+  /* ---------- interactive stepper ---------- */
+  .demo {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: 14px; padding: 22px; margin: 24px 0; box-shadow: var(--shadow);
+  }
+  .demo h4 { margin: 0 0 4px; font-size: 16px; }
+  .demo .demo-hint { font-size: 13.5px; color: var(--muted); margin: 0 0 16px; }
+  .step-track { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
+  .step-pip {
+    flex: 1; min-width: 54px; height: 6px; border-radius: 4px;
+    background: var(--surface-2); border: 1px solid var(--border-strong);
+    transition: background 0.25s ease;
+  }
+  .step-pip.on { background: var(--accent); border-color: var(--accent); }
+  .step-stage {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; min-height: 96px;
+  }
+  .step-stage .sn {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-stage .stt { font-weight: 700; font-size: 16.5px; margin-bottom: 4px; }
+  .step-stage .stb { font-size: 14.5px; color: var(--ink-soft); }
+  .step-ctrl { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
+  .step-ctrl button {
+    font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border-strong); background: var(--bg); color: var(--ink-soft);
+    padding: 8px 18px; border-radius: 8px; transition: all 0.2s ease;
+  }
+  .step-ctrl button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink); }
+  .step-ctrl button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .step-ctrl button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .step-ctrl .pos { margin-left: auto; font-size: 13px; color: var(--muted); font-family: var(--mono); }
+
+  /* ---------- callout ---------- */
+  .callout {
+    background: var(--accent-soft); border: 1px solid #e8c4a8;
+    border-radius: 12px; padding: 18px 22px; margin: 18px 0;
+  }
+  .callout .ch { font-weight: 700; color: var(--accent-ink); margin-bottom: 6px; font-size: 15.5px; }
+  .callout p { margin: 0; font-size: 15px; color: var(--ink-soft); }
+
+  /* ---------- details (code/spec) ---------- */
+  details.spec {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin: 16px 0; padding: 0;
+  }
+  details.spec summary {
+    cursor: pointer; padding: 15px 20px; font-weight: 600; font-size: 15px;
+    list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  details.spec summary::-webkit-details-marker { display: none; }
+  details.spec summary .ssum { font-size: 13px; color: var(--muted); font-weight: 400; }
+  details.spec[open] summary { border-bottom: 1px solid var(--border); }
+  .spec-body { padding: 16px 20px; }
+  pre.code {
+    margin: 0; background: #2b2620; color: #f4ead7; border-radius: 8px;
+    padding: 16px 18px; overflow-x: auto; font-family: var(--mono);
+    font-size: 13px; line-height: 1.7;
+  }
+  pre.code .cm { color: #b59b78; }
+  pre.code .kw { color: #e0a06a; }
+
+  /* two-col compare */
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+  .pane { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .pane h4 { margin: 0 0 8px; font-size: 15px; }
+  .pane.bad h4 { color: var(--muted); }
+  .pane.good h4 { color: var(--accent-ink); }
+  .pane p { font-size: 14px; margin: 0; color: var(--ink-soft); }
+
+  /* ---------- footer ---------- */
+  footer.site {
+    padding: 40px 0 60px; color: var(--muted); font-size: 14px;
+  }
+  footer.site .frow { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-bottom: 10px; }
+  footer.site a { font-weight: 600; }
+
+  /* nav */
+  .toc {
+    position: sticky; top: 0; z-index: 20; background: rgba(251,246,234,0.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .toc-inner { display: flex; gap: 6px; overflow-x: auto; padding: 11px 24px; max-width: 880px; margin: 0 auto; }
+  .toc a { color: var(--ink-soft); white-space: nowrap; padding: 4px 10px; border-radius: 7px; font-weight: 500; }
+  .toc a:hover { background: var(--surface); text-decoration: none; color: var(--accent-ink); }
+
+  @media (max-width: 880px) {
+    body { font-size: 16px; }
+    h1.title { font-size: 30px; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .twocol { grid-template-columns: 1fr; }
+    .site-inner { padding: 40px 0 30px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap site-inner">
+    <span class="eyebrow">图解导读 · Agentic 推理大模型</span>
+    <h1 class="title">
+      LongCat-Flash-Thinking-2601 技术报告
+      <span class="sub">560B 的 MoE 推理模型，把「智能体能力」当成可扩展的训练对象：自动造环境、异步多环境 RL、抗噪训练，再用 Heavy Thinking 做测试时扩展</span>
+    </h1>
+    <div class="meta-row">
+      <span class="chip">Meituan LongCat Team（美团）</span>
+      <span class="chip">2026 年 1 月</span>
+      <span class="chip">arXiv preprint</span>
+      <a class="src-link" href="https://arxiv.org/abs/2601.16725" target="_blank" rel="noopener">阅读原文 / Source ↗</a>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="toc-inner">
+    <a href="#tldr">TL;DR</a>
+    <a href="#problem">问题</a>
+    <a href="#prior">卡在哪</a>
+    <a href="#pipeline">训练总览</a>
+    <a href="#env">环境扩展</a>
+    <a href="#dora">DORA 异步 RL</a>
+    <a href="#robust">抗噪训练</a>
+    <a href="#heavy">Heavy Thinking</a>
+    <a href="#zigzag">Zig-Zag 注意力</a>
+    <a href="#results">结论</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ TL;DR ============ -->
+  <section class="block" id="tldr">
+    <div class="tldr">
+      <h2>30 秒看懂</h2>
+      <p><strong>LongCat-Flash-Thinking-2601</strong> 是美团开源的 <strong>5600 亿（560B）总参数、平均激活约 27B</strong> 的 MoE 推理模型。它延续了 LongCat-Flash 的架构与预训练配方，但把重心放在一件事上：<em>当模型「闭门苦思」的能力接近天花板时，下一个突破口是「与外部环境交互」</em>——也就是 <strong>agentic（智能体）推理</strong>。</p>
+      <p>它的招式是把 agentic 能力当成<strong>可扩展的训练对象</strong>来设计：<strong>① 自动造环境</strong>——用「领域图」自动合成可执行、可验证的工具环境，覆盖 <strong>20+ 领域、最多 3.2 万个并发环境</strong>；<strong>② DORA 异步 RL</strong>——全流式异步框架，稳定支撑万卡 + 多环境训练；<strong>③ 抗噪训练</strong>——主动往环境里注入真实世界的噪声，按课程逐步加难，让模型在「不完美环境」里依然稳；<strong>④ Heavy Thinking</strong>——测试时同时拓展推理的「宽度」与「深度」。</p>
+      <p>成果：在开源模型里，agentic 搜索与工具调用全面 SOTA——<strong>BrowseComp 73.1</strong>、<strong>BrowseComp-ZH 77.7</strong>、<strong>τ²-Bench 88.2</strong>；配合 Heavy 模式，AIME-2025 拿到满分、IMO-AnswerBench 达 86.8，逼近顶级闭源模型。</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">73.1</div><div class="lbl">BrowseComp<br>（agentic 搜索）</div></div>
+      <div class="metric"><div class="num">88.2</div><div class="lbl">τ²-Bench<br>（agentic 工具调用）</div></div>
+      <div class="metric"><div class="num">100<small>%</small></div><div class="lbl">AIME-2025<br>（Heavy 模式满分）</div></div>
+      <div class="metric"><div class="num">560<small>B</small></div><div class="lbl">总参数 / 平均激活 ~27B</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 问题 ============ -->
+  <section class="block" id="problem">
+    <p class="kicker">这篇报告要解决什么</p>
+    <h2>当「内在推理」逼近极限，下一步靠什么？</h2>
+    <p>过去两年，推理模型在数学、编程这类「闭卷题」上突飞猛进，部分任务甚至超过顶尖人类专家。于是一个自然的问题浮现：<strong>这种复杂问题求解能力，怎么用到真实生活里更复杂的任务上？又怎么继续往上突破？</strong></p>
+    <p>作者给出的判断是：当模型<strong>内在</strong>的推理能力接近极限，<em>与外部环境的交互</em>就成了继续提升的关键机制——让模型主动调用工具、搜索信息、在多轮对话中推进，把「思考」延伸到「行动」。这正是 agentic 推理的核心。但要把它训出来，有三道现实难关：</p>
+    <ul class="clean">
+      <li><strong>长程交互：</strong>agentic 任务是「思考→调工具→看结果→再思考」的长链条，对长上下文建模和 RL 基础设施都提出更高要求。</li>
+      <li><strong>数据稀缺：</strong>真实世界里大规模、高质量、含推理与规划的 agentic 轨迹极其稀少，没法像普通语料一样直接抓取。</li>
+      <li><strong>环境带噪：</strong>现实环境天然「不完美」——工具会报错、返回会缺失、用户会含糊。在干净环境里训出来的 agent，一进真实场景就掉链子。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 已有方案/卡点 ============ -->
+  <section class="block" id="prior">
+    <p class="kicker">已有思路 · 卡在哪</p>
+    <h2>为什么现成的训练范式不够用</h2>
+    <p>在进入本文方法前，先看清现有 agentic 训练范式各自的局限——这正是 LongCat-Flash-Thinking-2601 想补的三块短板。点开每张卡片看它做了什么、卡在哪。</p>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="ct">
+          <div class="cname">① 可验证奖励的推理 RL（数学 / 代码）</div>
+          <div class="csum">单轮、答案可自动判分，适合数学和竞赛代码，但天花板就在「闭卷」内。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>怎么做：</strong>用「答案是否正确 / 单测是否通过」作为可验证奖励（RLVR），对长链思考做强化学习。这条路在 AIME、LiveCodeBench 这类题上效果显著，也是本文「通用思考（General Thinking）」初始策略的基础。</p>
+        <p><strong>卡在哪：</strong>它本质是<em>单轮、静态</em>的——模型不与外部世界交互，能力上限受限于「内在推理」。一旦任务需要查资料、调工具、跟用户多轮拉扯，这套范式就覆盖不到。</p>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="ct">
+          <div class="cname">② 领域专用的 agentic 训练（搜索 / 代码 agent）</div>
+          <div class="csum">在某个垂直场景里手工搭环境训得不错，但难以泛化到没见过的工具与领域。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>怎么做：</strong>针对 agentic search、agentic coding 等具体场景，分别构造环境与任务做 RL。本文也保留了这些专用能力作为初始策略。</p>
+        <p><strong>卡在哪：</strong>作者明确指出——<em>真正高级的 agentic 能力，核心特征是「泛化」</em>：在已知环境学到的行为，要能可靠迁移到没见过的环境。只在少数垂直场景训练，学到的是「领域专属套路」，换个工具集就失效。要泛化，就得让模型见过<strong>足够多样</strong>的工具与交互——这就引出了「环境规模化」。</p>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="ct">
+          <div class="cname">③ 在「干净、稳定」的环境里训练</div>
+          <div class="csum">默认环境完美无瑕，训出来的 agent 一遇真实噪声就大幅退化。</div>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>怎么做：</strong>当前主流 agentic 训练通常用精心整理的指令、稳定可控的环境来交互，假设环境是「理想」的。</p>
+        <p><strong>卡在哪：</strong>真实世界恰恰相反——工具调用会失败、返回字段会缺、参数会被误解、用户表述会含糊。论文发现：在干净环境训练的 agent 部署到这些「不完美」环境时，性能<strong>显著下降</strong>。本文的对策是反其道而行——<em>主动把噪声注入训练</em>（见「抗噪训练」一节）。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ============ 训练总览 ============ -->
+  <section class="block" id="pipeline">
+    <p class="kicker">本文做法 · 总览</p>
+    <h2>一条端到端流水线：从预训练到 agentic 后训练</h2>
+    <p>LongCat-Flash-Thinking-2601 的强大不来自单点技巧，而是<strong>数据、环境、算法、基础设施的协同设计</strong>。整体可以看成下面五步——后面几节会逐个展开「重头戏」部分。</p>
+
+    <div class="demo" style="padding-top:18px;">
+      <div class="step-track" id="pl-track"></div>
+      <div class="step-stage">
+        <div class="sn" id="pl-n">1</div>
+        <div>
+          <div class="stt" id="pl-tt">预训练（继承 LongCat-Flash-Chat）</div>
+          <div class="stb" id="pl-tb">沿用 LongCat-Flash-Chat 的配方与数据分布，保住扎实的通用语言与推理能力，作为后续一切的地基。</div>
+        </div>
+      </div>
+      <div class="step-ctrl">
+        <button id="pl-prev" onclick="plStep(-1)">‹ 上一步</button>
+        <button id="pl-next" class="primary" onclick="plStep(1)">下一步 ›</button>
+        <span class="pos" id="pl-pos">1 / 5</span>
+      </div>
+    </div>
+    <p class="demo-hint" style="margin-top:-8px;color:var(--muted);font-size:13px;">点「下一步」按训练顺序走一遍：预训练 → agentic 中训练 → 环境规模化 → 多环境异步 RL（含抗噪）→ Heavy Thinking RL。</p>
+  </section>
+
+  <!-- ============ 环境扩展 ============ -->
+  <section class="block" id="env">
+    <p class="kicker">本文做法 · 核心贡献 ①</p>
+    <h2>自动造环境：用「领域图」批量生成可执行、可验证的世界</h2>
+    <p>要让 agent 学会泛化，就得让它在<strong>大量多样</strong>的环境里练手。但人工搭环境又慢又贵。作者的解法是一条<strong>自动化环境构建流水线</strong>：从一句高层「领域说明」出发，自动合成工具、数据库、测试与代码，并把工具之间的依赖整理成一张<strong>领域图 G</strong>，之后就能在图上采样出复杂度可控的任务。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/env_graph_construction.png" alt="从领域定义自动构建可执行领域图的流水线：工具 schema、数据库 schema、测试、代码，最终汇成领域图 G" />
+      <div class="fig-cap"><span class="fnum">图 1（原文 Figure 3）：</span>可执行「领域图」的自动构建——从领域定义出发，依次生成工具与数据库的 schema、测试、可运行代码，并经依赖分析汇成领域图 G。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ol>
+          <li><strong>Domain Definition（最左，起点）：</strong>一份高层领域说明，例如「文件系统」——给出一组方法名、描述、用途。这是整条流水线唯一的人工输入。</li>
+          <li><strong>Schema Generator（蓝色箭头）：</strong>由领域定义「派生（Schema Derivation）」出两类 schema——<em>Tool Schema</em>（工具的名称/描述/前后置条件/参数）与 <em>Database Schema</em>（表名/列/主键），二者之间还有「Database Mapping」对齐工具与数据。</li>
+          <li><strong>测试先行（中列 Tool Test / Database Test）：</strong>先为每个工具与数据库写出测试用例类（run_test_case、校验 db_state_before/after），把「正确行为」用可执行断言固定下来。</li>
+          <li><strong>代码实现 + 调试（右列 Tool Code / Database Code + Debuger🐍）：</strong>再生成真正可运行的 Python 实现（FileSystemTools、FileSystemDB），用 Python 解释器反复调试，直到通过前面写好的测试——这保证环境<em>真的能执行</em>，而不只是看起来对。</li>
+          <li><strong>Tool Dependency Analysis → Domain Graph G（最右）：</strong>对通过验证的工具做依赖分析，节点是工具、边是「参数依赖」，汇成一张领域图 G。后续任务就从这张图上采样工具链生成。</li>
+        </ol>
+        <div class="sum">一句话总结：把「一句领域说明」自动放大成「一个可执行、可验证、带依赖结构的环境」，让环境的生产像数据一样可规模化。</div>
+      </div></div>
+    </figure>
+
+    <p>有了领域图 G，构建任务就变成在图上「采样工具链」：先采一条中等规模的工具链，逐步降低已选工具的再次被选概率以保证多样性，再为链上每个工具实例化数据库状态，确保依赖被满足。要加难，就把初始工具链扩展成更大的子图——这会自然产生<strong>多条合法执行路径</strong>，逼模型学会规划与选择。</p>
+    <div class="callout">
+      <div class="ch">关键约束：可验证性必须随扩展一起保留</div>
+      <p>环境越长越复杂，越难保证「跨工具的数据库一致性」。作者的「保可验证性的环境扩展（原文 Figure 4）」从一条可执行的种子工具链出发，做<em>受控的图增长</em>，每一步都靠「执行代码 + 校验数据库最终状态」来验证轨迹正确——这样合成出来的数据始终<strong>扎根于真实执行逻辑</strong>，而不是凭空编造的对话。</p>
+    </div>
+
+    <details class="spec">
+      <summary><span>合成数据从哪来？三条互补来源</span><span class="ssum">文本挖掘 + 环境执行 + 规划增强</span></summary>
+      <div class="spec-body">
+        <ul class="clean" style="margin:0;">
+          <li><strong>文本驱动合成（Text-driven）：</strong>大规模语料里藏着大量隐式的「多步流程」（教程、操作指南）。先识别富含多步工作流的文本段、抽取潜在函数与调用列表（Tool Extraction），再翻译成具体的多轮「用户-智能体」交互，并做多样性增强与质量过滤。</li>
+          <li><strong>环境扎根合成（Environment-grounded）：</strong>直接在可执行环境里跑——基于工具定义实现轻量 Python 环境、用有向图建模工具间依赖、采样工具链并<em>执行验证最终状态</em>，保证逻辑正确、执行一致。</li>
+          <li><strong>规划导向增强（Planning-Oriented）：</strong>用 Tool Decomposition（把参数藏进环境，逼模型主动「问/取」）与 Reasoning Decomposition（为每步动作造多个候选，再合成「选最优」的推理）把普通轨迹改写成<em>决策过程</em>，显式强化规划能力。</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DORA ============ -->
+  <section class="block" id="dora">
+    <p class="kicker">本文做法 · 核心贡献 ①（基础设施）</p>
+    <h2>DORA：撑起「万卡 × 多环境」的全流式异步 RL</h2>
+    <p>有了海量环境，还得有能稳定吃下它们的训练系统。相比数学题那种「单轮、可一次算完」的场景，agentic 训练是<strong>多轮</strong>的——反复在「LLM 生成 → 环境执行 → 奖励评估」之间穿梭，轨迹既<em>长尾偏斜</em>又<em>时长不可预测</em>。同步训练会让大量设备空等。作者把它们的异步 RL 框架 <strong>DORA</strong> 系统性扩展到了多环境场景。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/dora_rl_framework.png" alt="DORA 可扩展异步 agentic RL 框架的执行流：Lite-Rollout Manager、虚拟 rollout 组、SampleQueue、Trainer" />
+      <div class="fig-cap"><span class="fnum">图 2（原文 Figure 5）：</span>DORA 异步 agentic RL 框架的执行流——多个「虚拟 rollout 组」以流式方式产出样本，经 SampleQueue 解耦后喂给 Trainer，生成与训练彻底异步。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ol>
+          <li><strong>Lite-Rollout Manager（最左）：</strong>轻量化的全局调度器，只管控制流（哪些样本该跑、跑到哪了）。原本臃肿的 RolloutManager 被拆薄，避免在扩展到几百台机器、上万环境时变成单机瓶颈。</li>
+          <li><strong>Virtual Rollout Group（中间，可叠多份）：</strong>每个组持有一份模型版本（Model Version 1/2/…），内含 <em>ENV（环境）</em>、<em>LLM（生成）</em> 与 <em>Rollout Controller</em>。组与组之间「解耦」，可同时存在多版本模型——这就是「Decoupled Virtual Rollout Groups（多版本模型）」。</li>
+          <li><strong>流式时间线（中部彩色方块）：</strong>横轴是时间，蓝=<em>Generation（生成）</em>、黄=<em>ENV（环境执行）</em>、红=<em>Finished（完成）</em>。可以看到不同样本（4/5/6 行）的生成与环境步交错推进、各自到点就完成——没有「批次栅栏」逼大家对齐，设备不再空等。</li>
+          <li><strong>SampleQueue（右二）：</strong>完成的样本流入一个队列做缓冲，把「产出样本」与「消费样本训练」彻底解耦。</li>
+          <li><strong>Trainer（最右）：</strong>持续从队列取样本更新参数（1/2/3…），与 rollout 完全异步，因此能容忍长尾轨迹而不拖慢整体——这就是「Asynchronous training」。</li>
+        </ol>
+        <div class="sum">一句话总结：用「轻量调度 + 多版本虚拟组 + 流式样本队列」把生成和训练解耦，让长尾、多轮的 agentic rollout 不再让万卡集群空转。</div>
+      </div></div>
+    </figure>
+
+    <p>规模有多大？作者的算法设置需要<strong>多达 3.2 万个环境</strong>、跑在约 <strong>400 台物理机、数千张加速器</strong>上。为此他们进一步把 RolloutManager 拆分以消除单机瓶颈，并用 <strong>PD 分离 + CPU 换出（Prefill-Decode Disaggregation with KV-cache Swapping）</strong> 解决多轮长上下文带来的专家并行负载不均——最终在 560B 模型上实现了工业级的稳定与高利用率。</p>
+  </section>
+
+  <!-- ============ 抗噪训练 ============ -->
+  <section class="block" id="robust">
+    <p class="kicker">本文做法 · 核心贡献 ②</p>
+    <h2>抗噪训练：主动把「真实世界的不完美」塞进训练</h2>
+    <p>这是本文最有「现实感」的一招。既然真实环境必然带噪，作者就<strong>系统性地分析真实噪声的来源</strong>，再设计一条自动化流水线，把<strong>多类型、多强度</strong>的噪声注入训练环境，并用<strong>课程学习</strong>逐步加难。</p>
+    <div class="twocol">
+      <div class="pane bad"><h4>常见做法：假设环境完美</h4><p>用精心整理的指令 + 稳定环境训练。结果：模型在「没见过 / 不完美」的环境里性能显著退化，鲁棒性差。</p></div>
+      <div class="pane good"><h4>本文做法：注入噪声 + 课程加难</h4><p>把鲁棒性量化为「同一任务在完美 vs 不完美环境上的性能差」。从轻微扰动起步，待模型在当前难度足够稳，再逐步加大噪声的难度与多样性——让训练始终「有信息量」而不被噪声淹没。</p></div>
+    </div>
+    <p>效果（原文 Table 1 的消融）：带噪训练在<strong>标准 agentic 基准上性能相当甚至略好</strong>，同时在<strong>带噪 / 不完美条件下大幅提升</strong>——也就是说，抗噪是「几乎不付出代价」换来的稳健。作者还据此构造了 <em>τ²-Noise</em>、<em>Vita-Noise</em> 与 <em>Random Complex Tasks</em> 等评测，并承诺开源噪声注入流水线。</p>
+  </section>
+
+  <!-- ============ Heavy Thinking ============ -->
+  <section class="block" id="heavy">
+    <p class="kicker">本文做法 · 核心贡献 ③</p>
+    <h2>Heavy Thinking：测试时同时拓「宽度」与「深度」</h2>
+    <p>测试时扩展（TTS）有两条正交的路：<strong>深度</strong>——更长的思维链 + 自我反思，逐步精化推理；<strong>宽度</strong>——像 self-consistency / MCTS 那样并行探索多条轨迹。Heavy Thinking 把两者<em>合二为一</em>：先并行思考拓宽探索面，再汇总反思加深结论。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/heavy_thinking.png" alt="Heavy Thinking 框架：用户提问 → Thinking LLM 并行推理（多个 Thinker）→ 上下文记忆 → Summary LLM 汇总 → 最终输出，支持多轮" />
+      <div class="fig-cap"><span class="fnum">图 3（原文 Figure 10）：</span>Heavy Thinking 框架——并行推理（拓宽度）+ 汇总反思（加深度）两阶段，配合上下文记忆与可选的多轮循环。下方是一道数学题的真实演示。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ol>
+          <li><strong>① User Query → ② Thinking LLM：</strong>一道有挑战性的题进入系统，交给「思考模型」。</li>
+          <li><strong>③ Parallel Reasoning（并行推理，拓「宽度」）：</strong>同一个思考模型并行跑出多条独立轨迹（Thinker #1 / #2 / #3 …），每个 Thinker 给出自己的解法与候选答案——图中三个灯泡分别独立推导，扩大探索面。</li>
+          <li><strong>④ Context Memory（上下文记忆）：</strong>把多条轨迹的中间推理与结论汇聚写入共享上下文（图中「多个 thinker 独立给出思考过程」的汇编），供下一阶段读取。</li>
+          <li><strong>⑤ Summary LLM → ⑥ Summarize（汇总反思，加「深度」）：</strong>由「汇总模型」对所有候选做反思式推理：识别多数 thinker 的共识、剔除低频的不一致答案，再通过对函数行为的仔细计数与分析得出有据可依的最终结论。</li>
+          <li><strong>⑦ Final Output / Multi-turn（可选多轮）：</strong>输出最终答案（图例中 \boxed{149}）；在工具使用与多轮对话场景下，可循环回到并行推理继续下一轮（顶部的「Multi-turn (Option)」回环）。</li>
+        </ol>
+        <div class="sum">一句话总结：先「多人各想各的」拓宽探索，再「一个人综合裁决」加深结论；并为汇总阶段单独加了一段 RL，让综合能力更强。</div>
+      </div></div>
+    </figure>
+
+    <div class="demo">
+      <h4>跟着走一遍 Heavy Thinking 的五个阶段</h4>
+      <p class="demo-hint">点「下一步」逐阶段查看数据如何从「一道题」流到「最终答案」。</p>
+      <div class="step-track" id="ht-track"></div>
+      <div class="step-stage">
+        <div class="sn" id="ht-n">1</div>
+        <div>
+          <div class="stt" id="ht-tt"></div>
+          <div class="stb" id="ht-tb"></div>
+        </div>
+      </div>
+      <div class="step-ctrl">
+        <button id="ht-prev" onclick="htStep(-1)">‹ 上一步</button>
+        <button id="ht-next" class="primary" onclick="htStep(1)">下一步 ›</button>
+        <span class="pos" id="ht-pos">1 / 5</span>
+      </div>
+    </div>
+
+    <p>作者还为<strong>汇总阶段单独加了一段 RL</strong>，专门强化「聚合 + 精化中间结论」的能力。实验上，Heavy Thinking 在长思维链、工具集成推理、纯 agentic 工具使用等多种设定下都有效，并<strong>持续优于 self-consistency</strong>——而且随着测试时算力预算增大，优势越发明显。</p>
+
+    <details class="spec">
+      <summary><span>看一眼图中的真实演示题</span><span class="ssum">多个 Thinker 各自求解，再由 Summary 综合出 \boxed{149}</span></summary>
+      <div class="spec-body">
+        <p style="margin:0 0 12px;font-size:14.5px;color:var(--ink-soft);">原文 Figure 10 用一道求参数 \(n\) 的数学题做演示：让 \(f(x)=\sin(7\pi\cdot\sin(5x))\) 在某区间内为零的 \(x\) 值个数相关问题。</p>
+        <pre class="code"><span class="cm"># 并行推理阶段：多个 Thinker 独立作答</span>
+Thinker #1 → 推导后得到 n + t = 139 + 10 = 149，答案 <span class="kw">\boxed{149}</span>
+Thinker #2 → 由 |sin(5x)| ≤ 1、(k) 满足 -7 ≤ k ≤ 7，得 <span class="kw">\boxed{149}</span>
+Thinker #3 → 同样约束下独立推导，得 <span class="kw">\boxed{149}</span>
+
+<span class="cm"># 汇总阶段：Summary 模型反思 + 综合</span>
+观察：多数 thinker 路径一致且自洽；剔除低频的不一致答案
+结论：经对 f(x) 行为的计数与分析，最终 <span class="kw">\boxed{149}</span></pre>
+        <p style="margin:12px 0 0;font-size:13px;color:var(--muted);">注：示例文本转写自论文配图，用于说明「并行 → 汇总」的数据流，非完整解题过程。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ Zig-Zag ============ -->
+  <section class="block" id="zigzag">
+    <p class="kicker">有意思的一点 · One More Thing</p>
+    <h2>Zig-Zag 注意力：为「更长上下文 + Heavy 模式」省算力</h2>
+    <p>推理痕迹越来越长，标准全注意力的<strong>二次复杂度</strong>很快变得昂贵；而 Heavy 模式还要同时解码多条并行轨迹，进一步放大时延。论文在结尾抛出一个「One More Thing」——<strong>Zig-Zag 注意力</strong>，给出 LongCat-Flash-Thinking-ZigZag 变体。</p>
+    <ul class="clean">
+      <li><strong>混合两种注意力：</strong>把 <em>MLA（多头潜在注意力，全局）</em> 与 <em>SSA（流式稀疏注意力）</em> 结合——SSA 对每个 query 只看「最近的局部窗口 + 序列开头的少量初始 token」，让计算随上下文长度<strong>次二次</strong>增长。</li>
+      <li><strong>逐层交错稀疏：</strong>约 <strong>50% 的全注意力层</strong>替换为 SSA 层，其余保留 MLA 全注意力。按「层」而非「头」做稀疏，避免线程发散、利于硬件利用。</li>
+      <li><strong>中训练引入 + 重要性筛选：</strong>用校准数据估计各注意力层的相对重要性，把<em>最不重要</em>的一批层换成 SSA，再继续长上下文中训练。</li>
+      <li><strong>配合 YaRN 外推到 1M：</strong>结合 YaRN 位置编码扩展，可处理多达 <strong>100 万 token</strong> 的上下文。关键参数：block size 128、sink block 1 个、local block 7 个（合计 1,024 token）。</li>
+    </ul>
+    <div class="callout">
+      <div class="ch">收益</div>
+      <p>LongCat-Flash-Thinking-ZigZag 在<strong>性能与速度之间取得良好折中</strong>——在维持竞争力的同时显著提升长上下文效率（原文 Figure 13 给出「性能 vs 相对成本」的对比）。</p>
+    </div>
+  </section>
+
+  <!-- ============ 结论 ============ -->
+  <section class="block" id="results">
+    <p class="kicker">实验结论</p>
+    <h2>开源 agentic 推理的新高度</h2>
+    <p>作者把模型与一众先进模型对比——开源侧 DeepSeek-V3.2-Thinking、Kimi-K2-Thinking、Qwen3-235B-A22B-Thinking-2507、GLM-4.7-Thinking；闭源侧 Claude-Opus-4.5-Thinking、Gemini-3-Pro、GPT-5.2-Thinking-xhigh。结论是：在<strong>保持通用推理竞争力</strong>的同时，agentic 搜索与工具调用<strong>全面拿下开源 SOTA</strong>。</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">77.7</div><div class="lbl">BrowseComp-ZH<br>（中文 agentic 搜索）</div></div>
+      <div class="metric"><div class="num">86.8</div><div class="lbl">IMO-AnswerBench<br>（Heavy，数学 SOTA）</div></div>
+      <div class="metric"><div class="num">85.2</div><div class="lbl">GPQA-Diamond<br>（Heavy 模式）</div></div>
+      <div class="metric"><div class="num">29.3</div><div class="lbl">VitaBench<br>（真实工具场景）</div></div>
+    </div>
+    <ul class="clean" style="margin-top:24px;">
+      <li><strong>数学推理：</strong>tool-integrated 推理稳居第一梯队；配 Heavy 模式，AIME-2025 满分、IMO-AnswerBench 达 86.8、AMO-Bench 开源 SOTA，逼近顶级闭源。</li>
+      <li><strong>agentic 搜索：</strong>BrowseComp 73.1、BrowseComp-ZH 77.7 均超过所有对比模型；RWSearch 79.5，仅次于 GPT-5.2-Thinking。</li>
+      <li><strong>agentic 工具调用：</strong>τ²-Bench、VitaBench 及其带噪变体上均表现强劲，并在「任意生成工具」的 Random Complex Tasks 上取得 SOTA——印证了泛化与抗噪。</li>
+      <li><strong>通用 QA / 代码：</strong>HLE（纯文本子集）25.2、GPQA-Diamond（Heavy）85.2；代码上与 GLM-4.7 相当但<em>更省</em>——每题约 45k token vs 57k。</li>
+    </ul>
+    <div class="callout">
+      <div class="ch">一句话收尾</div>
+      <p>LongCat-Flash-Thinking-2601 证明了：把「环境、数据、算法、基础设施」端到端协同设计——<strong>自动造环境 + DORA 异步多环境 RL + 抗噪训练 + Heavy Thinking</strong>——可以把 agentic 推理做成一件「可规模化训练」的事，并已开源权重供社区研究。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="frow">
+      <strong style="color:var(--ink-soft)">LongCat-Flash-Thinking-2601 Technical Report</strong>
+      <span>·</span>
+      <span>Meituan LongCat Team</span>
+      <span>·</span>
+      <span>2026 年 1 月 · arXiv preprint</span>
+    </div>
+    <div class="frow">
+      <a href="https://arxiv.org/abs/2601.16725" target="_blank" rel="noopener">阅读原文 / Source（arXiv:2601.16725）↗</a>
+      <span>·</span>
+      <a href="https://github.com/meituan-longcat/LongCat-Flash-Thinking-2601" target="_blank" rel="noopener">GitHub ↗</a>
+      <span>·</span>
+      <a href="https://huggingface.co/meituan-longcat/LongCat-Flash-Thinking-2601" target="_blank" rel="noopener">Hugging Face ↗</a>
+      <span>·</span>
+      <a href="https://longcat.ai" target="_blank" rel="noopener">LongCat Chat ↗</a>
+    </div>
+    <p style="margin-top:14px;font-size:13px;">本页为面向中文读者的教学可视化导读，图片来自论文 arXiv HTML 版（Figure 3 / 5 / 10）。核心数字均依据原文（实验对比见原文 Table 2），如需精确数据与完整实验请以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+  function toggleCard(headEl) {
+    const card = headEl.parentElement;
+    card.classList.toggle("open");
+  }
+
+  function toggleFigDetail(el) {
+    const detail = el.nextElementSibling;
+    const open = detail.classList.toggle("active");
+    el.textContent = open ? "收起说明 ▾" : "展开说明 ▸";
+  }
+
+  // ---- generic stepper ----
+  function buildStepper(cfg) {
+    const track = document.getElementById(cfg.trackId);
+    track.innerHTML = "";
+    cfg.steps.forEach(function () {
+      const pip = document.createElement("div");
+      pip.className = "step-pip";
+      track.appendChild(pip);
+    });
+    let idx = 0;
+    function render() {
+      const s = cfg.steps[idx];
+      document.getElementById(cfg.nId).textContent = String(idx + 1);
+      document.getElementById(cfg.ttId).textContent = s.tt;
+      document.getElementById(cfg.tbId).textContent = s.tb;
+      document.getElementById(cfg.posId).textContent = (idx + 1) + " / " + cfg.steps.length;
+      const pips = track.querySelectorAll(".step-pip");
+      pips.forEach(function (p, i) { p.classList.toggle("on", i <= idx); });
+      document.getElementById(cfg.prevId).disabled = (idx === 0);
+      document.getElementById(cfg.nextId).disabled = (idx === cfg.steps.length - 1);
+    }
+    render();
+    return function (dir) {
+      idx = Math.min(cfg.steps.length - 1, Math.max(0, idx + dir));
+      render();
+    };
+  }
+
+  const plSteps = [
+    { tt: "预训练（继承 LongCat-Flash-Chat）", tb: "沿用 LongCat-Flash-Chat 的配方与数据分布，保住扎实的通用语言与推理能力，作为后续一切的地基。" },
+    { tt: "agentic 中训练（mid-training）", tb: "在原中训练配方上，加入结构化 agentic 轨迹：文本驱动合成 + 环境扎根合成 + 规划导向增强，补上「长程交互数据稀缺」的短板。" },
+    { tt: "环境规模化（核心贡献 ①）", tb: "用「领域图」自动构建可执行、可验证的环境，覆盖 20+ 领域、最多 3.2 万并发环境，并保证扩展中可验证性不丢。" },
+    { tt: "多环境异步 RL + 抗噪（核心贡献 ①②）", tb: "在 DORA 全流式异步框架上做大规模多领域 RL；同时按课程注入真实噪声，提升不完美环境下的鲁棒性。" },
+    { tt: "Heavy Thinking RL（核心贡献 ③）", tb: "为「汇总阶段」单独加一段 RL，强化并行推理结果的聚合与精化，解锁测试时的宽度 + 深度联合扩展。" }
+  ];
+  const plStep = buildStepper({
+    trackId: "pl-track", nId: "pl-n", ttId: "pl-tt", tbId: "pl-tb",
+    posId: "pl-pos", prevId: "pl-prev", nextId: "pl-next", steps: plSteps
+  });
+
+  const htSteps = [
+    { tt: "① 用户提问", tb: "一道有挑战性的数学 / 推理题进入系统，交给 Thinking 模型。" },
+    { tt: "② 并行推理（拓宽度）", tb: "同一个 Thinking 模型并行生成多条候选轨迹（Thinker #1 / #2 / #3…），各自独立探索不同解法路径，扩大探索面。" },
+    { tt: "③ 上下文记忆", tb: "把多条轨迹的中间推理与结论汇聚写入共享上下文，供汇总阶段统一读取。" },
+    { tt: "④ 汇总反思（加深度）", tb: "Summary 模型对所有候选做反思式推理：识别共识、剔除低频不一致答案，综合出有据可依的最终决策。" },
+    { tt: "⑤ 最终输出 / 多轮（可选）", tb: "给出最终答案；在工具使用与多轮对话场景下，可循环回到并行推理，继续下一轮交互。" }
+  ];
+  const htStep = buildStepper({
+    trackId: "ht-track", nId: "ht-n", ttId: "ht-tt", tbId: "ht-tb",
+    posId: "ht-pos", prevId: "ht-prev", nextId: "ht-next", steps: htSteps
+  });
+</script>
+
+</body>
+</html>

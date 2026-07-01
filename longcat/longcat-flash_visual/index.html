@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LongCat-Flash 技术报告 · 图解导读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fbf6ea;
+    --surface: #f4ead7;
+    --surface-2: #efe3cd;
+    --border: #e4d6bd;
+    --border-strong: #d8c5a4;
+    --ink: #2b2620;
+    --ink-soft: #4d4639;
+    --muted: #8a7f6c;
+    --accent: #c2632e;
+    --accent-soft: #f0d9c6;
+    --accent-ink: #94491f;
+    --sans: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+    --shadow: 0 1px 2px rgba(60, 45, 20, 0.05), 0 8px 24px rgba(60, 45, 20, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.78;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ---------- header ---------- */
+  header.site {
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #fdf9f0 0%, var(--bg) 100%);
+  }
+  .site-inner { padding: 56px 0 40px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--accent-ink); background: var(--accent-soft);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 20px;
+  }
+  h1.title {
+    font-size: 40px; line-height: 1.18; margin: 0 0 18px;
+    font-weight: 800; letter-spacing: -0.01em;
+  }
+  h1.title .sub { display: block; font-size: 19px; font-weight: 500; color: var(--ink-soft); margin-top: 10px; letter-spacing: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+    font-size: 14px; color: var(--muted); margin-top: 8px;
+  }
+  .meta-row .chip {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 4px 11px; border-radius: 8px; color: var(--ink-soft); font-weight: 500;
+  }
+  .meta-row .src-link { font-weight: 600; }
+
+  /* ---------- sections ---------- */
+  section.block { padding: 44px 0; border-bottom: 1px solid var(--border); }
+  .kicker {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 8px;
+  }
+  h2 { font-size: 27px; font-weight: 700; margin: 0 0 16px; letter-spacing: -0.01em; }
+  h3 { font-size: 20px; font-weight: 700; margin: 32px 0 12px; }
+  p { margin: 0 0 16px; }
+  strong { font-weight: 700; color: var(--ink); }
+  em { font-style: normal; color: var(--accent-ink); font-weight: 600; }
+
+  ul.clean { margin: 0 0 16px; padding-left: 22px; }
+  ul.clean li { margin-bottom: 9px; }
+
+  /* ---------- TL;DR ---------- */
+  .tldr {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-left: 4px solid var(--accent); border-radius: 14px;
+    padding: 26px 28px; box-shadow: var(--shadow); margin-bottom: 28px;
+  }
+  .tldr h2 { font-size: 18px; margin: 0 0 12px; color: var(--accent-ink); }
+  .tldr p { margin-bottom: 12px; font-size: 16.5px; }
+  .tldr p:last-child { margin-bottom: 0; }
+
+  /* ---------- metric cards ---------- */
+  .metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 26px 0 6px;
+  }
+  .metric {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 16px; text-align: center;
+  }
+  .metric .num { font-size: 26px; font-weight: 800; color: var(--accent-ink); font-family: var(--sans); letter-spacing: -0.01em; }
+  .metric .num small { font-size: 15px; font-weight: 700; }
+  .metric .lbl { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+
+  /* ---------- expandable cards ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 14px; overflow: hidden;
+  }
+  .card-head {
+    padding: 16px 20px; cursor: pointer; display: flex; align-items: flex-start;
+    gap: 14px; user-select: none;
+  }
+  .card-head:hover { background: var(--surface-2); }
+  .card-head .ct { flex: 1; }
+  .card-head .cname { font-weight: 700; font-size: 16.5px; }
+  .card-head .csum { font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+  .card-head .chev {
+    flex-shrink: 0; color: var(--accent); font-size: 13px; font-weight: 700;
+    transition: transform 0.25s ease; margin-top: 3px;
+  }
+  .card.open .card-head .chev { transform: rotate(90deg); }
+  .card-body {
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+  }
+  .card.open .card-body { max-height: 1200px; opacity: 1; }
+  .card-body-inner { padding: 4px 20px 20px; border-top: 1px solid var(--border); }
+  .card-body-inner p { font-size: 15px; margin: 14px 0 0; }
+  .card-body-inner p:first-child { margin-top: 14px; }
+
+  /* ---------- figures ---------- */
+  figure.paper-fig {
+    margin: 26px 0; background: #fdfaf3; border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; box-shadow: var(--shadow);
+  }
+  figure.paper-fig img { width: 100%; height: auto; display: block; border-radius: 8px; }
+  .fig-cap { font-size: 13.5px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+  .fig-cap .fnum { font-weight: 700; color: var(--ink-soft); }
+  .fig-toggle {
+    display: inline-block; margin-top: 12px; cursor: pointer;
+    font-size: 13.5px; font-weight: 600; color: var(--accent);
+    user-select: none;
+  }
+  .fig-toggle:hover { text-decoration: underline; }
+  .figure-detail {
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height 0.45s ease, opacity 0.3s ease;
+  }
+  .figure-detail.active { max-height: 1600px; opacity: 1; }
+  .figure-detail-inner {
+    margin-top: 14px; padding: 16px 18px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; font-size: 14.5px;
+  }
+  .figure-detail-inner ol { margin: 0; padding-left: 20px; }
+  .figure-detail-inner li { margin-bottom: 10px; }
+  .figure-detail-inner .sum { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-strong); color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+
+  /* ---------- interactive zero-compute demo ---------- */
+  .demo {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: 14px; padding: 22px; margin: 24px 0; box-shadow: var(--shadow);
+  }
+  .demo h4 { margin: 0 0 4px; font-size: 16px; }
+  .demo .demo-hint { font-size: 13.5px; color: var(--muted); margin: 0 0 16px; }
+  .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--border-strong); border-radius: 10px; padding: 4px; gap: 4px; flex-wrap: wrap; }
+  .seg button {
+    font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer;
+    border: none; background: transparent; color: var(--ink-soft);
+    padding: 8px 16px; border-radius: 7px; transition: all 0.2s ease;
+  }
+  .seg button:hover { color: var(--accent-ink); }
+  .seg button.active { background: var(--accent); color: #fff; }
+  .slots { display: flex; flex-wrap: wrap; gap: 7px; margin: 20px 0 16px; }
+  .slot {
+    width: 38px; height: 38px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+    font-family: var(--mono); transition: all 0.25s ease;
+  }
+  .slot.ffn { background: var(--accent); color: #fff; }
+  .slot.zero { background: var(--surface-2); color: var(--muted); border: 1px dashed var(--border-strong); }
+  .readout { display: flex; flex-wrap: wrap; gap: 22px; align-items: baseline; font-size: 14px; }
+  .readout .big { font-size: 24px; font-weight: 800; color: var(--accent-ink); }
+  .readout .note { color: var(--muted); font-size: 13.5px; }
+  .legend { display: flex; gap: 18px; margin-top: 14px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 13px; height: 13px; border-radius: 4px; display: inline-block; }
+  .legend .dot.ffn { background: var(--accent); }
+  .legend .dot.zero { background: var(--surface-2); border: 1px dashed var(--border-strong); }
+
+  /* ---------- pipeline timeline ---------- */
+  .timeline { margin: 22px 0 8px; }
+  .tl-step {
+    display: flex; gap: 16px; padding-bottom: 22px; position: relative;
+  }
+  .tl-step:not(:last-child)::before {
+    content: ""; position: absolute; left: 15px; top: 34px; bottom: 0;
+    width: 2px; background: var(--border-strong);
+  }
+  .tl-dot {
+    flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; border: 2px solid var(--accent); z-index: 1;
+  }
+  .tl-body { flex: 1; padding-top: 2px; }
+  .tl-body .tt { font-weight: 700; font-size: 16px; margin-bottom: 3px; }
+  .tl-body .td { font-size: 14.5px; color: var(--ink-soft); }
+
+  /* ---------- callout ---------- */
+  .callout {
+    background: var(--accent-soft); border: 1px solid #e8c4a8;
+    border-radius: 12px; padding: 18px 22px; margin: 18px 0;
+  }
+  .callout .ch { font-weight: 700; color: var(--accent-ink); margin-bottom: 6px; font-size: 15.5px; }
+  .callout p { margin: 0; font-size: 15px; color: var(--ink-soft); }
+
+  /* ---------- details (code/spec) ---------- */
+  details.spec {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin: 16px 0; padding: 0;
+  }
+  details.spec summary {
+    cursor: pointer; padding: 15px 20px; font-weight: 600; font-size: 15px;
+    list-style: none; display: flex; justify-content: space-between; align-items: center;
+  }
+  details.spec summary::-webkit-details-marker { display: none; }
+  details.spec summary .ssum { font-size: 13px; color: var(--muted); font-weight: 400; }
+  details.spec[open] summary { border-bottom: 1px solid var(--border); }
+  .spec-body { padding: 16px 20px; }
+  table.cfg { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.cfg td { padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  table.cfg td:first-child { color: var(--ink-soft); }
+  table.cfg td:last-child { text-align: right; font-family: var(--mono); font-weight: 600; color: var(--accent-ink); }
+
+  /* two-col compare */
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+  .pane { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .pane h4 { margin: 0 0 8px; font-size: 15px; }
+  .pane.bad h4 { color: var(--muted); }
+  .pane.good h4 { color: var(--accent-ink); }
+  .pane p { font-size: 14px; margin: 0; color: var(--ink-soft); }
+
+  /* ---------- footer ---------- */
+  footer.site {
+    padding: 40px 0 60px; color: var(--muted); font-size: 14px;
+  }
+  footer.site .frow { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-bottom: 10px; }
+  footer.site a { font-weight: 600; }
+
+  /* nav */
+  .toc {
+    position: sticky; top: 0; z-index: 20; background: rgba(251,246,234,0.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .toc-inner { display: flex; gap: 6px; overflow-x: auto; padding: 11px 24px; max-width: 880px; margin: 0 auto; }
+  .toc a { color: var(--ink-soft); white-space: nowrap; padding: 4px 10px; border-radius: 7px; font-weight: 500; }
+  .toc a:hover { background: var(--surface); text-decoration: none; color: var(--accent-ink); }
+
+  @media (max-width: 880px) {
+    body { font-size: 16px; }
+    h1.title { font-size: 30px; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .twocol { grid-template-columns: 1fr; }
+    .site-inner { padding: 40px 0 30px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap site-inner">
+    <span class="eyebrow">图解导读 · MoE 高效大模型</span>
+    <h1 class="title">
+      LongCat-Flash 技术报告
+      <span class="sub">560B 参数的 MoE 模型，平均每个 token 只激活约 27B —— 把算力花在刀刃上，把通信藏进计算里</span>
+    </h1>
+    <div class="meta-row">
+      <span class="chip">Meituan LongCat Team（美团）</span>
+      <span class="chip">2025 年 9 月</span>
+      <span class="chip">arXiv preprint</span>
+      <a class="src-link" href="https://arxiv.org/abs/2509.01322" target="_blank" rel="noopener">阅读原文 / Source ↗</a>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="toc-inner">
+    <a href="#tldr">TL;DR</a>
+    <a href="#problem">问题</a>
+    <a href="#prior">已有方案</a>
+    <a href="#method">核心方法</a>
+    <a href="#zero">零计算专家</a>
+    <a href="#scmoe">ScMoE</a>
+    <a href="#train">训练</a>
+    <a href="#agent">Agentic</a>
+    <a href="#infer">推理部署</a>
+    <a href="#results">结论</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ TL;DR ============ -->
+  <section class="block" id="tldr">
+    <div class="tldr">
+      <h2>30 秒看懂</h2>
+      <p><strong>LongCat-Flash</strong> 是美团开源的一款 <strong>5600 亿（560B）总参数</strong> 的混合专家（MoE）大模型。它的核心追求只有两个字：<em>高效</em>——既要训练得快、又要推理得便宜，同时还要在「智能体（agentic）」任务上够强。</p>
+      <p>它靠两个架构创新做到这点：<strong>① 零计算专家（Zero-computation Experts）</strong>——让模型根据 token 的难易，动态地只激活 <strong>18.6B–31.3B</strong>（平均约 <strong>27B</strong>）参数，简单的 token 少花算力；<strong>② Shortcut-connected MoE（ScMoE）</strong>——通过一条跨层捷径，把昂贵的专家通信「藏」进相邻层的计算里，几乎不增加额外耗时。</p>
+      <p>成果：在 <strong>2 万张以上加速器</strong> 上，<strong>30 天</strong> 训练完 <strong>20T+ token</strong>；推理达到 <strong>100+ TPS</strong>、每百万输出 token 仅 <strong>$0.70</strong>；作为「非思考型」基础模型，性能比肩 DeepSeek-V3.1、Kimi-K2，且在工具调用等 agentic 任务上尤为出色。</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="num">560<small>B</small></div><div class="lbl">总参数量</div></div>
+      <div class="metric"><div class="num">~27<small>B</small></div><div class="lbl">平均每 token 激活<br>（动态 18.6–31.3B）</div></div>
+      <div class="metric"><div class="num">20<small>T+</small></div><div class="lbl">预训练 token 数</div></div>
+      <div class="metric"><div class="num">30<small> 天</small></div><div class="lbl">完成主预训练</div></div>
+      <div class="metric"><div class="num">100<small>+ TPS</small></div><div class="lbl">单用户推理速度<br>（H800）</div></div>
+      <div class="metric"><div class="num">$0.70</div><div class="lbl">每百万输出 token<br>推理成本</div></div>
+      <div class="metric"><div class="num">98.48<small>%</small></div><div class="lbl">训练时段可用率<br>（无人工干预）</div></div>
+      <div class="metric"><div class="num">28</div><div class="lbl">Transformer 层数<br>（更浅 = 更低延迟）</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 问题 ============ -->
+  <section class="block" id="problem">
+    <p class="kicker">要解决什么问题</p>
+    <h2>把模型做大很有用，但越来越贵</h2>
+    <p>DeepSeek-V3、Qwen 3、Kimi-K2 等模型已经证明：把模型规模和算力堆上去，能力确实会变强。但继续往上堆，<strong>成本</strong> 成了拦路虎。作者认为，单纯加参数已经不够，要在三件事上同时发力才能继续推进：更聪明的 <strong>模型架构</strong>、更扎实的 <strong>系统/基础设施优化</strong>、以及更系统的 <strong>数据策略</strong>。</p>
+    <p>论文从两个朴素的观察出发，去抠 MoE 模型的「浪费」：</p>
+    <ul class="clean">
+      <li><strong>并非所有 token 都一样难（Not all tokens are equal）。</strong>预测下一个词时，有的 token 很简单（小模型都能猜对），有的很难。可传统 MoE 对每个 token 都激活固定数量的专家、花同样的算力——这本身就是浪费。</li>
+      <li><strong>MoE 扩大后，通信成了瓶颈。</strong>专家并行（Expert Parallelism）要求先把 token「分发」到各自的专家、算完再「合并」回来。这一来一回的全局通信会让 GPU 大量时间在「等数据」，而不是在算。</li>
+    </ul>
+    <p>于是问题变成：<strong>能不能让算力按 token 的重要性动态分配，同时把不可避免的通信开销「重叠」进计算、不再空等？</strong></p>
+  </section>
+
+  <!-- ============ 已有方案 ============ -->
+  <section class="block" id="prior">
+    <p class="kicker">已有方案卡在哪</p>
+    <h2>两种主流思路，各有天花板</h2>
+    <p>LongCat-Flash 的两个创新，正是针对下面这两类已有做法的局限。点开看每种方案做了什么、卡在哪。</p>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="ct">
+          <div class="cname">方案一：固定激活的标准 MoE（top-k 路由）</div>
+          <div class="csum">每个 token 都激活同样数量的专家——稀疏了，但仍然「一刀切」地花算力。</div>
+        </div>
+        <span class="chev">▸</span>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>做了什么：</strong>MoE 把一个大 FFN 拆成很多「专家」，路由器（router）给每个 token 选 top-k 个专家来算，其余专家不激活。这样总参数可以很大，但每个 token 的实际计算量（激活参数）受控。</p>
+        <p><strong>卡在哪：</strong>k 是固定的，意味着不论 token 简单还是困难，都激活同样多的专家、花同样的算力。简单 token 被「过度计算」，困难 token 又未必能得到更多资源——计算预算的分配和 token 的真实需求不匹配。</p>
+        <p><strong>与本文的关系：</strong>LongCat-Flash 用 <em>零计算专家</em> 把「激活数量」变成可随 token 浮动的量，从而把省下的算力让给真正困难的 token。</p>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="ct">
+          <div class="cname">方案二：共享专家 MoE（用一个专家的计算掩盖通信）</div>
+          <div class="csum">让一个「共享专家」一直算，用它的计算去重叠分发/合并通信——但重叠窗口太小。</div>
+        </div>
+        <span class="chev">▸</span>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>做了什么：</strong>为缓解通信等待，一些架构设置「共享专家」（shared expert）对所有 token 都计算。理论上可以让这个专家的计算与 MoE 的通信并行，从而把通信时间「藏」起来一部分。</p>
+        <p><strong>卡在哪：</strong>能用来重叠的「计算窗口」只有这一个共享专家那么大，太小了，掩盖不了多少通信。在传统执行顺序里，必须先把 token 通过全局通信分发到专家，计算才能开始——这条串行链路就是吞吐的天花板。</p>
+        <p><strong>与本文的关系：</strong>LongCat-Flash 用 <em>ScMoE</em> 引入一条跨层捷径，重排执行流水线，让 <strong>上一层整个稠密 FFN</strong> 的计算去并行掩盖本层 MoE 的分发/合并通信——重叠窗口比单个共享专家大得多。</p>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="ct">
+          <div class="cname">方案三：小模型超参 + 直接放大初始化</div>
+          <div class="csum">大模型难调参、难稳定训练——随机初始化往往收敛慢、还容易炸 loss。</div>
+        </div>
+        <span class="chev">▸</span>
+      </div>
+      <div class="card-body"><div class="card-body-inner">
+        <p><strong>做了什么：</strong>训练超大模型时，直接在目标规模上搜超参代价极高，且随机初始化训练常出现不可恢复的 loss 尖峰。</p>
+        <p><strong>卡在哪：</strong>缺少把小模型经验「可靠迁移」到大模型的理论框架；初始化方式、优化器细节（如 Adam 的 epsilon）在大尺度下会变得异常敏感，稍有不慎就训练崩溃。</p>
+        <p><strong>与本文的关系：</strong>LongCat-Flash 用 <em>超参迁移</em>（width scaling 规则）+ <em>模型生长</em>（14 层堆成 28 层）+ <em>稳定性套件</em>（router 梯度平衡、hidden z-loss、epsilon 调优、确定性计算），让 560B 训练全程不炸。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ============ 核心方法总览 ============ -->
+  <section class="block" id="method">
+    <p class="kicker">本文做法 · 总览</p>
+    <h2>一张图看懂 LongCat-Flash 的架构</h2>
+    <p>LongCat-Flash 的每一层都把上面两个创新缝在一起：<strong>零计算专家</strong> 负责「该花多少算力」，<strong>ScMoE 的跨层捷径</strong> 负责「通信别空等」。再叠加对 MLA、FFN 专家做的方差对齐（variance alignment）来保证规模放大时不退化。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/architecture.png" alt="LongCat-Flash 单层架构图：双 MLA、稠密 FFN、带零计算专家的 MoE，以及一条跨层 shortcut" />
+      <div class="fig-cap"><span class="fnum">图 1（原文 Figure 2）：</span>LongCat-Flash 的单层架构。每层采用带「零计算专家」的 Shortcut-connected MoE（ScMoE）。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ol>
+          <li><strong>底部 Multi-head Latent Attention（MLA）：</strong>每层有两个 MLA 注意力块（图中下方黄色长条），负责让 token 之间交换信息；MLA 用低秩压缩 KV 来减小显存与 I/O。</li>
+          <li><strong>左侧的稠密 FFN（绿色）：</strong>这是「常开」的稠密前馈层，所有 token 都会过。它的存在很关键——正是它的计算被用来掩盖右侧 MoE 的通信（见下文 ScMoE）。</li>
+          <li><strong>中间的 Top-k Router（路由器）：</strong>柱状图代表路由打分，为每个 token 选出 K=12 个专家。橙色虚线表示打分如何映射到被选中的专家。</li>
+          <li><strong>右侧专家池——两类专家：</strong>粉色块 1…N 是真正做计算的 <strong>FFN 专家</strong>（共 512 个）；黄色块 1…Z 是 <strong>零计算专家</strong>（共 256 个），它们直接把输入原样返回（恒等映射），不产生任何计算。路由器若把名额给了零计算专家，这个 token 的实际算力就降下来了。</li>
+          <li><strong>顶部的跨层 shortcut（绿色长线 + ⊕）：</strong>第一个 MLA 的输出沿一条捷径直连到 MoE 块并相加。这条捷径重排了执行顺序，让上一块的稠密 FFN 能与本层 MoE 的分发/合并通信并行。</li>
+        </ol>
+        <div class="sum">一句话总结：输入 → MLA 交换信息 → 路由器按重要性给 token 分配「真专家 / 零计算专家」的组合 → 跨层捷径让计算和通信重叠 → 输出。算力按需分配，通信藏进计算。</div>
+      </div></div>
+    </figure>
+
+    <details class="spec">
+      <summary><span>模型关键配置（点开看具体数字）</span><span class="ssum">28 层 / 6144 隐藏维 / 512 FFN + 256 零计算专家</span></summary>
+      <div class="spec-body">
+        <table class="cfg">
+          <tr><td>总参数 / 平均激活参数</td><td>560B / ~27B</td></tr>
+          <tr><td>激活参数动态范围</td><td>18.6B – 31.3B</td></tr>
+          <tr><td>Transformer 层数（不含 MTP）</td><td>28</td></tr>
+          <tr><td>隐藏维度</td><td>6144</td></tr>
+          <tr><td>每层 FFN 专家 / 零计算专家</td><td>512 / 256</td></tr>
+          <tr><td>每 token 选中的专家数 K</td><td>12（两类混选）</td></tr>
+          <tr><td>注意力</td><td>MLA · 64 头 · 每头 128 维</td></tr>
+          <tr><td>KV / Query 压缩维度</td><td>512 / 1536</td></tr>
+          <tr><td>词表大小</td><td>131,072（BPE）</td></tr>
+          <tr><td>上下文长度</td><td>扩展至 128k</td></tr>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ 零计算专家 ============ -->
+  <section class="block" id="zero">
+    <p class="kicker">核心模块 ①</p>
+    <h2>零计算专家：让简单 token 少花算力</h2>
+    <p>思路非常直接：在 N 个真正的 FFN 专家之外，再加 Z 个 <strong>零计算专家</strong>。零计算专家的「计算」就是把输入原样吐出来——零成本。路由器照常为每个 token 选 K=12 个专家，但现在选的可能是「真专家 + 零计算专家」的任意组合。一个 token 被分到越多零计算专家，它实际消耗的算力就越少。</p>
+
+    <div class="demo">
+      <h4>互动：不同难度的 token，激活的专家不一样</h4>
+      <p class="demo-hint">点击切换 token 难度，观察 12 个名额里有多少落到「真 FFN 专家」、激活参数如何随之浮动。</p>
+      <div class="seg" id="zc-seg">
+        <button data-k="easy" onclick="selectToken('easy')">简单 token</button>
+        <button data-k="normal" class="active" onclick="selectToken('normal')">普通 token</button>
+        <button data-k="hard" onclick="selectToken('hard')">困难 token</button>
+      </div>
+      <div class="slots" id="zc-slots"></div>
+      <div class="readout">
+        <div><span class="big" id="zc-params">~27.0B</span> <span class="note">激活参数</span></div>
+        <div id="zc-desc" class="note"></div>
+      </div>
+      <div class="legend">
+        <span><span class="dot ffn"></span>FFN 专家（要计算）</span>
+        <span><span class="dot zero"></span>零计算专家（原样返回，零成本）</span>
+      </div>
+    </div>
+
+    <h3>难点：怎么保证「平均算力」可控？</h3>
+    <p>如果放任不管，模型会偷懒——倾向于多选零计算专家来省事，导致资源利用不足。所以必须 <strong>精确控制零计算专家被选中的平均比例</strong>，让总算力稳定在预算线上，同时又允许它在 token 之间灵活浮动。</p>
+    <p>作者的做法是给每个专家一个动态的 <strong>偏置项（expert bias）</strong>，用控制论里的 <strong>PID 控制器</strong> 来调它：哪个专家最近被用得太多，就调低它的路由分；用得太少就调高。这个偏置只影响路由、不进入语言模型的训练目标，因此不会干扰模型学习。</p>
+    <div class="callout">
+      <div class="ch">结果：稳得住，又放得开</div>
+      <p>训练约 20B token 后，所有层的「平均激活 FFN 专家数」都收敛到约 <strong>8 个</strong>（对应约 27B 激活参数），波动小于 <strong>1%</strong>；但其 <strong>标准差长到约 3</strong>——说明模型确实在不同 token 之间分配了差异巨大的算力。平均稳定、个体灵活，正是想要的效果。</p>
+    </div>
+    <p>此外还配了一个 <strong>设备级负载均衡损失</strong>，把所有零计算专家归到一个额外的组里单独平衡，避免某些 GPU 上的专家过载而拖慢整体训练。</p>
+  </section>
+
+  <!-- ============ ScMoE ============ -->
+  <section class="block" id="scmoe">
+    <p class="kicker">核心模块 ②</p>
+    <h2>Shortcut-connected MoE：把通信藏进计算里</h2>
+    <p>MoE 的效率瓶颈在通信：专家并行下，必须先用一次全局 all-to-all 把 token <strong>分发（dispatch）</strong>到各自的专家，算完再 <strong>合并（combine）</strong>回来。传统执行是串行的——通信时计算单元只能干等。共享专家方案能重叠的窗口又太小。</p>
+    <p>ScMoE 的关键是一条 <strong>跨层捷径</strong>，它重排了流水线，使得 <strong>上一块的稠密 FFN 计算</strong> 可以与 <strong>当前 MoE 层的分发/合并通信</strong> 完全并行。重叠窗口一下子从「一个专家」放大到「一整个稠密 FFN」。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/scmoe_overlap.png" alt="三种 MoE 的计算流与通信流时间线对比：传统 MoE、ScMoE 层、ScMoE 分块" />
+      <div class="fig-cap"><span class="fnum">图 2（原文 Figure 8）：</span>相同专家配置下三种结构的「计算流 / 通信流」时间线对比——ScMoE（尤其分块版）让更多通信被计算掩盖，效率最高。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ol>
+          <li><strong>每张图两条「泳道」：</strong>上面是 <em>Compute Stream（计算流）</em>，下面是 <em>EP Communication Stream（专家并行通信流）</em>。横轴是时间，方块越往右排得越久 = 总耗时越长。</li>
+          <li><strong>(a) 传统 MoE：</strong>计算（Attn、Router、MoE GEMM）和通信（Dispatch、Combine）基本错开排列、互相等待，时间线被拉得最长——这就是串行执行的代价。</li>
+          <li><strong>(b) ScMoE 层：</strong>跨层捷径让上一块的 <strong>Dense FFN</strong> 与本层的 <strong>Dispatch / Combine</strong> 通信对齐到同一时间段并行执行，计算流和通信流开始「叠」在一起，总长度明显缩短。</li>
+          <li><strong>(c) ScMoE + 分块（Chunk）：</strong>进一步沿 token 维把操作切成 Chunk0 / Chunk1 等细粒度块（图中深橙），让 MoE GEMM 与 Dispatch/Combine 的重叠更彻底、几乎填满通信空隙，效率最高。</li>
+          <li><strong>颜色含义：</strong>白色方块=纯计算算子；黄色/橙色方块=通信（或与通信重叠的计算块），橙色深浅区分不同的 chunk。</li>
+        </ol>
+        <div class="sum">一句话总结：从 (a) 到 (c)，通信方块被逐步「塞」进计算的时间段里，整条时间线越来越短——同样的计算量，墙钟时间更少。</div>
+      </div></div>
+    </figure>
+
+    <p>作者还用四组不同配置（2.4B-16B 配 MLA、3B-20B 配 MHA、15B-193B 配 GQA）做了对照实验：开/关 ScMoE 的训练 loss 曲线 <strong>几乎完全重合</strong>。这说明 ScMoE 是 <strong>「质量中性」（quality-neutral）</strong> 的——它不靠牺牲效果换速度，而且收益与注意力机制、模型规模都正交。</p>
+    <div class="callout">
+      <div class="ch">收益有多大？</div>
+      <p>训练上，重叠窗口让稠密块计算与 MoE 通信完全并行；推理上，ScMoE 支撑了 <strong>单批次重叠（Single Batch Overlap, SBO）</strong> 流水线，把理论 TPOT（每输出 token 时延）相比 DeepSeek-V3 降低近 <strong>50%</strong>，还能让节点内 NVLink 通信与节点间 RDMA 通信并发，吃满网络带宽。</p>
+    </div>
+  </section>
+
+  <!-- ============ 训练 ============ -->
+  <section class="block" id="train">
+    <p class="kicker">本文做法 · 训练</p>
+    <h2>让 560B 稳稳训完：可扩展 + 稳定性框架</h2>
+    <p>架构再好，训不稳也白搭。LongCat-Flash 搭了一套「先在小模型试、再可靠放大」的框架，并配齐稳定性手段，做到 <strong>全程无不可恢复的 loss 尖峰</strong>。</p>
+
+    <div class="timeline">
+      <div class="tl-step">
+        <div class="tl-dot">1</div>
+        <div class="tl-body">
+          <div class="tt">超参迁移（Hyperparameter Transfer）</div>
+          <div class="td">先在小的「代理模型」上搜出最优初始化方差和学习率，再用基于宽度缩放因子 <span style="font-family:var(--mono)">s = n_target / n_proxy</span> 的理论规则（Adam LR Full Align）迁移到 560B 目标模型，大幅省去在大模型上反复试参的成本。</div>
+        </div>
+      </div>
+      <div class="tl-step">
+        <div class="tl-dot">2</div>
+        <div class="tl-body">
+          <div class="tt">模型生长初始化（Model Growth）</div>
+          <div class="td">先训一个 14 层小模型，再把它「堆叠」成 28 层作为大模型的起点（扩张率 r=2）。这种初始化呈现「先升后快速收敛」的特征曲线，最终优于随机初始化——小模型提供了更好的参数起点，堆叠还起到隐式正则的作用。</div>
+        </div>
+      </div>
+      <div class="tl-step">
+        <div class="tl-dot">3</div>
+        <div class="tl-body">
+          <div class="tt">稳定性套件（三道保险）</div>
+          <div class="td"><strong>路由稳定：</strong>监控 router 权重相似度与梯度范数比 R_g（建议 &lt; 0.1），防止负载均衡损失压倒语言模型损失。<strong>激活稳定：</strong>引入极小系数的 <em>hidden z-loss</em> 压制「巨大激活值」，避免 BF16 下的数值尖峰。<strong>优化器稳定：</strong>把 Adam 的 epsilon 设到 <span style="font-family:var(--mono)">1e-16</span>（远小于梯度 RMS），保住自适应特性。</div>
+        </div>
+      </div>
+      <div class="tl-step">
+        <div class="tl-dot">4</div>
+        <div class="tl-body">
+          <div class="tt">确定性计算 + 三阶段数据课程</div>
+          <div class="td">引入确定性计算，保证实验可精确复现，并能在训练中检测「静默数据损坏」（SDC）。数据上采用三阶段课程：约 20T token 打底（8192 长度）→ 强化推理与代码 → 上下文扩展到 128k；每阶段都做严格去污染（13-gram 重叠 + BGE-m3 语义相似度）防测试集泄漏。</div>
+        </div>
+      </div>
+    </div>
+
+    <p>另外，模型还集成了 <strong>多 token 预测（MTP）</strong> 作为辅助训练目标——用一个轻量的单稠密层做 MTP 头，在评测中草稿 token 接受率超过 <strong>90%</strong>，为后面的推测解码（speculative decoding）打基础。</p>
+  </section>
+
+  <!-- ============ Agentic ============ -->
+  <section class="block" id="agent">
+    <p class="kicker">本文做法 · 智能体能力</p>
+    <h2>用「多智能体」造数据，教会模型用工具</h2>
+    <p>LongCat-Flash 的一大目标是 agentic（智能体）能力——通过与环境反复交互来解决复杂任务。难点在于：高质量、高难度的训练任务太稀缺。作者先把 agentic 任务的难度拆成 <strong>三个维度</strong>，再用一套 <strong>多智能体数据合成框架</strong> 按这三维「定制」难题。</p>
+
+    <div class="twocol">
+      <div class="pane good"><h4>三个难度维度</h4><p><strong>信息处理复杂度</strong>：需要多步推理来整合、转换信息。<br><br><strong>工具集复杂度</strong>：把工具建模为有向图，用节点数和边密度量化复杂度。<br><br><strong>用户交互复杂度</strong>：用尽量少的提问、策略性地从「不愿多说」的用户那里问出关键信息。</p></div>
+      <div class="pane bad"><h4>合成框架里的「专职智能体」</h4><p><strong>UserProfileAgent</strong> 造用户画像与对话风格；<strong>ToolSetAgent</strong> 枚举 40 个领域、1600 个应用、构建 8 万个模拟工具的工具图并随机游走采样子图；<strong>InstructionAgent</strong> 生成任务指令；<strong>EnvironmentAgent</strong> 补充环境信息与干扰项；<strong>RubricAgent</strong> 生成评分清单；<strong>Validator / Deduplicator</strong> 把关质量、去重。</p></div>
+    </div>
+    <p>这套框架能系统性地生成「需要反复推理 + 与环境交互」的高难度任务，再经严格筛选构成冷启动训练集，既保留多样性又保留探索空间——这正是 LongCat-Flash 在工具调用基准上表现突出的来源。</p>
+  </section>
+
+  <!-- ============ 推理部署 ============ -->
+  <section class="block" id="infer">
+    <p class="kicker">有意思的细节 · 推理</p>
+    <h2>SBO 四阶段流水线：架构与系统协同设计</h2>
+    <p>ScMoE 的重叠特性在推理时被进一步压榨成 <strong>Single Batch Overlap（SBO）</strong>——一个四阶段流水线，用「模块级重叠」在单个批次内就把通信开销藏起来（区别于 DeepSeek-V3 跨两批次重叠的 TBO）。</p>
+
+    <figure class="paper-fig">
+      <img src="assets/sbo_overlap.png" alt="SBO 四阶段重叠流水线示意图：MLA、稠密 FFN、A2A 分发/合并、MoE GEMM 的并行编排" />
+      <div class="fig-cap"><span class="fnum">图 3（原文 Figure 9）：</span>SBO 重叠策略总览——把单层拆成 4 个阶段，让通信（A2A 分发/合并）与计算（注意力、稠密 FFN、MoE GEMM）在时间上交叠。</div>
+      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+      <div class="figure-detail"><div class="figure-detail-inner">
+        <ol>
+          <li><strong>Stage 1（独立执行）：</strong>先跑注意力的一部分（Attn 0/Attn 1 + LayerNorm）。因为 MLA 的输出要喂给后续阶段，所以这一阶段必须先单独完成。</li>
+          <li><strong>Stage 2（关键重叠）：</strong>把 <strong>A2A Dispatch（全局分发通信）</strong> 与 <strong>Dense FFN + Attn 0（QKV 投影）</strong> 并行。由于分发通信开销最大，作者特意把注意力过程拆开，用它来填满通信时间。</li>
+          <li><strong>Stage 3（独立执行）：</strong>单独跑 <strong>MoE GEMM</strong>（专家矩阵乘）。这一阶段会从「宽专家并行（wide EP）」部署中获益，时延随 EP 规模增大而下降。</li>
+          <li><strong>Stage 4（再次重叠）：</strong>把 <strong>Attn 1（核心注意力 + 输出投影）和 Dense FFN</strong> 与 <strong>A2A Combine（全局合并通信）</strong> 并行，把合并通信也藏起来。</li>
+          <li><strong>左上角图例：</strong>AG=all-gather，RS=reduce-scatter，A2A=all-to-all；右上方小图表示不同通信通过 NVLink（NVLS）或 GPU Direct RDMA（NIC）走不同物理链路，从而可以并发、吃满带宽。</li>
+        </ol>
+        <div class="sum">一句话总结：把一层拆成 4 段，让两次最贵的全局通信分别被稠密 FFN 和注意力的计算掩盖；再叠加 NVLink 与 RDMA 的并发，单批次内就能压低时延。</div>
+      </div></div>
+    </figure>
+
+    <p>配合作为草稿模型的 <strong>MTP 推测解码</strong>（约 90% 接受率）、对 KV cache 的 I/O 优化、以及 PD 分离部署 + 宽 EP（DeepEP，并改造它来支持零计算专家），LongCat-Flash 在 H800 上把动作指令的生成速度做到接近 <strong>100 tokens/s</strong>，单轮工具调用时延压到 1 秒以内。</p>
+
+    <details class="spec">
+      <summary><span>理论时延 / 成本对比（点开看表）</span><span class="ssum">LongCat-Flash 用更少层数换更低 TPOT</span></summary>
+      <div class="spec-body">
+        <table class="cfg">
+          <tr><td>层数 n_layer（DeepSeek-V3 / Qwen3-235B / LongCat-Flash）</td><td>61 / 94 / 28</td></tr>
+          <tr><td>重叠策略</td><td>TBO / TBO / SBO</td></tr>
+          <tr><td>理论 TPOT（ms）</td><td>30 / 26.2 / 16</td></tr>
+          <tr><td>理论 $ / 百万输出 token</td><td>0.17 / 0.15 / 0.09</td></tr>
+          <tr><td>实测部署成本</td><td>~$0.70 / 百万输出 token</td></tr>
+        </table>
+        <p style="font-size:13px;color:var(--muted);margin:12px 0 0;">注：表中为统一假设下的理论值（H800、EP=128、batch/device=96 等）；实测 TPOT 约 26ms，约为理论值的 61.5%，差距主要来自小算子开销与通信带宽损耗。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ 结论 ============ -->
+  <section class="block" id="results">
+    <p class="kicker">实验结论</p>
+    <h2>更少参数、更快推理，agentic 任务尤其强</h2>
+    <p>作为一个 <strong>非思考型（non-thinking）</strong> 基础模型，LongCat-Flash 在多项基准上与 DeepSeek-V3.1、Kimi-K2 等领先模型 <strong>不相上下</strong>，同时参数更少、推理更快。它在通用、代码、智能体工具调用三类任务上都展现了稳健能力：</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">86.5</div><div class="lbl">ArenaHard-V2<br>（通用对话）</div></div>
+      <div class="metric"><div class="num">39.5</div><div class="lbl">TerminalBench<br>（命令行/代码）</div></div>
+      <div class="metric"><div class="num">67.7</div><div class="lbl">τ²-Bench<br>（智能体工具调用）</div></div>
+      <div class="metric"><div class="num">128<small>k</small></div><div class="lbl">上下文长度</div></div>
+    </div>
+    <p style="margin-top:24px;">作者还自建了 <strong>Meeseeks</strong>（多轮指令遵循）和 <strong>VitaBench</strong>（真实业务场景）两个新基准来减少数据污染带来的虚高——在 VitaBench 这类复杂真实任务上，LongCat-Flash 表现优于其他模型。</p>
+    <div class="callout">
+      <div class="ch">一句话收尾</div>
+      <p>LongCat-Flash 证明了：通过 <strong>架构（零计算专家 + ScMoE）、训练策略、基础设施的协同设计</strong>，可以在 560B 规模上同时拿到「高训练吞吐 + 低推理时延 + 强 agentic 能力」，并已开源模型权重供社区研究。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="frow">
+      <strong style="color:var(--ink-soft)">LongCat-Flash Technical Report</strong>
+      <span>·</span>
+      <span>Meituan LongCat Team</span>
+      <span>·</span>
+      <span>2025 年 9 月 · arXiv preprint</span>
+    </div>
+    <div class="frow">
+      <a href="https://arxiv.org/abs/2509.01322" target="_blank" rel="noopener">阅读原文 / Source（arXiv:2509.01322）↗</a>
+      <span>·</span>
+      <a href="https://github.com/meituan-longcat" target="_blank" rel="noopener">GitHub ↗</a>
+      <span>·</span>
+      <a href="https://huggingface.co/meituan-longcat" target="_blank" rel="noopener">Hugging Face ↗</a>
+    </div>
+    <p style="margin-top:14px;font-size:13px;">本页为面向中文读者的教学可视化导读，图片来自论文 arXiv HTML 版（Figure 2 / 8 / 9）。核心数字均依据原文，如需精确数据与完整实验请以原文为准。</p>
+  </div>
+</footer>
+
+<script>
+  function toggleCard(headEl) {
+    const card = headEl.parentElement;
+    card.classList.toggle("open");
+  }
+
+  function toggleFigDetail(el) {
+    const detail = el.nextElementSibling;
+    const open = detail.classList.toggle("active");
+    el.textContent = open ? "收起说明 ▾" : "展开说明 ▸";
+  }
+
+  const ZC = {
+    easy:   { ffn: 4,  params: "~22.8B", desc: "更多名额给了零计算专家 —— 简单 token 走捷径，少花算力" },
+    normal: { ffn: 8,  params: "~27.0B", desc: "平均情况：约 8 个 FFN 专家，正好落在 27B 的算力预算线上" },
+    hard:   { ffn: 12, params: "~31.3B", desc: "12 个名额全给真专家 —— 困难 token 拿到最多算力（激活上限）" }
+  };
+
+  function renderSlots(ffnCount) {
+    const total = 12;
+    const box = document.getElementById("zc-slots");
+    box.innerHTML = "";
+    for (let i = 0; i < total; i++) {
+      const s = document.createElement("div");
+      const isFfn = i < ffnCount;
+      s.className = "slot " + (isFfn ? "ffn" : "zero");
+      s.textContent = isFfn ? "E" : "0";
+      box.appendChild(s);
+    }
+  }
+
+  function selectToken(key) {
+    const data = ZC[key];
+    renderSlots(data.ffn);
+    document.getElementById("zc-params").textContent = data.params;
+    document.getElementById("zc-desc").textContent = data.desc;
+    const btns = document.querySelectorAll("#zc-seg button");
+    btns.forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-k") === key);
+    });
+  }
+
+  selectToken("normal");
+</script>
+
+</body>
+</html>
