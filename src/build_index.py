@@ -62,7 +62,8 @@ def render(groups) -> str:
         items = sorted(groups[key], key=lambda x: x["title"].lower())
         name = GROUP_NAMES.get(key, key)
         entries = "\n".join(
-            f'          <a class="entry" href="{html.escape(it["href"])}">'
+            f'          <a class="entry" href="{html.escape(it["href"])}" '
+            f'data-search="{html.escape(f"{it['title']} {name} {key}".lower(), quote=True)}">'
             f'<span class="entry-title">{html.escape(it["title"])}</span>'
             f'<span class="entry-go" aria-hidden="true">&rarr;</span></a>'
             for it in items
@@ -78,6 +79,75 @@ def render(groups) -> str:
             f'      </section>'
         )
     sections_html = "\n".join(sections)
+
+    script_js = """
+  <script>
+  (function () {
+    const input = document.getElementById('q');
+    const clearBtn = document.getElementById('clear');
+    const countEl = document.getElementById('count');
+    const noResults = document.getElementById('no-results');
+    const noResultsQ = document.getElementById('no-results-q');
+    const groups = Array.from(document.querySelectorAll('.group'));
+    const entries = Array.from(document.querySelectorAll('.entry'));
+    const total = entries.length;
+
+    entries.forEach(function (a) {
+      const t = a.querySelector('.entry-title');
+      t.dataset.orig = t.textContent;
+    });
+
+    function esc(s) {
+      return s.replace(/[&<>]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c];
+      });
+    }
+    function escRe(s) { return s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); }
+
+    function highlight(text, tokens) {
+      if (!tokens.length) return esc(text);
+      const re = new RegExp(tokens.map(escRe).join('|'), 'ig');
+      let out = '', last = 0, m;
+      while ((m = re.exec(text)) !== null) {
+        out += esc(text.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+        last = m.index + m[0].length;
+        if (m.index === re.lastIndex) re.lastIndex++;
+      }
+      return out + esc(text.slice(last));
+    }
+
+    function apply() {
+      const raw = input.value.trim();
+      const tokens = raw.toLowerCase().split(/\\s+/).filter(Boolean);
+      let visible = 0;
+      entries.forEach(function (a) {
+        const hit = tokens.every(function (t) { return a.dataset.search.indexOf(t) !== -1; });
+        a.style.display = hit ? '' : 'none';
+        const t = a.querySelector('.entry-title');
+        t.innerHTML = highlight(t.dataset.orig, hit ? tokens : []);
+        if (hit) visible++;
+      });
+      groups.forEach(function (g) {
+        const shown = Array.from(g.querySelectorAll('.entry')).filter(function (a) {
+          return a.style.display !== 'none';
+        }).length;
+        g.style.display = shown ? '' : 'none';
+        g.querySelector('.group-count').textContent = String(shown).padStart(2, '0');
+      });
+      countEl.textContent = raw ? (visible + ' / ' + total) : (total + ' 篇');
+      clearBtn.style.display = raw ? '' : 'none';
+      noResults.classList.toggle('show', visible === 0);
+      noResultsQ.textContent = raw ? ('“' + raw + '”') : '';
+    }
+
+    input.addEventListener('input', apply);
+    clearBtn.addEventListener('click', function () { input.value = ''; apply(); input.focus(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === '/' && document.activeElement !== input) { e.preventDefault(); input.focus(); }
+      else if (e.key === 'Escape' && document.activeElement === input) { input.value = ''; apply(); input.blur(); }
+    });
+  })();
+  </script>"""
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -119,7 +189,7 @@ def render(groups) -> str:
   .topbar .meta {{ font-family: var(--sans); font-size: 13px; color: var(--faint); }}
 
   /* 主视觉 */
-  .hero {{ padding: 92px 0 80px; max-width: 720px; }}
+  .hero {{ padding: 92px 0 40px; max-width: 720px; }}
   .eyebrow {{
     font-family: var(--sans); font-size: 12px; font-weight: 500;
     letter-spacing: .22em; text-transform: uppercase; color: var(--clay);
@@ -132,6 +202,41 @@ def render(groups) -> str:
   }}
   .hero p {{ font-size: 19px; line-height: 1.7; color: var(--muted); margin: 0; max-width: 40em; }}
   .hero p em {{ color: var(--ink); font-style: italic; }}
+
+  /* 搜索 */
+  .search {{ margin: 0 0 30px; }}
+  .search-box {{
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--line); border-radius: 12px; background: #fff;
+    padding: 13px 16px; transition: border-color .18s ease, box-shadow .18s ease;
+  }}
+  .search-box:focus-within {{ border-color: var(--clay); box-shadow: 0 0 0 3px rgba(217,119,87,.14); }}
+  .search-icon {{ flex: none; width: 18px; height: 18px; color: var(--faint); }}
+  .search input {{
+    flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+    font-family: var(--sans); font-size: 15px; color: var(--ink); padding: 0;
+  }}
+  .search input::placeholder {{ color: var(--faint); }}
+  .search input::-webkit-search-decoration,
+  .search input::-webkit-search-cancel-button {{ -webkit-appearance: none; }}
+  .search-count {{
+    font-family: var(--sans); font-size: 12.5px; color: var(--faint);
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }}
+  .search-clear {{
+    flex: none; border: none; background: transparent; cursor: pointer;
+    color: var(--faint); font-size: 20px; line-height: 1; padding: 0 2px; display: none;
+  }}
+  .search-clear:hover {{ color: var(--clay-deep); }}
+  .search-hint {{ font-family: var(--sans); font-size: 12px; color: var(--faint); margin: 11px 2px 0; }}
+  .search-hint kbd {{
+    font-family: var(--sans); font-size: 11px; color: var(--muted); background: #fff;
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px;
+  }}
+  mark {{ background: rgba(217,119,87,.16); color: var(--clay-deep); border-radius: 3px; padding: 0 1px; }}
+  .no-results {{ display: none; padding: 44px 4px; color: var(--muted); font-size: 17px; }}
+  .no-results.show {{ display: block; }}
+  .no-results b {{ color: var(--ink); font-weight: 500; }}
 
   /* 分组 */
   .group {{ padding: 34px 0; border-top: 1px solid var(--line); }}
@@ -192,8 +297,22 @@ def render(groups) -> str:
       <p>把 arXiv 上的技术报告与论文，做成<em>图文并茂的中文导读</em>。按团队分组，点开任意一篇即可在线阅读。</p>
     </header>
 
+    <div class="search">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+        </svg>
+        <input id="q" type="search" autocomplete="off" spellcheck="false"
+               placeholder="搜索论文，如 R1、attention、prover、agent…" aria-label="按关键词搜索论文">
+        <span class="search-count" id="count" aria-live="polite">{total} 篇</span>
+        <button class="search-clear" id="clear" type="button" aria-label="清空搜索">&times;</button>
+      </div>
+      <p class="search-hint">实时筛选 · 空格分隔多个关键词 · 按 <kbd>/</kbd> 聚焦，<kbd>Esc</kbd> 清空</p>
+    </div>
+
     <main>
 {sections_html}
+      <p class="no-results" id="no-results">没有匹配 <b id="no-results-q"></b> 的论文，换个关键词试试。</p>
     </main>
 
     <footer>
@@ -201,6 +320,7 @@ def render(groups) -> str:
       <span>由 <a href="src/build_index.py">build_index.py</a> 自动生成</span>
     </footer>
   </div>
+{script_js}
 </body>
 </html>
 """

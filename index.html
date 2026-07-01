@@ -38,7 +38,7 @@
   .topbar .meta { font-family: var(--sans); font-size: 13px; color: var(--faint); }
 
   /* 主视觉 */
-  .hero { padding: 92px 0 80px; max-width: 720px; }
+  .hero { padding: 92px 0 40px; max-width: 720px; }
   .eyebrow {
     font-family: var(--sans); font-size: 12px; font-weight: 500;
     letter-spacing: .22em; text-transform: uppercase; color: var(--clay);
@@ -51,6 +51,41 @@
   }
   .hero p { font-size: 19px; line-height: 1.7; color: var(--muted); margin: 0; max-width: 40em; }
   .hero p em { color: var(--ink); font-style: italic; }
+
+  /* 搜索 */
+  .search { margin: 0 0 30px; }
+  .search-box {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--line); border-radius: 12px; background: #fff;
+    padding: 13px 16px; transition: border-color .18s ease, box-shadow .18s ease;
+  }
+  .search-box:focus-within { border-color: var(--clay); box-shadow: 0 0 0 3px rgba(217,119,87,.14); }
+  .search-icon { flex: none; width: 18px; height: 18px; color: var(--faint); }
+  .search input {
+    flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+    font-family: var(--sans); font-size: 15px; color: var(--ink); padding: 0;
+  }
+  .search input::placeholder { color: var(--faint); }
+  .search input::-webkit-search-decoration,
+  .search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+  .search-count {
+    font-family: var(--sans); font-size: 12.5px; color: var(--faint);
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .search-clear {
+    flex: none; border: none; background: transparent; cursor: pointer;
+    color: var(--faint); font-size: 20px; line-height: 1; padding: 0 2px; display: none;
+  }
+  .search-clear:hover { color: var(--clay-deep); }
+  .search-hint { font-family: var(--sans); font-size: 12px; color: var(--faint); margin: 11px 2px 0; }
+  .search-hint kbd {
+    font-family: var(--sans); font-size: 11px; color: var(--muted); background: #fff;
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px;
+  }
+  mark { background: rgba(217,119,87,.16); color: var(--clay-deep); border-radius: 3px; padding: 0 1px; }
+  .no-results { display: none; padding: 44px 4px; color: var(--muted); font-size: 17px; }
+  .no-results.show { display: block; }
+  .no-results b { color: var(--ink); font-weight: 500; }
 
   /* 分组 */
   .group { padding: 34px 0; border-top: 1px solid var(--line); }
@@ -111,6 +146,19 @@
       <p>把 arXiv 上的技术报告与论文，做成<em>图文并茂的中文导读</em>。按团队分组，点开任意一篇即可在线阅读。</p>
     </header>
 
+    <div class="search">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+        </svg>
+        <input id="q" type="search" autocomplete="off" spellcheck="false"
+               placeholder="搜索论文，如 R1、attention、prover、agent…" aria-label="按关键词搜索论文">
+        <span class="search-count" id="count" aria-live="polite">57 篇</span>
+        <button class="search-clear" id="clear" type="button" aria-label="清空搜索">&times;</button>
+      </div>
+      <p class="search-hint">实时筛选 · 空格分隔多个关键词 · 按 <kbd>/</kbd> 聚焦，<kbd>Esc</kbd> 清空</p>
+    </div>
+
     <main>
       <section class="group">
         <div class="group-head">
@@ -119,16 +167,16 @@
           <span class="group-count">10</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/deepseek/deepseek-ocr2_visual/index.html"><span class="entry-title">DeepSeek-OCR 2:视觉因果流 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/deepseek-ocr_visual/index.html"><span class="entry-title">DeepSeek-OCR：用「光学压缩」把长文本塞进视觉 token</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/deepseek-prover-v2_visual/index.html"><span class="entry-title">DeepSeek-Prover-V2 图解精读 · 子目标分解与强化学习</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/deepseek-r1_visual/index.html"><span class="entry-title">DeepSeek-R1 · 中文导读：用强化学习激发推理能力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/deepseek-v3_visual/index.html"><span class="entry-title">DeepSeek-V3 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/deepseek-v32_visual/index.html"><span class="entry-title">DeepSeek-V3.2 解读 · 稀疏注意力 + 扩展 RL + 智能体合成</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/deepseek-v32-exp_visual/index.html"><span class="entry-title">DeepSeek-V3.2-Exp：用 DSA 稀疏注意力打通长上下文效率</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/deepseek-v4_visual/index.html"><span class="entry-title">DeepSeek-V4：让百万 token 上下文真正用得起 · 论文图解</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/dspark_visual/index.html"><span class="entry-title">DSpark · 半自回归 + 置信度调度的投机解码</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/deepseek/mhc_visual/index.html"><span class="entry-title">mHC：流形约束的超连接 · 论文精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-ocr2_visual/index.html" data-search="deepseek-ocr 2:视觉因果流 · 图解精读 deepseek deepseek"><span class="entry-title">DeepSeek-OCR 2:视觉因果流 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-ocr_visual/index.html" data-search="deepseek-ocr：用「光学压缩」把长文本塞进视觉 token deepseek deepseek"><span class="entry-title">DeepSeek-OCR：用「光学压缩」把长文本塞进视觉 token</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-prover-v2_visual/index.html" data-search="deepseek-prover-v2 图解精读 · 子目标分解与强化学习 deepseek deepseek"><span class="entry-title">DeepSeek-Prover-V2 图解精读 · 子目标分解与强化学习</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-r1_visual/index.html" data-search="deepseek-r1 · 中文导读：用强化学习激发推理能力 deepseek deepseek"><span class="entry-title">DeepSeek-R1 · 中文导读：用强化学习激发推理能力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-v3_visual/index.html" data-search="deepseek-v3 技术报告 · 图解精读 deepseek deepseek"><span class="entry-title">DeepSeek-V3 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-v32_visual/index.html" data-search="deepseek-v3.2 解读 · 稀疏注意力 + 扩展 rl + 智能体合成 deepseek deepseek"><span class="entry-title">DeepSeek-V3.2 解读 · 稀疏注意力 + 扩展 RL + 智能体合成</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-v32-exp_visual/index.html" data-search="deepseek-v3.2-exp：用 dsa 稀疏注意力打通长上下文效率 deepseek deepseek"><span class="entry-title">DeepSeek-V3.2-Exp：用 DSA 稀疏注意力打通长上下文效率</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/deepseek-v4_visual/index.html" data-search="deepseek-v4：让百万 token 上下文真正用得起 · 论文图解 deepseek deepseek"><span class="entry-title">DeepSeek-V4：让百万 token 上下文真正用得起 · 论文图解</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/dspark_visual/index.html" data-search="dspark · 半自回归 + 置信度调度的投机解码 deepseek deepseek"><span class="entry-title">DSpark · 半自回归 + 置信度调度的投机解码</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/deepseek/mhc_visual/index.html" data-search="mhc：流形约束的超连接 · 论文精读 deepseek deepseek"><span class="entry-title">mHC：流形约束的超连接 · 论文精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -138,9 +186,9 @@
           <span class="group-count">03</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/glm/glm-4.5_visual/index.html"><span class="entry-title">GLM-4.5 图解 · ARC 统一的智能体 / 推理 / 代码基础模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/glm/glm-4.5v_visual/index.html"><span class="entry-title">GLM-4.5V &amp; GLM-4.1V-Thinking · 可扩展强化学习驱动的多模态推理</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/glm/glm-5_visual/index.html"><span class="entry-title">GLM-5：从 Vibe Coding 到 Agentic Engineering · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/glm/glm-4.5_visual/index.html" data-search="glm-4.5 图解 · arc 统一的智能体 / 推理 / 代码基础模型 glm · 智谱 glm"><span class="entry-title">GLM-4.5 图解 · ARC 统一的智能体 / 推理 / 代码基础模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/glm/glm-4.5v_visual/index.html" data-search="glm-4.5v &amp; glm-4.1v-thinking · 可扩展强化学习驱动的多模态推理 glm · 智谱 glm"><span class="entry-title">GLM-4.5V &amp; GLM-4.1V-Thinking · 可扩展强化学习驱动的多模态推理</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/glm/glm-5_visual/index.html" data-search="glm-5：从 vibe coding 到 agentic engineering · 图解精读 glm · 智谱 glm"><span class="entry-title">GLM-5：从 Vibe Coding 到 Agentic Engineering · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -150,13 +198,13 @@
           <span class="group-count">07</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/kimi/kimi-k1.5_visual/index.html"><span class="entry-title">Kimi k1.5 · 中文导读：用长上下文把强化学习扩展到 LLM</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/kimi/kimi-k2_visual/index.html"><span class="entry-title">Kimi K2 · 中文导读：为「智能体」而生的开源万亿大模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/kimi/kimi-k2.5_visual/index.html"><span class="entry-title">Kimi K2.5 · 中文导读：视觉智能体与 Agent Swarm</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/kimi/kimi-linear_visual/index.html"><span class="entry-title">Kimi Linear · 中文导读：又快又强的混合线性注意力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/kimi/kimi-dev_visual/index.html"><span class="entry-title">Kimi-Dev · 中文导读：Agentless 训练作为 SWE-Agent 的技能先验</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/kimi/kimina-lean-server_visual/index.html"><span class="entry-title">Kimina Lean Server · 中文导读：为大规模形式化验证而生的高性能 Lean 服务器</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/kimi/kimina-prover-preview_visual/index.html"><span class="entry-title">Kimina-Prover Preview · 中文导读：用强化学习训练会「思考」的形式化证明大模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/kimi/kimi-k1.5_visual/index.html" data-search="kimi k1.5 · 中文导读：用长上下文把强化学习扩展到 llm kimi · 月之暗面 kimi"><span class="entry-title">Kimi k1.5 · 中文导读：用长上下文把强化学习扩展到 LLM</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/kimi/kimi-k2_visual/index.html" data-search="kimi k2 · 中文导读：为「智能体」而生的开源万亿大模型 kimi · 月之暗面 kimi"><span class="entry-title">Kimi K2 · 中文导读：为「智能体」而生的开源万亿大模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/kimi/kimi-k2.5_visual/index.html" data-search="kimi k2.5 · 中文导读：视觉智能体与 agent swarm kimi · 月之暗面 kimi"><span class="entry-title">Kimi K2.5 · 中文导读：视觉智能体与 Agent Swarm</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/kimi/kimi-linear_visual/index.html" data-search="kimi linear · 中文导读：又快又强的混合线性注意力 kimi · 月之暗面 kimi"><span class="entry-title">Kimi Linear · 中文导读：又快又强的混合线性注意力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/kimi/kimi-dev_visual/index.html" data-search="kimi-dev · 中文导读：agentless 训练作为 swe-agent 的技能先验 kimi · 月之暗面 kimi"><span class="entry-title">Kimi-Dev · 中文导读：Agentless 训练作为 SWE-Agent 的技能先验</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/kimi/kimina-lean-server_visual/index.html" data-search="kimina lean server · 中文导读：为大规模形式化验证而生的高性能 lean 服务器 kimi · 月之暗面 kimi"><span class="entry-title">Kimina Lean Server · 中文导读：为大规模形式化验证而生的高性能 Lean 服务器</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/kimi/kimina-prover-preview_visual/index.html" data-search="kimina-prover preview · 中文导读：用强化学习训练会「思考」的形式化证明大模型 kimi · 月之暗面 kimi"><span class="entry-title">Kimina-Prover Preview · 中文导读：用强化学习训练会「思考」的形式化证明大模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -166,10 +214,10 @@
           <span class="group-count">04</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/longcat/longcat-flash_visual/index.html"><span class="entry-title">LongCat-Flash 技术报告 · 图解导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/longcat/longcat-flash-prover_visual/index.html"><span class="entry-title">LongCat-Flash-Prover 图解：把形式化推理变成模型的原生能力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/longcat/longcat-flash-thinking_visual/index.html"><span class="entry-title">LongCat-Flash-Thinking 图解 · 美团 LongCat 推理增强技术报告</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/longcat/longcat-flash-thinking-2601_visual/index.html"><span class="entry-title">LongCat-Flash-Thinking-2601 技术报告 · 图解导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/longcat/longcat-flash_visual/index.html" data-search="longcat-flash 技术报告 · 图解导读 longcat · 美团 longcat"><span class="entry-title">LongCat-Flash 技术报告 · 图解导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/longcat/longcat-flash-prover_visual/index.html" data-search="longcat-flash-prover 图解：把形式化推理变成模型的原生能力 longcat · 美团 longcat"><span class="entry-title">LongCat-Flash-Prover 图解：把形式化推理变成模型的原生能力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/longcat/longcat-flash-thinking_visual/index.html" data-search="longcat-flash-thinking 图解 · 美团 longcat 推理增强技术报告 longcat · 美团 longcat"><span class="entry-title">LongCat-Flash-Thinking 图解 · 美团 LongCat 推理增强技术报告</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/longcat/longcat-flash-thinking-2601_visual/index.html" data-search="longcat-flash-thinking-2601 技术报告 · 图解导读 longcat · 美团 longcat"><span class="entry-title">LongCat-Flash-Thinking-2601 技术报告 · 图解导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -179,10 +227,10 @@
           <span class="group-count">04</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/minimax/minimax-sparse-attention_visual/index.html"><span class="entry-title">MiniMax Sparse Attention（MSA）图解 · 论文精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/minimax/minimax-01_visual/index.html"><span class="entry-title">MiniMax-01：用 Lightning Attention 把上下文扩到百万级</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/minimax/minimax-m1_visual/index.html"><span class="entry-title">MiniMax-M1 图解：用 Lightning Attention 高效扩展推理算力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/minimax/minimax-m2_visual/index.html"><span class="entry-title">MiniMax-M2 系列：用「迷你激活」撬动「最大真实世界智能」</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/minimax/minimax-sparse-attention_visual/index.html" data-search="minimax sparse attention（msa）图解 · 论文精读 minimax minimax"><span class="entry-title">MiniMax Sparse Attention（MSA）图解 · 论文精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/minimax/minimax-01_visual/index.html" data-search="minimax-01：用 lightning attention 把上下文扩到百万级 minimax minimax"><span class="entry-title">MiniMax-01：用 Lightning Attention 把上下文扩到百万级</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/minimax/minimax-m1_visual/index.html" data-search="minimax-m1 图解：用 lightning attention 高效扩展推理算力 minimax minimax"><span class="entry-title">MiniMax-M1 图解：用 Lightning Attention 高效扩展推理算力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/minimax/minimax-m2_visual/index.html" data-search="minimax-m2 系列：用「迷你激活」撬动「最大真实世界智能」 minimax minimax"><span class="entry-title">MiniMax-M2 系列：用「迷你激活」撬动「最大真实世界智能」</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -192,14 +240,14 @@
           <span class="group-count">08</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/qwen/qwen-image-2.0_visual/index.html"><span class="entry-title">Qwen-Image-2.0 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen/qwen2.5-1m_visual/index.html"><span class="entry-title">Qwen2.5-1M 技术报告 · 图解</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen/qwen3-embedding_visual/index.html"><span class="entry-title">Qwen3 Embedding 论文图解 · 基于基座大模型的文本嵌入与重排</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen/qwen3_visual/index.html"><span class="entry-title">Qwen3 技术报告 · 中文导读：一个模型同时会「想」与「不想」</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen/qwen3-coder-next_visual/index.html"><span class="entry-title">Qwen3-Coder-Next 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen/qwen3.5-omni_visual/index.html"><span class="entry-title">Qwen3.5-Omni 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen/qwen3guard_visual/index.html"><span class="entry-title">Qwen3Guard 技术报告 · 可视化精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen/tongyi-deepresearch_visual/index.html"><span class="entry-title">Tongyi DeepResearch 技术报告 · 图解</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/qwen-image-2.0_visual/index.html" data-search="qwen-image-2.0 技术报告 · 图解精读 qwen · 通义千问 qwen"><span class="entry-title">Qwen-Image-2.0 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/qwen2.5-1m_visual/index.html" data-search="qwen2.5-1m 技术报告 · 图解 qwen · 通义千问 qwen"><span class="entry-title">Qwen2.5-1M 技术报告 · 图解</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/qwen3-embedding_visual/index.html" data-search="qwen3 embedding 论文图解 · 基于基座大模型的文本嵌入与重排 qwen · 通义千问 qwen"><span class="entry-title">Qwen3 Embedding 论文图解 · 基于基座大模型的文本嵌入与重排</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/qwen3_visual/index.html" data-search="qwen3 技术报告 · 中文导读：一个模型同时会「想」与「不想」 qwen · 通义千问 qwen"><span class="entry-title">Qwen3 技术报告 · 中文导读：一个模型同时会「想」与「不想」</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/qwen3-coder-next_visual/index.html" data-search="qwen3-coder-next 技术报告 · 图解精读 qwen · 通义千问 qwen"><span class="entry-title">Qwen3-Coder-Next 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/qwen3.5-omni_visual/index.html" data-search="qwen3.5-omni 技术报告 · 图解精读 qwen · 通义千问 qwen"><span class="entry-title">Qwen3.5-Omni 技术报告 · 图解精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/qwen3guard_visual/index.html" data-search="qwen3guard 技术报告 · 可视化精读 qwen · 通义千问 qwen"><span class="entry-title">Qwen3Guard 技术报告 · 可视化精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen/tongyi-deepresearch_visual/index.html" data-search="tongyi deepresearch 技术报告 · 图解 qwen · 通义千问 qwen"><span class="entry-title">Tongyi DeepResearch 技术报告 · 图解</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -209,14 +257,14 @@
           <span class="group-count">08</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/seed/gr-rl_visual/index.html"><span class="entry-title">GR-RL · 中文导读：用强化学习把通用 VLA 打磨成长程灵巧操作专家</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/seed/seed-coder_visual/index.html"><span class="entry-title">Seed-Coder：让代码模型为自己筛选训练数据</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/seed/seed-oss_visual/index.html"><span class="entry-title">Seed-OSS · 图解精读：字节 Seed 开源的 36B 长上下文推理模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/seed/seed-prover-1.5_visual/index.html"><span class="entry-title">Seed-Prover 1.5 · 从经验中学习的自动定理证明</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/seed/seed-thinking-v1.5_visual/index.html"><span class="entry-title">Seed-Thinking-v1.5 · 中文导读：把推理能力用强化学习「练」到顶尖</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/seed/seed1.8_visual/index.html"><span class="entry-title">Seed1.8 模型卡 · 面向通用真实世界智能体</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/seed/seed2.0_visual/index.html"><span class="entry-title">Seed2.0 Model Card · 面向真实世界复杂性的智能前沿</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/seed/seedance-2.0_visual/index.html"><span class="entry-title">Seedance 2.0：统一的原生视频生成与编辑基础模型 · 可视化精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/gr-rl_visual/index.html" data-search="gr-rl · 中文导读：用强化学习把通用 vla 打磨成长程灵巧操作专家 seed · 字节 seed"><span class="entry-title">GR-RL · 中文导读：用强化学习把通用 VLA 打磨成长程灵巧操作专家</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/seed-coder_visual/index.html" data-search="seed-coder：让代码模型为自己筛选训练数据 seed · 字节 seed"><span class="entry-title">Seed-Coder：让代码模型为自己筛选训练数据</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/seed-oss_visual/index.html" data-search="seed-oss · 图解精读：字节 seed 开源的 36b 长上下文推理模型 seed · 字节 seed"><span class="entry-title">Seed-OSS · 图解精读：字节 Seed 开源的 36B 长上下文推理模型</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/seed-prover-1.5_visual/index.html" data-search="seed-prover 1.5 · 从经验中学习的自动定理证明 seed · 字节 seed"><span class="entry-title">Seed-Prover 1.5 · 从经验中学习的自动定理证明</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/seed-thinking-v1.5_visual/index.html" data-search="seed-thinking-v1.5 · 中文导读：把推理能力用强化学习「练」到顶尖 seed · 字节 seed"><span class="entry-title">Seed-Thinking-v1.5 · 中文导读：把推理能力用强化学习「练」到顶尖</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/seed1.8_visual/index.html" data-search="seed1.8 模型卡 · 面向通用真实世界智能体 seed · 字节 seed"><span class="entry-title">Seed1.8 模型卡 · 面向通用真实世界智能体</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/seed2.0_visual/index.html" data-search="seed2.0 model card · 面向真实世界复杂性的智能前沿 seed · 字节 seed"><span class="entry-title">Seed2.0 Model Card · 面向真实世界复杂性的智能前沿</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/seed/seedance-2.0_visual/index.html" data-search="seedance 2.0：统一的原生视频生成与编辑基础模型 · 可视化精读 seed · 字节 seed"><span class="entry-title">Seedance 2.0：统一的原生视频生成与编辑基础模型 · 可视化精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -226,11 +274,11 @@
           <span class="group-count">05</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/stepfun/step3.5-flash_visual/index.html"><span class="entry-title">Step 3.5 Flash · 11B 激活的开源前沿智能 | 论文可视化精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/stepfun/step3_visual/index.html"><span class="entry-title">Step-3 解读 · 模型-系统协同设计，把大模型的解码做便宜</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/stepfun/step-deepresearch_visual/index.html"><span class="entry-title">Step-DeepResearch 深读 · 用原子能力把中等模型训成专家级研究员</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/stepfun/stepfun-formalizer_visual/index.html"><span class="entry-title">StepFun-Formalizer：用「知识-推理融合」解锁大模型的自动形式化能力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/stepfun/stepfun-prover_visual/index.html"><span class="entry-title">StepFun-Prover Preview · 一边思考一边验证的形式化定理证明</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/stepfun/step3.5-flash_visual/index.html" data-search="step 3.5 flash · 11b 激活的开源前沿智能 | 论文可视化精读 stepfun · 阶跃 stepfun"><span class="entry-title">Step 3.5 Flash · 11B 激活的开源前沿智能 | 论文可视化精读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/stepfun/step3_visual/index.html" data-search="step-3 解读 · 模型-系统协同设计，把大模型的解码做便宜 stepfun · 阶跃 stepfun"><span class="entry-title">Step-3 解读 · 模型-系统协同设计，把大模型的解码做便宜</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/stepfun/step-deepresearch_visual/index.html" data-search="step-deepresearch 深读 · 用原子能力把中等模型训成专家级研究员 stepfun · 阶跃 stepfun"><span class="entry-title">Step-DeepResearch 深读 · 用原子能力把中等模型训成专家级研究员</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/stepfun/stepfun-formalizer_visual/index.html" data-search="stepfun-formalizer：用「知识-推理融合」解锁大模型的自动形式化能力 stepfun · 阶跃 stepfun"><span class="entry-title">StepFun-Formalizer：用「知识-推理融合」解锁大模型的自动形式化能力</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/stepfun/stepfun-prover_visual/index.html" data-search="stepfun-prover preview · 一边思考一边验证的形式化定理证明 stepfun · 阶跃 stepfun"><span class="entry-title">StepFun-Prover Preview · 一边思考一边验证的形式化定理证明</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
       <section class="group">
@@ -240,16 +288,17 @@
           <span class="group-count">08</span>
         </div>
         <div class="entries">
-          <a class="entry" href="reports/dcrc_visual/index.html"><span class="entry-title">DCRC：用「数据中心的编译」治金融问答的数字幻觉</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/mas_visual/index.html"><span class="entry-title">MAS-Orchestra：多智能体系统该不该用、又该怎么造</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/iwopd_visual/index.html"><span class="entry-title">OPD 的位置偏差：让在线策略蒸馏把劲使在刀刃上</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/quest_visual/index.html"><span class="entry-title">Quest：用全合成任务训练前沿深度研究智能体 · 可视化导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/qwen3-technical-report/qwen3-technical-report.html"><span class="entry-title">Qwen3 技术报告 · 中文导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/rubric_visual/index.html"><span class="entry-title">Rubrics 综述 · 从整体评判到结构化准则</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/tnet_blog/tnet.html"><span class="entry-title">TNet：用 CNN 取代 Attention 做目标级情感分类</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
-          <a class="entry" href="reports/otagent_visual/index.html"><span class="entry-title">训练 Agent 模型的数据配方 · OpenThoughts-Agent 导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/dcrc_visual/index.html" data-search="dcrc：用「数据中心的编译」治金融问答的数字幻觉 其它 _misc"><span class="entry-title">DCRC：用「数据中心的编译」治金融问答的数字幻觉</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/mas_visual/index.html" data-search="mas-orchestra：多智能体系统该不该用、又该怎么造 其它 _misc"><span class="entry-title">MAS-Orchestra：多智能体系统该不该用、又该怎么造</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/iwopd_visual/index.html" data-search="opd 的位置偏差：让在线策略蒸馏把劲使在刀刃上 其它 _misc"><span class="entry-title">OPD 的位置偏差：让在线策略蒸馏把劲使在刀刃上</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/quest_visual/index.html" data-search="quest：用全合成任务训练前沿深度研究智能体 · 可视化导读 其它 _misc"><span class="entry-title">Quest：用全合成任务训练前沿深度研究智能体 · 可视化导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/qwen3-technical-report/qwen3-technical-report.html" data-search="qwen3 技术报告 · 中文导读 其它 _misc"><span class="entry-title">Qwen3 技术报告 · 中文导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/rubric_visual/index.html" data-search="rubrics 综述 · 从整体评判到结构化准则 其它 _misc"><span class="entry-title">Rubrics 综述 · 从整体评判到结构化准则</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/tnet_blog/tnet.html" data-search="tnet：用 cnn 取代 attention 做目标级情感分类 其它 _misc"><span class="entry-title">TNet：用 CNN 取代 Attention 做目标级情感分类</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
+          <a class="entry" href="reports/otagent_visual/index.html" data-search="训练 agent 模型的数据配方 · openthoughts-agent 导读 其它 _misc"><span class="entry-title">训练 Agent 模型的数据配方 · OpenThoughts-Agent 导读</span><span class="entry-go" aria-hidden="true">&rarr;</span></a>
         </div>
       </section>
+      <p class="no-results" id="no-results">没有匹配 <b id="no-results-q"></b> 的论文，换个关键词试试。</p>
     </main>
 
     <footer>
@@ -257,5 +306,73 @@
       <span>由 <a href="src/build_index.py">build_index.py</a> 自动生成</span>
     </footer>
   </div>
+
+  <script>
+  (function () {
+    const input = document.getElementById('q');
+    const clearBtn = document.getElementById('clear');
+    const countEl = document.getElementById('count');
+    const noResults = document.getElementById('no-results');
+    const noResultsQ = document.getElementById('no-results-q');
+    const groups = Array.from(document.querySelectorAll('.group'));
+    const entries = Array.from(document.querySelectorAll('.entry'));
+    const total = entries.length;
+
+    entries.forEach(function (a) {
+      const t = a.querySelector('.entry-title');
+      t.dataset.orig = t.textContent;
+    });
+
+    function esc(s) {
+      return s.replace(/[&<>]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c];
+      });
+    }
+    function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    function highlight(text, tokens) {
+      if (!tokens.length) return esc(text);
+      const re = new RegExp(tokens.map(escRe).join('|'), 'ig');
+      let out = '', last = 0, m;
+      while ((m = re.exec(text)) !== null) {
+        out += esc(text.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+        last = m.index + m[0].length;
+        if (m.index === re.lastIndex) re.lastIndex++;
+      }
+      return out + esc(text.slice(last));
+    }
+
+    function apply() {
+      const raw = input.value.trim();
+      const tokens = raw.toLowerCase().split(/\s+/).filter(Boolean);
+      let visible = 0;
+      entries.forEach(function (a) {
+        const hit = tokens.every(function (t) { return a.dataset.search.indexOf(t) !== -1; });
+        a.style.display = hit ? '' : 'none';
+        const t = a.querySelector('.entry-title');
+        t.innerHTML = highlight(t.dataset.orig, hit ? tokens : []);
+        if (hit) visible++;
+      });
+      groups.forEach(function (g) {
+        const shown = Array.from(g.querySelectorAll('.entry')).filter(function (a) {
+          return a.style.display !== 'none';
+        }).length;
+        g.style.display = shown ? '' : 'none';
+        g.querySelector('.group-count').textContent = String(shown).padStart(2, '0');
+      });
+      countEl.textContent = raw ? (visible + ' / ' + total) : (total + ' 篇');
+      clearBtn.style.display = raw ? '' : 'none';
+      noResults.classList.toggle('show', visible === 0);
+      noResultsQ.textContent = raw ? ('“' + raw + '”') : '';
+    }
+
+    input.addEventListener('input', apply);
+    clearBtn.addEventListener('click', function () { input.value = ''; apply(); input.focus(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === '/' && document.activeElement !== input) { e.preventDefault(); input.focus(); }
+      else if (e.key === 'Escape' && document.activeElement === input) { input.value = ''; apply(); input.blur(); }
+    });
+  })();
+  </script>
 </body>
 </html>
