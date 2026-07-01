@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agents-A1：把「视野」而非「参数」做大——用 35B 追上万亿模型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf9f5; --ink:#141413; --muted:#6b6a62; --faint:#b0aea5;
+    --line:#e4e1d7; --surface:#f1eee4;
+    --accent:#d97757; --accent-deep:#bf5c3c;
+    --sans:"Poppins","Noto Sans SC","PingFang SC",sans-serif;
+    --serif:"Lora",Georgia,serif;
+    --cjk:"Noto Sans SC","PingFang SC",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--cjk);font-size:16.5px;line-height:1.8;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 28px;}
+
+  /* 顶栏 */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(250,249,245,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{max-width:880px;margin:0 auto;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--sans);font-weight:500;font-size:15px;letter-spacing:.2px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);}
+  .topnav{display:flex;gap:18px;font-family:var(--sans);font-size:13.5px;}
+  .topnav a{color:var(--muted);text-decoration:none;transition:color .18s;white-space:nowrap;}
+  .topnav a:hover{color:var(--accent-deep);}
+  .topnav a.src{color:var(--accent);}
+  @media(max-width:760px){.topnav{display:none;}}
+
+  /* Hero */
+  header.hero{padding:72px 0 34px;border-bottom:1px solid var(--line);}
+  .eyebrow{font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:0 0 18px;}
+  h1{font-family:var(--sans);font-weight:600;font-size:clamp(28px,5vw,44px);line-height:1.16;letter-spacing:-.01em;margin:0 0 20px;}
+  h1 .en{display:block;font-size:.5em;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:12px;font-family:var(--serif);font-style:italic;}
+  .hero-sub{font-size:18px;color:var(--muted);margin:0 0 26px;max-width:44em;}
+  .hero-sub b{color:var(--ink);font-weight:600;}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;font-family:var(--sans);font-size:12.5px;}
+  .tag{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:#fff;}
+  .tag.accent{border-color:var(--accent);color:var(--accent-deep);}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line);}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin:0 0 8px;}
+  .sec-num{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--accent);flex:none;}
+  h2{font-family:var(--sans);font-weight:600;font-size:clamp(22px,3.4vw,29px);letter-spacing:-.01em;margin:0;line-height:1.25;}
+  .sec-rule{flex:1;height:1px;background:var(--line);align-self:center;}
+  .lead{font-size:17px;color:var(--muted);margin:6px 0 28px;}
+  h3{font-family:var(--sans);font-weight:600;font-size:19px;margin:34px 0 12px;letter-spacing:-.01em;}
+  h4{font-family:var(--sans);font-weight:500;font-size:16px;margin:22px 0 8px;}
+  p{margin:0 0 16px;}
+  strong{font-weight:600;color:var(--ink);}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(217,119,87,.3);}
+  a:hover{color:var(--accent-deep);border-color:var(--accent-deep);}
+  ul,ol{margin:0 0 16px;padding-left:1.3em;}
+  li{margin:0 0 9px;}
+  .en-term{font-family:var(--serif);font-style:italic;}
+  code{font-family:var(--mono);font-size:.88em;background:var(--surface);padding:1px 6px;border-radius:5px;color:var(--accent-deep);}
+
+  /* TL;DR */
+  .tldr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:0 0 8px;}
+  .tldr h3{margin-top:0;display:flex;align-items:center;gap:9px;}
+  .tldr h3 .k{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;color:#fff;background:var(--accent);padding:3px 9px;border-radius:6px;}
+  .tldr p{margin-bottom:0;}
+
+  /* metric cards */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:26px 0;}
+  .metric{border:1px solid var(--line);border-radius:12px;padding:18px 16px;background:#fff;}
+  .metric .num{font-family:var(--sans);font-weight:600;font-size:30px;line-height:1;color:var(--accent-deep);letter-spacing:-.02em;}
+  .metric .num .unit{font-size:15px;color:var(--faint);font-weight:400;margin-left:3px;}
+  .metric .lab{font-family:var(--sans);font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.5;}
+  .metric .sub{font-size:11.5px;color:var(--faint);margin-top:4px;}
+
+  /* 双栏对比 */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0;}
+  .col-card{border:1px solid var(--line);border-radius:12px;padding:20px;background:#fff;}
+  .col-card.dim{background:var(--surface);}
+  .col-card h4{margin-top:0;display:flex;align-items:center;gap:8px;}
+  .col-card .badge{font-family:var(--sans);font-size:11px;padding:2px 8px;border-radius:5px;}
+  .badge-a{background:#efe7e2;color:var(--accent-deep);}
+  .badge-b{background:#e7ece4;color:#4a6b46;}
+  .col-card ul{margin-bottom:0;font-size:14.5px;color:var(--muted);}
+  @media(max-width:760px){.two-col{grid-template-columns:1fr;}}
+
+  /* figure */
+  figure{margin:28px 0;}
+  figure img{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;display:block;}
+  figcaption{margin-top:12px;font-family:var(--sans);}
+  .fig-cap-main{font-size:14px;color:var(--muted);line-height:1.6;}
+  .fig-cap-main .fnum{color:var(--accent);font-weight:500;}
+  .fig-toggle{display:inline-block;margin-top:9px;font-size:13px;color:var(--accent);cursor:pointer;user-select:none;border-bottom:1px dashed rgba(217,119,87,.4);}
+  .fig-toggle:hover{color:var(--accent-deep);}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0;}
+  .figure-detail.active{max-height:1600px;opacity:1;margin-top:14px;}
+  .figure-detail-inner{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;font-family:var(--cjk);font-size:14.5px;line-height:1.75;}
+  .figure-detail-inner ul{margin:0;}
+  .figure-detail-inner li{margin-bottom:8px;}
+  .figure-detail-inner .end{margin:10px 0 0;color:var(--ink);font-weight:500;font-size:14px;}
+
+  /* 可展开卡片 */
+  .exp{border:1px solid var(--line);border-radius:12px;margin:12px 0;background:#fff;overflow:hidden;}
+  .exp-head{display:flex;align-items:flex-start;gap:14px;padding:17px 20px;cursor:pointer;user-select:none;transition:background .18s;}
+  .exp-head:hover{background:var(--surface);}
+  .exp-ic{flex:none;width:30px;height:30px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:1px;}
+  .exp-tt{flex:1;}
+  .exp-tt .t{font-family:var(--sans);font-weight:600;font-size:16px;line-height:1.35;}
+  .exp-tt .t .pill{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--accent-deep);background:#efe7e2;padding:2px 8px;border-radius:5px;margin-left:8px;vertical-align:middle;}
+  .exp-tt .d{font-size:13px;color:var(--faint);margin-top:4px;line-height:1.55;}
+  .exp-ar{flex:none;color:var(--faint);font-size:13px;font-family:var(--sans);transition:transform .3s;margin-top:4px;}
+  .exp.open .exp-ar{transform:rotate(180deg);}
+  .exp-body{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+  .exp.open .exp-body{max-height:3200px;}
+  .exp-body-inner{padding:4px 20px 22px;border-top:1px solid var(--line);font-size:15px;}
+  .exp-body-inner h4:first-child{margin-top:16px;}
+
+  /* KAG 四元组 */
+  .tuple{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:22px 0;}
+  .tuple .t{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:14px 16px;background:#fff;}
+  .tuple .t .sym{font-family:var(--mono);font-weight:500;color:var(--accent-deep);font-size:14px;}
+  .tuple .t .nm{font-family:var(--sans);font-weight:600;font-size:14.5px;margin:2px 0 4px;}
+  .tuple .t .ds{font-size:13.5px;color:var(--muted);line-height:1.6;}
+  @media(max-width:760px){.tuple{grid-template-columns:1fr;}}
+
+  /* atomic ability chips */
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 8px;}
+  .chip{font-family:var(--sans);font-size:13.5px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);display:flex;align-items:center;gap:7px;}
+  .chip .n{color:var(--accent);font-weight:600;font-size:12px;}
+
+  /* 引用块 */
+  blockquote{margin:24px 0;padding:16px 22px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;font-family:var(--serif);font-style:italic;color:var(--ink);font-size:16px;line-height:1.7;}
+  blockquote .zh{font-family:var(--cjk);font-style:normal;font-size:14.5px;color:var(--muted);margin-top:8px;display:block;}
+
+  /* insight box */
+  .insight{border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:24px 0;background:#fff;}
+  .insight .lbl{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 8px;}
+  .insight p{margin-bottom:0;}
+
+  /* OPD stepper */
+  .stepper{border:1px solid var(--line);border-radius:14px;background:#fff;padding:22px;margin:26px 0;}
+  .step-pipe{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+  .step-node{flex:1;min-width:78px;text-align:center;padding:10px 6px;border:1px solid var(--line);border-radius:9px;font-family:var(--sans);font-size:11.5px;color:var(--faint);background:var(--bg);transition:all .3s;line-height:1.3;position:relative;}
+  .step-node .sn{display:block;font-size:14px;font-weight:600;color:var(--faint);margin-bottom:3px;}
+  .step-node.active{border-color:var(--accent);background:#fff;color:var(--ink);box-shadow:0 0 0 3px rgba(217,119,87,.12);}
+  .step-node.active .sn{color:var(--accent-deep);}
+  .step-node.done{border-color:var(--line);color:var(--muted);}
+  .step-node.done .sn{color:var(--accent);}
+  .step-detail{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-height:118px;}
+  .step-detail .st{font-family:var(--sans);font-weight:600;font-size:16px;margin:0 0 8px;color:var(--ink);}
+  .step-detail .sd{font-size:14.5px;color:var(--muted);margin:0;line-height:1.7;}
+  .step-ctrl{display:flex;align-items:center;gap:12px;margin-top:18px;}
+  .step-ctrl button{font-family:var(--sans);font-size:14px;padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:all .18s;white-space:nowrap;}
+  .step-ctrl button:hover:not(:disabled){border-color:var(--accent);color:var(--accent-deep);}
+  .step-ctrl button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .step-ctrl button.primary:hover{background:var(--accent-deep);}
+  .step-ctrl button:disabled{opacity:.4;cursor:not-allowed;}
+  .step-ctrl .prog{margin-left:auto;font-family:var(--sans);font-size:12.5px;color:var(--faint);}
+
+  /* 表格 */
+  .table-wrap{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:12px;}
+  table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:13.5px;min-width:520px;}
+  th,td{padding:10px 12px;text-align:center;border-bottom:1px solid var(--line);}
+  th{font-weight:600;color:var(--muted);background:var(--surface);font-size:12.5px;}
+  td:first-child,th:first-child{text-align:left;color:var(--ink);}
+  tbody tr:last-child td{border-bottom:none;}
+  td.win{background:rgba(217,119,87,.11);color:var(--accent-deep);font-weight:600;border-radius:4px;}
+  td.hero-col{font-weight:600;color:var(--ink);}
+  .tbl-note{font-family:var(--sans);font-size:12px;color:var(--faint);margin:8px 2px 0;}
+
+  /* case */
+  details.case{border:1px solid var(--line);border-radius:10px;margin:14px 0;background:#fff;padding:0 18px;}
+  details.case summary{cursor:pointer;padding:15px 0;font-family:var(--sans);font-weight:500;font-size:15px;list-style:none;display:flex;align-items:center;gap:9px;}
+  details.case summary::-webkit-details-marker{display:none;}
+  details.case summary .mk{color:var(--accent);transition:transform .3s;font-size:12px;}
+  details.case[open] summary .mk{transform:rotate(90deg);}
+  details.case summary .sm{color:var(--faint);font-weight:400;font-size:13px;margin-left:auto;}
+  details.case .cbody{padding:2px 0 18px;font-size:14.5px;line-height:1.75;border-top:1px solid var(--line);}
+
+  footer{padding:40px 0 60px;font-family:var(--sans);font-size:13px;color:var(--faint);}
+  footer .src-line{margin:0 0 8px;}
+  footer a{border:none;}
+  .divider-note{font-size:13.5px;color:var(--faint);font-style:italic;font-family:var(--serif);margin:6px 0 0;}
+
+  @media(max-width:760px){
+    .wrap{padding:0 20px;}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    body{font-size:16px;}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="brand"><span class="dot"></span>Agents-A1 图解精读</span>
+    <nav class="topnav">
+      <a href="#problem">问题</a>
+      <a href="#overview">总览</a>
+      <a href="#kag">KAG 基础设施</a>
+      <a href="#data">数据管线</a>
+      <a href="#train">三阶段训练</a>
+      <a href="#opd">OPD 蒸馏</a>
+      <a href="#results">实验</a>
+      <a href="#cases">应用案例</a>
+      <a class="src" href="https://arxiv.org/abs/2606.30616" target="_blank" rel="noopener">原文 ↗</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">论文导读 · Agentic Model</p>
+    <h1>把「视野」做大，而不是把「参数」做大
+      <span class="en">Scaling the Horizon, Not the Parameters — Reaching Trillion-Parameter Performance with a 35B Agent</span>
+    </h1>
+    <p class="hero-sub">一个 <b>35B</b> 的 MoE 智能体，靠「拉长智能体的决策视野」而非「堆参数」，在一系列长程 Agent 任务上追平甚至超过 <b>Kimi-K2.6、DeepSeek-V4、GPT-5.5</b> 这类万亿级模型。</p>
+    <div class="meta-row">
+      <span class="tag accent">2026.06 · arXiv preprint</span>
+      <span class="tag">Shanghai AI Lab · InternScience</span>
+      <span class="tag">Lei Bai, Bo Zhang 等 50 位作者</span>
+      <span class="tag"><a href="https://arxiv.org/abs/2606.30616" target="_blank" rel="noopener" style="border:none;color:inherit;">arXiv:2606.30616 ↗</a></span>
+    </div>
+  </header>
+
+  <!-- TL;DR -->
+  <section id="tldr" style="border-bottom:1px solid var(--line);">
+    <div class="tldr">
+      <h3><span class="k">TL;DR</span> 30 秒抓住核心</h3>
+      <p>前沿模型通常靠<strong>堆参数</strong>把海量推理、工具使用、领域知识「内化」进权重里——有效，但难以复现。本文换一条路：<strong>拉长智能体的「视野（horizon）」</strong>，把「获取知识 → 执行动作 → 观察结果 → 验证反馈」这条长决策链变成可训练的监督信号。为此他们做了三件事：<strong>①</strong> 建一套<strong>知识-行动基础设施（KAG）</strong>，把杂乱语料变成带证据、动作、观察、验证结果的可复现长程轨迹（平均 45K token）；<strong>②</strong> 用<strong>三阶段训练</strong>（全域 SFT → 各领域专家教师 → 多教师蒸馏）；<strong>③</strong> 提出<strong>领域路由的在线策略蒸馏（OPD）+ 显著词表对齐（SVA）</strong>，把六个「打架」的领域能力揉进一个可部署的学生模型。</p>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="num">40.0</div><div class="lab">FrontierScience-Research</div><div class="sub">1T 的 DSV4-Pro 仅 13.3</div></div>
+      <div class="metric"><div class="num">56.4</div><div class="lab">SEAL-0 搜索推理</div><div class="sub">超过全部 1T 模型</div></div>
+      <div class="metric"><div class="num">80.6</div><div class="lab">IFBench 指令遵循</div><div class="sub">超过全部 1T 模型</div></div>
+      <div class="metric"><div class="num">35<span class="unit">B</span></div><div class="lab">总参数（A3B 激活）</div><div class="sub">对标 &gt;1T 万亿模型</div></div>
+    </div>
+    <p class="divider-note">下面按「为什么这么做 → 怎么做 → 效果如何」的顺序展开。</p>
+  </section>
+
+  <!-- 1. 问题 -->
+  <section id="problem">
+    <div class="sec-head"><span class="sec-num">01</span><h2>为什么要「拉长视野」而不是「堆参数」</h2><span class="sec-rule"></span></div>
+    <p class="lead">要理解这篇论文，先得理解它在跟谁较劲——以及它选了一条什么样的赛道。</p>
+
+    <p>大模型正从「被动的语言模型」走向「自主的智能体」：能规划、用工具、与环境交互、并从反馈中改进。在软件工程、科研、复杂决策这些真实场景里，智能体必须在<strong>长程（long-horizon）</strong>下工作——获取信息、拆解任务、调用工具、验证中间结果、根据新信息不断调整策略。这类任务尤其难，因为<strong>早期的一个小错会不断累积</strong>，策略也要随新证据反复修正。</p>
+
+    <p>提升长程智能体，目前有两条扩展路线：</p>
+    <div class="two-col">
+      <div class="col-card dim">
+        <h4><span class="badge badge-a">路线一</span>Scale Parameters 堆参数</h4>
+        <ul>
+          <li>前沿模型靠巨大的参数量，把各种推理模式、工具使用习惯、领域知识全部「内化」进权重。</li>
+          <li><strong>有效</strong>，但代价是：没有对等的模型规模、数据和训练资源，几乎<strong>无法复现</strong>同等的智能体能力。</li>
+        </ul>
+      </div>
+      <div class="col-card">
+        <h4><span class="badge badge-b">路线二</span>Scale the Horizon 拉长视野</h4>
+        <ul>
+          <li>不扩大参数，而是把<strong>中间决策过程显式化</strong>：让「知识获取、动作执行、观察解读、验证」都成为可训练的监督。</li>
+          <li>这正是本文选择的路线——但它也暴露出两个关键瓶颈 ↓</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>拉长视野的两个瓶颈</h3>
+    <div class="metrics" style="grid-template-columns:1fr 1fr;">
+      <div class="col-card">
+        <h4>① 缺少「知识-工具」基础设施</h4>
+        <p style="margin-bottom:0;font-size:14.5px;color:var(--muted);">长程轨迹训练需要一个统一环境，把<strong>外部知识、动作、观察、验证信号</strong>连起来，让模型从「有依据的反馈」而非「孤立文本」中学习。可公开网络语料几乎从不暴露<strong>来源、动作轨迹、工具记录、执行日志、验证结果</strong>——没有这套基础设施，智能体学不会在真实场景里规划、恰当调用工具、验证证据、吸收反馈、从失败中恢复。</p>
+      </div>
+      <div class="col-card">
+        <h4>② 异构能力难以融合</h4>
+        <p style="margin-bottom:0;font-size:14.5px;color:var(--muted);">拉长视野还要整合一大批<strong>跨领域、可组合</strong>的能力：多步检索、工具使用、可执行迭代、约束跟踪、结果反思。这些能力在不同领域<strong>发育不均</strong>、彼此以复杂方式交互，很难把差异极大的专长「揉」进一个统一的智能体模型里。</p>
+      </div>
+    </div>
+
+    <div class="insight">
+      <p class="lbl">本文三大贡献</p>
+      <p><strong>Agents-A1（35B MoE）</strong>正是冲着这两个瓶颈去的：<strong>①</strong> 一个 35B 模型，在科研与研究类长程交互能力上追平甚至超过 1T 模型；<strong>②</strong> 一套<strong>长程知识-行动基础设施（KAG）</strong>，支撑与外部知识/工具的多轮交互；<strong>③</strong> 一个<strong>领域路由的在线策略蒸馏 + 显著词表对齐（SVA）</strong>方法，减少拉长视野时不同领域推理模式之间的冲突。</p>
+    </div>
+  </section>
+
+  <!-- 2. 总览 -->
+  <section id="overview">
+    <div class="sec-head"><span class="sec-num">02</span><h2>方法总览：三阶段流水线</h2><span class="sec-rule"></span></div>
+    <p class="lead">先看全景图，把三个阶段的关系装进脑子，后面再逐块拆开。</p>
+
+    <p>整套方法是一条<strong>三阶段流水线</strong>：先做全域 SFT 得到一个「样样都会一点」的长程智能体；再针对每个领域训练<strong>专家教师</strong>（用定向 SFT 或 RL）；最后通过<strong>多教师在线策略蒸馏</strong>，把各教师的专长整合进一个可部署的学生模型。而支撑这一切的是两根支柱：<strong>多领域数据基础设施（KAG）</strong> 提供「超越最终答案」的过程级监督；<strong>多教师 OPD</strong> 通过路由的教师指导、显著词表对齐、领域感知聚合，把领域教师融合成统一学生。</p>
+
+    <figure>
+      <img src="assets/fig2_pipeline.png" alt="Agents-A1 三阶段训练流水线总览">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 2 ·</span> Agents-A1 三阶段训练流水线总览：从多领域数据 → 各领域专家教师 → 多教师在线策略蒸馏。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>最左：多领域长程数据。</strong>由 KAG 基础设施生产的五类长程轨迹——搜索、科研、工程（含机器学习工程 MLE）、通用智能体任务、指令遵循，平均长度 45K token，是全流程的「燃料」。</li>
+            <li><strong>阶段一 · 全域 SFT。</strong>从 Qwen3.5-35B-A3B 出发，在全部领域数据上做监督微调，得到一个具备广泛长程能力、但各领域「风格打架」的通用智能体 <code>Agents-A1-SFT</code>。</li>
+            <li><strong>阶段二 · 领域专家教师。</strong>针对每个领域单独训练一个教师模型：搜索用 SFT+RL、科学用两阶段 SFT、指令遵循用两阶段 RL、工具调用用 SFT+RL，让每个教师在自己那一门「偏科到极致」。</li>
+            <li><strong>阶段三 · 多教师蒸馏（图右）。</strong>每条样本按领域标签<strong>硬路由</strong>到对应教师，教师给学生自己的 rollout 打分（在线策略），用 SVA 对齐 + 领域归一化聚合，把多个教师的专长收敛进<strong>单个可部署学生</strong>。</li>
+            <li><strong>数据流方向。</strong>知识与监督自左向右流动；关键在于教师<strong>不做参数合并</strong>，而是在 token 层面通过蒸馏信号把能力传给学生。</li>
+          </ul>
+          <p class="end">一句话总结：数据（KAG）喂出通用底座，教师把各领域打磨到极致，蒸馏再把它们「和平地」合并成一个 35B 学生。</p>
+        </div></div>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- 3. KAG -->
+  <section id="kag">
+    <div class="sec-head"><span class="sec-num">03</span><h2>支柱一：知识-行动基础设施 KAG</h2><span class="sec-rule"></span></div>
+    <p class="lead">要拉长视野，先得有「带过程记录」的训练数据。这就是 KAG 要解决的事。</p>
+
+    <p>随着模型变大，训练越来越受限于<strong>高密度、可验证、可演化</strong>监督的供给。公开语料几乎不暴露来源、动作轨迹、工具记录、执行日志和验证结果。于是作者构建了一套<strong>知识-行动基础设施</strong>，把杂乱语料转成「可组合、可验证、可自我扩展」的监督。</p>
+
+    <h3>把长程能力拆成 5 种原子能力</h3>
+    <p>他们先把「长程智能体能力」分解为 5 种<strong>原子能力（atomic abilities）</strong>，KAG 就是为了给这 5 种能力恢复监督信号：</p>
+    <div class="chips">
+      <span class="chip"><span class="n">1</span>信息获取</span>
+      <span class="chip"><span class="n">2</span>工具调用</span>
+      <span class="chip"><span class="n">3</span>可执行迭代</span>
+      <span class="chip"><span class="n">4</span>证据验证</span>
+      <span class="chip"><span class="n">5</span>约束跟踪</span>
+    </div>
+
+    <h3>KAG 是什么：一个「记录过程」的四元组图</h3>
+    <p>对某个领域 <code>d</code>，知识-行动图定义为一个带类型的四元组 <code>𝒢_d = (𝒞_d, 𝒜_d, 𝒪_d, 𝒱_d)</code>：</p>
+    <div class="tuple">
+      <div class="t"><div class="sym">𝒞_d · Corpus</div><div class="nm">领域语料</div><div class="ds">证据块、实体、事实、约束等上下文资源。</div></div>
+      <div class="t"><div class="sym">𝒜_d · Actions</div><div class="nm">动作空间</div><div class="ds">工具调用、检索查询、代码编辑与执行、推理步骤等可用操作。</div></div>
+      <div class="t"><div class="sym">𝒪_d · Observations</div><div class="nm">观察空间</div><div class="ds">工具返回、检索到的证据、执行状态、中间产物。</div></div>
+      <div class="t"><div class="sym">𝒱_d · Verifiers</div><div class="nm">验证器集合</div><div class="ds">对正确性、证据支持、约束满足、目标完成的自动检查。</div></div>
+    </div>
+    <p>图由一条条<strong>动作记录 <code>(s_t, a_t, o_t, v_t)</code></strong> 填充：当前状态 → 采取的动作 → 观察到的结果 → 验证结论；记录之间的边编码「支持 / 依赖 / 产出 / 验证 / 动作转移」关系。</p>
+
+    <blockquote>
+      Unlike a conventional knowledge graph that mainly stores entity-relation facts, a KAG preserves the process by which an answer is acquired, tested, revised, and verified.
+      <span class="zh">与主要存「实体-关系事实」的传统知识图谱不同，KAG 保存的是<strong>一个答案「如何被获取、检验、修正、验证」的过程</strong>——它同时保留成功与失败的、有证据支撑的轨迹，从而支持跨步骤的信用分配和可复现的长程监督。</span>
+    </blockquote>
+
+    <figure>
+      <img src="assets/fig3_kag.png" alt="Agents-A1 知识-行动基础设施总览">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 3 ·</span> 知识-行动基础设施：异构语料被分解为原子能力，组织进记录证据/动作/观察/验证结果的 KAG；一个工具增强的自博弈循环把 KAG 扩展成各领域的 sub-KAG。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>左侧输入：异构语料。</strong>来自不同来源的原始语料（wiki、竞赛、科学问题、文档、工具接口等）先被<strong>分解为原子能力</strong>，作为构图的原料。</li>
+            <li><strong>中间：知识-行动图 KAG。</strong>语料被组织成四元组图，节点/边记录证据、动作、观察和验证结果——不是静态事实，而是「解题过程」本身。</li>
+            <li><strong>核心机制：自博弈循环。</strong>一个「提议者 π_P — 求解者 π_S — 验证者 π_V」的博弈：提议者从图里采样并提出受约束的任务，求解者用检索/工具去解，验证者检查答案、证据、执行结果、轨迹与「抄近路」风险。</li>
+            <li><strong>反馈回写。</strong>求解者与验证者的反馈会<strong>写回 KAG</strong>，成为新的状态、动作、观察、证据、产物与验证结论，让图不断自我增强。</li>
+            <li><strong>右侧输出：sub-KAG。</strong>增强后的图被特化成各领域子图——编码、智能体推理、指令遵循、MLE、科学推理；「裁判-验证」模块接收合格子图用于构造下游任务，把失败的路由回自博弈继续扩展。</li>
+          </ul>
+          <p class="end">一句话总结：KAG 把「语料」变成「带过程记录的可验证任务工厂」，靠自博弈不断产出高质量长程轨迹。</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <h3>自博弈图搜索与扩展：为什么任务「合格」很严格</h3>
+    <p>单次生成的数据质量往往不够，需要多轮迭代和验证。每个生成的任务 <code>x = (q, d, τ, y*, ℰ_q, 𝒱_q)</code> 只有同时满足 5 个条件才会被验证者 π_V 接受：</p>
+    <ul>
+      <li><strong>可验证</strong>：存在某个验证器能判定它；</li>
+      <li><strong>有效</strong>：轨迹 τ 真的到达了一个被验证器接受的答案；</li>
+      <li><strong>过程有信息量</strong>：τ 要包含有意义的中间决策，而不是塌缩成「一次查表」；</li>
+      <li><strong>证据覆盖</strong>：所需证据 ℰ_q 在轨迹里被真正查阅过；</li>
+      <li><strong>无歧义、无捷径</strong>：不存在「抄近路」的解法。</li>
+    </ul>
+    <p>这 5 条正是为了保证轨迹「值得学」——逼模型走完真实的长程决策，而不是投机取巧。</p>
+  </section>
+
+  <!-- 4. 数据管线 -->
+  <section id="data">
+    <div class="sec-head"><span class="sec-num">04</span><h2>五大领域数据管线</h2><span class="sec-rule"></span></div>
+    <p class="lead">KAG 是抽象框架，落到具体领域各不相同。以下每个领域都是 KAG 的一次「实例化」。点开看每个领域怎么造数据。</p>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">🔎</span><div class="exp-tt"><div class="t">长程搜索 Long-horizon Search</div><div class="d">在 wiki 图上做受控随机游走，生成「必须顺着间接证据多跳查找」的搜索题。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p><strong>KAG 实例化：</strong><code>𝒞</code>=wiki 页面与段落级证据；<code>𝒜</code>=由超链接诱导的实体跳转与受控图游走；<code>𝒪</code>=检索到的页面文本与连接证据；<code>𝒱</code>=检查答案实体与其支持路径能否从上下文恢复。针对「信息获取 + 证据验证」两种原子能力。</p>
+        <h4>关系链生成</h4>
+        <p>先把 wiki 转成有向语料图（每个词条=实体节点，词条间引用=边），过滤掉重复标题、消歧页、无正文页、出链不足的页面；再用一个 <strong>LLM 选择器</strong>做受控随机游走，在「局部路径连贯」与「可选跨领域话题切换」之间权衡。走到死胡同就用短辅助游走找回合格节点。每次转移都存成一条动作记录。</p>
+        <h4>问答对生成</h4>
+        <p>把整条链序列化后，<strong>把最后一个实体当作答案</strong>，改写成自然语言问题，<strong>屏蔽专有名词</strong>等可识别信息，逼求解者顺着间接的长上下文证据去恢复答案，而不是靠直接的名字匹配。验证器再核对答案身份与证据支持。</p>
+        <h4>轨迹收集与质控</h4>
+        <p>用强模型带 <code>search / read_page / code</code> 三个工具在<strong>真实互联网</strong>上跑深研任务，最大上下文 256K，单轮工具调用数不设限。事后剔除答案错误、交互过短、明显猜答的轨迹；到达最大轮数的轨迹回滚一轮并强制模型给出答案。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">🧪</span><div class="exp-tt"><div class="t">机器学习工程 MLE<span class="pill">带工具接口示例</span></div><div class="d">把 Kaggle 式竞赛建成「可执行解的搜索树」，靠评分器引导扩展。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p><strong>KAG 实例化：</strong><code>𝒞</code>=竞赛说明、数据集、执行环境；<code>𝒜</code>=解的编辑、实验运行、树导航、节点作废、答案提交；<code>𝒪</code>=日志、指标、产物、生成的提交；<code>𝒱</code>=评分器分数、提交格式检查、指标可靠性检查。因为「候选解=可执行代码，好坏只有评分后才知道」，每条轨迹就成了对<strong>解图的验证器引导式扩展</strong>。</p>
+        <h4>任务来源与智能体 harness</h4>
+        <p>任务来自 <strong>MLE-Dojo</strong> 与经自动化框架处理的已结束 Kaggle 竞赛（重新切分数据、构造私有答案、合成本地评估器）。轨迹在一个「生长可执行解节点树」的 harness 里产生：写完整脚本=开新根，打补丁=生子节点，执行节点=挂上日志/异常/指标/产物等观察。分支编码不同尝试，失败节点提供「负证据」。</p>
+        <h4>工具接口（表 1）—— 一个具体的动作空间</h4>
+        <div class="table-wrap"><table>
+          <thead><tr><th>工具</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>write_full_code</td><td style="text-align:left;color:var(--muted);">从零写完整训练脚本，开一个新根节点（一条新思路）</td></tr>
+            <tr><td>patch_code</td><td style="text-align:left;color:var(--muted);">对某节点代码做局部编辑，生成子节点，保留树历史</td></tr>
+            <tr><td>execute_code</td><td style="text-align:left;color:var(--muted);">运行节点，抓 stdout/异常，提取验证指标，检查提交有效性</td></tr>
+            <tr><td>execute_bash</td><td style="text-align:left;color:var(--muted);">受控 shell 命令（装依赖、查 GPU、文件操作）</td></tr>
+            <tr><td>list_nodes / select_node</td><td style="text-align:left;color:var(--muted);">纵览解树 / 完整检视单个节点（代码、计划、输出、指标、父链）</td></tr>
+            <tr><td>invalidate_node</td><td style="text-align:left;color:var(--muted);">排除指标不可信（泄漏、过拟合）的节点</td></tr>
+            <tr><td>update_answer / get_current_answer</td><td style="text-align:left;color:var(--muted);">提交/查看当前作为答案的节点</td></tr>
+            <tr><td>write_notes / read_notes</td><td style="text-align:left;color:var(--muted);">跨上下文压缩的持久记事本（决策、失败策略及原因、假设）</td></tr>
+            <tr><td>analyze</td><td style="text-align:left;color:var(--muted);">派出独立子智能体在自己的上下文里探索数据/结果并返回一份结构化报告</td></tr>
+          </tbody>
+        </table></div>
+        <p class="tbl-note">这套紧凑工具接口，正是把「代码编写、执行、搜索树管理、持久记忆、委派分析」变成可训练动作的关键。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">🔬</span><div class="exp-tt"><div class="t">科学推理与研究 Scientific Reasoning</div><div class="d">把科学问题做成 KAG，自演化出「更难」与「更需交互」两类变体，约 15K 实例。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p><strong>KAG 实例化：</strong><code>𝒞</code>=问题陈述、主题、关键词、解结构；<code>𝒜</code>=分解、变换、检索、计算等推理动作；<code>𝒪</code>=中间推理状态、外部证据、执行输出；<code>𝒱</code>=对正确性、一致性、科学有效性的验证。</p>
+        <h4>问题构造：自演化增强</h4>
+        <p>先收集数学、物理等基础领域的大规模问题池，建成 KAG；再用自博弈图搜索沿两个方向系统改写：<strong>(i) 更难的推理变体</strong>——增加知识深度、引入复杂符号结构、延长多步推导；<strong>(ii) 交互更强的变体</strong>——注入跨领域知识、加入需外部检索的概念、增加基于代码的数值计算需求。最终得到约 <strong>15K</strong> 个「更难、更需交互」的增强科学问题。</p>
+        <h4>轨迹生成：无工具 + 有工具</h4>
+        <p><strong>无工具推理</strong>：从强模型蒸馏纯推理轨迹（多步推导、符号变换、最终答案），只保留验证正确的，强化「内在推理」。<strong>有工具推理</strong>：搭一个交互框架配 <code>search / visit / code / scholar</code> 四个工具，蒸馏带工具调用、观察、计算的轨迹并按答案正确性过滤。两者互补，共同强化长程科学问题求解。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">📏</span><div class="exp-tt"><div class="t">指令遵循 Instruction Following</div><div class="d">把「约束 + 长上下文证据 + 局部规则」建成 KAG；13K 多约束 + 10K 长上下文 QA。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p><strong>KAG 实例化：</strong><code>𝒞</code>=用户指令、可验证约束、长文档块、注入的上下文规则、干扰项、候选答案；<code>𝒜</code>=约束解析、证据选择、局部规则应用、干扰项拒绝、答案格式化；<code>𝒪</code>=选中的证据、解析出的约束状态、注入规则状态；<code>𝒱</code>=约束满足、答案匹配、证据依赖、与注入信息一致性的自动校验器。针对「约束跟踪 + 证据验证 + 长上下文适应」。</p>
+        <h4>两个数据来源</h4>
+        <ul>
+          <li><strong>13K 多约束样本</strong>：来自 NVIDIA Nemotron-RL 指令遵循数据的高质量子集，覆盖长度、格式、关键词、语言、标点、段落结构等可自动验证的约束。每个约束在 KAG 里是一个「条件节点」，连到所需输出行为及其验证器。</li>
+          <li><strong>10K 已验证长上下文 QA</strong>：自建管线——先结构化解析长文档、抽取实体/属性/关系/数值构造文档级证据图；再合成需跨多个事实节点组合的多跳 QA；然后<strong>注入局部规则或干扰项</strong>（临时协议覆盖文档规则、误导性框定、与先验冲突的约束）。确保正确答案<strong>同时依赖</strong>长上下文证据链和注入的上下文信息。</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">🔧</span><div class="exp-tt"><div class="t">工具调用 Tool Calling</div><div class="d">把工具做成依赖图，用「受约束图搜索」合成任务，避免随意拼接工具。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p><strong>KAG 实例化：</strong><code>𝒞</code>=工具 schema、环境状态、可选模拟用户画像、任务资源；<code>𝒜</code>=基于 schema 的调用与澄清动作；<code>𝒪</code>=工具返回、状态更新、错误、用户反馈；<code>𝒱</code>=schema/状态/落地/目标完成检查。</p>
+        <h4>任务构造：受约束图搜索</h4>
+        <p>从科学、网页、代码库、数据库、本地模拟等场景抽取候选工具接口，构建一张连接「工具-资源/状态类型-观察字段-验证目标」的图，边表示可执行依赖（schema 兼容、前置-效果、共享资源、状态转移等）。任务合成被形式化为在这张依赖图上的<strong>受约束图搜索</strong>：选取连通的工具子图或依赖路径，再渲染成用户指令。这样<strong>避免了工具的随意拼接</strong>——后面的调用必须依赖前面产生的对象/约束/观察。</p>
+        <h4>轨迹生成：Tool Sandbox + 模拟用户</h4>
+        <p>在一个维护环境状态演化的 Tool Sandbox 里，求解后端多轮探索：选工具、绑参数、解读观察、决定继续/澄清/给出最终回答。需要澄清偏好或缺失约束时，一个<strong>模拟用户</strong>参与到循环里。同一目标生成多条候选轨迹，由验证器按调用格式、schema 类型、状态一致性、观察落地、约束满足、目标完成来打分排序；无效的被拒绝或路由去修复重采样。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 5. 三阶段训练 -->
+  <section id="train">
+    <div class="sec-head"><span class="sec-num">05</span><h2>支柱二：三阶段训练配方</h2><span class="sec-rule"></span></div>
+    <p class="lead">有了数据，接下来是怎么训。阶段一打底，阶段二偏科，阶段三合并——最难也最新颖的是阶段三。</p>
+
+    <h3>阶段一 · 全域 SFT</h3>
+    <p>从 <strong>Qwen3.5-35B-A3B</strong> 出发，在全部领域数据上做监督微调（loss 只算在回复 token 上，指令 token 被 mask）。数据是约 <strong>100K</strong> 条长程轨迹，覆盖深研、编码与工程、科学求解、指令遵循、通用智能体五类。</p>
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr);">
+      <div class="metric"><div class="num">100<span class="unit">K</span></div><div class="lab">SFT 轨迹数</div></div>
+      <div class="metric"><div class="num">45<span class="unit">K</span></div><div class="lab">平均 token 长度</div><div class="sub">深研 44K / 工程 48K / 科学 37K</div></div>
+      <div class="metric"><div class="num">1</div><div class="lab">训练 epoch</div><div class="sub">131K 上下文 · 样本打包</div></div>
+    </div>
+    <p>SFT 之后的问题很快暴露：<strong>不同领域的推理模式会「打架」</strong>——这正是阶段三要解决的（见 <a href="#opd">第 06 节</a>）。</p>
+
+    <h3>阶段二 · 各领域专家教师</h3>
+    <p>为每个领域单独训练一个「偏科到极致」的教师。点开看每个教师的配方与增益：</p>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">🔎</span><div class="exp-tt"><div class="t">搜索教师 · SFT + GRPO RL<span class="pill">GAIA 59.8 → 95.1</span></div><div class="d">先 SFT 学基本工具使用，再用 GRPO 强化多跳推理与高效搜索。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p><strong>两阶段：</strong>先在搜索轨迹上 SFT（学会拆子查询、在合适时机调用搜索/读页、综合信息）；再用 <strong>GRPO</strong> RL 提升多跳推理。约 2000 道精选多跳题，每题 8 rollout。</p>
+        <p><strong>奖励设计：</strong>(1) 正确性奖励（LLM 裁判判答案对错）；(2) 搜索行为惩罚——<strong>效率惩罚</strong>（前 K 轮免罚，超出后线性递增，逼模型信息够了就停）+ <strong>重复惩罚</strong>（滑窗内重复的查询/URL 小额扣分）；(3) 格式校准奖励。</p>
+        <p><strong>增益：</strong>GAIA 59.8 → 95.1（+35），SEAL-0 41.4 → 54.1，HLE 47.4 → 50.3，XBench-DS 77.0 → 86.0。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">🔬</span><div class="exp-tt"><div class="t">科学教师 · 两阶段 SFT<span class="pill">FS-R 2.5 → 54.3</span></div><div class="d">先强化「内在推理」，再强化「带工具交互」。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p>前沿科学任务往往同时需要长推导、专业知识、数值计算与符号操作，所以科学教师要<strong>内在推理</strong>与<strong>外在交互</strong>兼备。</p>
+        <ul>
+          <li><strong>Stage 1 · 推理增强 SFT</strong>：在高质量无工具科学推理轨迹上微调，鼓励模型在给出答案前先形成完整的因果与数学链条，靠自足推导而非过早依赖工具。</li>
+          <li><strong>Stage 2 · 工具增强 SFT</strong>：从强推理 checkpoint 继续，在过滤后的多学科科学轨迹上训练，让模型学会「识别何时需要外部支持 → 选对工具 → 组织精确输入 → 解读观察 → 验证中间量 → 把证据折回解题」，并延长训练轮数使长交互下工具使用更稳定。</li>
+        </ul>
+        <p><strong>增益：</strong>FS-R <strong>2.5 → 54.3</strong>（爆炸式提升），FS-O 64.5 → 82.0，HiPhO 37.0 → 46.9。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">📏</span><div class="exp-tt"><div class="t">指令遵循教师 · 两阶段 GRPO RL<span class="pill">IFBench 70.2 → 82.0</span></div><div class="d">先练细粒度约束满足，再练长上下文 ICL。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p>假设：更强的指令遵循能力可以促进长上下文下的<strong>上下文学习（ICL）</strong>。两阶段都用 GRPO，并用<strong>动态采样</strong>（只保留组内奖励非均匀的样本，滤掉太易/太难的组，让梯度集中在有对比信号的样本上）。</p>
+        <ul>
+          <li><strong>Stage 1 · 指令遵循 RL</strong>：在 Nemotron 数据上，用<strong>可验证的规则奖励</strong>检查格式、长度、关键词、语言等约束是否满足——可靠、且不依赖外部裁判。</li>
+          <li><strong>Stage 2 · 长上下文学习 RL</strong>：从上一步 checkpoint 继续，用规则化答案匹配作为结果奖励，逼模型去「检索稀疏但决定性的证据、跨远距离整合信息、适应新引入的上下文规则、拒绝显眼但无支持的干扰项」。</li>
+        </ul>
+        <p><strong>增益：</strong>IFBench 70.2 → 82.0，LongBench V2 59.0 → 62.4，IFEval 91.9 → 93.4。</p>
+      </div></div>
+    </div>
+
+    <div class="exp" data-exp>
+      <div class="exp-head"><span class="exp-ic">🔧</span><div class="exp-tt"><div class="t">工具调用教师 · SFT + RL（仅 64 样本）<span class="pill">τ²-Bench 32.5 → 82.5</span></div><div class="d">用 PAPO 式非对称优势 + 数据复用，小数据高质量地强化工具 RL。</div></div><span class="exp-ar">▾</span></div>
+      <div class="exp-body"><div class="exp-body-inner">
+        <p>工具使用光靠 SFT 不够，因为失败往往不是局部格式错，而是<strong>「何时调、调哪个、参数对不对、出错怎么恢复、任务何时算完」这些有延迟后果的决策</strong>——需要 RL 优化完整轨迹。</p>
+        <p><strong>奖励与优势设计：</strong>两类奖励——<strong>结果奖励</strong> <code>r_out∈{0,1}</code>（任务是否成功）+ <strong>过程分</strong> <code>r_proc</code>（按 LLM rubric 衡量部分完成度）。采用<strong>非对称优势</strong>：成功轨迹已满足所有 rubric，再加过程奖会重复计分；过程奖真正有用的是在<strong>失败轨迹</strong>上——把不同失败按「离成功有多近」排序。故 <code>A_i = A_out + 0.5·𝟙[r_out=0]·A_proc</code>。</p>
+        <p><strong>小数据 + 数据复用：</strong>只构造了 <strong>64 个</strong>「近乎成功却拿不到结果奖」的硬样本，通过反复复用（等效于用大得多的批量）+ PAPO 式优势增强 GRPO，只用少量步数就实现高效的工具 RL 提升。</p>
+        <p><strong>增益：</strong>τ²-Bench 32.53 → 82.50（Airline 16→72，Retail 30.7→82.5），VitaBench 26.0 → 44.16。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 6. OPD -->
+  <section id="opd">
+    <div class="sec-head"><span class="sec-num">06</span><h2>核心创新：领域路由 OPD + 显著词表对齐</h2><span class="sec-rule"></span></div>
+    <p class="lead">这是全文最新颖的一块：如何把上面四个「偏科」的教师，合并成一个不打架的通用学生。</p>
+
+    <div class="insight">
+      <p class="lbl">先看要解决的痛点</p>
+      <p>全域 SFT 无法化解<strong>不同推理模式的冲突</strong>：长指令遵循是「单轮 + 长思考」模式，长程搜索是「多轮工具使用 + 短思考」模式，两者风格相反。SFT 把它们塞在一起，会在某些领域<strong>掉分</strong>（如 IFBench、HLE、通用智能体任务）。作者的答案是<strong>多领域在线策略蒸馏（OPD）</strong>。</p>
+    </div>
+
+    <p>已有的「采样-token OPD」只给真实 rollout 出来的那个 token 打分，效率高，但这种<strong>单 token 近似</strong>让附近的高概率备选项不受约束，容易产生不稳定或不均衡的指导。为此作者提出<strong>领域路由的多教师 OPD + 显著词表对齐（SVA）</strong>。</p>
+
+    <h3>整个 OPD 循环怎么跑（点「下一步」逐步看）</h3>
+    <div class="stepper" id="opdStepper">
+      <div class="step-pipe" id="stepPipe">
+        <div class="step-node" data-i="0"><span class="sn">1</span>学生自采样</div>
+        <div class="step-node" data-i="1"><span class="sn">2</span>领域硬路由</div>
+        <div class="step-node" data-i="2"><span class="sn">3</span>教师打分</div>
+        <div class="step-node" data-i="3"><span class="sn">4</span>显著词表 SVA</div>
+        <div class="step-node" data-i="4"><span class="sn">5</span>领域归一化</div>
+        <div class="step-node" data-i="5"><span class="sn">6</span>更新学生</div>
+      </div>
+      <div class="step-detail">
+        <p class="st" id="stepTitle"></p>
+        <p class="sd" id="stepDesc"></p>
+      </div>
+      <div class="step-ctrl">
+        <button id="stepPrev">‹ 上一步</button>
+        <button id="stepNext" class="primary">下一步 ›</button>
+        <button id="stepReset">重置</button>
+        <span class="prog" id="stepProg"></span>
+      </div>
+    </div>
+
+    <h3>显著词表对齐（SVA）：只在「教师看重的备选」上对齐</h3>
+    <p>在每个位置 <code>t</code>，学生与被路由的教师在<strong>同一条学生生成的前缀</strong>上评估。SVA 不再用「采样 token 近似」，而是取教师分布下的 <strong>top-k 有效 token</strong> 作为局部支持集 <code>𝒮</code>，把学生与教师的分布都在这个支持集上重新归一化，然后计算<strong>截断的反向 KL</strong>（只在可训练的模型生成位置上平均）。</p>
+    <div class="two-col">
+      <div class="col-card dim">
+        <h4><span class="badge badge-a">旧做法</span>采样-token OPD</h4>
+        <ul>
+          <li>只给「真实采样出的那一个 token」打分；</li>
+          <li>附近高概率的<strong>备选 token 完全不受约束</strong>；</li>
+          <li>→ 指导信号不稳定、不均衡。</li>
+        </ul>
+      </div>
+      <div class="col-card">
+        <h4><span class="badge badge-b">本文 SVA</span>显著词表对齐</h4>
+        <ul>
+          <li>在教师看重的 <strong>top-k 支持集</strong>上对齐整片概率；</li>
+          <li>两侧分布在支持集上重归一化，算截断反向 KL；</li>
+          <li>额外监控学生侧覆盖率 <code>ρ</code>：越高越接近「全词表对齐」。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>领域路由的归一化目标：让每个领域「话语权相当」</h3>
+    <p>多领域下不同领域会诱导异构梯度（风格、推理模式、证据获取、工具使用各不同）。作者用<strong>硬路由</strong>：每条样本只由它所属领域的教师监督 <code>θ_t,i = θ_t^{d_i}</code>，而非多个教师的软混合——这保住了各教师的领域偏好，避免在 token 层面混入不兼容信号。</p>
+    <p>再做<strong>领域归一化聚合</strong>：先在每个活跃领域内对样本求平均，再对活跃领域求平均。这样<strong>高频或高 loss 的领域不会主导</strong>学生更新，每个活跃领域获得相当的影响力。</p>
+    <blockquote>
+      OPD does not always outperform the corresponding domain teacher. This is expected, since each teacher is specialized for one domain, while Agents-A1 is required to maintain a unified policy across heterogeneous tasks.
+      <span class="zh">一个诚实的观察：蒸馏后的学生<strong>并不总能超过对应的领域教师</strong>。这很正常——教师只专精一门，而 Agents-A1 要维持一个跨异构任务的<strong>统一策略</strong>。OPD 的作用是把各教师的长处「搬进」一个模型、并改善全域 SFT 的平衡，而非在每门专长上都碾压教师。</span>
+    </blockquote>
+  </section>
+
+  <!-- 7. 实验 -->
+  <section id="results">
+    <div class="sec-head"><span class="sec-num">07</span><h2>效果：35B 追平万亿模型</h2><span class="sec-rule"></span></div>
+    <p class="lead">结论一句话：在多步搜索、科研、长指令遵循等长程任务上，Agents-A1（35B）能与 1T 级模型掰手腕，部分项目还反超。</p>
+
+    <h3>与 1T 模型正面对比（表 9 精选）</h3>
+    <p>下表挑出最有代表性的基准。<span style="color:var(--accent-deep);font-weight:600;">橙色高亮</span>表示 Agents-A1 超过<strong>全部</strong>列出的 1T 模型。</p>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>基准</th><th class="hero-col">Agents-A1<br>35B</th><th>Qwen3.6<br>35B</th><th>Kimi-K2.6<br>&gt;1T</th><th>DSV4-Pro<br>&gt;1T</th><th>GPT-5.5<br>&gt;1T</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>SEAL-0</td><td class="win">56.4</td><td>38.7</td><td>50.5</td><td>55.0</td><td>42.3</td></tr>
+        <tr><td>GAIA</td><td class="hero-col">96.0</td><td>78.6</td><td>80.6</td><td>98.1</td><td>87.4</td></tr>
+        <tr><td>BrowseComp</td><td class="hero-col">75.5</td><td>67.9</td><td>83.2</td><td>83.4</td><td>84.4</td></tr>
+        <tr><td>HiPhO 物理奥赛</td><td class="win">46.4</td><td>37.7</td><td>41.1</td><td>38.7</td><td>43.3</td></tr>
+        <tr><td>FS-Olympiad</td><td class="win">79.0</td><td>60.3</td><td>73.0</td><td>76.0</td><td>78.0</td></tr>
+        <tr><td>FS-Research</td><td class="win">40.0</td><td>2.9</td><td>17.9</td><td>13.3</td><td>26.7</td></tr>
+        <tr><td>IFBench</td><td class="win">80.6</td><td>64.4</td><td>71.8</td><td>73.5</td><td>75.9</td></tr>
+        <tr><td>HLE w/ tools</td><td class="hero-col">47.6</td><td>36.2</td><td>54.0</td><td>48.2</td><td>52.2</td></tr>
+        <tr><td>SciCode</td><td class="hero-col">44.3</td><td>35.8</td><td>53.5</td><td>50.0</td><td>56.1</td></tr>
+        <tr><td>MLE-Bench-Lite</td><td class="hero-col">43.9</td><td>34.9</td><td>62.1</td><td>63.6</td><td>72.7</td></tr>
+        <tr><td>MolBench-Bind</td><td class="win">56.8</td><td>48.7</td><td>21.6</td><td>37.8</td><td>62.2</td></tr>
+      </tbody>
+    </table></div>
+    <p class="tbl-note">最亮眼的是 <strong>FS-Research：40.0</strong>，把 1T 模型（26.7 / 17.9 / 13.3）远远甩开；SEAL-0、HiPhO、FS-O、IFBench 也全面反超 1T。短板在 <strong>MLE-Bench-Lite</strong>（43.9 vs GPT-5.5 的 72.7）——见下方「诚实的短板」。</p>
+
+    <h3>SFT 掉的分，OPD 补回来了</h3>
+    <p>对比全域 SFT 与 OPD（表 4）：SFT 因领域冲突在几个基准上掉分，OPD 阶段基本修复，并进一步提升。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>基准</th><th>Qwen 基座</th><th>Agents-A1-SFT</th><th class="hero-col">Agents-A1 (OPD)</th></tr></thead>
+      <tbody>
+        <tr><td>IFBench</td><td>70.2</td><td style="color:#b23b3b;">68.7 ↓</td><td class="win">80.6</td></tr>
+        <tr><td>HLE w/ tools</td><td>47.4</td><td style="color:#b23b3b;">41.6 ↓</td><td class="win">47.6</td></tr>
+        <tr><td>τ²-Bench（复现基线 33.0）</td><td>~33</td><td>76.7</td><td class="win">79.8</td></tr>
+        <tr><td>FS-Research</td><td>2.5</td><td>31.7</td><td class="win">40.0</td></tr>
+        <tr><td>MLE-Bench-Lite</td><td>24.2</td><td>39.4</td><td class="win">43.9</td></tr>
+      </tbody>
+    </table></div>
+    <p class="tbl-note">红色 ↓ 表示 SFT 阶段相对基座掉分（推理模式冲突所致），OPD 阶段把这些分数拉回甚至超过基座——正是领域路由蒸馏想要的效果。</p>
+
+    <div class="insight">
+      <p class="lbl">诚实的短板</p>
+      <p>Agents-A1 在 <strong>MLE-Bench-Lite</strong> 上（43.9）明显弱于 1T 模型（GPT-5.5 达 72.7）。作者认为原因在于：MLE 不是静态解题，而是要走完<strong>一整套工程流程</strong>，对「保持稳定目标、记住过往决策、在大量实验中避免重复试错」提出了更高要求——这恰恰是当前 35B 智能体的能力边界。</p>
+    </div>
+  </section>
+
+  <!-- 8. 应用案例 -->
+  <section id="cases">
+    <div class="sec-head"><span class="sec-num">08</span><h2>长程能力的两个真实案例</h2><span class="sec-rule"></span></div>
+    <p class="lead">数字之外，两个案例更能说明「长程视野」到底意味着什么。</p>
+
+    <h3>案例一 · 12 小时机器学习工程马拉松</h3>
+    <p>在 MLE 数据集的「右鲸叫声检测」任务上，Agents-A1 从一个朴素 CNN 基线出发，在 12 小时里<strong>自主</strong>完成一连串干预——时序数据分析、音频增强、时序局部化训练、Mel 频谱 CNN 集成的架构精修、大规模增强，把最佳验证 AUC 从 <strong>0.58 一路推到 0.9935</strong>，最终达到金牌水平。</p>
+    <figure>
+      <img src="assets/fig4_mle.png" alt="Agents-A1 在鲸鱼挑战赛上 12 小时优化轨迹">
+      <figcaption>
+        <div class="fig-cap-main"><span class="fnum">图 4 ·</span> Agents-A1 在 ICML 2013 鲸鱼挑战赛上 12 小时运行的优化轨迹：曲线为随时间达到的最佳验证 AUC，标注了对应不同算法改进的「突破时刻」，阴影带表示多随机种子间的方差。</div>
+        <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+        <div class="figure-detail"><div class="figure-detail-inner">
+          <ul>
+            <li><strong>横轴=真实墙钟时间，纵轴=最佳验证 AUC。</strong>展示的是一次连续 12 小时的自主优化，而非孤立的超参搜索。</li>
+            <li><strong>曲线上的标注点</strong>对应模型自己引入的一次次算法改进（数据分析、增强、架构精修、集成、大规模增强），每一步都带来一段可见的性能跃升。</li>
+            <li><strong>关键洞察：识别出训练/测试录音之间的时域偏移</strong>，并施加针对性改动大幅改善泛化——这是「诊断问题→设计方案」的长程推理，而非盲调。</li>
+            <li><strong>阴影带</strong>反映跨独立种子的运行间方差，说明这条上升趋势是稳定可复现的、而非偶然。</li>
+          </ul>
+          <p class="end">一句话总结：模型把「数据诊断 + 表示设计 + 增强策略 + 迭代评估」串成一条可解释的多步优化链，最终逼近满分 AUC。</p>
+        </div></div>
+      </figcaption>
+    </figure>
+
+    <details class="case">
+      <summary><span class="mk">▸</span>案例二 · 地球科学：热带气旋 Nargis 全流程重建<span class="sm">数据→清洗→计算→可视化→报告的闭环</span></summary>
+      <div class="cbody">
+        <p>让模型从真实最佳路径数据出发，重建 2008 年北印度洋强气旋风暴 Nargis 的路径、生成诊断可视化、并解读其路径与强度演化。Agents-A1 <strong>自动识别 IBTrACS 为数据源</strong>，完成数据抽取、清洗、派生指标计算、可视化、结果综合，形成「规划 → 编码 → 执行 → 结果检查 → 科学分析 → 报告生成」的<strong>多阶段闭环</strong>。它以合理保真度重建了 Nargis 在孟加拉湾中部生成、西北向移动、随后向东北再曲折、最终在缅甸南部登陆的主要演化；并保留 WMO/IMD 与 JTWC/USA 两套强度估计以避免混淆不同业务惯例。</p>
+        <figure style="margin:8px 0 0;">
+          <img src="assets/fig5_earth.png" alt="Agents-A1 生成的 Nargis 气旋综合诊断图">
+          <figcaption>
+            <div class="fig-cap-main"><span class="fnum">图 5 ·</span> Agents-A1 生成的 Nargis（2008）综合路径/强度/运动特征：(a) 最佳路径地图，(b) 最大持续风速时序，(c) 经纬度演化，(d) 平移速度，(e) 路径航向变化。</div>
+            <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
+            <div class="figure-detail"><div class="figure-detail-inner">
+              <ul>
+                <li><strong>(a) 路径图：</strong>路段颜色表示强度等级，标记颜色表示最大持续风速，关键阶段标为 A–E。</li>
+                <li><strong>(b) 强度时序：</strong>USA/JTWC 与 WMO/IMD 两套估计，橙色阴影为登陆前 6 小时、红色为登陆后，红虚线为 2008-05-02 12:00 UTC 登陆时刻。</li>
+                <li><strong>(c) 位置演化：</strong>纬度与经度分别用左右两条 y 轴表示随时间的变化。</li>
+                <li><strong>(d) 平移速度：</strong>三角标记显著的加速/减速事件。</li>
+                <li><strong>(e) 航向变化：</strong>红色标注急转事件。全部时间以 UTC 计。</li>
+              </ul>
+              <p class="end">一句话总结：这张多面板图是模型自主完成「数据组织 + 诊断计算 + 结果整合」的产物，体现其端到端的地球科学分析闭环能力。</p>
+            </div></div>
+          </figcaption>
+        </figure>
+      </div>
+    </details>
+  </section>
+
+  <!-- 9. 局限 -->
+  <section id="future" style="border-bottom:none;">
+    <div class="sec-head"><span class="sec-num">09</span><h2>局限与未来</h2><span class="sec-rule"></span></div>
+    <p>作者把 Agents-A1 定位为「拉长智能体视野」的一次<strong>早期尝试</strong>。模型的智能体能力主要来自三个源头：Qwen3.5-35B-A3B 的初始基线、为不同长程场景搭建的统一知识-行动基础设施、以及能减少跨领域推理模式冲突的领域路由 OPD。</p>
+    <p>在实践中他们发现，有几种<strong>基础原子能力</strong>对「让智能体在长程求解中保持目标一致与高效」尤其关键——<strong>推理前先规划、行动前先反思、在长上下文中总结关键信息、识别重要的过往信息</strong>。未来工作将聚焦提升这些能力，并以此为起点进一步增强 Agents-A1 解决长流程任务的水平。</p>
+    <blockquote style="font-style:normal;font-family:var(--cjk);">
+      <span style="font-family:var(--serif);font-style:italic;">We hope this work provides the community with a practical path for scaling the horizon using a 35B agent that can reach or match the performance of 1T models on long-horizon tasks.</span>
+      <span class="zh">作者的期望：为社区提供一条务实的路径——用一个 35B 智能体，通过「拉长视野」在长程任务上追平甚至匹配 1T 模型。</span>
+    </blockquote>
+  </section>
+
+  <footer>
+    <p class="src-line">原文：<a href="https://arxiv.org/abs/2606.30616" target="_blank" rel="noopener">Scaling the Horizon, Not the Parameters: Reaching Trillion-Parameter Performance with a 35B Agent</a> · arXiv:2606.30616 · Shanghai AI Lab / InternScience（2026.06）</p>
+    <p>图片来源：arXiv HTML 版（arxiv.org/html/2606.30616v1）。本页为中文可视化导读，仅供学习参考，数据与结论以原文为准。</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // 图片说明展开
+  window.toggleFigDetail = function(el){
+    var d = el.nextElementSibling;
+    if(!d) return;
+    var on = d.classList.toggle('active');
+    el.textContent = on ? '收起 ▴' : '展开说明 ▸';
+  };
+
+  // 可展开卡片：onclick 绑在 head，避免内部冒泡
+  document.querySelectorAll('[data-exp]').forEach(function(card){
+    var head = card.querySelector('.exp-head');
+    head.addEventListener('click', function(){
+      card.classList.toggle('open');
+    });
+  });
+
+  // OPD 步进
+  var steps = [
+    {t:'① 学生自采样 rollout', d:'对每个「prompt + 领域标签」，一个冻结的 rollout 学生按当前策略自己生成响应或智能体轨迹。工具输出、用户轮次、环境观察保留作上下文，但从 loss 里 mask 掉——只优化学生自己生成的 token。'},
+    {t:'② 领域硬路由', d:'每条样本按其领域标签，被硬路由到「专为该领域训练的那个教师」θ_t^{d}，而不是多个教师的软混合。这样保住各教师的领域偏好，避免在 token 层面混入不兼容的教师信号。'},
+    {t:'③ 教师给学生自己的轨迹打分', d:'与离线模仿不同，教师不另外生成参考轨迹，而是对「学生自己的前缀」逐 token 打分——这正是「在线策略（on-policy）」的含义：监督信号始终贴着学生当前的分布。'},
+    {t:'④ 显著词表对齐 SVA', d:'取教师分布下的 top-k 有效 token 作为局部支持集，把学生与教师分布都在该支持集上重归一化，计算截断的反向 KL。相比只盯单个采样 token，SVA 约束了「教师看重的一整片高概率备选」，指导更稳。同时监控学生侧覆盖率 ρ。'},
+    {t:'⑤ 领域归一化聚合', d:'先在每个活跃领域内对样本损失求平均，再对所有活跃领域求平均。由于每条样本损失已在自己的可训练位置上归一，长轨迹不会因 token 多而占便宜；跨领域再归一则让高频/高 loss 领域无法主导更新。'},
+    {t:'⑥ 更新统一学生', d:'在领域路由的 SVA 目标下，用领域归一化权重聚合梯度更新学生。多轮之后，学生既保住全域 SFT 的广度，又把各教师的领域专长吸收进一个统一的长程智能体。'}
+  ];
+  var idx = 0;
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('#stepPipe .step-node'));
+  var titleEl = document.getElementById('stepTitle');
+  var descEl = document.getElementById('stepDesc');
+  var progEl = document.getElementById('stepProg');
+  var prevB = document.getElementById('stepPrev');
+  var nextB = document.getElementById('stepNext');
+  var resetB = document.getElementById('stepReset');
+  function render(){
+    titleEl.textContent = steps[idx].t;
+    descEl.textContent = steps[idx].d;
+    progEl.textContent = (idx+1) + ' / ' + steps.length;
+    nodes.forEach(function(n,i){
+      n.classList.remove('active','done');
+      if(i < idx) n.classList.add('done');
+      else if(i === idx) n.classList.add('active');
+    });
+    prevB.disabled = (idx === 0);
+    nextB.disabled = (idx === steps.length-1);
+  }
+  nextB.addEventListener('click', function(){ if(idx < steps.length-1){ idx++; render(); } });
+  prevB.addEventListener('click', function(){ if(idx > 0){ idx--; render(); } });
+  resetB.addEventListener('click', function(){ idx = 0; render(); });
+  nodes.forEach(function(n){ n.addEventListener('click', function(){ idx = parseInt(n.dataset.i,10); render(); }); });
+  render();
+})();
+</script>
+</body>
+</html>
