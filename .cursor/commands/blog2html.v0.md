@@ -89,27 +89,13 @@
 
 **风格底线：克制、低饱和、信息优先。** 不做装饰性炫技，不靠颜色堆砌存在感；强调用字重 / 字号 / 留白，不用颜色。
 
-- **配色（对齐 Anthropic 官方色板，与站点首页同一套视觉语言）**：
-  - 背景用暖白 `#faf9f5`，避免纯白大面积刺眼；正文近黑 `#141413`，次要文字暖灰 `#6b6a62`
-  - 分割线 / 边框用发丝浅灰 `#e4e1d7`，卡片 / hover 底色用更浅的 `#f1eee4`，计数 / caption 等辅助信息用中灰 `#b0aea5`
-  - 唯一 accent 用陶土橙 `#d97757`（链接、关键 metric、当前选中态、hover 强调），深一档 `#bf5c3c` 作 hover / 按压态；**整页只此一个强调色**
+- **配色**：
+  - 主色调参考 Anthropic 风格的柔和浅黄 / 米色系，优先使用暖白、奶油黄、浅砂色、浅赭色；避免纯白大面积刺眼背景
+  - 背景、卡片、分割线用同一暖色相的明度层级区分，例如 `#fbf6ea` / `#f4ead7` / `#e8dcc7`，文字用深棕灰或近黑
+  - 最多 **1 个低饱和暖色 accent**（用于链接、关键 metric、当前选中态），整页保持同一个色相
   - 语义色（success / warn / danger）按需出现，**同一页面内合计不超过 1 种**，不要又绿又黄又红
   - **禁止**：彩色渐变背景、霓虹 / 荧光色、发光效果（`box-shadow` blur > 20px 的彩色阴影）、彩虹色或多色渐变文字、半透明玻璃拟态堆叠
-- **字体（对齐 Anthropic）**：标题 / 标签 / 导航用 `Poppins`（无衬线，字重 400/500/600）；拉丁正文、金句可用 `Lora`（衬线）增添编辑气质；中文正文用 `Noto Sans SC`（干净可读，CJK 回落 PingFang SC）；代码 / 公式用 `JetBrains Mono`。层级靠字重 / 字号 / 行距 / 留白，不用颜色做层级；字体统一走 CDN 引入
-- **设计令牌**（直接放进生成页面的 `:root`，确保与首页视觉一致）：
-
-```css
-:root{
-  --bg:#faf9f5; --ink:#141413; --muted:#6b6a62; --faint:#b0aea5;
-  --line:#e4e1d7; --surface:#f1eee4;
-  --accent:#d97757; --accent-deep:#bf5c3c;
-  --sans:"Poppins","Noto Sans SC","PingFang SC",sans-serif;
-  --serif:"Lora",Georgia,serif;
-  --mono:"JetBrains Mono",ui-monospace,monospace;
-}
-```
-
-- **组件与首页保持一家人**：卡片 / 输入框 / 可展开区用发丝边框（`--line`）+ 小圆角（10–12px）；hover 用 `--surface` 作底色、`--accent` 作强调；可交互元素 focus 用陶土橙描边（`box-shadow:0 0 0 3px rgba(217,119,87,.14)`）；section 标题可配一条 `--line` 发丝横线延伸到行尾，右侧放计数 / 元信息
+- **字体**：一套 sans（Inter + Noto Sans SC）+ 一套 mono（JetBrains Mono）；层级靠字重 / 字号 / 行距，避免用颜色做层级
 - **交互**：纯 CSS transition + JS 切 class，不引入动画库
 - **动效**：仅限「展开 / 折叠 / 淡入 / 短距离位移」，禁止旋转、弹跳缩放、连续 loop 动画、粒子 / 光斑 / 鼠标拖尾
 - **动画使用条件**：只有当动画展示了真实状态迁移、队列推进、反馈闭环或时序依赖时才使用（含步进动画——用于逐步演示机制流程）；装饰性 packet 动画禁止
