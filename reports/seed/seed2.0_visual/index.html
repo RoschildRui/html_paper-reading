@@ -6,398 +6,920 @@
 <title>Seed2.0 Model Card · 面向真实世界复杂性的智能前沿</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#fbf6ea; --bg2:#f4ead7; --bg3:#ede0c8; --line:#e0d2b8;
-    --ink:#2c2620; --ink2:#5d5446; --ink3:#8a7f6c;
-    --accent:#b06a2c; --accent-soft:#f0e2cd;
-    --card:#fffdf7; --shadow:0 1px 2px rgba(80,60,30,.06),0 6px 18px rgba(120,90,40,.06);
+    --bg:#faf9f5; --ink:#141413; --muted:#6b6a62; --faint:#b0aea5;
+    --line:#e4e1d7; --surface:#f1eee4;
+    --accent:#d97757; --accent-deep:#bf5c3c;
+    --sans:"Poppins","Noto Sans SC","PingFang SC",sans-serif;
+    --serif:"Lora",Georgia,serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
   body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:"Inter","Noto Sans SC",system-ui,sans-serif;line-height:1.75;
-    font-size:17px;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+    font-family:var(--sans);line-height:1.78;font-size:16.5px;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
+  strong{font-weight:600;color:var(--ink)}
 
   /* header */
-  header.top{padding:54px 0 30px;border-bottom:1px solid var(--line)}
-  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
-  .badge{font-size:13px;font-weight:600;padding:4px 11px;border-radius:999px;
-    background:var(--bg3);color:var(--ink2);border:1px solid var(--line)}
+  header.top{padding:60px 0 30px;border-bottom:1px solid var(--line)}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .badge{font-size:12.5px;font-weight:500;padding:4px 11px;border-radius:999px;
+    background:var(--surface);color:var(--muted);border:1px solid var(--line)}
   .badge.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
-  h1{font-size:34px;line-height:1.25;margin:.1em 0 .25em;font-weight:800;letter-spacing:-.01em}
-  .subtitle{font-size:18px;color:var(--ink2);font-weight:500;margin-bottom:18px}
-  .meta{font-size:14.5px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:14px;align-items:center}
-  .meta .src{font-weight:600}
+  h1{font-size:33px;line-height:1.28;margin:.1em 0 .3em;font-weight:600;letter-spacing:-.01em}
+  .subtitle{font-size:17.5px;color:var(--muted);font-weight:400;margin-bottom:22px;font-family:var(--serif)}
+  .meta{font-size:13.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+  .meta .src a{font-weight:500}
 
   /* nav */
-  nav.toc{position:sticky;top:0;z-index:20;background:rgba(251,246,234,.92);
-    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:8px}
-  nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding:10px 22px;scrollbar-width:none}
+  nav.toc{position:sticky;top:0;z-index:30;background:rgba(250,249,245,.9);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding:9px 24px;scrollbar-width:none}
   nav.toc .wrap::-webkit-scrollbar{display:none}
-  nav.toc a{font-size:13.5px;font-weight:600;color:var(--ink2);white-space:nowrap;
+  nav.toc a{font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;
     padding:5px 11px;border-radius:8px}
-  nav.toc a:hover{background:var(--bg3);text-decoration:none}
+  nav.toc a:hover{background:var(--surface);text-decoration:none;color:var(--ink)}
 
-  section{padding:34px 0;border-bottom:1px solid var(--line)}
-  h2{font-size:25px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em}
-  h2 .k{color:var(--accent);font-weight:800;margin-right:8px}
-  .lead{color:var(--ink2);font-size:16px;margin:0 0 20px}
-  h3{font-size:19px;font-weight:700;margin:26px 0 8px}
-  p{margin:.7em 0}
-  strong{font-weight:700;color:var(--ink)}
-  ul{margin:.6em 0;padding-left:1.2em}
-  li{margin:.35em 0}
+  section{padding:40px 0;border-bottom:1px solid var(--line)}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  .sec-head .k{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:500}
+  .sec-head .rule{flex:1;height:1px;background:var(--line)}
+  h2{font-size:25px;font-weight:600;margin:0;letter-spacing:-.01em}
+  .lead{color:var(--muted);font-size:16px;margin:2px 0 22px}
+  h3{font-size:18.5px;font-weight:600;margin:30px 0 8px}
+  h4{font-size:15px;font-weight:600;margin:18px 0 6px;color:var(--ink)}
+  p{margin:.75em 0}
+  ul,ol{margin:.6em 0;padding-left:1.25em}
+  li{margin:.4em 0}
+  li::marker{color:var(--faint)}
 
   /* tldr */
-  .tldr{background:linear-gradient(180deg,#fffdf7,#fbf4e6);border:1px solid var(--line);
-    border-radius:16px;padding:22px 24px;box-shadow:var(--shadow);margin-top:26px}
-  .tldr h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px}
-  .tldr p{margin:.5em 0;font-size:16.5px}
+  .tldr{background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:24px 26px;margin-top:28px}
+  .tldr .tag{font-size:12px;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--accent);font-weight:600;margin-bottom:10px;font-family:var(--mono)}
+  .tldr p{margin:.55em 0;font-size:16px}
 
   /* metric cards */
-  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
-  .metric{background:var(--card);border:1px solid var(--line);border-radius:13px;
-    padding:15px 16px;box-shadow:var(--shadow)}
-  .metric .num{font-size:27px;font-weight:800;color:var(--accent);letter-spacing:-.02em;line-height:1.1}
-  .metric .num small{font-size:14px;color:var(--ink3);font-weight:600}
-  .metric .lab{font-size:13px;color:var(--ink2);margin-top:5px;font-weight:600}
-  .metric .sub{font-size:12px;color:var(--ink3);margin-top:2px}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:22px 0}
+  .metric{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fff}
+  .metric .num{font-size:29px;font-weight:600;letter-spacing:-.02em;line-height:1.1;font-family:var(--sans)}
+  .metric .num .u{font-size:15px;color:var(--muted);font-weight:400;margin-left:2px}
+  .metric .lab{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .metric.hl .num{color:var(--accent)}
 
-  /* figure */
-  figure{margin:22px 0;background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:14px;box-shadow:var(--shadow)}
-  figure img{width:100%;border-radius:8px;display:block;background:#fff}
-  .figcap{font-size:14px;color:var(--ink2);margin-top:10px}
-  .fig-toggle{display:inline-block;margin-top:9px;font-size:13.5px;font-weight:600;
-    color:var(--accent);cursor:pointer;user-select:none}
-  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0}
-  .figure-detail.active{max-height:1400px;opacity:1;margin-top:10px}
-  .figure-detail ul{font-size:14.5px;color:var(--ink2)}
-  .figure-detail .end{font-size:14px;color:var(--ink);font-weight:600;margin-top:8px}
+  /* callout / quote */
+  .quote{border-left:3px solid var(--accent);padding:6px 0 6px 18px;margin:20px 0;
+    font-family:var(--serif);font-size:16.5px;color:var(--ink)}
+  .quote .cn{font-family:var(--sans);font-size:14.5px;color:var(--muted);margin-top:8px;display:block}
+  .note{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;margin:18px 0;font-size:15px;color:var(--muted)}
+  .note strong{color:var(--ink)}
 
-  /* expandable cards */
-  .xcard{background:var(--card);border:1px solid var(--line);border-radius:13px;
-    margin:12px 0;box-shadow:var(--shadow);overflow:hidden}
-  .xcard .head{padding:15px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px}
-  .xcard .head .ic{font-size:20px;line-height:1.4}
-  .xcard .head .ht{flex:1}
-  .xcard .head .ht .t{font-weight:700;font-size:17px}
-  .xcard .head .ht .s{font-size:13.5px;color:var(--ink3);margin-top:2px}
-  .xcard .head .arw{color:var(--accent);font-size:14px;transition:transform .3s;margin-top:3px}
-  .xcard.open .head .arw{transform:rotate(90deg)}
-  .xcard .body{max-height:0;overflow:hidden;transition:max-height .45s ease;padding:0 18px}
-  .xcard.open .body{max-height:900px;padding:0 18px 18px}
-  .xcard .body p{font-size:15px;color:var(--ink2);margin:.5em 0}
+  /* two-column panel */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+  .col{border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:#fff}
+  .col h4{margin-top:0;display:flex;align-items:center;gap:8px}
+  .col.good{border-top:3px solid var(--accent)}
+  .col.gap{border-top:3px solid var(--faint)}
+  .col ul{padding-left:1.1em;margin:.4em 0 0}
+  .col li{font-size:14.5px;margin:.5em 0}
 
-  /* dimension diagram */
-  .frame{background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:20px;box-shadow:var(--shadow);margin:20px 0}
-  .frame .core{text-align:center;font-weight:700;font-size:15px;color:var(--accent);
-    background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;
-    padding:9px;margin-bottom:14px}
-  .dims{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-  .dim{border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:var(--bg)}
-  .dim .dt{font-weight:700;font-size:15px;display:flex;gap:7px;align-items:center}
-  .dim .dd{font-size:13.5px;color:var(--ink2);margin-top:5px}
-  .dim .db{font-size:12px;color:var(--ink3);margin-top:6px;font-family:"JetBrains Mono",monospace}
+  /* bars */
+  .bars{margin:16px 0}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 52px;align-items:center;gap:12px;margin:7px 0;font-size:14px}
+  .bar-row .lbl{color:var(--ink);text-align:right;line-height:1.35}
+  .bar-track{background:var(--surface);border-radius:6px;height:14px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--accent);border-radius:6px}
+  .bar-fill.soft{background:var(--faint)}
+  .bar-row .val{color:var(--muted);font-family:var(--mono);font-size:12.5px}
 
-  /* tabs */
-  .tabs{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 4px}
-  .tab{font-size:13.5px;font-weight:600;padding:6px 13px;border-radius:9px;cursor:pointer;
-    background:var(--bg3);color:var(--ink2);border:1px solid var(--line);user-select:none}
-  .tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .panel{display:none}
-  .panel.on{display:block;animation:fade .35s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  /* taxonomy */
+  .tax{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+  .tax-card{border:1px solid var(--line);border-radius:12px;padding:18px;background:#fff}
+  .tax-card .cap{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--accent);font-weight:500}
+  .tax-card h4{margin:6px 0 8px}
+  .tax-card ul{margin:0;padding-left:1.1em}
+  .tax-card li{font-size:13.5px;color:var(--muted);margin:.35em 0}
+  .tax-card li b{color:var(--ink);font-weight:600}
 
-  /* table */
-  .tbl{width:100%;border-collapse:collapse;font-size:14.5px;margin:8px 0;
-    background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .tbl th,.tbl td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
-  .tbl th{background:var(--bg3);font-weight:700;color:var(--ink2);font-size:13px}
-  .tbl td.n{font-variant-numeric:tabular-nums;text-align:right;font-family:"JetBrains Mono",monospace}
-  .tbl tr:last-child td{border-bottom:none}
-  .tbl .me{background:var(--accent-soft)}
-  .tbl .me td{font-weight:700}
-  .note{font-size:13px;color:var(--ink3);margin-top:6px}
+  /* pipeline / flow */
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:20px 0;
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .flow-step{flex:1;min-width:150px;padding:16px 18px;border-right:1px solid var(--line);position:relative}
+  .flow-step:last-child{border-right:none}
+  .flow-step .n{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:500}
+  .flow-step .t{font-weight:600;font-size:14.5px;margin:4px 0 4px}
+  .flow-step .d{font-size:13px;color:var(--muted);line-height:1.5}
 
-  .quote{border-left:3px solid var(--accent);padding:6px 0 6px 16px;margin:18px 0;
-    color:var(--ink);font-size:16px}
-  .quote .zh{color:var(--ink2);font-size:14.5px;margin-top:5px}
+  /* deep cards (expandable) */
+  .deep{margin:16px 0}
+  .deep-card{border:1px solid var(--line);border-radius:12px;background:#fff;margin:12px 0;overflow:hidden}
+  .deep-card .dhead{padding:16px 20px;cursor:pointer;display:flex;gap:14px;align-items:flex-start;
+    transition:background .15s}
+  .deep-card .dhead:hover{background:var(--surface)}
+  .deep-card .dhead .ic{font-size:20px;line-height:1.3;flex-shrink:0}
+  .deep-card .dhead .txt{flex:1}
+  .deep-card .dhead .dt{font-weight:600;font-size:16px;display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+  .deep-card .dhead .ptag{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);
+    border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:1px 9px}
+  .deep-card .dhead .dsum{font-size:13.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .deep-card .dhead .chev{color:var(--faint);font-size:13px;flex-shrink:0;margin-top:3px;transition:transform .25s}
+  .deep-card.open .dhead .chev{transform:rotate(90deg)}
+  .deep-card .dbody{max-height:0;overflow:hidden;transition:max-height .4s ease;
+    border-top:0 solid var(--line)}
+  .deep-card.open .dbody{max-height:6000px;border-top:1px solid var(--line)}
+  .deep-card .dbody-in{padding:18px 22px}
+  .deep-card .dbody-in p{font-size:14.5px;margin:.6em 0}
+  .deep-card .dbody-in h4{font-size:14px;color:var(--accent);margin:16px 0 4px;
+    font-family:var(--mono);font-weight:500;letter-spacing:.02em}
+  .deep-card .dbody-in h4:first-child{margin-top:0}
+  .deep-card .dbody-in ul li{font-size:14px}
 
-  .callout{background:var(--bg2);border:1px solid var(--line);border-radius:12px;
-    padding:14px 18px;margin:18px 0;font-size:15px;color:var(--ink2)}
-  .callout b{color:var(--accent)}
+  /* details / code */
+  details{border:1px solid var(--line);border-radius:10px;margin:12px 0;background:var(--surface);overflow:hidden}
+  details summary{cursor:pointer;padding:11px 16px;font-size:13.5px;font-weight:500;
+    color:var(--ink);list-style:none;display:flex;gap:8px;align-items:center}
+  details summary::-webkit-details-marker{display:none}
+  details summary .mk{color:var(--accent);font-family:var(--mono);font-size:12px}
+  details[open] summary{border-bottom:1px solid var(--line)}
+  details .dc{padding:14px 16px;background:#fff}
+  pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+    overflow-x:auto;color:var(--ink);white-space:pre;tab-size:2}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface);
+    padding:1px 5px;border-radius:4px;color:var(--accent-deep)}
+  pre code{background:none;padding:0;color:inherit}
+  .io{display:grid;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:4px 0}
+  .io .r{padding:10px 14px;font-size:13px}
+  .io .r.q{background:var(--surface);border-bottom:1px solid var(--line)}
+  .io .r .k{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:500;display:block;margin-bottom:3px}
 
-  footer{padding:34px 0 60px;color:var(--ink3);font-size:14px}
-  footer a{font-weight:600}
+  /* stepper */
+  .stepper{border:1px solid var(--line);border-radius:14px;background:#fff;padding:22px;margin:22px 0}
+  .stepper-track{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+  .stepper-dot{flex:1;min-width:40px;height:5px;border-radius:3px;background:var(--surface);transition:background .3s}
+  .stepper-dot.on{background:var(--accent)}
+  .stepper-stage{display:none}
+  .stepper-stage.on{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .stepper-stage .sn{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500}
+  .stepper-stage .st{font-size:18px;font-weight:600;margin:5px 0 8px}
+  .stepper-stage .sd{font-size:14.5px;color:var(--muted);line-height:1.65}
+  .stepper-stage .sd .ex{display:block;margin-top:10px;padding:10px 14px;background:var(--surface);
+    border-radius:8px;font-size:13px;color:var(--ink);border-left:3px solid var(--accent);font-family:var(--serif)}
+  .stepper-ctrl{display:flex;gap:10px;align-items:center;margin-top:20px}
+  .btn{font-family:var(--sans);font-size:13.5px;font-weight:500;padding:7px 16px;border-radius:8px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:all .15s}
+  .btn:hover{background:var(--surface)}
+  .btn.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.pri:hover{background:var(--accent-deep)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .stepper-ctrl .cnt{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--faint)}
 
-  @media(max-width:880px){
-    h1{font-size:27px}.wrap{padding:0 16px}.dims{grid-template-columns:1fr}
-    .metric .num{font-size:23px}body{font-size:16px}
+  /* fig detail */
+  .figbox{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:18px 0;background:#fff}
+  .figbox img{width:100%;display:block;background:#fff}
+  .figcap{padding:10px 16px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);line-height:1.55}
+  .figcap .ft{color:var(--accent);cursor:pointer;font-weight:500;user-select:none;font-family:var(--mono);font-size:12px}
+  .figure-detail{max-height:0;overflow:hidden;transition:max-height .4s ease}
+  .figure-detail.active{max-height:1200px}
+  .figure-detail-in{padding-top:10px;font-size:13px;color:var(--muted);line-height:1.6}
+  .figure-detail-in ul{margin:.3em 0}
+
+  footer{padding:40px 0 70px;color:var(--faint);font-size:13.5px}
+  footer a{color:var(--muted)}
+  footer .src{margin-top:8px}
+
+  @media (max-width:880px){
+    .cols,.tax{grid-template-columns:1fr}
+    .bar-row{grid-template-columns:110px 1fr 46px}
+    h1{font-size:27px}
+    .metric .num{font-size:25px}
   }
 </style>
 </head>
 <body>
 
-<header class="top"><div class="wrap">
-  <div class="badges">
-    <span class="badge accent">官方模型卡 Model Card</span>
-    <span class="badge">2026-02</span>
-    <span class="badge">ByteDance Seed</span>
-    <span class="badge">通用大模型 · Pro / Lite / Mini</span>
+<header class="top">
+  <div class="wrap">
+    <div class="badges">
+      <span class="badge accent">模型技术报告 · Model Card</span>
+      <span class="badge">ByteDance Seed</span>
+      <span class="badge">2026.06</span>
+      <span class="badge">arXiv preprint</span>
+      <span class="badge">Pro / Lite / Mini</span>
+    </div>
+    <h1>Seed2.0 Model Card：面向真实世界复杂性的智能前沿</h1>
+    <div class="subtitle">当 AI 已经能拿奥数金牌，真正的难题变成了——它能不能可靠地做完一件又长又杂的真实工作？</div>
+    <div class="meta">
+      <span class="src">📄 <a href="https://arxiv.org/abs/2607.00248" target="_blank" rel="noopener">阅读原文 arXiv:2607.00248 ↗</a></span>
+      <span>ByteDance Seed 团队</span>
+      <span>2026 年 6 月 30 日</span>
+    </div>
   </div>
-  <h1>Seed2.0 Model Card</h1>
-  <div class="subtitle">Towards Intelligence Frontier for Real-World Complexity ——「面向真实世界复杂性的智能前沿」</div>
-  <div class="meta">
-    <span class="src">来源：<a href="https://seed.bytedance.com/zh/seed2" target="_blank" rel="noopener">官方模型卡 ↗</a></span>
-    <span>调用 ID：<code>Doubao-Seed-2.0-pro</code>（火山引擎）</span>
-  </div>
-</div></header>
+</header>
 
-<nav class="toc"><div class="wrap">
-  <a href="#tldr">速览</a>
-  <a href="#why">定位</a>
-  <a href="#deploy">真实部署</a>
-  <a href="#frame">四维框架</a>
-  <a href="#cap">核心能力</a>
-  <a href="#cost">成本</a>
-  <a href="#gap">差距与局限</a>
-  <a href="#end">结语</a>
-</div></nav>
+<nav class="toc">
+  <div class="wrap">
+    <a href="#gap">① 一个不对称</a>
+    <a href="#deploy">② 真实部署</a>
+    <a href="#eval">③ 评测体系</a>
+    <a href="#results">④ 结果与差距</a>
+    <a href="#cases">⑤ 真实用例</a>
+    <a href="#diag">⑥ 模型诊断模型</a>
+    <a href="#end">⑦ 定位与结论</a>
+  </div>
+</nav>
 
 <div class="wrap">
 
-  <div class="tldr" id="tldr">
-    <h2>30 秒速览</h2>
-    <p><strong>Seed2.0 是字节跳动 Seed 团队的旗舰通用大模型系列（Pro / Lite / Mini）。</strong>它不追求只在竞赛题上刷分，而是把目标定在「<strong>真实世界复杂性</strong>」——服务于已覆盖数亿日活的产品生态（豆包、Trae 等）。</p>
-    <p>这是一份<strong>偏「能力 + 评测」的官方模型卡</strong>：它不公开架构与训练细节，而是先<strong>从真实用户需求出发</strong>抽象出一套四维评测框架（科学发现 / Vibe Coding / 上下文学习 / 真实世界任务），再用它来衡量与迭代模型。</p>
-    <p>结论：在数学、推理、视觉、搜索等核心能力上<strong>已进入国际第一梯队</strong>（AIME 2025 98.3、Codeforces Elo 3020、HMMT 97.3），API 价格<strong>比前沿模型低约一个数量级</strong>；但模型卡也<strong>诚实承认</strong>在代码工程（SWE-Evo、NL2Repo）与长尾知识（SimpleQA-Verified）上与 Claude / Gemini 仍有差距。</p>
+  <!-- TL;DR -->
+  <div class="tldr">
+    <div class="tag">TL;DR · 30 秒看懂</div>
+    <p><strong>Seed2.0 是字节 Seed 团队的一份「模型卡」</strong>，覆盖 Pro / Lite / Mini 三个尺寸。它不提出某个单一新算法，而是给出一套<strong>做模型的方法论</strong>：先从真实用户需求出发，反推出一套前瞻的<strong>评测体系</strong>，再用它当研发指南针。</p>
+    <p>核心判断：AI 的前沿正从「能不能解一道孤立的难题」<strong>转向「能不能可靠地跑完一条又长又杂的真实工作流」</strong>。为此 Seed2.0 死磕两个最容易在真实部署里翻车的能力——<strong>长尾专业知识</strong> 与 <strong>复杂指令遵循</strong>。</p>
+    <p>结果：在搜索 / 深度研究 / 视觉 Agent、数学（IMO·CMO 金牌、ICPC 五赛全金）、复杂指令上进入国际第一梯队；成本比前沿模型<strong>便宜约一个数量级</strong>。同时报告罕见地<strong>诚实标注差距</strong>——编程（对 Claude）、长尾知识（对 Gemini）仍有明显落后。</p>
+    <p>这份卡最值得读的部分不是刷榜数字，而是<strong>大量真实 case</strong>：从破解 FEAL 密码、修 Qiskit 量子编译器的相位 bug，到在 CapCut 里点错按钮后自我纠错、证明 Erdős 数论问题。</p>
   </div>
 
-  <section id="why">
-    <h2><span class="k">01</span>它想解决什么：从「会做难题」到「能干真活」</h2>
-    <p class="lead">当前 LLM 出现了一个有趣的不对称：能解奥赛级难题，却常常无法端到端可靠地完成一件实际任务（比如一次性搭出一个设计良好的应用）。</p>
-    <p>模型卡指出造成这一落差的两个原因：</p>
-    <ul>
-      <li><strong>真实任务是长程、多阶段的</strong>——现有 agent 难以自主构建有效工作流，也难以在长时间尺度上积累经验。</li>
-      <li><strong>真实知识高度领域化、长尾化</strong>——只擅长数学和代码的模型，在专业场景里往往帮不上忙。Seed2.0 通过系统性地「吃进」长尾领域知识来应对。</li>
-    </ul>
-    <p>因此 Seed2.0 的设计直接对齐<strong>四个最影响真实交互质量的因素</strong>：</p>
-    <div class="metrics">
-      <div class="metric"><div class="num">①</div><div class="lab">视觉/多模态查询</div><div class="sub">大量真实查询含截图、图表、扫描件</div></div>
-      <div class="metric"><div class="num">②</div><div class="lab">推理延迟</div><div class="sub">Pro/Lite/Mini 三档权衡速度与能力</div></div>
-      <div class="metric"><div class="num">③</div><div class="lab">复杂指令执行</div><div class="sub">多步、带约束的指令作为一等需求</div></div>
-      <div class="metric"><div class="num">④</div><div class="lab">编码协助</div><div class="sub">无缝的代码辅助体验</div></div>
-    </div>
-    <div class="callout">作为人类偏好的佐证：截至 2026-02-16，Seed 在 <b>LMSYS Chatbot Arena 文本榜（Overall）排第 6</b>、<b>视觉榜排第 3</b>。</div>
-  </section>
-
-  <section id="deploy">
-    <h2><span class="k">02</span>从真实部署里读需求</h2>
-    <p class="lead">模型卡难得地公开了一份「中国大陆 MaaS 使用分布」，这正是 Seed2.0 设计取舍的依据——先看清楚用户在用模型干什么。</p>
-
-    <figure>
-      <img src="assets/fig1_usage_distribution.png" alt="Seed2.0 MaaS 使用分布：左为行业流量分布，右为业务场景分布">
-      <div class="figcap"><strong>图 1（原文 Figure 1）：</strong>中国大陆 MaaS 使用分布。左：行业流量分布；右：业务客户使用场景分布（数据来自签署数据授权协议的「豆包协同激励计划」客户）。</div>
-      <span class="fig-toggle" onclick="toggleFigDetail(this)">展开说明 ▸</span>
-      <div class="figure-detail">
-        <ul>
-          <li><strong>左图·行业流量：</strong>互联网行业压倒性领先，占绝大多数流量；消费电子、金融、新零售、商业服务紧随其后但差距明显；制造、汽车、通信等传统行业各自占比不足 1%。</li>
-          <li><strong>共同特征：</strong>领先行业普遍具有信息密度高、产品迭代快、模型与生产系统耦合紧密的特点——模型直接参与核心业务流程，而非边缘生产力工具。</li>
-          <li><strong>右图·场景分布（2026-01）：</strong>「非结构化信息处理与分析」占最大单一份额（&gt;50%）；教育、内容创作、搜索推荐为第二梯队；社交陪伴、专业咨询、客服销售、质检、编码、结构化信息处理等占比更小。</li>
-          <li><strong>技术含义：</strong>主导场景要求模型能处理长上下文、整合异构知识源、执行多步指令，并产出可供下游系统消费的结构化高保真输出。</li>
-        </ul>
-        <div class="end">一句话总结：真实需求集中在「大规模、工作流集成」的企业级场景，这决定了 Seed2.0 是面向工作流的 MaaS 底座，而不是轻量对话模型。</div>
-      </div>
-    </figure>
-
-    <p>在<strong>智能体编码（agentic coding）</strong>的轨迹数据里也有清晰画像：<strong>前端开发</strong>（页面布局、样式、UI 逻辑）的请求远超后端 / 客户端 / 全栈；框架上 <strong>Vue.js 的采用率是 React 的三倍多</strong>（反映中国大陆开发者生态）；按任务类型看，<strong>Bug 修复</strong>居首，其次是重构与文档——开发者主要把 AI 用于「反应式维护」，而非从零开发。</p>
-  </section>
-
-  <section id="frame">
-    <h2><span class="k">03</span>核心方法：先建评测框架，再迭代模型</h2>
-    <p class="lead">Seed2.0 最有意思的「方法论」不是某个网络结构，而是<strong>把评测本身当作开发的指南针</strong>。团队建立了一套四维框架，既是 benchmark 套件，也是迭代开发的导引。</p>
-
-    <div class="frame">
-      <div class="core">真实世界复杂性 · 长程 / 多阶段 agent 能力</div>
-      <div class="dims">
-        <div class="dim">
-          <div class="dt">🔬 Scientific Discovery 科学发现</div>
-          <div class="dd">能否实现并操作科学工作流中的计算过程、对交织的图文科学信息进行研究式推理。</div>
-          <div class="db">Ainstein Bench · BABE · FrontierSci</div>
-        </div>
-        <div class="dim">
-          <div class="dt">💻 Vibe Coding</div>
-          <div class="dd">能否端到端地完成一整个软件仓库的构建，而非只写片段代码。</div>
-          <div class="db">NL2Repo-Bench · ArtifactsBench</div>
-        </div>
-        <div class="dim">
-          <div class="dt">📚 Context Learning 上下文学习</div>
-          <div class="dd">能否严格依据用户提供的上下文 / 文档执行，而非凭记忆作答。</div>
-          <div class="db">DeR2 Bench · KORBench</div>
-        </div>
-        <div class="dim">
-          <div class="dt">🌍 Real-World Tasks 真实任务</div>
-          <div class="dd">面向端到端任务完成的细粒度内部评测，强调直接经济价值。</div>
-          <div class="db">XPert Bench · GDPVal · ToB 系列</div>
-        </div>
-      </div>
-      <div class="figcap" style="margin-top:14px"><strong>自制示意图（非原文配图）：</strong>依据模型卡 §3.4 文字描述绘制的四维评测框架，忠于原文维度划分，不代表具体实现。</div>
-    </div>
-
-    <p>这套框架的设计哲学贯穿全卡：</p>
-    <div class="quote">
-      “First, the Seed team identifies users’ real needs, and selects or abstracts a series of benchmarks based on these real needs … Based on the reliable and forward-looking evaluation system, Seed2.0 focuses on solving long-tail knowledge problems and complex instruction following problems.”
-      <div class="zh">先识别用户真实需求 → 据此抽象出可靠且前瞻的评测体系 → 再以此聚焦攻克长尾知识与复杂指令跟随问题。</div>
-    </div>
-
-    <h3>评测方法上的工程细节</h3>
-    <p>为了让 agentic 评测稳定可复现，团队做了不少「脏活」：统一执行环境到预构建镜像、修复退化或报错的参考脚本、用内部镜像替换外部包源；并做<strong>质量过滤</strong>剔除不可靠用例（多容器 Docker Compose、参考解自身都过不了的用例、跨次运行非确定性的用例、异常占盘 / 依赖网络的任务等）。为避免低估竞品，最终分数取「官方文档分」与「自测分」的<strong>最大值</strong>。</p>
-  </section>
-
-  <section id="cap">
-    <h2><span class="k">04</span>核心能力：已进入国际第一梯队</h2>
-    <p class="lead">在基础语言能力上，Seed2.0 Pro「舒适地处于国际领先集团之中」。下面挑出最能说明问题的数字（完整对比见原文 Table 3）。点击切换不同能力维度。</p>
-
-    <div class="metrics">
-      <div class="metric"><div class="num">98.3</div><div class="lab">AIME 2025</div><div class="sub">GPT-5.2 99.0 / Gemini-3-Pro 95.0</div></div>
-      <div class="metric"><div class="num">3020<small> Elo</small></div><div class="lab">Codeforces（无工具）</div><div class="sub">仅次于 GPT-5.2 的 3148</div></div>
-      <div class="metric"><div class="num">89.3</div><div class="lab">IMOAnswerBench（无工具）</div><div class="sub">该项最高分</div></div>
-      <div class="metric"><div class="num">第 1</div><div class="lab">Frames 长上下文榜</div><div class="sub">长文本理解排名第一</div></div>
-    </div>
-
-    <div class="tabs">
-      <span class="tab on" data-p="math" onclick="switchTab(this)">数学</span>
-      <span class="tab" data-p="code" onclick="switchTab(this)">代码</span>
-      <span class="tab" data-p="know" onclick="switchTab(this)">知识/科学</span>
-      <span class="tab" data-p="stem" onclick="switchTab(this)">STEM</span>
-    </div>
-
-    <div class="panel on" id="p-math">
-      <table class="tbl">
-        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
-        <tr><td>AIME 2025</td><td class="n">99.0</td><td class="n">95.0</td><td class="n">91.3</td><td class="n">98.3</td></tr>
-        <tr><td>HMMT Feb 2025</td><td class="n">100.0</td><td class="n">97.3</td><td class="n">92.9</td><td class="n">97.3</td></tr>
-        <tr class="me"><td>BeyondAIME</td><td class="n">86.0</td><td class="n">83.0</td><td class="n">69.0</td><td class="n">86.5</td></tr>
-        <tr class="me"><td>IMOAnswerBench（无工具）</td><td class="n">86.6</td><td class="n">83.3</td><td class="n">72.6</td><td class="n">89.3</td></tr>
-        <tr class="me"><td>MathArenaApex（shortlist）</td><td class="n">80.1</td><td class="n">71.4</td><td class="n">47.4</td><td class="n">82.1</td></tr>
-      </table>
-      <div class="note">高亮行为 Seed2.0 Pro 取得最高分的基准。数学是其最强项之一。</div>
-    </div>
-    <div class="panel" id="p-code">
-      <table class="tbl">
-        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
-        <tr><td>Codeforces Elo（无工具）</td><td class="n">3148</td><td class="n">2726</td><td class="n">1701</td><td class="n">3020</td></tr>
-        <tr><td>LiveCodeBench (v6)</td><td class="n">87.7</td><td class="n">90.7</td><td class="n">84.8</td><td class="n">87.8</td></tr>
-        <tr><td>AetherCode</td><td class="n">73.8</td><td class="n">57.8</td><td class="n">31.6</td><td class="n">60.6</td></tr>
-      </table>
-      <div class="note">竞赛级编码很强（Elo 3020），但仓库级工程仍是短板（见「差距与局限」）。</div>
-    </div>
-    <div class="panel" id="p-know">
-      <table class="tbl">
-        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
-        <tr><td>MMLU-Pro</td><td class="n">85.9</td><td class="n">90.1</td><td class="n">89.3</td><td class="n">87.0</td></tr>
-        <tr class="me"><td>Encyclo-K（长尾专业知识）</td><td class="n">61.0</td><td class="n">64.9</td><td class="n">63.3</td><td class="n">65.7</td></tr>
-        <tr><td>SuperGPQA</td><td class="n">67.9</td><td class="n">73.8</td><td class="n">70.6</td><td class="n">68.7</td></tr>
-        <tr><td>HealthBench</td><td class="n">63.3</td><td class="n">37.9</td><td class="n">36.3</td><td class="n">57.7</td></tr>
-        <tr><td>SimpleQA Verified</td><td class="n">36.8</td><td class="n">72.1</td><td class="n">48.6</td><td class="n">36.0</td></tr>
-      </table>
-      <div class="note">在为产品优化的长尾知识（Encyclo-K）上领先；但 SimpleQA-Verified 这类「冷僻事实记忆」明显落后 Gemini。</div>
-    </div>
-    <div class="panel" id="p-stem">
-      <table class="tbl">
-        <tr><th>基准</th><th>GPT-5.2 High</th><th>Gemini-3-Pro</th><th>Claude-Opus-4.5</th><th>Seed2.0 Pro</th></tr>
-        <tr><td>GPQA Diamond</td><td class="n">92.4</td><td class="n">91.9</td><td class="n">86.9</td><td class="n">88.9</td></tr>
-        <tr><td>PhyBench</td><td class="n">74.0</td><td class="n">80.0</td><td class="n">69.0</td><td class="n">74.0</td></tr>
-        <tr class="me"><td>FrontierSci-research</td><td class="n">25.0</td><td class="n">15.0</td><td class="n">21.7</td><td class="n">25.0</td></tr>
-      </table>
-      <div class="note">研究级科学推理（FrontierSci-research）与最强基线并列居首，呼应其「科学发现」维度的投入。</div>
-    </div>
-
-    <h3>有意思的点：开始触碰研究前沿</h3>
-    <p>模型卡展示了几个超出「答题」范畴的能力切片：</p>
-    <ul>
-      <li><strong>攻克开放数学难题：</strong>给出了两道 <strong>Erdős 问题</strong>的证明（经迭代精炼流水线生成），并用 <strong>Seed-Prover 1.5 形式化了 Erdős 1051 的证明</strong>。</li>
-      <li><strong>科学编码（Scientific Coding）：</strong>能实现并操作科学工作流中的计算过程，在 AInstein Bench 上领先。</li>
-      <li><strong>长上下文：</strong>在 Frames 排行榜上排名第一。</li>
-    </ul>
-  </section>
-
-  <section id="cost">
-    <h2><span class="k">05</span>成本：能力对标前沿，价格低一个数量级</h2>
-    <p class="lead">Seed2.0 的一大卖点是成本结构。在能力对标前沿模型的同时，token 定价大约低一个数量级——这对高频、工作流集成的企业 MaaS 部署尤其关键。</p>
-    <table class="tbl">
-      <tr><th>模型</th><th>输入 / 1M tokens</th><th>输出 / 1M tokens</th></tr>
-      <tr><td>Claude-Opus-4.5-thinking</td><td class="n">$5.00</td><td class="n">$25.00</td></tr>
-      <tr><td>GPT-5.2 High</td><td class="n">$1.75</td><td class="n">$14.00</td></tr>
-      <tr><td>Gemini-3-Pro</td><td class="n">$2.00–4.00</td><td class="n">$12.00–18.00</td></tr>
-      <tr class="me"><td>Seed2.0 Pro</td><td class="n">$0.47</td><td class="n">$2.37</td></tr>
-      <tr class="me"><td>Seed2.0 Lite</td><td class="n">$0.09</td><td class="n">$0.53</td></tr>
-      <tr class="me"><td>Seed2.0 Mini</td><td class="n">$0.03</td><td class="n">$0.31</td></tr>
-    </table>
-    <div class="note">数据为原文 Table 1（USD / 1M tokens）。Gemini 为按上下文档位的区间价。</div>
-    <p>三档定位各司其职：</p>
-    <div class="xcard" onclick="toggleCard(this)"><div class="head">
-      <span class="ic">🚀</span><div class="ht"><div class="t">Seed2.0 Pro</div><div class="s">复杂推理与长上下文，能力优先</div></div><span class="arw">▸</span>
-    </div><div class="body"><p>面向能力至上的复杂推理、长上下文任务，是与国际前沿对标的主力型号（调用 ID <code>Doubao-Seed-2.0-pro</code>）。</p></div></div>
-    <div class="xcard" onclick="toggleCard(this)"><div class="head">
-      <span class="ic">⚖️</span><div class="ht"><div class="t">Seed2.0 Lite</div><div class="s">通用应用的平衡选择</div></div><span class="arw">▸</span>
-    </div><div class="body"><p>在效率型模型中表现稳健：多个真实世界 ToB 基准成绩强，部分高级任务上直接超过 GPT-5-Mini，同时延迟与成本更友好。</p></div></div>
-    <div class="xcard" onclick="toggleCard(this)"><div class="head">
-      <span class="ic">⚡</span><div class="ht"><div class="t">Seed2.0 Mini</div><div class="s">高吞吐、低延迟、极致单价</div></div><span class="arw">▸</span>
-    </div><div class="body"><p>输出价低于 $0.50/1M tokens，为「每次查询成本必须极低」的高吞吐、延迟敏感场景打开了可能性。</p></div></div>
-  </section>
-
+  <!-- ① 一个不对称 -->
   <section id="gap">
-    <h2><span class="k">06</span>诚实的差距与局限</h2>
-    <p class="lead">模型卡难得地直接列出了自己与国际前沿的差距——这往往比漂亮的数字更能帮你判断它适不适合你的场景。</p>
+    <div class="sec-head"><span class="k">01</span><h2>一个有意思的不对称</h2><span class="rule"></span></div>
+    <p class="lead">当下的 Agent 系统有个奇怪的现象：它能解决竞赛级难题，却常常做不完一件普通的实际活。</p>
+
+    <p>报告开篇就点出这个矛盾：现在的模型可以拿 IMO 金牌、Codeforces 冲到 3000+，<strong>却往往无法「一次性」建好一个设计合理的应用</strong>。会解题 ≠ 会干活。作者把这个 gap 归因于两点：</p>
     <ul>
-      <li><strong>代码工程：</strong>与 <strong>Claude 在编码上仍有可观差距</strong>，典型如 <code>SWE-Evo</code> 与 <code>NL2Repo</code>。</li>
-      <li><strong>长尾知识：</strong>与 <strong>Gemini 在贴近用户体验的长尾知识上差距明显</strong>，典型如 <code>SuperGPQA</code> 与 <code>SimpleQA-Verified</code>。</li>
-      <li><strong>上下文学习 + Vibe Coding：</strong>在 <code>DeR2 Bench</code> 与 <code>NL2Repo-Bench</code> 上落后最强基线，说明长程上下文整合与仓库级代码生成仍是挑战——团队已将其列为优先研究方向。</li>
+      <li><strong>真实任务是长程、多阶段的</strong>：需要模型自主构建工作流、在很长的时间尺度上积累经验并纠错——而现有 Agent 很难做到。</li>
+      <li><strong>真实知识是高度领域化、长尾的</strong>：一个数学 / 代码很强的模型，扔进某个具体的专业场景里可能几乎没用。通用训练覆盖不到这些冷门但有价值的知识。</li>
     </ul>
-    <div class="callout">这份模型卡<b>不公开架构、参数量与训练细节</b>，本页所有内容均来自模型卡公开披露的能力与评测信息，未做任何架构层面的推断。</div>
-  </section>
+    <p>Seed2.0 的整份设计，就是冲着这两点去的。先看「会解题」的一面有多强——这是它进入牌桌的门票：</p>
 
-  <section id="end">
-    <h2><span class="k">07</span>结语</h2>
-    <p>Seed2.0 系列在「解决复杂真实世界任务」这条路上迈出了关键一步：<strong>先从用户真实需求出发建立可靠且前瞻的评测体系</strong>，再据此聚焦攻克长尾知识与复杂指令跟随问题，从而提升模型在复杂、长程真实任务上的可靠性。叠加世界领先的推理、视觉理解与搜索能力，它满足了海量用户最真实的需求；模型卡用大量真实用例证明——Seed2.0 已<strong>初步具备处理复杂真实世界任务的能力</strong>。</p>
     <div class="metrics">
-      <div class="metric"><div class="num">数亿</div><div class="lab">日活用户产品生态</div><div class="sub">豆包 / Trae 等</div></div>
-      <div class="metric"><div class="num">4</div><div class="lab">维评测框架</div><div class="sub">科学 / 编码 / 上下文 / 真实任务</div></div>
-      <div class="metric"><div class="num">3</div><div class="lab">模型档位</div><div class="sub">Pro / Lite / Mini</div></div>
+      <div class="metric hl"><div class="num">35<span class="u">/42</span></div><div class="lab">IMO 2025 金牌（门槛 ≥35）；CMO 2025 拿到 114/126</div></div>
+      <div class="metric hl"><div class="num">3020</div><div class="lab">Codeforces Elo（无工具），逼近 GPT-5.2 的 3148，远超 Gemini / Claude</div></div>
+      <div class="metric hl"><div class="num">73.0<span class="u">%</span></div><div class="lab">五场 ICPC 2025 Pass@8，含世界总决赛；<strong>五赛全部金牌线</strong>，高于 GPT-5.2（65.1%）/ Gemini-3-Pro（63.5%）</div></div>
+      <div class="metric"><div class="num">35.5</div><div class="lab">Putnam-200 形式化证明 Pass@8（第一），并已用 Seed-Prover 形式化 Erdős 1051</div></div>
     </div>
-    <p>体验入口：<a href="https://www.volcengine.com/experience/ark" target="_blank" rel="noopener">火山引擎方舟 ↗</a> · 官方页面：<a href="https://seed.bytedance.com/zh/seed2" target="_blank" rel="noopener">seed.bytedance.com/zh/seed2 ↗</a></p>
+
+    <div class="quote">
+      「它们能解决竞赛级问题，却常常无法端到端地可靠完成实际任务——比如一次就搭好一个设计良好的应用。」
+      <span class="cn">—— 报告 Introduction，点出全文要攻克的核心矛盾</span>
+    </div>
+    <p>所以这份 model card 真正想回答的问题不是「Seed2.0 能考多少分」，而是<strong>「它能不能开始把真实世界里那些又长又杂的活，可靠地做完」</strong>。下面的每一部分都在服务这个问题。</p>
   </section>
 
-  <footer>
-    <p>本页为 Seed2.0 Model Card 的中文教学可视化精读，内容与数字均整理自官方模型卡原文，仅供学习参考。</p>
-    <p>原文：<a href="https://seed.bytedance.com/zh/seed2" target="_blank" rel="noopener">Seed2.0 Model Card: Towards Intelligence Frontier for Real-World Complexity · ByteDance Seed ↗</a></p>
-  </footer>
+  <!-- ② 真实部署 -->
+  <section id="deploy">
+    <div class="sec-head"><span class="k">02</span><h2>真实部署告诉我们什么</h2><span class="rule"></span></div>
+    <p class="lead">在动手定义「好模型」之前，Seed 团队先去看了自己在中国 MaaS（模型即服务）市场上，真实流量到底长什么样。这些数据直接塑造了 Seed2.0 的优化重心。</p>
+
+    <h3>行业与场景：集中在信息密集、迭代快的数字业务</h3>
+    <p>从授权数据（「豆包合作激励计划」，2026 年 1 月）看，<strong>互联网行业压倒性地占据了绝大多数流量</strong>，消费电子、金融、新零售、商业服务次之；而制造、汽车、通信这些传统垂类各自不到 1%。领先行业的共同点是：信息密度高、产品迭代快、模型与生产系统深度耦合。</p>
+
+    <div class="bars">
+      <div class="bar-row"><span class="lbl">互联网</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">&gt;50%</span></div>
+      <div class="bar-row"><span class="lbl">消费电子</span><div class="bar-track"><div class="bar-fill" style="width:22%"></div></div><span class="val">&gt;10%</span></div>
+      <div class="bar-row"><span class="lbl">金融 / 新零售 / 商业服务</span><div class="bar-track"><div class="bar-fill soft" style="width:14%"></div></div><span class="val">次之</span></div>
+      <div class="bar-row"><span class="lbl">制造 / 汽车 / 通信</span><div class="bar-track"><div class="bar-fill soft" style="width:3%"></div></div><span class="val">&lt;1%</span></div>
+    </div>
+
+    <p>再看具体<strong>使用场景</strong>：占比最大的是「非结构化信息处理与分析」，其次是教育、内容创作、搜索推荐；社交陪伴、专业咨询、客服销售、质检、编程、结构化信息处理等更专门的场景占比则小得多。</p>
+
+    <div class="bars">
+      <div class="bar-row"><span class="lbl">非结构化信息处理</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">&gt;30%</span></div>
+      <div class="bar-row"><span class="lbl">教育</span><div class="bar-track"><div class="bar-fill" style="width:36%"></div></div><span class="val">&gt;10%</span></div>
+      <div class="bar-row"><span class="lbl">内容创作</span><div class="bar-track"><div class="bar-fill" style="width:36%"></div></div><span class="val">&gt;10%</span></div>
+      <div class="bar-row"><span class="lbl">搜索推荐</span><div class="bar-track"><div class="bar-fill" style="width:36%"></div></div><span class="val">&gt;10%</span></div>
+      <div class="bar-row"><span class="lbl">社交 / 咨询 / 客服 / 质检 / 编程…</span><div class="bar-track"><div class="bar-fill soft" style="width:16%"></div></div><span class="val">较小</span></div>
+    </div>
+
+    <div class="note">
+      <strong>结论如何反推设计：</strong>主流场景要求模型能处理<strong>长上下文</strong>、整合<strong>异构知识源</strong>、执行<strong>多步指令</strong>、产出可供下游系统消费的<strong>结构化高保真输出</strong>。所以 Seed 把自己定位成「工作流导向的 MaaS 底座」，而不是一个轻量聊天模型。这与 OpenAI / Anthropic / Google Cloud 的企业 AI 报告结论一致：软件工程、研究、分析、客服、知识工作是增长最快的品类。
+    </div>
+
+    <h3>Agentic Coding：前端 + 改 bug 是绝对主力</h3>
+    <p>在轨迹级的开发者用量数据里，最醒目的发现是<strong>前端开发的统治地位</strong>——页面布局、样式、UI 逻辑相关的请求远超后端、客户端、全栈。语言上 JavaScript / TypeScript / CSS / HTML 合计占了大头；框架里 <strong>Vue.js 断层领先，是 React 的三倍多</strong>（反映了中国开发者生态）。按任务类型，<strong>改 bug 最多</strong>，其次是重构和写文档——说明开发者主要把 AI 用于「反应式维护」而非从零造轮子。</p>
+    <div class="cols">
+      <div class="col good">
+        <h4>🖥️ 按开发领域</h4>
+        <ul>
+          <li><b>前端</b>：远超其它——视觉反馈循环鼓励高频交互</li>
+          <li>后端 / 客户端 / 全栈：明显更少</li>
+        </ul>
+      </div>
+      <div class="col good">
+        <h4>🔧 按需求类型</h4>
+        <ul>
+          <li><b>Bug Fixing</b>：最高频，错误诊断是真实痛点</li>
+          <li>重构 / 文档 / 测试：次之</li>
+        </ul>
+      </div>
+    </div>
+    <p>这直接指向研发优先级：JS/TS 理解、CSS 布局推理、框架特定知识，以及<strong>调试能力</strong>（读栈追踪、推理程序状态）都该被重点投入。</p>
+
+    <h3>成本：便宜约一个数量级</h3>
+    <p>Seed2.0 的一个关键卖点是价格结构。在做到与前沿模型相当的用户体验的同时，token 定价大约低了一个数量级——这对高频、嵌入工作流的企业部署是决定性的：很多用更贵模型「算不过账」的场景，才因此变得可行。</p>
+    <div class="metrics">
+      <div class="metric hl"><div class="num">$0.47<span class="u"> / $2.37</span></div><div class="lab">Seed2.0 <b>Pro</b> 每百万 token 输入 / 输出（¥3.41 / ¥17.04）</div></div>
+      <div class="metric"><div class="num">$0.09<span class="u"> / $0.53</span></div><div class="lab">Seed2.0 <b>Lite</b>，通用场景的质量–成本平衡点</div></div>
+      <div class="metric"><div class="num">$0.03<span class="u"> / $0.31</span></div><div class="lab">Seed2.0 <b>Mini</b>，高吞吐 / 低延迟场景</div></div>
+      <div class="metric"><div class="num">$5 <span class="u">/ $25</span></div><div class="lab">对比 Claude-Opus-4.5；GPT-5.2 High 为 $1.75 / $14</div></div>
+    </div>
+  </section>
+
+  <!-- ③ 评测体系 -->
+  <section id="eval">
+    <div class="sec-head"><span class="k">03</span><h2>评测体系：这份卡真正的「方法贡献」</h2><span class="rule"></span></div>
+    <p class="lead">Seed2.0 最想让你记住的，不是某个模型结构，而是一套评测哲学：评测不是为了刷榜，而是当研发的指南针，并且必须反映真实的高价值任务。</p>
+
+    <p>整套评测分两层。<strong>基础能力层</strong>衡量模型的底子；<strong>高阶价值任务层</strong>——也是这份卡的重点——把「真实世界复杂性」拆成四个可追踪的维度。</p>
+
+    <h3>基础能力层（Fundamental Capacity）</h3>
+    <div class="tax">
+      <div class="tax-card">
+        <div class="cap">Language</div>
+        <h4>语言能力</h4>
+        <ul>
+          <li>推理 / 数学 / 代码 / STEM</li>
+          <li>长上下文、多语言、指令遵循、幻觉鲁棒性</li>
+          <li><b>新基准</b>：LPFQA、Encyclo-K、HLE-Verified</li>
+        </ul>
+      </div>
+      <div class="tax-card">
+        <div class="cap">Vision & Video</div>
+        <h4>视觉与视频</h4>
+        <ul>
+          <li>50 个图像基准 × 9 类能力（数学、STEM、谜题、感知、VQA、计数、空间、文档图表、长上下文）</li>
+          <li>24 个视频基准 × 6 维（知识、推理、运动感知、长视频、多视频、流式）</li>
+        </ul>
+      </div>
+      <div class="tax-card">
+        <div class="cap">Agentic</div>
+        <h4>基础智能体能力</h4>
+        <ul>
+          <li>Coding Agent / Search Agent / Tool Use / GUI Agent / Deep Research</li>
+          <li>为可复现性重构了测试脚本、统一镜像、剔除不稳定用例</li>
+        </ul>
+      </div>
+      <div class="tax-card">
+        <div class="cap">Philosophy</div>
+        <h4>长尾知识的取舍</h4>
+        <ul>
+          <li>不追 SimpleQA / HLE 那类<b>冷僻 trivia</b></li>
+          <li>转而强调<b>「专业相关的长尾知识」</b>——让模型能当一台高端专业搜索引擎</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>高阶价值任务层：真实世界复杂性的四个维度</h3>
+    <p>这是全卡的骨架。每个维度都由 Seed 自研 benchmark 锚定，直接对准实践中观察到的具体失败模式。</p>
+    <div class="tax">
+      <div class="tax-card">
+        <div class="cap">Dimension 1</div>
+        <h4>🔬 科学发现</h4>
+        <ul>
+          <li>能不能做研究级别的推理与科学编程</li>
+          <li><b>AInstein Bench</b>（科学编程）、<b>BABE / BIObench</b>（图文交织的生物科学推理）</li>
+        </ul>
+      </div>
+      <div class="tax-card">
+        <div class="cap">Dimension 2</div>
+        <h4>💻 Vibe Coding</h4>
+        <ul>
+          <li>能不能仅凭自然语言需求，一次性端到端建好整个仓库</li>
+          <li><b>NL2Repo-Bench</b>：长程仓库构建、跨文件一致性、依赖管理</li>
+        </ul>
+      </div>
+      <div class="tax-card">
+        <div class="cap">Dimension 3</div>
+        <h4>📚 上下文学习</h4>
+        <ul>
+          <li>能不能严格按提供的长手册 / 内部文档执行，从<b>噪声长文</b>里抽取并利用有用信息</li>
+          <li><b>DeR2</b> + CL-Bench + 两个内部场景（客服 QA、复杂工作流）</li>
+        </ul>
+      </div>
+      <div class="tax-card">
+        <div class="cap">Dimension 4</div>
+        <h4>🌍 真实世界任务</h4>
+        <ul>
+          <li>端到端完成有直接经济价值的任务</li>
+          <li><b>GDPVal-Verified</b>（可自动评分子集）、<b>XpertBench</b>、<b>WorldTravel</b>（目标分解 + 可执行多步计划）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote">
+      「这套评测把 Introduction 里的愿景落到了实处：衡量 LLM 能否作为『完成真实任务的智能体系统』运转，而不只是回答问题。」
+      <span class="cn">—— 把评测锚定在真实工作流与长程完成度上，才能得到更忠实的能力测量</span>
+    </div>
+  </section>
+
+  <!-- ④ 结果与差距 -->
+  <section id="results">
+    <div class="sec-head"><span class="k">04</span><h2>结果一览：强在哪，诚实的差距在哪</h2><span class="rule"></span></div>
+    <p class="lead">报告最难得的一点是它的诚实。这里不搬运几十张表，只讲清楚 Seed2.0 站在什么位置。</p>
+
+    <p>整体上，<strong>Seed2.0 Pro 稳稳落在国际第一梯队</strong>，在部分方向领跑、部分方向仍有明确差距。它把差距写得非常直白：</p>
+
+    <div class="cols">
+      <div class="col good">
+        <h4>✅ 明显强项</h4>
+        <ul>
+          <li><b>搜索 / 深度研究 / 视觉 Agent</b>：BrowseComp-zh 82.4、HLE-Verified 73.6、DeepSearchQA 77.4、ResearchRubrics 50.7 多项第一；视觉 Agent 上 Minedojo-Verified 49.0、MM-BrowseComp 48.8 <b>大幅领先</b>对手</li>
+          <li><b>数学与形式化证明</b>：IMO/CMO 金牌、Codeforces 3020、ICPC 五赛全金、Putnam-200 第一</li>
+          <li><b>复杂指令遵循</b>：中文场景较 Seed1.8 提升 +2.37，语气控制 +15.16、措辞 +10.31、few-shot +9.53</li>
+          <li><b>视觉与视频理解</b>：MathVision 88.8、DA-2K 92.3、BLINK 79.5 等多项 SOTA；VideoReasonBench 77.8 <b>超过人类</b>（73.8）</li>
+        </ul>
+      </div>
+      <div class="col gap">
+        <h4>➖ 诚实的差距</h4>
+        <ul>
+          <li><b>编程（对 Claude）</b>：SWE-Evo 仅 8.5（Opus-4.5 为 27.1）、NL2Repo-Bench 27.9（GPT-5.2 为 49.3）、Aider Polyglot 80.0（对手 91–94）</li>
+          <li><b>长尾知识（对 Gemini）</b>：SimpleQA-Verified 36.0（Gemini-3-Pro 72.1）、SuperGPQA 68.7（73.8）</li>
+          <li><b>长上下文检索</b>：MRCR、Graphwalks 仍有 headroom</li>
+          <li><b>幻觉</b>：FactScore 71.2，明显低于前沿模型的 91–92</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="quote">
+      「Seed2.0 系列与 Claude 在编程上存在较大差距（以 SWE-Evo 和 NL2Repo 为例），与 Gemini 在贴近用户体验的长尾知识上存在相对明显的差距（以 SuperGPQA 和 SimpleQA-Verified 为例）。」
+      <span class="cn">—— 报告罕见地在正文里主动点名自己落后的对手和 benchmark</span>
+    </div>
+
+    <p><strong>关于 Lite / Mini：</strong>小模型主打效率–质量权衡。Seed2.0 Lite 数学、推理、指令遵循都很扎实，在多个 advanced benchmark 上<strong>直接胜过 GPT-5-mini</strong>，配合更低成本，适合大规模、低延迟部署。<strong>视频工具 VideoCut</strong> 是全系默认能力：处理长视频时可把关键片段以更高帧率「回放」，让 ZeroVideo 这类困难长视频推理从 14.5 提到 27.9。</p>
+  </section>
+
+  <!-- ⑤ 真实用例 -->
+  <section id="cases">
+    <div class="sec-head"><span class="k">05</span><h2>真实用例：模型到底能做成什么样的复杂活</h2><span class="rule"></span></div>
+    <p class="lead">这是全卡最值得细读的部分。相比榜单数字，这些真实轨迹更能让你「看懂」Seed2.0 的能力边界——也包括它的短板。卡片默认折叠，按兴趣展开即可。</p>
+
+    <!-- 视觉锚点：GUI 自纠错步进 -->
+    <h3>先看一个「视觉锚点」：GUI Agent 的在线自纠错闭环</h3>
+    <p>在 FreeCAD、CapCut 这类生产力软件里操作，界面是<strong>有状态的</strong>：工具随模式变化、参数跨轮次联动，一个误触、一次双击没生效、一个弹窗，都可能引发连锁失败。Seed2.0 展示出的关键能力是——把「反思」当成<strong>噪声反馈下的在线控制回路</strong>。点「下一步」跟着走一遍这个循环：</p>
+
+    <div class="stepper" id="loopStepper">
+      <div class="stepper-track">
+        <div class="stepper-dot on"></div><div class="stepper-dot"></div><div class="stepper-dot"></div>
+        <div class="stepper-dot"></div><div class="stepper-dot"></div><div class="stepper-dot"></div>
+      </div>
+      <div class="stepper-stage on">
+        <div class="sn">STEP 1 / 6 · 发出动作</div>
+        <div class="st">按计划执行一个 UI 操作</div>
+        <div class="sd">模型先把目标拆成微计划（例如「画圆 → 约束直径 → 退出草图」），然后发出一个具体动作：双击图标、点击对话框的 OK、拖动播放头。
+          <span class="ex">CapCut：Action: left_double[0.025, 0.268]（双击桌面上的剪映专业版图标以启动）</span>
+        </div>
+      </div>
+      <div class="stepper-stage">
+        <div class="sn">STEP 2 / 6 · 观察结果</div>
+        <div class="st">发现 UI 状态没有如预期改变</div>
+        <div class="sd">动作没生效：应用没启动、OK 按钮没响应、或者误点了 Pocket 工具弹出报错框。模型不会假装成功，而是<strong>把「实际 UI 状态」和「预期状态」对比</strong>。
+          <span class="ex">Think：CapCut 似乎没有成功启动，可能是上一次双击没被准确识别，或启动延迟比预期更长……</span>
+        </div>
+      </div>
+      <div class="stepper-stage">
+        <div class="sn">STEP 3 / 6 · 自省诊断</div>
+        <div class="st">判断到底是哪种失败模式</div>
+        <div class="sd">关键一步：不是简单记录「出错了」，而是<strong>诊断失败原因</strong>——是点击不够准？系统延迟？选错了工具？还是 UI 还没加载完？不同诊断对应不同修法。
+          <span class="ex">Think：OK 按钮刚才没响应，可能是点击不够精确，或系统响应慢。仔细找 OK 按钮：它是带「OK」字样的绿色对勾图标。</span>
+        </div>
+      </div>
+      <div class="stepper-stage">
+        <div class="sn">STEP 4 / 6 · 定向纠正</div>
+        <div class="st">采取针对性的补救动作</div>
+        <div class="sd">按诊断结果精准修复：关闭遮挡的弹窗、重新选择正确工具、或把「点击添加」改成「拖拽拼接」来做转场，而不是盲目重试同一个动作。
+          <span class="ex">我们误点了 Pocket 工具并弹出报错——先点 OK 关闭对话框，再回到正确步骤，去「草图几何体」子菜单里找「圆」工具。</span>
+        </div>
+      </div>
+      <div class="stepper-stage">
+        <div class="sn">STEP 5 / 6 · 重锚定不变量</div>
+        <div class="st">把工作流重新对齐到规范锚点</div>
+        <div class="sd">继续之前，模型把状态<strong>重新锚定到时间轴 / 几何不变量</strong>：项目起点 00:00:00:00、拼接边界 00:00:02:29。这个「重锚定」机制阻止了错误在多阶段编辑里累积漂移。
+          <span class="ex">观察到关键问题：音频轨从约 00:00:03:00 而非 00:00:00 开始——需把播放头拖到时间轴最左端重新对齐。</span>
+        </div>
+      </div>
+      <div class="stepper-stage">
+        <div class="sn">STEP 6 / 6 · 冗余校验收束</div>
+        <div class="st">用独立第二通道确认结果</div>
+        <div class="sd">最后，正确性靠「冗余验证」而非「看起来对」来锚定。FreeCAD 里模型同时用<strong>属性面板</strong>（Data→Shape→Volume/Area）和<strong>独立的 Python 读数</strong>（obj.Shape.Volume）双重确认，把一个 GUI 过程变成可检查的结果。
+          <span class="ex">最终：体积 = 231061.93 mm³，表面积 = 23306.19 mm²（两个通道一致）。</span>
+        </div>
+      </div>
+      <div class="stepper-ctrl">
+        <button class="btn" id="loopPrev" onclick="loopStep(-1)">← 上一步</button>
+        <button class="btn pri" id="loopNext" onclick="loopStep(1)">下一步 →</button>
+        <button class="btn" onclick="loopReset()">重置</button>
+        <span class="cnt" id="loopCnt">1 / 6</span>
+      </div>
+    </div>
+    <p>这套「维持系统不变量 → 恢复操作上下文 → 继续原任务」的模式，被作者视为鲁棒 GUI Agent 的一个可泛化框架。下面按四类场景展开更多真实 case。</p>
+
+    <!-- A. Vibe Coding -->
+    <h3>A · Vibe Coding：端到端软件工程</h3>
+    <p>「Vibe Coding」考的是真实约束下的端到端行为：理解欠规范的需求、形成可执行计划、产出可运行产物、并根据反馈迭代到验收通过——而不是写孤立的代码片段。</p>
+
+    <div class="deep">
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🔐</span>
+          <span class="txt">
+            <span class="dt">复杂代码合成：破解 FEAL 分组密码 <span class="ptag">TerminalBench 2.0 · Hard</span></span>
+            <span class="dsum">面对 80-bit 密钥空间的已知明文攻击，暴力枚举不可行——模型用代数求逆 + 中间相遇（MITM）把搜索量砍到可行。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>任务</h4>
+          <p>给定一个 FEAL 类 Feistel 分组密码的实现、参考解密程序、以及若干明文–密文对，要求构造<strong>已知明文攻击</strong>恢复密钥，并解密更多密文来自证。天真地在有效密钥空间上暴力枚举，在 benchmark 约束下算不完——必须有算法洞察。</p>
+          <h4>模型的做法（12 轮交互）</h4>
+          <p>Seed2.0 先做系统性的仓库分析：检视项目结构、读 <code>feal.c</code> 重建轮函数、对齐输入输出格式，再据此写出针对该 FEAL 变体的 <code>attack.py</code>。攻击的核心是把<strong>代数求逆</strong>与<strong>时间–空间权衡</strong>结合：</p>
+          <ul>
+            <li>为密码内部操作（旋转、模加）推导逆变换，实现 F 函数的显式逆 <code>f_inv_function</code>；</li>
+            <li>为 20→32 bit 的 <code>expand()</code> 预计算逆映射表，避免搜索阶段的重复计算；</li>
+            <li>用<strong>中间相遇（meet-in-the-middle）</strong>在中间态劈开计算，前向/后向部分结果匹配，用内存和预处理换取巨大的运行时下降——从而绕开 80-bit 全枚举。</li>
+          </ul>
+          <h4>为什么值得说</h4>
+          <p>恢复候选密钥后，模型对全部 32 对明密文做校验、并与参考 <code>decrypt</code> 交叉验证，一致后才解密 100 条密文。它的解法<strong>与 benchmark 参考实现不同</strong>——说明它是在做真正的程序结构分析与针对性密码分析推理，而非匹配已知答案。</p>
+          <details>
+            <summary><span class="mk">&lt;/&gt;</span> 查看 F 函数求逆的关键片段</summary>
+            <div class="dc"><pre><code>def f_inv_function(output_val):
+    output_val &= 0xFFFFFFFF
+    y = [(output_val >> (8*i)) & 0xFF for i in range(4)]
+    x1_xor_x0 = (rotr2(y[1]) - y[2])      & 0xFF
+    x3_xor_x2 = (rotr2(y[2]) - x1_xor_x0 - 1) & 0xFF
+    x3        = (rotr2(y[3]) - y[2])      & 0xFF
+    x2        = (x3_xor_x2 ^ x3)          & 0xFF
+    x0        = (rotr2(y[0]) - y[1] - 1)  & 0xFF
+    x1        = (x1_xor_x0 ^ x0)          & 0xFF
+    return sum(v << (8*i) for i,v in enumerate([x0,x1,x2,x3])) & 0xFFFFFFFF
+
+# MITM：先为 k0 建 delta 映射表，再遍历 k3 找匹配</code></pre></div>
+          </details>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">📦</span>
+          <span class="txt">
+            <span class="dt">仓库级构建：仅凭需求文档建整个库 <span class="ptag">NL2Repo</span></span>
+            <span class="dsum">从空工作区、只给一份 start.md，37 轮内产出一个可安装、可测试、符合规范的 Python 配置库。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>任务与流程</h4>
+          <p>从空目录出发，仅凭需求文档构建一个 Decouple 风格的配置工具库（把配置与代码解耦，同时可安装 / 可测试 / 可作为标准包使用）。模型走了标准三阶段：<strong>规范分析 → 实现与配置 → 测试与调试</strong>。它先读 <code>start.md</code> 抽取需求，核心实现落在 <code>decouple.py</code>，定义了 8 个核心类处理源优先级、解析与类型转换。</p>
+          <h4>工程师式的调试</h4>
+          <p>质量保证靠一套 22 个自写测试用例的 pytest。失败暴露的问题被逐个迭代修复，这正是「测试驱动」的痕迹：</p>
+          <ul>
+            <li>缺 pytest 依赖 → 安装；</li>
+            <li>Python 3.12 的配置读取导入失败 → 改用 <code>parser.read_file()</code>；</li>
+            <li>空字符串的布尔转换 → 加保护判断；</li>
+            <li>类作用域 fixture 冲突 → 移到全局作用域；</li>
+            <li>参数名不匹配（flat vs choices）→ 对齐到目标 API。</li>
+          </ul>
+          <p>全部修完 22 个测试通过，再跑示例、验证 <code>pip install -e .</code> 安装、确认跨目录导入。产出是一个完整、符合约定、带文档的仓库。</p>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🐞</span>
+          <span class="txt">
+            <span class="dt">零回归重构调试 <span class="ptag">SWE-Bench Pro</span></span>
+            <span class="dsum">把 Qt 告警抑制逻辑及其测试从 log.py 搬到 qtlog.py，严格保持行为等价——56 个单测通过，公共 API 不变。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>约束：严格行为等价</h4>
+          <p>目标不是重设计，而是通过测试搬迁与扩展来<strong>强化验证</strong>。核心约束是与原实现完全一致：对所有非 Qt、非匹配的日志有相同效果。匹配的告警在到达 handler 之前被完全抑制，非匹配告警照常出现在控制台与捕获日志中。</p>
+          <h4>四阶段工作流</h4>
+          <p>理解与定位 → 编辑与优化 → 局部验证 → 全局验证。<code>hide_qt_warning</code> 与 <code>QtWarningFilter</code> 迁到 <code>qtlog.py</code>，测试搬到 <code>test_qtlog.py</code>；<code>log.py</code> 保留一层导入以维持向后兼容，让既有调用点不受影响，<code>qtlog.py</code> 成为单一事实源。测试中发现的一个 logger 参数问题被修复并重新验证，最终 56 个单测通过、导入兼容、handler 输出准确。</p>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">⬆️</span>
+          <span class="txt">
+            <span class="dt">仅凭 Release Notes 做跨版本升级 <span class="ptag">SWE-EVO</span></span>
+            <span class="dsum">没有文件级指令，只给发布说明——模型跨 79 轮，把一条语义意图从命令入口贯穿到版本遍历机制，完成 DVC 库的跨切面升级。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>难在哪</h4>
+          <p>与 SWE-bench 的「解决一个明确定义的 issue」不同，这里的目标是<strong>仅用 release notes 升级一个库</strong>。没有显式的文件级指令，模型必须自己推断哪些组件承载了承诺的行为变化，并把整个单元测试套件（含历史通过与历史失败的用例）当作验收 oracle。</p>
+          <h4>79 轮的探索→实现→验证循环</h4>
+          <p>模型先绘制仓库与依赖面（目录检视 + <code>setup.py</code>），识别出这是 DVC，然后迭代实现跨 OS 兼容、日志语义、CLI/API 一致性、并发安全、输出正确性等一系列跨切面升级。最硬的一处是端到端引入 <code>--all-commits</code> 标志到 push/pull/status/metrics：这需要把单一语义意图从命令入口，穿过仓库操作，一直贯穿到版本遍历——最终扩展了分支迭代机制 <code>brancher.py</code>，并确保初始化调用新的遍历路径。</p>
+          <ul>
+            <li>用 <code>sys.getwindowsversion()</code> 门控 speedcopy 导入（比脆弱的字符串解析更稳）；</li>
+            <li>把 tqdm 相关锁换成 <code>threading.RLock()</code> 缓解重入与多线程竞争；</li>
+            <li>当请求抑制时不再打印「No changes」——照顾测试常编码的行为边界；</li>
+            <li>PyDrive2 大文件上传项被识别为「依赖一致性检查」——<code>pydrive2&gt;=1.4.8</code> 已声明，于是<strong>避免不必要的改动</strong>，贴合最小改动升级策略。</li>
+          </ul>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🏆</span>
+          <span class="txt">
+            <span class="dt">竞赛级编程：五场 ICPC 2025 <span class="ptag">Pass@8</span></span>
+            <span class="dsum">仅给题面、要求 C++、无多轮无工具——Pass@8 达 73.02%，五赛全部达到人类金牌水平。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>设置与结果</h4>
+          <p>覆盖 2025 年 5 场官方赛事：世界总决赛（巴库）、西安、成都、武汉、上海区域赛，用与官方一致的测试数据、时限、内存限制。输入 prompt 只含题面 + 「用 C++ 求解」的简单指令，不允许多轮交互或外部工具。</p>
+          <div class="metrics">
+            <div class="metric hl"><div class="num">73.0<span class="u">%</span></div><div class="lab">Seed2.0 Pro（Pass@8）</div></div>
+            <div class="metric"><div class="num">65.1<span class="u">%</span></div><div class="lab">GPT-5.2（Pass@8）</div></div>
+            <div class="metric"><div class="num">63.5<span class="u">%</span></div><div class="lab">Gemini-3-Pro（Pass@8）</div></div>
+          </div>
+          <p>对比人类战队，Seed2.0 Pro 在五场比赛中<strong>全部达到金牌线</strong>。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- B. 应用操作 & 图生码 -->
+    <h3>B · 真实应用操作与图生码</h3>
+    <p>除了上面的 GUI 自纠错闭环（FreeCAD / CapCut），报告还展示了「看图写代码」——把设计稿或图表变成可运行代码。</p>
+    <div class="deep">
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🎨</span>
+          <span class="txt">
+            <span class="dt">图生码：从截图还原带动效的网站 & matplotlib 3D 图</span>
+            <span class="dsum">给一张网页截图 + 一串动效要求，产出可直接在浏览器打开、视觉几乎一致的单文件 HTML；给一张 3D 相空间图，产出还原三视图投影关系的 matplotlib 代码。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>网站还原</h4>
+          <p>任务要求在还原视觉的同时实现一组明确动效：<strong>数字滚动计数、XP 进度条动画、任务卡片的 3D 倾斜 + 高光扫掠、进度条的动态流光纹理</strong>。模型产出的代码保存为 HTML 直接打开，就得到一个与输入几乎一致、且所有要求动效都在的网站——用 Intersection Observer 保证进入视口才触发动画，只用 CDN 资源、完全响应式。</p>
+          <h4>科学绘图还原</h4>
+          <p>另一例是「作为 matplotlib 专家，重画给定的 3D 图」，输入提供了 x-y / x-z / y-z 三个投影关系。编译生成的 Python 代码，得到一个遵循输入投影关系的 3D 相空间 / 流形分布图。</p>
+          <div class="note">这两个 case 的价值在于：它把「多模态理解」直接转成「可运行、可验证的产物」——输出对不对，浏览器 / 编译器一跑便知。</div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- C. 科学研究编码 -->
+    <h3>C · 多学科科学研究编码</h3>
+    <p>真实的科学软件常常耦合了数学表示、物理惯例和大型代码库，导致微妙却高代价的错误。以下三个 case 都来自 AInstein Bench，共同点是：光靠模式匹配或局部编辑解决不了，必须把<strong>领域理论</strong>映射到<strong>软件架构</strong>的正确位置。</p>
+    <div class="deep">
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">⚛️</span>
+          <span class="txt">
+            <span class="dt">量子计算：修 Qiskit Solovay–Kitaev 的相位 bug <span class="ptag">AInstein Bench</span></span>
+            <span class="dsum">根因是 SU(2) 双覆盖 SO(3)——递归在 SO(3) 里做，丢掉了全局相位。模型不改数学正确的递归，而在后处理边界做原理性对齐。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>问题</h4>
+          <p>Qiskit 把 Solovay–Kitaev（SK）算法的递归核心用 <strong>SO(3) 旋转矩阵</strong>（Bloch 球旋转）表达，而目标单量子比特门属于 <strong>SU(2)</strong>。因为 SU(2) 双覆盖 SO(3)，递归无法区分 U 与 −U，全局相位信息会被丢弃，映射回 SU(2) 电路时必须补回。报告症状：对 Pauli-Y 做分解，得到的算子恰好等于 −Y，全局相位不一致。</p>
+          <h4>系统化调试</h4>
+          <ul>
+            <li><strong>复现与定性</strong>：用最小样例复现，明确差异是纯符号翻转（相位差 π），而非数值近似误差；</li>
+            <li><strong>理论解释</strong>：用群表示论识别出这是 SU(2)→SO(3) 二对一映射的结构性损失，而非偶然；</li>
+            <li><strong>根因定位</strong>：递归本身数学正确，损失发生在 SO(3) 递归与最终 SU(2) 电路构造的<strong>接口</strong>——即 <code>solovay_kitaev.py</code> 的相位赋值后处理；</li>
+            <li><strong>拒绝 hack</strong>：试过给特定门加常数相位偏移，能修 Y 却弄坏 X 和参数化旋转——于是放弃 case-by-case，转而求通用解；</li>
+            <li><strong>原理性修复</strong>：重构分解序列实现的 SU(2) 矩阵，计算唯一的全局相位 ϕ 使 e<sup>iϕ</sup>U<sub>decomp</sub> = U<sub>target</sub>，跨所有单比特门验证且无回归。</li>
+          </ul>
+          <p>这条轨迹展示了「领域理论诊断 → 恰当接口处的精确干预 → 严格泛化测试」的智能体式调试。</p>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🌌</span>
+          <span class="txt">
+            <span class="dt">数值广义相对论：在 Fortran 遗留库里补实现 <span class="ptag">AInstein Bench</span></span>
+            <span class="dsum">构建系统引用了一个不存在的 AHFinder_dis.F——模型自行诊断缺失、追溯调用点，正确地把「距离」实现为弯曲时空里的固有距离而非坐标距离。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>任务</h4>
+          <p>在 Einstein Toolkit（Cactus 框架）的遗留 Fortran 代码库里实现数值相对论功能。模型自主诊断出：<code>AHFinder_dis.F</code> 被构建系统引用，却在 <code>src</code> 里缺失；随后追溯它在 <code>AHFinder.F</code> 的调用点，确定它在双黑洞模拟的多视界追踪中的角色。</p>
+          <h4>物理洞察 + 数值严谨</h4>
+          <p>关键在于模型正确地把「距离」理解为弯曲时空里的<strong>固有距离（proper distance）</strong>而非坐标间隔，实现了带全部空间 3-度规分量（含 g<sub>xy</sub>, g<sub>xz</sub>, g<sub>yz</sub> 等非对角项）的线元积分 s = ∫√(g<sub>ij</sub> dx<sup>i</sup> dx<sup>j</sup>)，用 Einstein Toolkit 惯例访问度规变量，并对无效句柄、缺失视界加了鲁棒性检查。</p>
+          <div class="note">这体现了把物理概念（黎曼几何、测地线积分）翻译成数值方法（插值、求积），再嵌入复杂软件架构（框架 API、F77/F90 混合语法 + 预处理宏）的综合能力。</div>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🧪</span>
+          <span class="txt">
+            <span class="dt">计算化学：修 PySCF 密度拟合对复数密度矩阵的缺陷 <span class="ptag">AInstein Bench</span></span>
+            <span class="dsum">复数 MO 系数下能量偏差约 0.9 Hartree——模型定位到底层 C 内核只支持实数组，用线性性把复数拆成实/虚两遍处理再重组。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>症状与定位</h4>
+          <p>密度拟合（DF/RI）用辅助基的三中心张量替代四中心积分来加速 J/K 矩阵构建。bug 表现为：用复数 SCF 输入做 DF 计算时能量偏差约 0.9 Hartree，而实数与复数的非 DF 计算却高度一致（精度到 10⁻¹¹）。这个模式立刻把故障锁定在 DF 的 J/K 管线，而非一般复数处理。模型追踪到 <code>pyscf/df/df_jk.py</code>，发现底层走的是<strong>假设实数、对称数组</strong>的 C AO2MO 内核。</p>
+          <h4>诊断与修复</h4>
+          <p>通过插桩隔离能量贡献，模型确定 J 在 DF 下仍准确、而 K 严重损坏——这与「复数缓冲被当成实数内存误读」的失败模式一致（产生看似合理却静默错误的结果）。修复极简却数学严谨：利用 J/K 构建的线性性，拦截复数密度矩阵，拆成实部/虚部各跑一遍既有的优化实数路径，再按 K(D<sub>re</sub> + iD<sub>im</sub>) = K(D<sub>re</sub>) + iK(D<sub>im</sub>) 重组。修复后复数 DF 能量与实数 DF、非 DF 参考都吻合到 ~10⁻¹¹，且既有测试套件无回归。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- D. 科学研究分析 -->
+    <h3>D · 多学科科学研究分析（含诚实的局限）</h3>
+    <p>这组 case 考的是研究级别的分析与方案设计——从数学证明到实验方案。难得的是，报告在展示强项的同时，<strong>逐个点出了模型的短板</strong>，这比单看结论更能帮你判断能不能用。</p>
+    <div class="deep">
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">∑</span>
+          <span class="txt">
+            <span class="dt">复杂数学：证明 Erdős 问题 <span class="ptag">Erdős</span></span>
+            <span class="dsum">通过迭代精炼流程产出两道 Erdős 问题的证明，人类专家已验证正确性，其中 Erdős 1051 已用 Seed-Prover 形式化。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>案例</h4>
+          <p>报告展示了一道数论问题的完整反证法证明（形如「若整数序列满足某 liminf 条件，则某无穷和为无理数」）：假设有理 → 拆成部分和与尾项 → 建立递推 → 转对数变量证明收敛 → 用几何级数界住尾项 → 导出与下界矛盾。人类专家已验证这些证明的正确性，其中 <strong>Erdős 1051 的证明已用 Seed-Prover 1.5 形式化</strong>。这说明模型具备系统化推理与严谨证明构造的能力，能触及数学研究的前沿难题。</p>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🧬</span>
+          <span class="txt">
+            <span class="dt">生物分子模拟：设计 CBD–α7 nAChR 的粗粒化 MD 方案 <span class="ptag">FrontierScience</span></span>
+            <span class="dsum">产出结构完整、可迭代的 GROMACS 工作流——但会幻觉具体的 PDB 条目与引用文献，必须人工核验。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>强项</h4>
+          <p>要求为「用粗粒化分子动力学确定 CBD 在 α7 nAChR 上的结合位点」写一份逐步、带论证的完整方案。模型正确选取合适的 PDB 结构、给出标准的结构准备流程、选用适合体系的 DFT 计算层级、并<strong>提出用分配系数 logP 作为力场准确性的验证指标</strong>（对疏水配体是一个考究的选择）；还用正确的 gmx 命令处理周期性边界伪影、给出明确的时间定义与判据、以及 all-atom + FEP/MM-PBSA 的交叉验证策略。</p>
+          <h4>诚实的局限</h4>
+          <div class="note">⚠️ 最关键的问题：模型<strong>幻觉出了具体的 PDB 条目和引用文献</strong>，实施前必须仔细核验。这类不准确会误导研究者、损害工作流可靠性——它可以作为一份有用的初始模板，但不能未经人工验证就直接用。</div>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🔗</span>
+          <span class="txt">
+            <span class="dt">高分子化学：分析 mPA 的 ROMP–氧化合成路线 <span class="ptag">FrontierScience</span></span>
+            <span class="dsum">机理推理扎实（催化剂选择、结构–性能关系都对），但没识别出更具体的电荷转移（CT）络合物机制，动力学深度不足。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>强项</h4>
+          <p>分析一条两步法合成马来酰亚胺聚乙炔（mPA）的路线。模型准确识别环丁烯衍生物的开环易位聚合行为、正确指出高应变缺电子底物需要高活性 Schrock 催化剂，并说清两步法相对直接共聚的优势（分子量控制、交替结构规整度、抑制副反应）。结构–性能分析也到位：前驱体含 sp³ 碳带来柔性与可加工性，氧化后形成高度共轭平面结构最大化 π–π 堆叠，马来酰亚胺作为强吸电子基降低 LUMO 以支持空气稳定的 n 型半导体。</p>
+          <h4>局限</h4>
+          <div class="note">⚠️ 宏观机理叙述自洽，但模型<strong>没能识别本反应中更具体的电荷转移（CT）络合物机制</strong>——即 TEA 与氧化剂可能先形成 CT 络合物作为反应引发物种。它退回到更通用的酸碱平衡 + 电子转移解释，对「弱碱 TEA 如何高效触发反应」的关键动力学细节缺乏机理深度。</div>
+        </div></div>
+      </div>
+
+      <div class="deep-card">
+        <div class="dhead" onclick="toggleDeep(this)">
+          <span class="ic">🔬</span>
+          <span class="txt">
+            <span class="dt">整合实验设计：细胞类型特异的高尔基体多组学 <span class="ptag">FrontierScience</span></span>
+            <span class="dsum">用 Cre-LoxP + Golgi-IP 给出超过典型博士生水平的可执行方案；唯一小瑕疵是标签蛋白选择（Giantin 可能引入非特异结合）。</span>
+          </span>
+          <span class="chev">▸</span>
+        </div>
+        <div class="dbody"><div class="dbody-in">
+          <h4>强项</h4>
+          <p>任务是设计小鼠模型，测量星形胶质细胞、小胶质细胞、少突胶质细胞、神经元中细胞类型特异失调的高尔基体蛋白/脂质/代谢物。模型给出细粒度的可执行步骤：CRISPR/Cas9 在 Rosa26 安全港位点的同源臂设计、gRNA 考量、基因分型引物规划；在高尔基体免疫沉淀（Golgi-IP）的关键步骤定义严格的质控与阴性对照（用 ER/线粒体/核标志物排除污染），并用基于 PCC 的定量纯度评估；多组学差异检验的统计判据也明确（FDR &lt; 0.05、|LFC| ≥ 1.2）。整体<strong>超过典型博士生的水平</strong>。</p>
+          <h4>局限</h4>
+          <div class="note">⚠️ 一个潜在问题在标签蛋白选择：模型选了 Giantin 作高尔基体标志物，但它是大型基质蛋白，免疫沉淀时可能比 Tmem115 等跨膜蛋白引入更多非特异结合，也更可能扰动高尔基体结构。</div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑥ 模型诊断模型 -->
+  <section id="diag">
+    <div class="sec-head"><span class="k">06</span><h2>有意思的一点：让模型来诊断模型</h2><span class="rule"></span></div>
+    <p class="lead">当评测生态越来越大，人工分析结果变得昂贵又难标准化。Seed 团队搭了一条自动化「模型诊断模型」流水线。</p>
+    <p>这条流水线用 LLM 去分析<strong>其它模型</strong>在各种异构 benchmark 上的评测产出——不只是分数，还聚合了行为统计：token 用量、格式合规、轮次数、emoji 频率、best-of-N 统计等，配合实例级输出、推理轨迹与执行轨迹。通过「数据处理 / 场景自适应分析 / 报告合成」三层设计，它能规模化地暴露模型弱点、策略权衡和具体行为问题（如 code-switching、重复 CoT）。有意思的是，它对 Seed2.0 自己的诊断也毫不留情：</p>
+    <div class="cols">
+      <div class="col good">
+        <h4>🔍 XBench（搜索 Agent）</h4>
+        <ul>
+          <li>avg_score 0.64 <b>排名第一</b>（GPT-5.2 0.57 / Sonnet 0.48）</li>
+          <li>能通过多源检索 + 迭代验证收敛复杂多跳任务</li>
+          <li>弱点：细粒度边界对齐、结构化比较场景</li>
+        </ul>
+      </div>
+      <div class="col good">
+        <h4>🧮 IMO-Bench（推理）</h4>
+        <ul>
+          <li>bon 0.87 峰值能力接近 Gemini-3（0.91/0.92）</li>
+          <li>但 won 仅 0.66，<b>bon–won 差 0.211 ≈ 21% 采样不稳定</b></li>
+          <li>65% 错误涉及极值 / 边界构造，80% 涉及全称量词 / 多分支穷举</li>
+        </ul>
+      </div>
+      <div class="col gap">
+        <h4>🌐 WorldTravel（真实任务）</h4>
+        <ul>
+          <li>avg 0.233 第二，落后 GPT-5.2（0.327）</li>
+          <li>约束 ≤15 时稳，<b>&gt;15 个交叉依赖约束时急剧失败</b></li>
+          <li>失败集中在时序错配、票价误算、结构排序、长链冲突修复</li>
+          <li>亮点：推理 token 少 77%、completion 少 84%</li>
+        </ul>
+      </div>
+      <div class="col gap">
+        <h4>🛠️ τ2-Bench（工具使用）</h4>
+        <ul>
+          <li>高分 case 动态跳过冗余设备检查、严守单步 JSON 输出</li>
+          <li>低分 case 机械枚举、过度消耗对话轮次（31.4 → 55.0 轮）</li>
+          <li>整体 token 用量远低于 GPT-5 High，尽管有 0.17 分差</li>
+        </ul>
+      </div>
+    </div>
+    <p>这类诊断的价值在于：它把「大规模评测结果」自动转成「结构化的行为报告」，让算法研究者能高效定位系统性失败并迭代——本身就是「用 AI 加速 AI 研发」的一个具体范例。</p>
+  </section>
+
+  <!-- ⑦ 定位与结论 -->
+  <section id="end">
+    <div class="sec-head"><span class="k">07</span><h2>定位与结论</h2><span class="rule"></span></div>
+    <p class="lead">Seed2.0 把自己定位为「迈向真实世界复杂性的初步进展」——它诚实地承认与国际前沿仍有差距，但更重要的是指明了方向。</p>
+    <p>把全卡串起来，逻辑其实非常清晰：</p>
+    <ol>
+      <li><strong>先识别真实需求</strong>——从中国 MaaS 的真实流量看清楚模型到底被用来干什么；</li>
+      <li><strong>再建可靠的评测体系</strong>——从这些需求反推出四个真实世界维度，让评测当研发的指南针而非刷榜工具；</li>
+      <li><strong>然后死磕两个瓶颈</strong>——长尾专业知识 + 复杂指令遵循，提升模型在复杂长程任务里的可靠性；</li>
+      <li><strong>叠加世界领先的通用能力</strong>——推理、视觉理解、搜索，满足海量用户的高频需求；</li>
+      <li><strong>用大量真实 case 证明</strong>——模型开始具备处理「初步的复杂真实任务」的能力。</li>
+    </ol>
+    <div class="quote">
+      Seed2.0 与国际前沿仍有差距，但它把差距写在明处，并把「从真实需求出发、以长尾知识与长程可靠性为主攻方向」当成清晰的路线图。
+      <span class="cn">—— 对读者最有用的，不是它考了多少分，而是它诚实划出的「能用 / 慎用」边界</span>
+    </div>
+    <p>如果你是要选型的工程师，这份卡给你的信号很明确：<strong>搜索 / 深度研究 / 视觉 Agent / 数学、加上一个数量级的成本优势，是它的甜区</strong>；而重仓库级编程、依赖精确长尾事实、或对幻觉零容忍的科研场景，则需要谨慎并加人工核验。</p>
+  </section>
 
 </div>
 
+<footer>
+  <div class="wrap">
+    <div>本页为 Seed2.0 Model Card 的中文教学可视化整理，面向快速理解，细节与数字以原文为准。</div>
+    <div class="src">原文：<a href="https://arxiv.org/abs/2607.00248" target="_blank" rel="noopener">Seed2.0 Model Card: Towards Intelligence Frontier for Real-World Complexity</a> · ByteDance Seed · arXiv:2607.00248（2026.06）</div>
+  </div>
+</footer>
+
 <script>
+  // 可展开深度卡片：onclick 只绑在 header 上，避免内部点击冒泡
+  function toggleDeep(headerEl){
+    var card = headerEl.closest('.deep-card');
+    if(card) card.classList.toggle('open');
+  }
+
+  // 图片说明展开（保留通用能力，本页目前以自制可视化为主）
   function toggleFigDetail(el){
-    var d=el.nextElementSibling;
-    d.classList.toggle("active");
-    el.textContent=d.classList.contains("active")?"收起 ▴":"展开说明 ▸";
+    var box = el.closest('.figcap');
+    if(!box) return;
+    var d = box.querySelector('.figure-detail');
+    if(d){
+      d.classList.toggle('active');
+      el.textContent = d.classList.contains('active') ? '收起 ▴' : '展开说明 ▸';
+    }
   }
-  function toggleCard(el){ el.classList.toggle("open"); }
-  function switchTab(el){
-    var p=el.getAttribute("data-p");
-    var tabs=el.parentElement.querySelectorAll(".tab");
-    tabs.forEach(function(t){ t.classList.remove("on"); });
-    el.classList.add("on");
-    document.querySelectorAll(".panel").forEach(function(pn){ pn.classList.remove("on"); });
-    document.getElementById("p-"+p).classList.add("on");
+
+  // GUI 自纠错步进
+  var loopStages = document.querySelectorAll('#loopStepper .stepper-stage');
+  var loopDots = document.querySelectorAll('#loopStepper .stepper-dot');
+  var loopIdx = 0;
+  function loopRender(){
+    for(var i=0;i<loopStages.length;i++){
+      loopStages[i].classList.toggle('on', i===loopIdx);
+      loopDots[i].classList.toggle('on', i<=loopIdx);
+    }
+    document.getElementById('loopCnt').textContent = (loopIdx+1)+' / '+loopStages.length;
+    document.getElementById('loopPrev').disabled = (loopIdx===0);
+    document.getElementById('loopNext').disabled = (loopIdx===loopStages.length-1);
   }
+  function loopStep(d){
+    loopIdx = Math.max(0, Math.min(loopStages.length-1, loopIdx+d));
+    loopRender();
+  }
+  function loopReset(){ loopIdx = 0; loopRender(); }
+  loopRender();
 </script>
+
 </body>
 </html>
